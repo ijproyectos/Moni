@@ -1,0 +1,62 @@
+@import 'tailwindcss';
+
+/* Brand tokens — source of truth: Moni brand manual v1.0 (Oct 2026). */
+@theme {
+  --color-*: initial;
+
+  /* Primary palette */
+  --color-forest: #064735;
+  --color-lime: #b8ec7c;
+  --color-cream: #fff2d8;
+  --color-gold: #ffc83d;
+
+  /* Secondary & interface */
+  --color-blush: #f5b8b0;
+  --color-lacquer: #e5533d;
+  --color-canvas: #fff8ec;
+  --color-surface: #0a5440;
+  --color-text-muted: #3f5a50;
+  --color-text-muted-on-dark: #a9c4b8;
+  --color-white: #ffffff;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Category data colors */
+  --color-category-food: #e5533d;
+  --color-category-groceries: #064735;
+  --color-category-transport: #2f9e8f;
+  --color-category-outings: #f0aa2a;
+  --color-category-subscriptions: #8a6bd1;
+  --color-category-home: #6dbe3a;
+
+  /* Typography */
+  --font-display: 'Fredoka', ui-rounded, system-ui, sans-serif;
+  --font-body: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+
+  /* Radii */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--color-canvas);
+    color: var(--color-forest);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+}

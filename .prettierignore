@@ -1,0 +1,10 @@
+dist
+node_modules
+package-lock.json
+src/assets
+README.md
+PROMPT_CLAUDE_CODE.md
+docs/MVP_SCOPE.md
+docs/ARCHITECTURE.md
+docs/IMPLEMENTATION_PLAN.md
+*.example
