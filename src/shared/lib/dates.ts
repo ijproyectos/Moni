@@ -53,3 +53,71 @@ export function formatRelativeDay(date: IsoDate, today: IsoDate): string {
   if (toUtc(date).getTime() === yesterday.getTime()) return 'Ayer'
   return shortDay.format(toUtc(date)).replace('.', '')
 }
+
+const SHORT_MONTHS = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+]
+const LONG_MONTHS = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+]
+
+function parts(date: IsoDate): [number, number, number] {
+  return date.split('-').map(Number) as [number, number, number]
+}
+
+/** "31 de mar de 2027". */
+export function formatShortDate(date: IsoDate): string {
+  const [y, m, d] = parts(date)
+  return `${d} de ${SHORT_MONTHS[m - 1]} de ${y}`
+}
+
+/** "27 feb 2027". */
+export function formatCompactDate(date: IsoDate): string {
+  const [y, m, d] = parts(date)
+  return `${d} ${SHORT_MONTHS[m - 1]} ${y}`
+}
+
+/** "27 de febrero de 2027". */
+export function formatLongDate(date: IsoDate): string {
+  const [y, m, d] = parts(date)
+  return `${d} de ${LONG_MONTHS[m - 1]} de ${y}`
+}
+
+/** "20 oct". */
+export function formatDayMonth(date: IsoDate): string {
+  const [, m, d] = parts(date)
+  return `${d} ${SHORT_MONTHS[m - 1]}`
+}
+
+/** "oct de 2027". */
+export function formatMonthShortYear(date: IsoDate): string {
+  const [y, m] = parts(date)
+  return `${SHORT_MONTHS[m - 1]} de ${y}`
+}
+
+/** "octubre". */
+export function monthNameOf(date: IsoDate): string {
+  return LONG_MONTHS[parts(date)[1] - 1] ?? ''
+}

@@ -47,3 +47,9 @@ export function weekdayIndex(date: IsoDate): number {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number]
   return (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7
 }
+
+/** Adds calendar days to an ISO date. */
+export function addDays(date: IsoDate, days: number): IsoDate {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number]
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}

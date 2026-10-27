@@ -2,6 +2,7 @@ import {
   Check,
   RefreshCw,
   Search,
+  Send,
   Sparkles,
   Target,
   UsersRound,
@@ -10,13 +11,15 @@ import {
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { GOAL_OPTIONS } from '../domain/goals'
+import { OnboardingTitle } from './OnboardingTitle'
 
-const GOAL_ICONS: Record<string, LucideIcon> = {
-  track_spending: Search,
-  save_monthly: Target,
-  split_expenses: UsersRound,
-  control_recurring: RefreshCw,
-  all: Sparkles,
+const GOAL_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
+  track_spending: { icon: Search, color: '#b8ec7c' },
+  save_monthly: { icon: Target, color: '#ffc83d' },
+  split_expenses: { icon: UsersRound, color: '#f5b8b0' },
+  control_recurring: { icon: RefreshCw, color: '#7fd1c3' },
+  plan_trips: { icon: Send, color: '#7fd1c3' },
+  all: { icon: Sparkles, color: '#ffc83d' },
 }
 
 interface OnboardingGoalsStepProps {
@@ -26,7 +29,7 @@ interface OnboardingGoalsStepProps {
   onSkip: () => void
 }
 
-// Screen 02 — Objetivos.
+// Screen 002 — Objetivos.
 export function OnboardingGoalsStep({
   selected,
   onToggle,
@@ -35,17 +38,15 @@ export function OnboardingGoalsStep({
 }: OnboardingGoalsStepProps) {
   return (
     <>
-      <h1 className="mt-10 text-center font-display text-[32px] font-semibold leading-9 text-cream">
-        ¿Qué querés lograr con Moni?
-      </h1>
-      <p className="mt-3 text-center text-[17px] leading-6 text-text-muted-on-dark">
-        Elegí todas las que quieras. Así armamos la app a tu medida.
-      </p>
+      <OnboardingTitle
+        title="¿Qué querés lograr con Moni?"
+        subtitle="Elegí todas las que quieras. Así armamos la app a tu medida."
+      />
 
-      <ul className="mt-8 flex flex-col gap-3">
+      <ul className="mt-6 flex flex-col gap-3">
         {GOAL_OPTIONS.map((goal) => {
           const checked = selected.includes(goal.id)
-          const Icon = GOAL_ICONS[goal.id] ?? Sparkles
+          const { icon: Icon, color } = GOAL_ICONS[goal.id] ?? { icon: Sparkles, color: '#ffc83d' }
           return (
             <li key={goal.id}>
               <button
@@ -53,13 +54,14 @@ export function OnboardingGoalsStep({
                 aria-pressed={checked}
                 onClick={() => onToggle(goal.id)}
                 className={cn(
-                  'flex min-h-[68px] w-full items-center gap-4 rounded-lg border-2 bg-surface px-4 py-3 text-left font-body text-[17px] text-cream transition',
-                  checked ? 'border-lime' : 'border-lime/20',
+                  'flex min-h-[62px] w-full items-center gap-4 rounded-[20px] border-2 px-3 py-2 text-left text-[17px] font-semibold leading-[22px] text-cream transition',
+                  checked ? 'border-lime bg-surface' : 'border-white/5 bg-surface/70',
                 )}
               >
                 <span
                   aria-hidden="true"
-                  className="flex size-11 shrink-0 items-center justify-center rounded-md bg-forest text-lime"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-full bg-forest/60"
+                  style={{ color }}
                 >
                   <Icon className="size-5" strokeWidth={2} />
                 </span>
@@ -67,11 +69,11 @@ export function OnboardingGoalsStep({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'flex size-8 shrink-0 items-center justify-center rounded-full border-2',
+                    'flex size-7 shrink-0 items-center justify-center rounded-full border-2',
                     checked ? 'border-lime bg-lime text-forest' : 'border-text-muted-on-dark',
                   )}
                 >
-                  {checked && <Check className="size-5" strokeWidth={3} />}
+                  {checked && <Check className="size-4" strokeWidth={3} />}
                 </span>
               </button>
             </li>
@@ -79,7 +81,7 @@ export function OnboardingGoalsStep({
         })}
       </ul>
 
-      <div className="mt-auto flex flex-col items-center gap-2 pt-8">
+      <div className="mt-auto flex flex-col items-center gap-1 pt-4">
         <Button onClick={onContinue}>Continuar</Button>
         <Button variant="ghost" onClick={onSkip} className="text-text-muted-on-dark">
           Saltar

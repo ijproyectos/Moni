@@ -1,7 +1,7 @@
 {
   "name": "moni",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -35,8 +35,7 @@
     "vitest": "3.2.7"
   },
   "dependencies": {
-    "@fontsource/fredoka": "5.3.0",
-    "@fontsource/outfit": "5.3.0",
+    "@fontsource/nunito": "5.3.0",
     "@hookform/resolvers": "5.9.2",
     "@supabase/supabase-js": "2.118.0",
     "@tanstack/react-query": "5.104.5",

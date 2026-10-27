@@ -69,7 +69,7 @@ describe('HomeScreen', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Gastos por categoría' })).toBeInTheDocument()
     expect(screen.getByText('32%')).toBeInTheDocument()
-    expect(screen.getByText('Disponible en cuentas:')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Metas/ })).toHaveAttribute('href', '/metas')
   })
 
   it('renders virtual template categories from shared expenses without links', () => {
@@ -96,7 +96,7 @@ describe('HomeScreen', () => {
     })
     expect(screen.getAllByText('Restaurante').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Gastos compartidos').length).toBeGreaterThan(0)
-    expect(screen.getByText('60% del total')).toBeInTheDocument()
+    expect(screen.getByText('60%')).toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: /Restaurante|Gastos compartidos/ }),
     ).not.toBeInTheDocument()

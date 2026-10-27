@@ -18,8 +18,8 @@ interface TransferFormProps {
 }
 
 const fieldClass =
-  'h-14 w-full rounded-full border border-cream bg-white px-5 text-[17px] text-forest placeholder:text-text-muted'
-const labelClass = 'font-display text-sm font-semibold uppercase tracking-wider text-text-muted'
+  'h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest placeholder:text-text-muted'
+const labelClass = 'text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted'
 
 /** Presentational form for moving money between two own accounts. Transfers are not income or expense. */
 export function TransferForm({ accounts, isSubmitting, submitError, onSubmit }: TransferFormProps) {

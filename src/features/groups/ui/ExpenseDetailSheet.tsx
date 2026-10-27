@@ -1,96 +1,105 @@
-import { useState } from 'react'
+import { Pencil, Trash2, X } from 'lucide-react'
 import { formatLongDay } from '@/shared/lib/dates'
+import { formatArs } from '@/shared/lib/money'
+import { cn } from '@/shared/ui/cn'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
-import { AmountDisplay } from '@/shared/ui/AmountDisplay'
-import { Button } from '@/shared/ui/Button'
-import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
-import type { CategoryTemplate } from '@/features/categories/domain/category'
-import type { GroupMember, SharedExpense } from '../domain/group'
-import { canVoidExpense, nameById } from '../domain/groupView'
+import { Avatar, SectionLabel } from '@/shared/ui/kit'
+import { personName, type LedgerExpense, type Person } from '../domain/ledger'
 
 interface ExpenseDetailSheetProps {
-  expense: SharedExpense
-  members: readonly GroupMember[]
-  template?: CategoryTemplate
-  meId: string
-  isVoiding: boolean
-  voidError: string | null
-  onVoid: () => void
+  expense: LedgerExpense
+  people: readonly Person[]
+  icon: React.ComponentType<{ className?: string }>
+  canEdit: boolean
+  onEdit: () => void
+  onDelete: () => void
   onClose: () => void
 }
 
-/** Detail of a shared expense: who paid, each split and, when allowed, void (behind a confirm). */
+// Screen 090 — Detalle del gasto.
 export function ExpenseDetailSheet({
   expense,
-  members,
-  template,
-  meId,
-  isVoiding,
-  voidError,
-  onVoid,
+  people,
+  icon: Icon,
+  canEdit,
+  onEdit,
+  onDelete,
   onClose,
 }: ExpenseDetailSheetProps) {
-  const [confirming, setConfirming] = useState(false)
-  const voided = expense.status === 'voided'
-
-  if (confirming) {
-    return (
-      <ConfirmDialog
-        title="¿Anular este gasto?"
-        message="Se borra de los saldos del grupo y de tus gastos. Si pagaste desde una cuenta, también se devuelve la plata."
-        confirmLabel="Anular gasto"
-        isBusy={isVoiding}
-        onConfirm={onVoid}
-        onCancel={() => setConfirming(false)}
-      />
-    )
-  }
-
+  const payer =
+    expense.payers.length > 1 ? 'varios' : personName(people, expense.payers[0]?.personId ?? '')
   return (
     <BottomSheet title={expense.description} onClose={onClose}>
-      <div className="flex flex-col gap-4">
-        <div>
-          <AmountDisplay cents={expense.amountCents} className="font-display text-4xl font-bold" />
-          <p className="text-[15px] text-text-muted">
-            Pagó {nameById(members, expense.paidBy, meId)} · {formatLongDay(expense.occurredOn)}
-            {template ? ` · ${template.name}` : ''}
-          </p>
-          {voided && <p className="mt-1 font-semibold text-expense">Anulado</p>}
+      <div className="-mt-2 flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex size-14 items-center justify-center rounded-full bg-lime/35">
+            <Icon className="size-6" />
+          </span>
+          <p className="text-[16px] text-text-muted">{formatLongDay(expense.occurredOn)}</p>
         </div>
-
-        <section aria-labelledby="splits-title">
-          <h3
-            id="splits-title"
-            className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-text-muted"
-          >
-            {expense.splitMethod === 'percent' ? 'Por porcentaje' : 'Partes iguales'}
-          </h3>
-          <ul className="divide-y divide-cream rounded-xl border border-cream bg-white">
-            {expense.splits.map((split) => (
-              <li key={split.userId} className="flex min-h-12 items-center gap-3 px-4 py-2">
-                <span className="min-w-0 flex-1 truncate font-display text-[17px] font-semibold">
-                  {nameById(members, split.userId, meId)}
+        <p className="font-display text-[44px] font-extrabold leading-[50px]">
+          {formatArs(expense.amountCents)}
+        </p>
+        <p className="flex flex-wrap items-center gap-2 text-[16px]">
+          {expense.payers.length === 1 && <Avatar name={payer} size="sm" />}
+          Pagó <strong className="font-extrabold">{payer}</strong> ·{' '}
+          {expense.methodLabel.startsWith('entre')
+            ? `partes iguales ${expense.methodLabel}`
+            : expense.methodLabel}
+        </p>
+        <p className="-mt-2 text-[14px] text-text-muted">
+          Cargado por{' '}
+          {expense.createdBy ? personName(people, expense.createdBy) : 'alguien del grupo'}
+          {expense.source === 'sim' && ' · guardado en este dispositivo'}
+        </p>
+        <SectionLabel>Cómo se dividió</SectionLabel>
+        <ul className="divide-y divide-sand rounded-[22px] border border-sand bg-white px-4">
+          {expense.shares.map((s) => {
+            const person = people.find((p) => p.id === s.personId)
+            const paid = expense.payers.find((p) => p.personId === s.personId)?.cents
+            return (
+              <li key={s.personId} className="flex items-center gap-3 py-2.5">
+                <Avatar name={person?.name ?? '?'} size="sm" />
+                <span className="flex-1 text-[18px] font-extrabold">
+                  {person?.name ?? 'Ex miembro'}
                 </span>
-                {split.percent !== null && (
-                  <span className="text-sm text-text-muted">
-                    {String(split.percent).replace('.', ',')}%
-                  </span>
-                )}
-                <AmountDisplay cents={split.shareCents} className="font-display font-semibold" />
+                {paid ? (
+                  <span className="text-[14px] text-text-muted">puso {formatArs(paid)}</span>
+                ) : person && !person.hasMoni ? (
+                  <span className="text-[14px] text-text-muted">sin Moni</span>
+                ) : null}
+                <span className="w-24 text-right text-[18px] font-extrabold">
+                  {formatArs(s.cents)}
+                </span>
               </li>
-            ))}
-          </ul>
-        </section>
-
-        {voidError && (
-          <p role="alert" className="text-center text-sm text-expense">
-            {voidError}
+            )
+          })}
+        </ul>
+        <div className="mt-1 grid grid-cols-[1fr_1.4fr] gap-2">
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={!canEdit}
+            className="flex min-h-14 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[18px] font-extrabold text-expense disabled:opacity-50"
+          >
+            <Trash2 aria-hidden="true" className="size-5" /> Eliminar
+          </button>
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={!canEdit}
+            className={cn(
+              'flex min-h-14 items-center justify-center gap-2 rounded-full bg-lime text-[18px] font-extrabold disabled:opacity-50',
+            )}
+          >
+            <Pencil aria-hidden="true" className="size-5" /> Editar
+          </button>
+        </div>
+        {!canEdit && (
+          <p className="flex items-center gap-1 text-[14px] text-text-muted">
+            <X aria-hidden="true" className="size-4" /> Solo quien lo cargó, pagó o participa puede
+            cambiarlo.
           </p>
-        )}
-        {canVoidExpense(expense, meId) && (
-          <Button variant="dark" onClick={() => setConfirming(true)}>
-            Anular gasto
-          </Button>
         )}
       </div>
     </BottomSheet>

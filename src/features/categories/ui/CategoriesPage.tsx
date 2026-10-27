@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
@@ -6,11 +6,15 @@ import { toUserMessage } from '@/shared/lib/errors'
 import type { CategoryKind } from '@/shared/lib/database.types'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
-import { Card } from '@/shared/ui/Card'
+import { useMonthSummary } from '@/features/dashboard/api/useMonthSummary'
+import { setBudget, useBudgets } from '@/features/budgets/mock/budgetsStore'
+import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
+import { formatArs } from '@/shared/lib/money'
+import { todayIso } from '@/shared/lib/month'
+import { HeaderAddButton } from '@/shared/ui/kit'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { CategoryIconCircle } from '@/shared/ui/IconCircle'
-import { MovementRow } from '@/shared/ui/MovementRow'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -50,6 +54,19 @@ export function CategoriesPage() {
 
   const all = categories.data ?? []
   const list = categoriesByKind(all, kind)
+  const month = useMonthSummary(todayIso())
+  const spentById = new Map(
+    (month.data?.byCategory ?? []).map((c) => [c.categoryId, c.amountCents]),
+  )
+  const budgets = useBudgets()
+  const [limitText, setLimitText] = useState('')
+
+  function startEditing(category?: Category) {
+    setSubmitError(null)
+    const limit = category ? budgets[category.id] : undefined
+    setLimitText(limit ? formatAmountInput(limit) : '')
+    setEditing(category ? { category } : {})
+  }
 
   async function save(values: CategoryFormValues) {
     setSubmitError(null)
@@ -59,6 +76,7 @@ export function CategoriesPage() {
           id: editing.category.id,
           values: { name: values.name, icon: values.icon, color: values.color },
         })
+        setBudget(editing.category.id, parseAmountInput(limitText))
       } else {
         await create.mutateAsync({ ...values, kind })
       }
@@ -85,8 +103,12 @@ export function CategoriesPage() {
   }
 
   return (
-    <section className="flex flex-col gap-4 px-4 pt-12">
-      <PageHeader title="Categorías" backTo="/mas" />
+    <section className="flex flex-col gap-4 px-4 pt-14">
+      <PageHeader
+        title="Categorías"
+        backTo="/mas"
+        action={<HeaderAddButton label="Nueva categoría" onClick={() => startEditing()} />}
+      />
       <SegmentedControl
         label="Tipo de categoría"
         options={KIND_OPTIONS}
@@ -114,36 +136,45 @@ export function CategoriesPage() {
           description="Creá la primera para ordenar tus movimientos."
         />
       ) : (
-        <Card className="py-1">
-          <ul className="divide-y divide-cream">
-            {list.map((category) => (
+        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+          {list.map((category) => {
+            const spent = spentById.get(category.id) ?? 0
+            return (
               <li key={category.id}>
-                <MovementRow
-                  leading={<CategoryIconCircle iconName={category.icon} color={category.color} />}
-                  title={category.name}
-                  onPress={() => {
-                    setSubmitError(null)
-                    setEditing({ category })
-                  }}
-                  pressLabel={`Editar ${category.name}`}
-                  onDelete={() => setArchiving(category)}
-                  deleteLabel={`Archivar ${category.name}`}
-                />
+                <button
+                  type="button"
+                  onClick={() => startEditing(category)}
+                  aria-label={`Editar ${category.name}`}
+                  className="flex min-h-[64px] w-full items-center gap-3 px-4 py-2 text-left"
+                >
+                  <CategoryIconCircle
+                    iconName={category.icon}
+                    color={category.color}
+                    className="size-12"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[18px] font-extrabold">
+                      {category.name}
+                    </span>
+                    <span className="block text-[15px] text-text-muted">
+                      {spent > 0
+                        ? `${formatArs(spent)} este mes`
+                        : kind === 'expense'
+                          ? 'Sin gastos'
+                          : 'Sin ingresos'}
+                    </span>
+                  </span>
+                  <Pencil aria-hidden="true" className="size-5 text-forest" strokeWidth={2} />
+                </button>
               </li>
-            ))}
-          </ul>
-        </Card>
+            )
+          })}
+        </ul>
       )}
 
-      <Button
-        onClick={() => {
-          setSubmitError(null)
-          setEditing({})
-        }}
-      >
-        <Plus aria-hidden="true" className="mr-2 size-5" strokeWidth={2.5} />
-        Nueva categoría
-      </Button>
+      <p className="px-1 text-[15px] leading-5 text-text-muted">
+        Tocá una categoría para cambiar el nombre, el ícono, el color o ponerle un límite.
+      </p>
 
       {editing && (
         <BottomSheet
@@ -161,14 +192,37 @@ export function CategoriesPage() {
             isSubmitting={create.isPending || update.isPending}
             submitError={submitError}
             onSubmit={(values) => void save(values)}
-          />
+            onArchive={editing.category ? () => setArchiving(editing.category ?? null) : undefined}
+          >
+            {editing.category?.kind === 'expense' && (
+              <label className="flex items-center gap-3 rounded-[18px] border border-sand bg-white px-4 py-3">
+                <span className="flex-1">
+                  <span className="block text-[17px] font-extrabold">Límite por mes</span>
+                  <span className="block text-[14px] text-text-muted">
+                    Moni te avisa cuando llegás al 80%
+                  </span>
+                </span>
+                <span className="flex items-baseline text-[22px] font-extrabold">
+                  $
+                  <input
+                    value={limitText}
+                    onChange={(e) => setLimitText(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="Sin límite"
+                    aria-label="Límite por mes"
+                    className="w-28 bg-transparent text-right outline-none placeholder:text-[15px] placeholder:font-bold placeholder:text-text-muted"
+                  />
+                </span>
+              </label>
+            )}
+          </CategoryForm>
         </BottomSheet>
       )}
       {archiving && (
         <ConfirmDialog
-          title="¿Archivar esta categoría?"
+          title="¿Eliminar esta categoría?"
           message={`"${archiving.name}" deja de aparecer para cargar movimientos nuevos. Los que ya cargaste se mantienen.`}
-          confirmLabel="Archivar"
+          confirmLabel="Eliminar"
           isBusy={archive.isPending}
           onConfirm={() => void confirmArchive()}
           onCancel={() => setArchiving(null)}

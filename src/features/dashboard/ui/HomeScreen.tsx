@@ -9,8 +9,12 @@ import { Card } from '@/shared/ui/Card'
 import { CategoryIconCircle } from '@/shared/ui/IconCircle'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { MovementRow } from '@/shared/ui/MovementRow'
-import { Target } from 'lucide-react'
-import { IconCircle } from '@/shared/ui/IconCircle'
+import { ShoppingBag, Target } from 'lucide-react'
+import { progress, percentLabel } from '@/features/goals/domain/goals'
+import { useGoals } from '@/features/goals/mock/goalsStore'
+import { ANTS_WEEK } from '@/features/insights/mock/antsData'
+import { formatArs } from '@/shared/lib/money'
+import { MoniGlyph, ProgressBar } from '@/shared/ui/kit'
 import type { MonthSummary } from '../domain/monthSummary'
 import { buildInsight } from '../domain/insight'
 import { CategoryDonut } from './CategoryDonut'
@@ -48,14 +52,16 @@ export function HomeScreen({
         balanceCents={summary.balanceCents}
         incomeCents={summary.incomeCents}
         expenseCents={summary.expenseCents}
-        availableCents={summary.availableBalanceCents}
       />
 
       <div className="flex flex-col gap-4 px-4 pt-4">
-        <Card className="flex items-center gap-3">
-          <IconCircle icon={Target} color="#F0AA2A" className="size-12 rounded-md" />
-          <p className="text-[16px] leading-6 text-forest">
-            <strong className="font-semibold">Moni dice:</strong> {buildInsight(summary.byCategory)}
+        <Card className="flex items-center gap-4 rounded-[24px] p-4">
+          <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40 text-forest">
+            <MoniGlyph className="size-9" />
+          </span>
+          <p className="text-[17px] leading-6 text-forest">
+            <strong className="font-extrabold">Moni dice:</strong>{' '}
+            {buildInsight(summary.byCategory)}
           </p>
         </Card>
 
@@ -70,12 +76,14 @@ export function HomeScreen({
           </Card>
         ) : (
           <>
-            <Card className="p-5">
+            <Card className="rounded-[24px] p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="font-display text-xl font-semibold">Gastos por categoría</h2>
+                <h2 className="whitespace-nowrap font-display text-[20px] font-extrabold">
+                  Gastos por categoría
+                </h2>
                 <Link
                   to="/actividad"
-                  className="flex min-h-11 items-center rounded-full border border-cream bg-canvas px-4 font-display text-sm font-semibold"
+                  className="flex min-h-11 items-center whitespace-nowrap rounded-full border border-sand bg-canvas px-3 font-display text-[14px] font-extrabold"
                 >
                   Ver movimientos
                 </Link>
@@ -91,37 +99,12 @@ export function HomeScreen({
               )}
             </Card>
 
-            {summary.byCategory.length > 0 && (
-              <section aria-labelledby="by-category-title">
-                <div className="mb-2 flex items-baseline justify-between px-1">
-                  <h2 id="by-category-title" className="font-display text-xl font-semibold">
-                    Por categoría
-                  </h2>
-                  <span className="text-[15px] text-text-muted">{monthName}</span>
-                </div>
-                <Card className="py-1">
-                  <ul className="divide-y divide-cream">
-                    {summary.byCategory.map((slice) => (
-                      <li key={slice.categoryId}>
-                        <MovementRow
-                          leading={<CategoryIconCircle iconName={slice.icon} color={slice.color} />}
-                          title={slice.name}
-                          subtitle={`${Math.round(slice.percent)}% del total`}
-                          trailing={
-                            <AmountDisplay cents={-slice.amountCents} className="text-expense" />
-                          }
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              </section>
-            )}
+            <HomeShortcuts />
 
             {summary.recent.length > 0 && (
               <section aria-labelledby="recent-title">
                 <div className="mb-2 flex items-baseline justify-between px-1">
-                  <h2 id="recent-title" className="font-display text-xl font-semibold">
+                  <h2 id="recent-title" className="font-display text-xl font-extrabold">
                     Últimos movimientos
                   </h2>
                   <Link
@@ -165,5 +148,35 @@ export function HomeScreen({
         )}
       </div>
     </>
+  )
+}
+
+/** Metas and Hormigas shortcut cards (simulated features). */
+function HomeShortcuts() {
+  const goals = useGoals().filter((g) => !g.shared)
+  const saved = goals.reduce((sum, g) => sum + g.savedCents, 0)
+  const target = goals.reduce((sum, g) => sum + g.targetCents, 0)
+  const value = target > 0 ? progress({ savedCents: saved, targetCents: target }) : 0
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <Link to="/metas" className="rounded-[24px] border border-cream bg-white p-4">
+        <span className="flex items-center gap-2 text-[18px] font-extrabold">
+          <Target aria-hidden="true" className="size-5" strokeWidth={2.25} /> Metas
+        </span>
+        <ProgressBar value={value} className="mt-3" label="Avance de tus metas" />
+        <span className="mt-1.5 block text-[15px] text-text-muted">
+          {percentLabel(value)} juntado
+        </span>
+      </Link>
+      <Link to="/hormigas" className="rounded-[24px] border border-cream bg-white p-4">
+        <span className="flex items-center gap-2 text-[18px] font-extrabold">
+          <ShoppingBag aria-hidden="true" className="size-5" strokeWidth={2.25} /> Hormigas
+        </span>
+        <span className="mt-2 block font-display text-[22px] font-extrabold leading-7">
+          {formatArs(ANTS_WEEK.totalCents)}
+        </span>
+        <span className="block text-[15px] text-text-muted">esta semana</span>
+      </Link>
+    </div>
   )
 }

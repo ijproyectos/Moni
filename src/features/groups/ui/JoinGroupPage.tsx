@@ -1,84 +1,278 @@
+import { Bell, ClipboardPaste, Gift, Lock, Search, Sparkles, UsersRound } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
-import mascotAlert from '@/assets/mascot/expresion_atento.svg'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
+import iconUrl from '@/assets/brand/icono_app_redondeado.svg'
+import { useProfile } from '@/features/auth/api/useProfile'
+import { firstName } from '@/features/auth/domain/profile'
 import { toUserMessage } from '@/shared/lib/errors'
 import { Button } from '@/shared/ui/Button'
-import { Card } from '@/shared/ui/Card'
-import { EmptyState } from '@/shared/ui/EmptyState'
-import { useToast } from '@/shared/ui/toastContext'
+import { cn } from '@/shared/ui/cn'
+import { Avatar, MoniSays, Page, SectionLabel } from '@/shared/ui/kit'
+import { PageHeader } from '@/shared/ui/PageHeader'
 import { useJoinGroup } from '../api/useGroups'
-import { INVITE_CODE_PATTERN, normalizeInviteCode } from '../domain/group'
+import { cleanCodeInput, INVITE_CODE_PATTERN, normalizeInviteCode } from '../domain/group'
+import { prettyCode } from '../domain/inviteCode'
 
-/** /unirse/:code. Asks for confirmation before joining; never joins on load. */
+function MascotTile({ size = 'md' }: { size?: 'md' | 'lg' }) {
+  return (
+    <span
+      className={cn(
+        'mx-auto flex items-center justify-center rounded-[28px] bg-cream',
+        size === 'lg' ? 'size-52' : 'h-28 w-40',
+      )}
+    >
+      <img src={mascotGroup} alt="" className={size === 'lg' ? 'size-44' : 'h-24'} />
+    </span>
+  )
+}
+
+// Screens 119 / 120 / 123 — Entrar con un código.
+export function JoinWithCodePage() {
+  const navigate = useNavigate()
+  const back = (useLocation().state ?? {}) as { code?: string; notFound?: boolean }
+  const [code, setCode] = useState(back.code ?? '')
+  const [notFound, setNotFound] = useState(Boolean(back.notFound))
+  const valid = INVITE_CODE_PATTERN.test(code)
+
+  async function paste() {
+    try {
+      const text = await navigator.clipboard.readText()
+      const match = /[A-Za-z0-9-\s]{12,}/.exec(text.split('/').pop() ?? text)
+      setCode(cleanCodeInput(match?.[0] ?? text))
+      setNotFound(false)
+    } catch {
+      // Clipboard blocked: the person types it.
+    }
+  }
+
+  return (
+    <Page className="pb-28">
+      <PageHeader title="Entrar con un código" backTo="/grupos" />
+      <MascotTile />
+      <h2 className="text-center font-display text-[26px] font-extrabold leading-8">
+        Pegá el código que te mandaron
+      </h2>
+      <p className="-mt-2 text-center text-[16px] leading-6 text-text-muted">
+        Lo tiene quien armó el grupo: está en Personas, en “Código del grupo”.
+      </p>
+      <input
+        type="text"
+        aria-label="Código del grupo"
+        placeholder="XXXX-XXXX-XXXX"
+        autoComplete="off"
+        autoCapitalize="characters"
+        spellCheck={false}
+        value={prettyCode(code)}
+        onChange={(e) => {
+          setCode(cleanCodeInput(e.target.value))
+          setNotFound(false)
+        }}
+        aria-invalid={notFound || undefined}
+        className={cn(
+          'mx-auto h-[72px] w-full rounded-[22px] border-2 bg-white text-center font-display text-[28px] font-extrabold uppercase tracking-[0.12em] placeholder:text-[#c4b38c]',
+          notFound ? 'border-expense bg-blush/20 text-expense' : 'border-sand',
+        )}
+      />
+      {notFound ? (
+        <>
+          <p role="alert" className="flex gap-2 text-[15px] leading-5 text-expense">
+            <Bell aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            No encontramos ese código. Revisá que esté completo o pedile uno nuevo a quien te
+            invitó.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setCode('')
+              setNotFound(false)
+            }}
+            className="mx-auto min-h-11 text-[17px] font-extrabold"
+          >
+            Pegar otro código
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => void paste()}
+          className="mx-auto flex min-h-12 items-center gap-2 rounded-full bg-forest px-6 text-[17px] font-extrabold text-cream"
+        >
+          <ClipboardPaste aria-hidden="true" className="size-5" /> Pegar código
+        </button>
+      )}
+      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+        <Button
+          disabled={!valid}
+          onClick={() => navigate(`/unirse/${code}`)}
+          className="disabled:bg-lime/40"
+        >
+          <Search aria-hidden="true" className="mr-2 size-5" /> Buscar grupo
+        </Button>
+      </div>
+      <span className="sr-only" aria-live="polite">
+        {valid ? 'Código completo' : ''}
+      </span>
+    </Page>
+  )
+}
+
+// Screens 121 / 122 — Entrar al grupo (confirmación) y listo. Never joins on load.
 export function JoinGroupPage() {
   const { code: rawCode = '' } = useParams()
   const code = normalizeInviteCode(rawCode)
-  const [error, setError] = useState<string | null>(null)
-  const join = useJoinGroup()
   const navigate = useNavigate()
-  const toast = useToast()
+  const join = useJoinGroup()
+  const { data: profile } = useProfile()
+  const [error, setError] = useState<string | null>(null)
+  const [joinedId, setJoinedId] = useState<string | null>(null)
+  const me = firstName(profile?.display_name) || 'Vos'
+
+  if (!INVITE_CODE_PATTERN.test(code)) {
+    return (
+      <Page>
+        <PageHeader title="Entrar al grupo" backTo="/grupos" />
+        <p role="alert" className="text-[16px] text-expense">
+          Ese link no es válido. El código tiene 12 letras o números: pedí uno nuevo.
+        </p>
+        <Link to="/grupos/unirse" className="text-[17px] font-extrabold underline">
+          Escribir el código
+        </Link>
+      </Page>
+    )
+  }
+
+  if (joinedId) {
+    return (
+      <Page className="pb-28 pt-24">
+        <MascotTile size="lg" />
+        <h1 className="text-center font-display text-[30px] font-extrabold">
+          Ya estás en el grupo
+        </h1>
+        <p className="text-center text-[16px] leading-6 text-text-muted">
+          Ven tus gastos y vos los de ellos. Todos pueden editar y Moni te avisa cada cambio.
+        </p>
+        <Link
+          to="/recomendar"
+          className="flex items-center gap-3 rounded-[22px] bg-lime/30 px-4 py-3"
+        >
+          <span className="flex size-12 items-center justify-center rounded-full bg-white">
+            <Gift aria-hidden="true" className="size-5" />
+          </span>
+          <span className="flex-1">
+            <span className="block text-[17px] font-extrabold">¿Tenés amigos sin Moni?</span>
+            <span className="block text-[15px]">Recomendala y ganen 2 meses de Pro.</span>
+          </span>
+        </Link>
+        <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+          <Button onClick={() => navigate(`/grupos/${joinedId}`, { replace: true })}>
+            <UsersRound aria-hidden="true" className="mr-2 size-5" /> Ver el grupo
+          </Button>
+        </div>
+      </Page>
+    )
+  }
 
   async function confirm() {
     setError(null)
     try {
-      const groupId = await join.mutateAsync(code)
-      toast.show('¡Ya sos parte del grupo!', { mascotUrl: mascotGroup })
-      navigate(`/grupos/${groupId}`, { replace: true })
+      setJoinedId(await join.mutateAsync(code))
     } catch (e) {
-      setError(toUserMessage(e))
+      const message = toUserMessage(e)
+      // An unknown or expired code goes back to the code screen (123); other errors stay here.
+      if (/c[oó]digo|invit|venci|no existe|not found/i.test(message)) {
+        navigate('/grupos/unirse', { replace: true, state: { code, notFound: true } })
+      } else {
+        setError(message)
+      }
     }
   }
 
-  if (!INVITE_CODE_PATTERN.test(code)) {
-    return (
-      <section className="px-4 pt-12">
-        <EmptyState
-          mascotUrl={mascotAlert}
-          title="Ese link no es válido"
-          description="El código de la invitación tiene que tener 12 letras o números. Pedí un link nuevo."
-          action={
-            <Link
-              to="/grupos"
-              className="flex h-14 items-center justify-center rounded-full bg-lime font-display text-lg font-semibold"
-            >
-              Ir a Grupos
-            </Link>
-          }
-        />
-      </section>
-    )
-  }
-
   return (
-    <section className="flex flex-col gap-3 px-4 pt-12">
-      <h1 className="px-1 font-display text-[30px] font-bold leading-[34px]">Invitación</h1>
-      <Card className="rounded-[28px] p-0">
-        <EmptyState
-          mascotUrl={mascotGroup}
-          title="Te invitaron a un grupo"
-          description="Al entrar vas a ver los gastos compartidos y tu saldo. Solo tu parte cuenta como gasto tuyo."
-          action={
-            <Button onClick={() => void confirm()} disabled={join.isPending}>
-              {join.isPending ? 'Entrando…' : 'Unirme al grupo'}
-            </Button>
-          }
-        />
-        <p className="pb-5 text-center font-display text-lg font-semibold tracking-[0.25em] text-text-muted">
-          {code}
-        </p>
-        {error && (
-          <p role="alert" className="px-5 pb-5 text-center text-sm text-expense">
-            {error}
-          </p>
-        )}
-      </Card>
-      <Link
-        to="/grupos"
-        className="flex min-h-11 items-center justify-center text-forest underline"
+    <Page className="pb-28">
+      <PageHeader title="Entrar al grupo" backTo="/grupos/unirse" />
+      <section className="rounded-[28px] bg-forest p-4 text-cream">
+        <div className="flex items-center gap-3">
+          <span className="flex size-16 items-center justify-center rounded-full bg-lime text-forest">
+            <UsersRound aria-hidden="true" className="size-7" />
+          </span>
+          <div>
+            <p className="text-[22px] font-extrabold leading-7">Te invitaron a un grupo</p>
+            <p className="text-[15px] text-text-muted-on-dark">Código {prettyCode(code)}</p>
+          </div>
+        </div>
+      </section>
+      <SectionLabel>Vas a entrar como</SectionLabel>
+      <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3">
+        <Avatar name={me} size="lg" />
+        <span className="flex-1">
+          <span className="block text-[18px] font-extrabold">{me}</span>
+          <span className="block text-[15px] text-text-muted">Con tu cuenta de Moni</span>
+        </span>
+        <span className="rounded-full bg-lime/40 px-3 py-0.5 text-[13px] font-extrabold">
+          Tiene Moni
+        </span>
+      </div>
+      <MoniSays
+        lead={null}
+        icon={<Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
       >
-        Ahora no
+        Ves los gastos del grupo y todos pueden editarlos. Moni te avisa cada cambio. Solo tu parte
+        cuenta como gasto tuyo.
+      </MoniSays>
+      {error && (
+        <p role="alert" className="text-center text-[15px] text-expense">
+          {error}
+        </p>
+      )}
+      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+        <Button onClick={() => void confirm()} disabled={join.isPending}>
+          {join.isPending ? 'Entrando…' : 'Entrar al grupo'}
+        </Button>
+      </div>
+    </Page>
+  )
+}
+
+// Screen 127 — Lo que ve quien no tiene Moni al abrir un link de grupo (public page).
+export function GroupLinkLandingPage() {
+  const { code = '' } = useParams()
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center gap-4 bg-canvas px-6 pb-10 pt-10 text-center text-forest">
+      <span className="flex items-center gap-2 rounded-full border border-sand bg-white px-4 py-1.5 text-[15px]">
+        <Lock aria-hidden="true" className="size-4" /> moni.app
+      </span>
+      <img src={iconUrl} alt="Moni" className="mt-4 size-24" />
+      <h1 className="font-display text-[30px] font-extrabold leading-9">
+        Te invitaron a un grupo en Moni
+      </h1>
+      <p className="text-[17px] leading-6 text-text-muted">
+        Para entrar al grupo necesitás Moni. Creá tu cuenta gratis y entrás directo, con tus gastos
+        ya cargados.
+      </p>
+      <Link
+        to={`/unirse/${code}`}
+        className="flex h-14 w-full items-center justify-center rounded-full bg-lime text-[18px] font-extrabold"
+      >
+        Descargar para iPhone
       </Link>
-    </section>
+      <Link
+        to={`/unirse/${code}`}
+        className="flex h-14 w-full items-center justify-center rounded-full border-2 border-sand bg-white text-[18px] font-extrabold"
+      >
+        Descargar para Android
+      </Link>
+      <MoniSays
+        lead={null}
+        icon={<Gift aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
+        className="text-left"
+      >
+        Si te registrás con este link, vos y quien te invitó ganan{' '}
+        <strong className="font-extrabold">2 meses de Moni Pro</strong>.
+      </MoniSays>
+      <Link to={`/unirse/${code}`} className="min-h-11 text-[17px] font-extrabold">
+        Ya tengo Moni · entrar con un código
+      </Link>
+    </main>
   )
 }

@@ -39,18 +39,18 @@ export function WelcomePage() {
         <Coin variant="hole" className="absolute left-[337px] top-[284px] size-5" />
         <Coin className="absolute left-[29px] top-[402px] size-[34px]" />
 
-        <h1 className="mt-[24px] text-center font-display text-[38px] font-bold uppercase leading-[40px] text-lime">
+        <h1 className="mt-[24px] text-center font-display text-[38px] font-extrabold uppercase leading-[40px] text-lime">
           Tu plata,
           <br />
           bajo control
         </h1>
-        <p className="mx-auto mt-[16px] -rotate-3 bg-gold px-4 py-2 font-display text-xl font-bold uppercase leading-none text-forest">
+        <p className="mx-auto mt-[16px] -rotate-3 bg-gold px-4 py-2 font-display text-xl font-extrabold uppercase leading-none text-forest">
           Sin vueltas
         </p>
 
         <div className="mt-auto flex flex-col items-center gap-[15px] pt-9">
           <Button onClick={handleSignIn} disabled={isRedirecting}>
-            Arrancar
+            Registrarse
           </Button>
           <Button
             variant="ghost"

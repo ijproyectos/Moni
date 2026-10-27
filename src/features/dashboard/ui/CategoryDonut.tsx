@@ -4,7 +4,7 @@ import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 
 const RADIUS = 70
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
-const LEGEND_SIZE = 4
+const LEGEND_SIZE = 5
 
 interface CategoryDonutProps {
   slices: readonly CategorySlice[]
@@ -20,15 +20,15 @@ export function CategoryDonut({ slices, totalCents }: CategoryDonutProps) {
   )
 
   return (
-    <div className="flex items-center gap-5">
-      <div className="relative size-[176px] shrink-0">
+    <div className="flex items-center gap-4">
+      <div className="relative size-[150px] shrink-0">
         <svg
           viewBox="0 0 176 176"
           className="size-full -rotate-90"
           role="img"
           aria-label="Gastos por categoría"
         >
-          <circle cx="88" cy="88" r={RADIUS} fill="none" stroke="#f3e8d2" strokeWidth="22" />
+          <circle cx="88" cy="88" r={RADIUS} fill="none" stroke="#f3e8d2" strokeWidth="26" />
           {sorted.map((slice, i) => {
             const arc = arcs[i]
             if (!arc || arc.length <= 0) return null
@@ -40,7 +40,7 @@ export function CategoryDonut({ slices, totalCents }: CategoryDonutProps) {
                 r={RADIUS}
                 fill="none"
                 stroke={slice.color}
-                strokeWidth="22"
+                strokeWidth="26"
                 strokeDasharray={`${arc.length} ${CIRCUMFERENCE - arc.length}`}
                 strokeDashoffset={-arc.offset}
               />
@@ -48,12 +48,12 @@ export function CategoryDonut({ slices, totalCents }: CategoryDonutProps) {
           })}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-display text-xs font-semibold uppercase tracking-wider text-text-muted">
+          <span className="font-display text-xs font-extrabold uppercase tracking-wider text-text-muted">
             Total
           </span>
           <AmountDisplay
             cents={totalCents}
-            className="font-display text-xl font-bold text-forest"
+            className="font-display text-lg font-extrabold text-forest"
           />
         </div>
       </div>
@@ -66,7 +66,7 @@ export function CategoryDonut({ slices, totalCents }: CategoryDonutProps) {
               style={{ backgroundColor: slice.color }}
             />
             <span className="min-w-0 flex-1 truncate text-forest">{slice.name}</span>
-            <span className="font-display font-semibold text-forest">
+            <span className="font-display font-extrabold text-forest">
               {Math.round(slice.percent)}%
             </span>
           </li>

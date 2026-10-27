@@ -32,7 +32,7 @@ interface TransactionFormProps {
 }
 
 const fieldClass =
-  'h-14 w-full rounded-full border border-cream bg-white px-5 text-[17px] text-forest placeholder:text-text-muted'
+  'h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest placeholder:text-text-muted'
 
 /** Presentational form for expenses and incomes. Emits parsed values: amount in integer cents. */
 export function TransactionForm({
@@ -106,7 +106,7 @@ export function TransactionForm({
       </div>
 
       <fieldset>
-        <legend className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-text-muted">
+        <legend className="mb-2 text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
           Categoría
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ export function TransactionForm({
 
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
-          <span className="font-display text-sm font-semibold uppercase tracking-wider text-text-muted">
+          <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
             Cuenta
           </span>
           <select className={fieldClass} {...register('accountId')}>
@@ -153,7 +153,7 @@ export function TransactionForm({
           )}
         </label>
         <label className="flex flex-col gap-1">
-          <span className="font-display text-sm font-semibold uppercase tracking-wider text-text-muted">
+          <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
             Fecha
           </span>
           <input type="date" className={fieldClass} {...register('occurredOn')} />

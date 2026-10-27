@@ -28,7 +28,7 @@ export function AmountInput({
       <span
         aria-hidden="true"
         className={cn(
-          'font-display font-semibold text-text-muted',
+          'font-display font-extrabold text-forest',
           scale === 'lg' ? 'text-3xl' : 'text-xl',
         )}
       >
@@ -41,7 +41,7 @@ export function AmountInput({
         aria-invalid={invalid || undefined}
         placeholder={placeholder}
         className={cn(
-          'min-w-0 flex-1 bg-transparent font-display font-semibold text-forest outline-none placeholder:text-text-muted/40',
+          'min-w-0 flex-1 bg-transparent font-display font-extrabold text-forest outline-none placeholder:text-text-muted/40',
           scale === 'lg' ? 'text-[56px] leading-[64px]' : 'text-2xl leading-9',
         )}
         {...props}

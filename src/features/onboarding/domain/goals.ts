@@ -10,12 +10,13 @@ export const GOAL_OPTIONS: readonly GoalOption[] = [
   { id: 'save_monthly', label: 'Ahorrar todos los meses' },
   { id: 'split_expenses', label: 'Dividir gastos con mi pareja o amigos' },
   { id: 'control_recurring', label: 'Controlar suscripciones, gastos fijos y cuotas' },
+  { id: 'plan_trips', label: 'Planear mis viajes' },
   { id: ALL_GOALS_ID, label: 'Todo lo anterior' },
 ]
 
 const SPECIFIC_IDS = GOAL_OPTIONS.filter((g) => g.id !== ALL_GOALS_ID).map((g) => g.id)
 
-/** "Todo lo anterior" selects or clears every goal; picking all four others also checks it. */
+/** "Todo lo anterior" selects or clears every goal; picking all the others also checks it. */
 export function toggleGoal(selected: readonly string[], id: string): string[] {
   if (id === ALL_GOALS_ID) {
     return selected.includes(ALL_GOALS_ID) ? [] : [...SPECIFIC_IDS, ALL_GOALS_ID]

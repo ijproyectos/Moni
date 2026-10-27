@@ -1,29 +1,58 @@
 import { useRef, useState } from 'react'
-import mascotReport from '@/assets/mascot/personaje_informe-del-mes.svg'
+import mascotBudget from '@/assets/mascot/personaje_alerta-de-presupuesto.svg'
+import mascotAnts from '@/assets/mascot/personaje_asistente.svg'
+import mascotTrips from '@/assets/mascot/personaje_carga-de-dinero.svg'
+import mascotVoice from '@/assets/mascot/personaje_carga-por-voz.svg'
 import mascotGroups from '@/assets/mascot/personaje_gastos-en-grupo.svg'
-import mascotMoney from '@/assets/mascot/personaje_carga-de-dinero.svg'
+import mascotReport from '@/assets/mascot/personaje_informe-del-mes.svg'
+import mascotGoals from '@/assets/mascot/personaje_metas-de-ahorro.svg'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
+import { OnboardingTitle } from './OnboardingTitle'
 
-// Only features inside the MVP are advertised.
+// Screens 003-009 — Así te ayuda Moni.
 const SLIDES = [
   {
     tag: 'Informe del mes',
     title: 'Mirá en qué se te va la plata',
-    text: 'Gráficos por categoría y cómo venís este mes.',
+    text: 'Gráficos por categoría y cómo venís contra el mes pasado.',
     image: mascotReport,
   },
   {
-    tag: 'Gastos en grupo',
-    title: 'Dividí gastos sin hacer cuentas',
-    text: 'Cargá lo que pagó cada uno y Moni te dice quién le debe a quién.',
+    tag: 'Carga por voz',
+    title: 'Cargá varios gastos hablando',
+    text: 'Decí todo junto, como te salga. Moni separa cada gasto y lo categoriza.',
+    image: mascotVoice,
+  },
+  {
+    tag: 'Gastos hormiga',
+    title: 'Cazá los gastos hormiga',
+    text: 'Cada semana te contamos qué cambió y dónde se repiten los gastitos.',
+    image: mascotAnts,
+  },
+  {
+    tag: 'Presupuestos y fijos',
+    title: 'Frená antes de pasarte',
+    text: 'Límites por categoría y control de suscripciones, fijos y cuotas.',
+    image: mascotBudget,
+  },
+  {
+    tag: 'Metas de ahorro',
+    title: 'Ahorrá para lo que quieras',
+    text: 'Contale tu objetivo y Moni calcula cuánto guardar por mes. Y si conviene pagar en cuotas.',
+    image: mascotGoals,
+  },
+  {
+    tag: 'Grupos',
+    title: 'Dividí sin hacer cuentas',
+    text: 'Quién puso cuánto y quién le debe a quién. Mandás el resumen por WhatsApp y listo.',
     image: mascotGroups,
   },
   {
-    tag: 'Carga de dinero',
-    title: 'Anotá cada peso en segundos',
-    text: 'Cargá un gasto o un ingreso en un toque y mirá cómo cambia tu balance.',
-    image: mascotMoney,
+    tag: 'Viajes',
+    title: 'Viajá con la plata clara',
+    text: 'Presupuesto por rubro, ahorro para el viaje y gastos en grupo.',
+    image: mascotTrips,
   },
 ] as const
 
@@ -33,66 +62,82 @@ interface OnboardingBenefitsStepProps {
   onContinue: () => void
 }
 
-// Screen 03 — Así te va a ayudar Moni.
 export function OnboardingBenefitsStep({ name, onContinue }: OnboardingBenefitsStepProps) {
   const [index, setIndex] = useState(0)
   const trackRef = useRef<HTMLUListElement>(null)
+  const isLast = index === SLIDES.length - 1
+
+  function slideWidth(track: HTMLUListElement) {
+    const first = track.firstElementChild as HTMLElement | null
+    return first ? first.offsetWidth + 12 : track.clientWidth
+  }
 
   function handleScroll() {
     const track = trackRef.current
     if (!track || track.clientWidth === 0) return
-    setIndex(Math.round(track.scrollLeft / track.clientWidth))
+    setIndex(Math.min(SLIDES.length - 1, Math.round(track.scrollLeft / slideWidth(track))))
+  }
+
+  function next() {
+    if (isLast) return onContinue()
+    const track = trackRef.current
+    const target = index + 1
+    setIndex(target)
+    track?.scrollTo?.({ left: target * slideWidth(track), behavior: 'smooth' })
   }
 
   return (
     <>
-      <h1 className="mt-10 text-center font-display text-[32px] font-semibold leading-9 text-cream">
-        {name ? `${name}, así te va a ayudar Moni` : 'Así te va a ayudar Moni'}
-      </h1>
-      <p className="mt-3 text-center text-[17px] leading-6 text-text-muted-on-dark">
-        Lo armamos según lo que nos contaste.
-      </p>
+      <OnboardingTitle
+        title={name ? `${name}, así te va a ayudar Moni` : 'Así te va a ayudar Moni'}
+        subtitle="Lo armamos según lo que nos contaste."
+      />
 
       <ul
         ref={trackRef}
         onScroll={handleScroll}
         aria-label="Beneficios de Moni"
-        className="no-scrollbar mt-6 flex snap-x snap-mandatory gap-3 overflow-x-auto"
+        className="no-scrollbar -mr-5 mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pr-5"
       >
         {SLIDES.map((slide, i) => (
           <li
             key={slide.tag}
             aria-label={`${i + 1} de ${SLIDES.length}`}
-            className="flex w-full shrink-0 snap-center flex-col items-center rounded-xl bg-canvas p-5 text-center"
+            className="flex w-[86%] shrink-0 snap-start flex-col items-center rounded-[28px] bg-canvas px-5 pb-7 pt-5 text-center"
           >
-            <div className="flex aspect-[1.1] w-full items-center justify-center rounded-lg bg-cream">
-              <img src={slide.image} alt="" className="h-[85%] w-auto" />
+            <div className="flex aspect-[1.35] w-full items-center justify-center rounded-[22px] bg-cream">
+              <img src={slide.image} alt="" className="h-[88%] w-auto" />
             </div>
-            <span className="mt-5 rounded-full bg-lime/60 px-4 py-1 font-display text-sm font-semibold uppercase tracking-wide text-forest">
+            <span className="mt-4 rounded-full bg-lime/45 px-4 py-1 text-[13px] font-extrabold uppercase tracking-[0.08em] text-forest">
               {slide.tag}
             </span>
-            <h2 className="mt-3 font-display text-2xl font-semibold leading-7 text-forest">
+            <h2 className="mt-3 font-display text-[26px] font-extrabold leading-[30px] text-forest">
               {slide.title}
             </h2>
-            <p className="mt-2 text-[16px] leading-6 text-text-muted">{slide.text}</p>
+            <p className="mt-2 text-[15px] leading-[22px] text-text-muted">{slide.text}</p>
           </li>
         ))}
       </ul>
 
-      <div aria-hidden="true" className="mt-4 flex justify-center gap-2">
+      <div aria-hidden="true" className="mt-4 flex justify-center gap-1.5">
         {SLIDES.map((slide, i) => (
           <span
             key={slide.tag}
             className={cn(
               'h-2 rounded-full transition-all',
-              i === index ? 'w-6 bg-lime' : 'w-2 bg-surface',
+              i === index ? 'w-7 bg-lime' : 'w-2 bg-surface',
             )}
           />
         ))}
       </div>
 
-      <div className="mt-auto pt-6">
-        <Button onClick={onContinue}>¡De una!</Button>
+      <div className="mt-auto flex flex-col items-center gap-1 pt-5">
+        <Button onClick={next}>{isLast ? 'Continuar' : 'Seguir'}</Button>
+        {!isLast && (
+          <Button variant="ghost" onClick={onContinue} className="text-text-muted-on-dark">
+            Saltar
+          </Button>
+        )}
       </div>
     </>
   )

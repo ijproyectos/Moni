@@ -1,3 +1,4 @@
+import { Mic } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
@@ -23,6 +24,7 @@ import type {
 import type { SheetMode } from './movementSheetContext'
 import { TransactionForm } from './TransactionForm'
 import { TransferForm } from './TransferForm'
+import { VoiceSheet } from './VoiceSheet'
 
 interface MovementSheetProps {
   initialMode: SheetMode
@@ -31,10 +33,10 @@ interface MovementSheetProps {
   onClose: () => void
 }
 
+// Screen 019: Gasto / Ingreso. Transfers open from Medios de pago with their own title.
 const MODE_OPTIONS: readonly SegmentOption<SheetMode>[] = [
   { value: 'expense', label: 'Gasto', activeClassName: 'bg-blush text-forest' },
   { value: 'income', label: 'Ingreso', activeClassName: 'bg-lime text-forest' },
-  { value: 'transfer', label: 'Transferencia', activeClassName: 'bg-forest text-cream' },
 ]
 
 /** "Nuevo movimiento" sheet (screen 13): expense, income, transfer, or edit of an existing movement. */
@@ -102,23 +104,32 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
     }
   }
 
-  const title = isEdit ? 'Editar movimiento' : 'Nuevo movimiento'
+  const [voice, setVoice] = useState(false)
+  const title = isEdit
+    ? 'Editar movimiento'
+    : mode === 'transfer'
+      ? 'Transferencia'
+      : 'Nuevo movimiento'
   const segments = isEdit
     ? MODE_OPTIONS.filter((o) => o.value === mode).map((o) => ({ ...o, disabled: true }))
     : MODE_OPTIONS
 
+  if (voice) return <VoiceSheet onClose={() => setVoice(false)} />
+
   return (
     <BottomSheet title={title} onClose={onClose}>
       <div className="flex flex-col gap-4">
-        <SegmentedControl
-          label="Tipo de movimiento"
-          options={segments}
-          value={mode}
-          onChange={(value) => {
-            setSubmitError(null)
-            setMode(value)
-          }}
-        />
+        {mode !== 'transfer' && (
+          <SegmentedControl
+            label="Tipo de movimiento"
+            options={segments}
+            value={mode}
+            onChange={(value) => {
+              setSubmitError(null)
+              setMode(value)
+            }}
+          />
+        )}
 
         {isLoading ? (
           <div role="status" aria-label="Cargando" className="flex flex-col gap-3">
@@ -160,6 +171,15 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
               navigate('/categorias')
             }}
           />
+        )}
+        {!isEdit && mode !== 'transfer' && (
+          <button
+            type="button"
+            onClick={() => setVoice(true)}
+            className="-mt-1 flex min-h-11 items-center justify-center gap-2 text-[17px] font-extrabold underline"
+          >
+            <Mic aria-hidden="true" className="size-5" /> Mejor lo digo con la voz
+          </button>
         )}
       </div>
     </BottomSheet>

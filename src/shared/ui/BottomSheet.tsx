@@ -5,12 +5,14 @@ import { useModal } from './useModal'
 
 interface BottomSheetProps {
   title: string
+  /** Small line under the title (e.g. the goal name). */
+  subtitle?: string
   onClose: () => void
   children: ReactNode
 }
 
 /** Modal sheet anchored to the bottom: focus trap, Escape/scrim/X to close, labelled by its title. */
-export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
+export function BottomSheet({ title, subtitle, onClose, children }: BottomSheetProps) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
   useModal(panelRef, onClose)
@@ -32,14 +34,20 @@ export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
       >
         <div aria-hidden="true" className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-sand" />
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 id={titleId} className="font-display text-2xl font-bold text-forest">
-            {title}
-          </h2>
+          <div className="min-w-0">
+            <h2
+              id={titleId}
+              className="font-display text-[28px] font-extrabold leading-8 text-forest"
+            >
+              {title}
+            </h2>
+            {subtitle && <p className="mt-0.5 text-[15px] text-text-muted">{subtitle}</p>}
+          </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-sand text-forest"
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-sand text-forest"
           >
             <X aria-hidden="true" className="size-5" strokeWidth={2} />
           </button>

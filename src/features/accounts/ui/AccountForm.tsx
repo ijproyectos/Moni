@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import type { ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { formatAmountInput } from '@/shared/lib/amountInput'
 import { AmountInput } from '@/shared/ui/AmountInput'
@@ -19,6 +20,8 @@ interface AccountFormProps {
   submitError: string | null
   onSubmit: (values: AccountFormValues) => void
   onArchive?: () => void
+  /** Extra fields shown before the save button (e.g. the simulated alias). */
+  children?: ReactNode
 }
 
 const KIND_OPTIONS = ACCOUNT_KINDS.map((value) => ({ value, label: ACCOUNT_KIND_LABELS[value] }))
@@ -29,6 +32,7 @@ export function AccountForm({
   submitError,
   onSubmit,
   onArchive,
+  children,
 }: AccountFormProps) {
   const {
     register,
@@ -49,7 +53,7 @@ export function AccountForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="font-display text-sm font-semibold uppercase tracking-wider text-text-muted">
+        <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
           Nombre
         </span>
         <input
@@ -58,7 +62,7 @@ export function AccountForm({
           maxLength={40}
           placeholder="Ej: Cuenta sueldo"
           aria-invalid={Boolean(errors.name) || undefined}
-          className="h-14 w-full rounded-full border border-cream bg-white px-5 text-[17px] text-forest placeholder:text-text-muted"
+          className="h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest placeholder:text-text-muted"
           {...register('name')}
         />
         {errors.name && (
@@ -76,7 +80,7 @@ export function AccountForm({
       />
 
       <div>
-        <span className="font-display text-sm font-semibold uppercase tracking-wider text-text-muted">
+        <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
           Saldo inicial
         </span>
         <AmountInput
@@ -92,17 +96,19 @@ export function AccountForm({
         )}
       </div>
 
+      {children}
+
       {submitError && (
         <p role="alert" className="text-center text-sm text-expense">
           {submitError}
         </p>
       )}
-      <Button type="submit" variant="dark" disabled={isSubmitting}>
+      <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? 'Guardando…' : 'Guardar'}
       </Button>
       {onArchive && (
         <Button variant="ghost" onClick={onArchive} className="text-expense">
-          Archivar cuenta
+          Eliminar medio
         </Button>
       )}
     </form>

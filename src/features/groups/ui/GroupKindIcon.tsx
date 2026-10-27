@@ -9,7 +9,7 @@ export function GroupKindTile({ kind, className }: { kind: GroupKind; className?
     <span
       aria-hidden="true"
       className={cn(
-        'flex size-14 shrink-0 items-center justify-center rounded-lg bg-lime/40 text-forest',
+        'flex size-14 shrink-0 items-center justify-center rounded-[16px] bg-lime/40 text-forest',
         className,
       )}
     >

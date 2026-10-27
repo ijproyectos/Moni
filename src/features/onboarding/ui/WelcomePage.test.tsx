@@ -13,7 +13,7 @@ describe('WelcomePage', () => {
     signInWithOAuth.mockReset().mockResolvedValue({ data: {}, error: null })
   })
 
-  it.each(['Arrancar', 'Ya tengo cuenta'])('"%s" starts Google OAuth', async (label) => {
+  it.each(['Registrarse', 'Ya tengo cuenta'])('"%s" starts Google OAuth', async (label) => {
     render(<WelcomePage />)
     await userEvent.click(screen.getByRole('button', { name: label }))
     expect(signInWithOAuth).toHaveBeenCalledWith({
@@ -25,7 +25,7 @@ describe('WelcomePage', () => {
   it('shows an error when Google sign-in fails', async () => {
     signInWithOAuth.mockResolvedValue({ data: {}, error: new Error('boom') })
     render(<WelcomePage />)
-    await userEvent.click(screen.getByRole('button', { name: 'Arrancar' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Registrarse' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos conectarte con Google')
   })
 })

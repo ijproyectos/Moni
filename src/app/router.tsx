@@ -11,9 +11,38 @@ import {
 import { AccountsPage } from '@/features/accounts/ui/AccountsPage'
 import { CategoriesPage } from '@/features/categories/ui/CategoriesPage'
 import { HomePage } from '@/features/dashboard/ui/HomePage'
+import { MonthReportPage } from '@/features/dashboard/ui/MonthReportPage'
+import { YearReportPage } from '@/features/dashboard/ui/YearReportPage'
+import { AntsPage } from '@/features/insights/ui/AntsPage'
+import { WeeklyDigestPage } from '@/features/insights/ui/WeeklyDigestPage'
+import { NotificationsPage } from '@/features/notifications/ui/NotificationsPage'
+import { ProPage } from '@/features/pro/ui/ProPage'
+import { ReferralPage } from '@/features/pro/ui/ReferralPage'
+import {
+  AguinaldoDonePage,
+  AguinaldoPage,
+  AguinaldoSplitPage,
+} from '@/features/aguinaldo/ui/AguinaldoPages'
+import { DebtsPage } from '@/features/notifications/ui/DebtsPage'
+import { RecurringPage } from '@/features/recurring/ui/RecurringPage'
+import { GoalDetailPage } from '@/features/goals/ui/GoalDetailPage'
+import { GoalsPage } from '@/features/goals/ui/GoalsPage'
+import { InstallmentsPage } from '@/features/goals/ui/InstallmentsPage'
 import { GroupDetailPage } from '@/features/groups/ui/GroupDetailPage'
 import { GroupsPage } from '@/features/groups/ui/GroupsPage'
-import { JoinGroupPage } from '@/features/groups/ui/JoinGroupPage'
+import { CreateGroupPage } from '@/features/groups/ui/CreateGroupPage'
+import {
+  GroupSummaryPage,
+  NoticesSentPage,
+  ShareSummaryPage,
+} from '@/features/groups/ui/GroupSummaryPages'
+import {
+  GroupLinkLandingPage,
+  JoinGroupPage,
+  JoinWithCodePage,
+} from '@/features/groups/ui/JoinGroupPage'
+import { PeoplePage } from '@/features/groups/ui/PeoplePage'
+import { SoloTripPage, TripsPage } from '@/features/trips/ui/TripsPages'
 import { OnboardingPage } from '@/features/onboarding/ui/OnboardingPage'
 import { WelcomePage } from '@/features/onboarding/ui/WelcomePage'
 import { MorePage } from '@/features/settings/ui/MorePage'
@@ -21,12 +50,55 @@ import { ProfilePage } from '@/features/settings/ui/ProfilePage'
 import { ActivityPage } from '@/features/transactions/ui/ActivityPage'
 import { AppShell } from './AppShell'
 
+/** Screens backed by simulated data (no Supabase yet). */
+const simulatedRoutes = [
+  { path: 'metas', element: <GoalsPage /> },
+  { path: 'metas/cuotas', element: <InstallmentsPage /> },
+  { path: 'metas/:id', element: <GoalDetailPage /> },
+  { path: 'hormigas', element: <AntsPage /> },
+  { path: 'hormigas/aviso-semanal', element: <WeeklyDigestPage /> },
+  { path: 'avisos', element: <NotificationsPage /> },
+  { path: 'pro', element: <ProPage /> },
+  { path: 'recomendar', element: <ReferralPage /> },
+  { path: 'deudas', element: <DebtsPage /> },
+  { path: 'aguinaldo', element: <AguinaldoPage /> },
+  { path: 'aguinaldo/reparto', element: <AguinaldoSplitPage /> },
+  { path: 'aguinaldo/listo', element: <AguinaldoDonePage /> },
+  { path: 'fijos', element: <RecurringPage /> },
+]
+
+/** Everything inside the app shell (private routes). */
+const appRoutes = [
+  { index: true, element: <HomePage /> },
+  { path: 'actividad', element: <ActivityPage /> },
+  { path: 'grupos', element: <GroupsPage /> },
+  { path: 'grupos/nuevo', element: <CreateGroupPage /> },
+  { path: 'grupos/unirse', element: <JoinWithCodePage /> },
+  { path: 'grupos/:id', element: <GroupDetailPage /> },
+  { path: 'grupos/:id/personas', element: <PeoplePage /> },
+  { path: 'grupos/:id/resumen', element: <GroupSummaryPage /> },
+  { path: 'grupos/:id/compartir', element: <ShareSummaryPage /> },
+  { path: 'grupos/:id/avisados', element: <NoticesSentPage /> },
+  { path: 'viajes', element: <TripsPage /> },
+  { path: 'viajes/:id', element: <SoloTripPage /> },
+  { path: 'unirse/:code', element: <JoinGroupPage /> },
+  { path: 'mas', element: <MorePage /> },
+  { path: 'cuentas', element: <AccountsPage /> },
+  { path: 'categorias', element: <CategoriesPage /> },
+  { path: 'perfil', element: <ProfilePage /> },
+  { path: 'este-mes', element: <MonthReportPage /> },
+  { path: 'tu-anio', element: <YearReportPage /> },
+  ...simulatedRoutes,
+]
+
 export const router = createBrowserRouter([
   {
     element: <RedirectIfAuthenticated />,
     children: [{ path: WELCOME_PATH, element: <WelcomePage /> }],
   },
   { path: '/auth/callback', element: <AuthCallbackPage /> },
+  // Public: what someone without Moni sees when they open a group link (screen 127).
+  { path: '/g/:code', element: <GroupLinkLandingPage /> },
   {
     element: <RequireAuth />,
     children: [
@@ -39,17 +111,7 @@ export const router = createBrowserRouter([
         children: [
           {
             element: <AppShell />,
-            children: [
-              { index: true, element: <HomePage /> },
-              { path: 'actividad', element: <ActivityPage /> },
-              { path: 'grupos', element: <GroupsPage /> },
-              { path: 'grupos/:id', element: <GroupDetailPage /> },
-              { path: 'unirse/:code', element: <JoinGroupPage /> },
-              { path: 'mas', element: <MorePage /> },
-              { path: 'cuentas', element: <AccountsPage /> },
-              { path: 'categorias', element: <CategoriesPage /> },
-              { path: 'perfil', element: <ProfilePage /> },
-            ],
+            children: appRoutes,
           },
         ],
       },

@@ -9,6 +9,7 @@ vi.mock('@/features/auth/api/useProfile', () => ({
   useProfile: () => ({ data: { display_name: 'Jonatan Rios' } }),
 }))
 vi.mock('@/features/categories/api/useCategories', () => ({
+  useCreateCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCategoryTemplates: () => ({
     isError: false,
     data: [
@@ -58,7 +59,7 @@ async function goToCategories() {
   expect(
     screen.getByRole('heading', { name: 'Jonatan, así te va a ayudar Moni' }),
   ).toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: '¡De una!' }))
+  await user.click(screen.getByRole('button', { name: 'Saltar' }))
   await user.click(screen.getByRole('button', { name: 'Continuar' }))
   return user
 }
@@ -81,6 +82,9 @@ describe('OnboardingPage', () => {
     const user = await goToCategories()
     await user.click(screen.getByRole('button', { name: 'Sueldo' }))
     await user.click(screen.getByRole('button', { name: 'Continuar · 2 elegidas' }))
+    await user.click(screen.getByRole('button', { name: 'Más tarde' }))
+    expect(mutateAsync).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Ahora no' }))
     expect(mutateAsync).toHaveBeenCalledWith({
       goals: ['track_spending'],
       templateSlugs: ['comida', 'super'],

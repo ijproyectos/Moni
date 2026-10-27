@@ -32,7 +32,7 @@ export function MovementRow({
     <>
       {leading}
       <span className="min-w-0 flex-1 text-left">
-        <span className="block truncate font-display text-[17px] font-semibold leading-6 text-forest">
+        <span className="block truncate font-display text-[18px] font-extrabold leading-6 text-forest">
           {title}
         </span>
         {subtitle && (
@@ -40,7 +40,7 @@ export function MovementRow({
         )}
       </span>
       {trailing && (
-        <span className="shrink-0 font-display text-[17px] font-semibold">{trailing}</span>
+        <span className="shrink-0 font-display text-[18px] font-extrabold">{trailing}</span>
       )}
     </>
   )

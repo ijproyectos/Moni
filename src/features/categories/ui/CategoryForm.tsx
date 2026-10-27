@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
@@ -10,7 +11,6 @@ import {
   getCategoryIcon,
   readableOn,
 } from '@/shared/ui/categoryIcons'
-import { CategoryIconCircle } from '@/shared/ui/IconCircle'
 import { categoryFormSchema, type Category, type CategoryFormValues } from '../domain/category'
 import type { CategoryKind } from '@/shared/lib/database.types'
 
@@ -22,6 +22,9 @@ interface CategoryFormProps {
   isSubmitting: boolean
   submitError: string | null
   onSubmit: (values: CategoryFormValues) => void
+  onArchive?: () => void
+  /** Extra fields shown before the save button (e.g. the simulated monthly limit). */
+  children?: ReactNode
 }
 
 export function CategoryForm({
@@ -31,6 +34,8 @@ export function CategoryForm({
   isSubmitting,
   submitError,
   onSubmit,
+  onArchive,
+  children,
 }: CategoryFormProps) {
   const {
     register,
@@ -61,8 +66,10 @@ export function CategoryForm({
 
   return (
     <form onSubmit={handleSubmit(submit)} noValidate className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <CategoryIconCircle iconName={icon} color={color} className="size-14" />
+      <div className="flex flex-col gap-2">
+        <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
+          Nombre
+        </span>
         <label className="flex flex-1 flex-col gap-1">
           <span className="sr-only">Nombre</span>
           <input
@@ -72,7 +79,7 @@ export function CategoryForm({
             placeholder="Nombre de la categoría"
             aria-label="Nombre"
             aria-invalid={Boolean(errors.name) || undefined}
-            className="h-14 w-full rounded-full border border-cream bg-white px-5 text-[17px] text-forest placeholder:text-text-muted"
+            className="h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest placeholder:text-text-muted"
             {...register('name')}
           />
         </label>
@@ -84,10 +91,10 @@ export function CategoryForm({
       )}
 
       <fieldset>
-        <legend className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-text-muted">
+        <legend className="mb-2 text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
           Ícono
         </legend>
-        <div className="grid grid-cols-6 gap-2">
+        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
           {CATEGORY_ICON_NAMES.map((iconName) => {
             const Icon = getCategoryIcon(iconName)
             const selected = icon === iconName
@@ -99,10 +106,10 @@ export function CategoryForm({
                 aria-label={iconName}
                 onClick={() => setValue('icon', iconName)}
                 className={cn(
-                  'flex size-11 items-center justify-center rounded-full border-2',
+                  'flex size-12 shrink-0 items-center justify-center rounded-[16px] border-2',
                   selected
-                    ? 'border-forest bg-forest text-cream'
-                    : 'border-cream bg-white text-forest',
+                    ? 'border-forest bg-forest text-lime'
+                    : 'border-sand bg-white text-forest',
                 )}
               >
                 <Icon aria-hidden="true" className="size-5" strokeWidth={2} />
@@ -113,10 +120,10 @@ export function CategoryForm({
       </fieldset>
 
       <fieldset>
-        <legend className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-text-muted">
+        <legend className="mb-2 text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
           Color
         </legend>
-        <div className="flex flex-wrap gap-2">
+        <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 py-1">
           {CATEGORY_COLORS.map((c) => (
             <button
               key={c}
@@ -124,7 +131,10 @@ export function CategoryForm({
               aria-pressed={color === c}
               aria-label={`Color ${c}`}
               onClick={() => setValue('color', c)}
-              className="flex size-11 items-center justify-center rounded-full"
+              className={cn(
+                'flex size-11 shrink-0 items-center justify-center rounded-full',
+                color === c && 'ring-2 ring-forest ring-offset-2 ring-offset-canvas',
+              )}
               style={{ backgroundColor: c, color: readableOn(c) }}
             >
               {color === c && <Check aria-hidden="true" className="size-5" strokeWidth={3} />}
@@ -133,14 +143,21 @@ export function CategoryForm({
         </div>
       </fieldset>
 
+      {children}
+
       {submitError && (
         <p role="alert" className="text-center text-sm text-expense">
           {submitError}
         </p>
       )}
-      <Button type="submit" variant="dark" disabled={isSubmitting}>
+      <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? 'Guardando…' : 'Guardar'}
       </Button>
+      {onArchive && (
+        <Button variant="ghost" onClick={onArchive} className="text-expense">
+          Eliminar categoría
+        </Button>
+      )}
     </form>
   )
 }

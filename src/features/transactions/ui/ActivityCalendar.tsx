@@ -19,6 +19,9 @@ interface ActivityCalendarProps {
   onPrev: () => void
   onNext: () => void
   onSelectDay: (day: IsoDate | null) => void
+  /** Which side the summary and day amounts show (screens 015 / 078 / 079). */
+  kind?: 'all' | 'expense' | 'income'
+  incomeCount?: number
 }
 
 export function ActivityCalendar({
@@ -31,13 +34,19 @@ export function ActivityCalendar({
   onPrev,
   onNext,
   onSelectDay,
+  kind = 'all',
+  incomeCount = 0,
 }: ActivityCalendarProps) {
   const { hidden } = useHiddenAmounts()
   const today = todayIso()
   const blanks = days[0] ? weekdayIndex(days[0].date) : 0
+  const elapsed = Math.max(1, days.filter((d) => d.date <= today).length)
+  const label =
+    'font-display text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted-on-dark'
+  const value = 'font-display text-[26px] font-extrabold leading-8'
 
   return (
-    <section aria-label="Calendario del mes" className="rounded-xl bg-forest p-4 text-cream">
+    <section aria-label="Calendario del mes" className="rounded-[28px] bg-forest p-4 text-cream">
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -47,7 +56,7 @@ export function ActivityCalendar({
         >
           <ChevronLeft aria-hidden="true" className="size-5" strokeWidth={2} />
         </button>
-        <h2 className="font-display text-xl font-semibold">{formatMonthYear(month)}</h2>
+        <h2 className="font-display text-[21px] font-extrabold">{formatMonthYear(month)}</h2>
         <button
           type="button"
           onClick={onNext}
@@ -59,21 +68,25 @@ export function ActivityCalendar({
         </button>
       </div>
 
-      <dl className="mt-3 flex gap-10 px-1">
+      <dl className="mt-3 flex justify-between px-1">
         <div>
-          <dt className="font-display text-xs font-semibold uppercase tracking-wider text-text-muted-on-dark">
-            Gastaste
-          </dt>
-          <dd className="font-display text-2xl font-semibold text-blush">
-            <AmountDisplay cents={expenseCents} />
+          <dt className={label}>{kind === 'income' ? 'Ingresaste' : 'Gastaste'}</dt>
+          <dd className={cn(value, kind === 'income' ? 'text-lime' : 'text-blush')}>
+            <AmountDisplay cents={kind === 'income' ? incomeCents : expenseCents} />
           </dd>
         </div>
-        <div>
-          <dt className="font-display text-xs font-semibold uppercase tracking-wider text-text-muted-on-dark">
-            Ingresaste
+        <div className="text-right">
+          <dt className={label}>
+            {kind === 'all' ? 'Ingresaste' : kind === 'expense' ? 'Por día' : 'Ingresos'}
           </dt>
-          <dd className="font-display text-2xl font-semibold text-lime">
-            <AmountDisplay cents={incomeCents} />
+          <dd className={cn(value, kind === 'all' ? 'text-lime' : 'text-cream')}>
+            {kind === 'all' ? (
+              <AmountDisplay cents={incomeCents} />
+            ) : kind === 'expense' ? (
+              <AmountDisplay cents={Math.round(expenseCents / elapsed / 100) * 100} />
+            ) : (
+              `${incomeCount} este mes`
+            )}
           </dd>
         </div>
       </dl>
@@ -83,7 +96,7 @@ export function ActivityCalendar({
           <span
             key={i}
             aria-hidden="true"
-            className="text-center font-display text-sm font-semibold text-text-muted-on-dark"
+            className="text-center font-display text-[15px] font-extrabold text-text-muted-on-dark"
           >
             {d}
           </span>
@@ -93,8 +106,8 @@ export function ActivityCalendar({
         ))}
         {days.map((day) => {
           const selected = day.date === selectedDay
-          const hasExpense = day.expenseCents > 0
-          const hasIncome = day.incomeCents > 0
+          const hasExpense = kind !== 'income' && day.expenseCents > 0
+          const hasIncome = kind !== 'expense' && day.incomeCents > 0
           const dayNumber = Number(day.date.slice(8, 10))
           const future = day.date > today
           return (
@@ -105,17 +118,19 @@ export function ActivityCalendar({
               aria-label={`Día ${dayNumber}`}
               onClick={() => onSelectDay(selected ? null : day.date)}
               className={cn(
-                'flex h-14 min-w-0 flex-col items-center justify-center rounded-md font-display text-[17px] font-semibold leading-tight',
-                selected ? 'bg-lime text-forest' : 'bg-surface text-cream',
-                future && !selected && !hasExpense && !hasIncome && 'text-text-muted-on-dark',
-                day.date === today && !selected && 'ring-2 ring-lime',
+                'flex h-[52px] min-w-0 flex-col items-center justify-center rounded-[14px] font-display text-[18px] font-extrabold leading-tight',
+                selected
+                  ? 'bg-lime text-forest'
+                  : future
+                    ? 'bg-transparent text-text-muted-on-dark/60'
+                    : 'bg-surface text-cream',
               )}
             >
               {dayNumber}
               {(hasExpense || hasIncome) && (
                 <span
                   className={cn(
-                    'text-[11px] font-semibold',
+                    'text-[11px] font-extrabold',
                     selected ? 'text-forest' : 'text-lime',
                   )}
                 >
@@ -124,9 +139,7 @@ export function ActivityCalendar({
                   ) : hasExpense ? (
                     <AmountDisplay cents={day.expenseCents} compact />
                   ) : (
-                    <>
-                      +<AmountDisplay cents={day.incomeCents} compact />
-                    </>
+                    <AmountDisplay cents={day.incomeCents} compact />
                   )}
                 </span>
               )}

@@ -83,7 +83,7 @@ describe('ActivityPage', () => {
   it('filters by kind with the segmented control', async () => {
     const user = setup()
     await user.click(screen.getByRole('button', { name: 'Ingresos' }))
-    expect(screen.getByText('1 movimiento')).toBeInTheDocument()
+    expect(screen.getByText('1 ingreso')).toBeInTheDocument()
     expect(screen.getByText('Sueldo octubre')).toBeInTheDocument()
     expect(screen.queryByText('Cena')).not.toBeInTheDocument()
   })

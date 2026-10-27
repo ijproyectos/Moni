@@ -20,7 +20,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="flex h-16 flex-1 items-center justify-between rounded-full bg-forest p-2 shadow-lg"
+      className="flex h-16 items-center gap-1 rounded-full bg-forest p-2 shadow-lg"
     >
       {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
         <NavLink
@@ -30,9 +30,9 @@ export function BottomNav() {
           aria-label={label}
           className={({ isActive }) =>
             cn(
-              'flex h-12 min-w-11 items-center justify-center gap-2 rounded-full font-display text-base font-semibold transition-all',
+              'flex h-12 min-w-12 items-center justify-center gap-2 rounded-full font-display text-[17px] font-extrabold transition-all',
               isActive
-                ? 'bg-lime px-4 text-forest'
+                ? 'bg-lime px-5 text-forest'
                 : 'px-3 text-text-muted-on-dark hover:text-cream',
             )
           }

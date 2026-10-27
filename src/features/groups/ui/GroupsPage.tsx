@@ -1,39 +1,40 @@
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router'
+import { useAuth } from '@/features/auth/api/authContext'
 import { useMyGroups } from '../api/useGroups'
-import { GroupsScreen } from './GroupsScreen'
-import { JoinGroupSheet } from './JoinGroupSheet'
-import { NewGroupSheet } from './NewGroupSheet'
-
-type Sheet = 'new' | 'join' | null
+import { overlayDeltaFor } from '../domain/ledger'
+import { useOverlays } from '../mock/overlayStore'
+import { GroupsScreen, type ListedGroup } from './GroupsScreen'
 
 export function GroupsPage() {
-  const [sheet, setSheet] = useState<Sheet>(null)
   const navigate = useNavigate()
+  const { user } = useAuth()
   const groups = useMyGroups()
+  const overlays = useOverlays()
+
+  const listed = useMemo<ListedGroup[] | undefined>(
+    () =>
+      groups.data
+        ?.filter((g) => !overlays[g.id]?.deleted)
+        .map((g) => {
+          const overlay = overlays[g.id]
+          return {
+            ...g,
+            name: overlay?.name ?? g.name,
+            myNetCents: g.myNetCents + overlayDeltaFor(overlay, user?.id ?? ''),
+            peopleCount: g.memberCount + (overlay?.guests.length ?? 0),
+          }
+        }),
+    [groups.data, overlays, user?.id],
+  )
 
   return (
-    <>
-      <GroupsScreen
-        groups={groups.data}
-        isLoading={groups.isLoading}
-        isError={groups.isError}
-        onRetry={() => void groups.refetch()}
-        onNewGroup={() => setSheet('new')}
-        onJoinWithCode={() => setSheet('join')}
-      />
-      {sheet === 'new' && (
-        <NewGroupSheet
-          onClose={() => setSheet(null)}
-          onCreated={(groupId) => navigate(`/grupos/${groupId}`)}
-        />
-      )}
-      {sheet === 'join' && (
-        <JoinGroupSheet
-          onClose={() => setSheet(null)}
-          onJoined={(groupId) => navigate(`/grupos/${groupId}`)}
-        />
-      )}
-    </>
+    <GroupsScreen
+      groups={listed}
+      isLoading={groups.isLoading}
+      isError={groups.isError}
+      onRetry={() => void groups.refetch()}
+      onNewGroup={() => navigate('/grupos/nuevo')}
+    />
   )
 }

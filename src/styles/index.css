@@ -34,8 +34,8 @@
   --color-category-home: #6dbe3a;
 
   /* Typography */
-  --font-display: 'Fredoka', ui-rounded, system-ui, sans-serif;
-  --font-body: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Nunito', ui-rounded, system-ui, sans-serif;
+  --font-body: 'Nunito', ui-sans-serif, system-ui, sans-serif;
 
   /* Radii */
   --radius-sm: 12px;

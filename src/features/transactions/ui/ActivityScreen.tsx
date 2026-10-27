@@ -53,6 +53,13 @@ const KIND_OPTIONS = [
   { value: 'income', label: 'Ingresos' },
 ] as const
 
+function countLabel(kind: KindFilter, count: number): string {
+  const one = count === 1
+  if (kind === 'expense') return one ? 'gasto' : 'gastos'
+  if (kind === 'income') return one ? 'ingreso' : 'ingresos'
+  return one ? 'movimiento' : 'movimientos'
+}
+
 export function ActivityScreen(props: ActivityScreenProps) {
   const { days, categoriesById, accountNamesById, kind, categories } = props
   const [pendingVoid, setPendingVoid] = useState<ActivityEntry | null>(null)
@@ -77,12 +84,10 @@ export function ActivityScreen(props: ActivityScreenProps) {
   }
 
   return (
-    <section className="flex flex-col gap-4 px-4 pt-12">
+    <section className="flex flex-col gap-4 px-4 pt-14">
       <div className="flex items-baseline justify-between px-1">
-        <h1 className="font-display text-[30px] font-bold leading-[34px]">Actividad</h1>
-        <p className="text-[16px] text-text-muted">
-          {count} {count === 1 ? 'movimiento' : 'movimientos'}
-        </p>
+        <h1 className="font-display text-[34px] font-extrabold leading-[40px]">Actividad</h1>
+        <p className="text-[16px] text-text-muted">{`${count} ${countLabel(kind, count)}`}</p>
       </div>
 
       <label className="relative block">
@@ -97,7 +102,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
           value={props.search}
           onChange={(e) => props.onSearchChange(e.target.value)}
           placeholder="Buscar por nota o categoría…"
-          className="h-14 w-full rounded-full border border-cream bg-white pl-12 pr-4 text-[17px] text-forest placeholder:text-text-muted"
+          className="h-14 w-full rounded-full border border-sand bg-white pl-12 pr-4 text-[17px] text-forest placeholder:text-text-muted"
         />
       </label>
 
@@ -145,6 +150,14 @@ export function ActivityScreen(props: ActivityScreenProps) {
         onPrev={props.onPrevMonth}
         onNext={props.onNextMonth}
         onSelectDay={props.onSelectDay}
+        kind={kind}
+        incomeCount={days.reduce(
+          (n, d) =>
+            n +
+            d.entries.filter((e) => e.type === 'transaction' && e.transaction.kind === 'income')
+              .length,
+          0,
+        )}
       />
 
       {count === 0 ? (
@@ -161,14 +174,15 @@ export function ActivityScreen(props: ActivityScreenProps) {
         days.map((day) => (
           <section key={day.date} aria-label={formatLongDay(day.date)}>
             <div className="mb-2 flex items-baseline justify-between px-1">
-              <h2 className="font-display text-[17px] font-semibold">{formatLongDay(day.date)}</h2>
+              <h2 className="font-display text-[17px] font-extrabold">{formatLongDay(day.date)}</h2>
               <AmountDisplay
                 cents={day.netCents}
-                className={`font-display text-[17px] font-semibold ${day.netCents < 0 ? 'text-expense' : 'text-income'}`}
+                signed
+                className={`font-display text-[17px] font-extrabold ${day.netCents < 0 ? 'text-forest' : 'text-income'}`}
               />
             </div>
-            <Card className="py-1">
-              <ul className="divide-y divide-cream">
+            <Card className="rounded-[24px] border-sand py-1">
+              <ul className="divide-y divide-sand">
                 {day.entries.map((entry) => (
                   <li key={`${entry.type}-${entry.id}`}>
                     {entry.type === 'transaction' ? (

@@ -64,13 +64,13 @@ describe('SharedExpenseForm', () => {
     const { user, onSubmit } = setup()
     await user.type(screen.getByLabelText('Monto'), '100')
     await user.type(screen.getByLabelText('Descripción'), 'Super')
-    await user.click(screen.getByRole('button', { name: 'Porcentaje' }))
-    expect(screen.getByText('Suma 100% de 100%')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Por %' }))
+    expect(screen.getByText('Suman 100%. Listo.')).toBeInTheDocument()
 
     const beto = screen.getByLabelText('Porcentaje de Beto')
     await user.clear(beto)
     await user.type(beto, '20')
-    expect(screen.getByText('Suma 86,67% de 100%')).toBeInTheDocument()
+    expect(screen.getByText('Suman 86,67% de 100%')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Guardar gasto' }))
     expect(await screen.findByText('Los porcentajes tienen que sumar 100.')).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()
@@ -78,7 +78,7 @@ describe('SharedExpenseForm', () => {
     const dani = screen.getByLabelText('Porcentaje de Dani')
     await user.clear(dani)
     await user.type(dani, '46,66')
-    expect(screen.getByText('Suma 100% de 100%')).toBeInTheDocument()
+    expect(screen.getByText('Suman 100%. Listo.')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Guardar gasto' }))
     await waitFor(() => expect(onSubmit).toHaveBeenCalled())
     expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
@@ -91,7 +91,7 @@ describe('SharedExpenseForm', () => {
     const { user, onSubmit } = setup()
     await user.type(screen.getByLabelText('Monto'), '10')
     await user.type(screen.getByLabelText('Descripción'), 'Algo')
-    for (const name of ['Ana (vos)', 'Beto', 'Dani']) {
+    for (const name of ['Vos', 'Beto', 'Dani']) {
       await user.click(screen.getByRole('checkbox', { name }))
     }
     await user.click(screen.getByRole('button', { name: 'Guardar gasto' }))

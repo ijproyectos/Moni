@@ -1,6 +1,9 @@
-import { ChevronDown } from 'lucide-react'
+import { Check } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/shared/ui/Button'
+import { cn } from '@/shared/ui/cn'
 import { formatArs } from '@/shared/lib/money'
+import { OnboardingTitle } from './OnboardingTitle'
 
 function ArgentinaFlag() {
   return (
@@ -12,37 +15,62 @@ function ArgentinaFlag() {
   )
 }
 
-// Screen 04 — Moneda. Pesos only for the MVP: the selector is shown but has a single option.
+// Screen 010 — Moneda. Pesos are the main currency; dollars are an optional second one (not persisted yet).
 export function OnboardingCurrencyStep({ onContinue }: { onContinue: () => void }) {
+  const [usesDollars, setUsesDollars] = useState(true)
+
   return (
     <>
-      <h1 className="mt-10 text-center font-display text-[32px] font-semibold leading-9 text-cream">
-        ¿En qué moneda manejás tu plata?
-      </h1>
-      <p className="mt-3 text-center text-[17px] leading-6 text-text-muted-on-dark">
-        En esta moneda vas a ver balances y totales.
+      <OnboardingTitle
+        title="¿En qué moneda manejás tu plata?"
+        subtitle="Por ahora Moni funciona en pesos argentinos. Si también usás dólares, sumalos como segunda moneda."
+      />
+
+      <div
+        aria-label="Moneda principal: Peso argentino, ARS"
+        className="mx-auto mt-8 flex min-h-[60px] w-fit items-center gap-3 rounded-full bg-canvas px-5 text-forest"
+      >
+        <ArgentinaFlag />
+        <span className="font-display text-[20px] font-extrabold">Peso argentino</span>
+        <span className="rounded-full bg-lime/60 px-3 py-0.5 text-sm font-extrabold">ARS</span>
+      </div>
+
+      <p className="mt-8 text-center text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
+        Así vas a ver tus números
+      </p>
+      <p className="mx-auto mt-3 w-fit rounded-[24px] border-2 border-dashed border-lime/30 px-5 py-3 font-display text-[38px] font-extrabold text-cream">
+        {formatArs(1_234_550)}
       </p>
 
       <button
         type="button"
-        disabled
-        aria-label="Moneda: Peso argentino, ARS (por ahora es la única disponible)"
-        className="mt-8 flex min-h-14 w-full items-center gap-3 rounded-full bg-canvas px-5 text-forest disabled:cursor-default"
+        role="checkbox"
+        aria-checked={usesDollars}
+        onClick={() => setUsesDollars((v) => !v)}
+        className="mt-6 flex w-full items-center gap-4 rounded-[20px] bg-surface px-4 py-3 text-left"
       >
-        <ArgentinaFlag />
-        <span className="font-display text-xl font-semibold">Peso argentino</span>
-        <span className="rounded-full bg-lime/60 px-3 py-0.5 font-display text-sm font-semibold">
-          ARS
+        <span
+          aria-hidden="true"
+          className="flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-forest/60 text-[15px] font-extrabold text-lime"
+        >
+          US$
         </span>
-        <ChevronDown aria-hidden="true" className="ml-auto size-5" strokeWidth={2} />
+        <span className="flex-1">
+          <span className="block text-[17px] font-extrabold text-cream">También uso dólares</span>
+          <span className="block text-[14px] text-text-muted-on-dark">
+            Sumalos como segunda moneda
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            'flex size-8 shrink-0 items-center justify-center rounded-[8px] border-2',
+            usesDollars ? 'border-lime bg-lime text-forest' : 'border-text-muted-on-dark',
+          )}
+        >
+          {usesDollars && <Check className="size-5" strokeWidth={3} />}
+        </span>
       </button>
-
-      <p className="mt-8 text-center font-display text-sm font-semibold uppercase tracking-wider text-text-muted-on-dark">
-        Así vas a ver tus números
-      </p>
-      <p className="mx-auto mt-3 w-fit rounded-lg border-2 border-dashed border-lime/30 px-8 py-4 font-display text-[34px] font-semibold text-cream">
-        {formatArs(1_234_550)}
-      </p>
 
       <div className="mt-auto pt-8">
         <Button onClick={onContinue}>Continuar</Button>
