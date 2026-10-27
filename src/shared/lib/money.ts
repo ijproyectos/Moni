@@ -21,14 +21,17 @@ export function fromCents(cents: Cents): string {
   return `${sign}${Math.trunc(abs / 100)}.${String(abs % 100).padStart(2, '0')}`
 }
 
-const arsFormatter = new Intl.NumberFormat('es-AR', {
-  minimumFractionDigits: 0,
+const wholeFormatter = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 })
+const fractionFormatter = new Intl.NumberFormat('es-AR', {
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
 
 /** Formats cents as an ARS amount the way the designs show it: "$12.345,50", "-$22.000". */
 export function formatArs(cents: Cents, options: { signed?: boolean } = {}): string {
-  const abs = arsFormatter.format(Math.abs(cents) / 100)
+  // Whole amounts drop the decimals ($22.000); any cents show both digits ($12.345,50).
+  const formatter = cents % 100 === 0 ? wholeFormatter : fractionFormatter
+  const abs = formatter.format(Math.abs(cents) / 100)
   const sign = cents < 0 ? '-' : options.signed && cents > 0 ? '+' : ''
   return `${sign}$${abs}`
 }
@@ -41,4 +44,14 @@ export function splitEqually(total: Cents, parts: number): Cents[] {
   const base = Math.floor(total / parts)
   const remainder = total - base * parts
   return Array.from({ length: parts }, (_, index) => base + (index < remainder ? 1 : 0))
+}
+
+/** Short amount for tight spaces (calendar cells): 3800000 -> "38K", 2850000 -> "28,5K", 150000 -> "1,5K". */
+export function formatCompact(cents: Cents): string {
+  const whole = Math.abs(cents) / 100
+  const trim = (n: number) =>
+    (Math.round(n * 10) / 10).toLocaleString('es-AR', { maximumFractionDigits: 1 })
+  if (whole >= 1_000_000) return `${trim(whole / 1_000_000)}M`
+  if (whole >= 1_000) return `${trim(whole / 1_000)}K`
+  return String(Math.round(whole))
 }

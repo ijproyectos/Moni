@@ -1,4 +1,4 @@
-import { formatArs, fromCents, splitEqually, toCents } from './money'
+import { formatArs, formatCompact, fromCents, splitEqually, toCents } from './money'
 
 describe('toCents', () => {
   it.each([
@@ -30,7 +30,7 @@ describe('fromCents', () => {
 
 describe('formatArs', () => {
   it('formats like the designs', () => {
-    expect(formatArs(1234550)).toBe('$12.345,5')
+    expect(formatArs(1234550)).toBe('$12.345,50')
     expect(formatArs(-2200000)).toBe('-$22.000')
     expect(formatArs(85050000, { signed: true })).toBe('+$850.500')
   })
@@ -49,5 +49,14 @@ describe('splitEqually', () => {
   it('rejects invalid input', () => {
     expect(() => splitEqually(100, 0)).toThrow()
     expect(() => splitEqually(-1, 2)).toThrow()
+  })
+})
+
+describe('formatCompact', () => {
+  it('abbreviates thousands and millions', () => {
+    expect(formatCompact(3_800_000)).toBe('38K')
+    expect(formatCompact(2_850_000)).toBe('28,5K')
+    expect(formatCompact(60_000)).toBe('600')
+    expect(formatCompact(250_000_000)).toBe('2,5M')
   })
 })

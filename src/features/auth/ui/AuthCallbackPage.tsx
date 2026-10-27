@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { FullScreenLoader } from '@/shared/ui/FullScreenLoader'
 import { useAuth } from '../api/authContext'
+import { peekReturnTo } from '../domain/returnTo'
 import { WELCOME_PATH } from './guards'
 
 const CALLBACK_TIMEOUT_MS = 10_000
@@ -12,7 +13,7 @@ export function AuthCallbackPage() {
   const [timedOut, setTimedOut] = useState(false)
 
   useEffect(() => {
-    if (session) navigate('/', { replace: true })
+    if (session) navigate(peekReturnTo() ?? '/', { replace: true })
   }, [session, navigate])
 
   useEffect(() => {
