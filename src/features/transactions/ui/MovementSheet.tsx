@@ -1,4 +1,4 @@
-import { Mic } from 'lucide-react'
+import { Mic, PenLine } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
@@ -104,7 +104,7 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
     }
   }
 
-  const [voice, setVoice] = useState(false)
+  const [voice, setVoice] = useState<'voice' | 'text' | null>(null)
   const title = isEdit
     ? 'Editar movimiento'
     : mode === 'transfer'
@@ -114,7 +114,11 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
     ? MODE_OPTIONS.filter((o) => o.value === mode).map((o) => ({ ...o, disabled: true }))
     : MODE_OPTIONS
 
-  if (voice) return <VoiceSheet onClose={() => setVoice(false)} />
+  if (voice) {
+    return (
+      <VoiceSheet startWith={voice === 'text' ? 'text' : 'promo'} onClose={() => setVoice(null)} />
+    )
+  }
 
   return (
     <BottomSheet title={title} onClose={onClose}>
@@ -173,13 +177,22 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
           />
         )}
         {!isEdit && mode !== 'transfer' && (
-          <button
-            type="button"
-            onClick={() => setVoice(true)}
-            className="-mt-1 flex min-h-11 items-center justify-center gap-2 text-[17px] font-extrabold underline"
-          >
-            <Mic aria-hidden="true" className="size-5" /> Mejor lo digo con la voz
-          </button>
+          <div className="-mt-1 flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => setVoice('voice')}
+              className="flex min-h-11 items-center justify-center gap-2 text-[17px] font-extrabold underline"
+            >
+              <Mic aria-hidden="true" className="size-5" /> Mejor lo digo con la voz
+            </button>
+            <button
+              type="button"
+              onClick={() => setVoice('text')}
+              className="flex min-h-11 items-center justify-center gap-2 text-[15px] font-bold text-text-muted underline"
+            >
+              <PenLine aria-hidden="true" className="size-4" /> Escribilo como te salga
+            </button>
+          </div>
         )}
       </div>
     </BottomSheet>

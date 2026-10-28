@@ -55,6 +55,33 @@ export function useCreateTransaction() {
   })
 }
 
+export type CreateManyResult = { key: string } & ({ ok: true } | { ok: false; error: unknown })
+
+/**
+ * Saves several movements one after another (confirmed AI drafts). A failure does not stop the rest:
+ * every item reports its own result so the UI can keep only the ones that failed.
+ */
+export function useCreateTransactions() {
+  const invalidate = useInvalidateMoney()
+  return useMutation({
+    mutationFn: async (
+      items: readonly { key: string; values: TransactionFormValues }[],
+    ): Promise<CreateManyResult[]> => {
+      const results: CreateManyResult[] = []
+      for (const item of items) {
+        try {
+          await createTransaction(item.values)
+          results.push({ key: item.key, ok: true })
+        } catch (error) {
+          results.push({ key: item.key, ok: false, error })
+        }
+      }
+      return results
+    },
+    onSettled: invalidate,
+  })
+}
+
 export function useUpdateTransaction() {
   const invalidate = useInvalidateMoney()
   return useMutation({

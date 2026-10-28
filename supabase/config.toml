@@ -26,3 +26,8 @@ enabled = true
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 skip_nonce_check = false
+
+[functions.parse-movements]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/parse-movements/index.ts"
