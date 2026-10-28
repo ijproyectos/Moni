@@ -10,16 +10,41 @@ import { cn } from '@/shared/ui/cn'
 import { CheckDot, ChoiceChip, DashedButton, MoniGlyph, Page, SectionLabel } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import {
-  formatRate,
-  impliedMonthlyRate,
-  optionTotal,
-  roundUpSuggestion,
-  type InstallmentOption,
-} from '../domain/goals'
+  analyzeInstallments,
+  validateInstallmentInput,
+  type InstallmentAnalysis,
+} from '@/features/budgets/domain/installments'
+import { formatRate, optionTotal, roundUpSuggestion, type InstallmentOption } from '../domain/goals'
 import { MOCK_AGUINALDO_ESTIMATE } from '../mock/goalsStore'
 import { NewGoalSheet, type NewGoalPrefill } from './NewGoalSheet'
 
 const AGUINALDO_MONTHS = 3
+
+const DEFAULT_INFLATION_PERCENT = 3
+
+/** "3,5" or "3.5" -> 3.5; null when it is not a number. */
+function parsePercent(text: string): number | null {
+  const value = Number(text.trim().replace(',', '.'))
+  return text.trim() !== '' && Number.isFinite(value) ? value : null
+}
+
+/** Analysis of an installments option, or null while the inputs are not valid. */
+function analyze(
+  price: number,
+  option: InstallmentOption,
+  inflation: number | null,
+  discount: number | null,
+): InstallmentAnalysis | null {
+  if (option.kind !== 'installments' || inflation === null || discount === null) return null
+  const input = {
+    cashPriceCents: price,
+    installments: option.count,
+    installmentCents: option.installmentCents,
+    monthlyInflationPercent: inflation,
+    cashDiscountPercent: discount,
+  }
+  return validateInstallmentInput(input) ? null : analyzeInstallments(input)
+}
 
 const DEFAULT_OPTIONS: InstallmentOption[] = [
   { id: 'o6', kind: 'installments', count: 6, installmentCents: 176_000_00 },
@@ -39,6 +64,10 @@ export function InstallmentsPage() {
   const [selectedId, setSelectedId] = useState('o12')
   const [adding, setAdding] = useState(false)
   const [prefill, setPrefill] = useState<NewGoalPrefill | null>(null)
+  const [inflationText, setInflationText] = useState(String(DEFAULT_INFLATION_PERCENT))
+  const [discountText, setDiscountText] = useState('')
+  const inflation = parsePercent(inflationText)
+  const discount = discountText.trim() === '' ? 0 : parsePercent(discountText)
 
   const installments = options.filter((o) => o.kind === 'installments')
   const selected =
@@ -51,6 +80,7 @@ export function InstallmentsPage() {
   )
   const compareAgainst = selected.kind === 'installments' ? selected : cheapest
   const saving = compareAgainst ? extra(compareAgainst) : 0
+  const analysis = analyze(price, selected, inflation, discount)
   const aguinaldoMonthly = roundUpSuggestion(Math.max(0, price - aguinaldo) / AGUINALDO_MONTHS)
 
   return (
@@ -67,7 +97,8 @@ export function InstallmentsPage() {
             aria-label="Precio de contado"
             defaultValue={formatAmountInput(price)}
             onBlur={(e) => {
-              setPrice(parseAmountInput(e.target.value) ?? price)
+              const typed = parseAmountInput(e.target.value)
+              setPrice(typed && typed > 0 ? typed : price)
               setEditing(null)
             }}
           />
@@ -87,6 +118,24 @@ export function InstallmentsPage() {
             </button>
           </div>
         )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <PercentField
+          label="Inflación esperada por mes"
+          hint="Editable. Es tu estimación."
+          value={inflationText}
+          onChange={setInflationText}
+          invalid={inflation === null || inflation < 0 || inflation > 100}
+        />
+        <PercentField
+          label="Descuento por pagar de contado"
+          hint="Opcional."
+          value={discountText}
+          onChange={setDiscountText}
+          placeholder="0"
+          invalid={discount === null || discount < 0 || discount >= 100}
+        />
       </div>
 
       <SectionLabel
@@ -147,7 +196,7 @@ export function InstallmentsPage() {
                   <span className="block text-[14px] leading-5 text-text-muted">
                     {isAgui
                       ? `Aguinaldo + ${formatArs(aguinaldoMonthly)} por mes · ${AGUINALDO_MONTHS} meses`
-                      : `+${formatArs(extra(o))} · ${formatRate(impliedMonthlyRate(price, o.count, o.installmentCents))} por mes`}
+                      : `+${formatArs(extra(o))} · ${formatRate(optionRate(price, o))} por mes`}
                   </span>
                 </span>
                 <span className="text-[16px] font-extrabold">
@@ -168,12 +217,31 @@ export function InstallmentsPage() {
         <p className="flex items-center gap-2 text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
           <MoniGlyph className="size-5 text-gold" /> Comparación de Moni
         </p>
-        <p className="mt-2 font-display text-[26px] font-extrabold leading-8 text-lime">
-          Con el aguinaldo ahorrás {formatArs(saving)}
-        </p>
-        <p className="mt-2 text-[16px] leading-6 text-text-muted-on-dark">
-          Si esperás a diciembre y lo pagás de contado, no pagás interés.
-        </p>
+        {analysis ? (
+          <>
+            <p className="mt-2 font-display text-[26px] font-extrabold leading-8 text-lime">
+              {VERDICT_TITLE[analysis.verdict]}
+            </p>
+            <div className="mt-2 flex flex-col gap-2 text-[16px] leading-6 text-text-muted-on-dark">
+              {analysis.explanation.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
+          </>
+        ) : selected.kind === 'aguinaldo' ? (
+          <>
+            <p className="mt-2 font-display text-[26px] font-extrabold leading-8 text-lime">
+              Con el aguinaldo ahorrás {formatArs(saving)}
+            </p>
+            <p className="mt-2 text-[16px] leading-6 text-text-muted-on-dark">
+              Si esperás a diciembre y lo pagás de contado, no pagás interés.
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-[16px] leading-6 text-text-muted-on-dark">
+            Revisá la inflación y el descuento: tienen que ser porcentajes válidos para comparar.
+          </p>
+        )}
         {cheapest && (
           <p className="mt-3 border-t border-white/15 pt-3 text-[16px] leading-6 text-text-muted-on-dark">
             Si lo necesitás ya, la opción con menos interés es la de {cheapest.count} cuotas (+
@@ -213,6 +281,59 @@ export function InstallmentsPage() {
       )}
       {prefill && <NewGoalSheet prefill={prefill} onClose={() => setPrefill(null)} />}
     </Page>
+  )
+}
+
+const VERDICT_TITLE = {
+  cuotas: 'Te conviene en cuotas',
+  contado: 'Te conviene pagar de contado',
+  similar: 'Da casi lo mismo',
+} as const
+
+/** Monthly implied rate (CFT-like) of an installments option against the cash price. */
+function optionRate(price: number, option: InstallmentOption): number {
+  const input = {
+    cashPriceCents: price,
+    installments: option.count,
+    installmentCents: option.installmentCents,
+    monthlyInflationPercent: 0,
+  }
+  if (validateInstallmentInput(input)) return 0
+  return Math.max(0, analyzeInstallments(input).impliedMonthlyRate)
+}
+
+function PercentField({
+  label,
+  hint,
+  value,
+  onChange,
+  placeholder,
+  invalid,
+}: {
+  label: string
+  hint: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  invalid: boolean
+}) {
+  return (
+    <label className="flex flex-col gap-1 rounded-[18px] border border-sand bg-white px-3 py-2">
+      <span className="text-[14px] font-extrabold leading-5">{label}</span>
+      <span className="flex items-baseline gap-1 text-[22px] font-extrabold">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          inputMode="decimal"
+          placeholder={placeholder}
+          aria-label={label}
+          aria-invalid={invalid}
+          className={cn('w-full min-w-0 bg-transparent outline-none', invalid && 'text-[#b8321f]')}
+        />
+        %
+      </span>
+      <span className="text-[13px] text-text-muted">{hint}</span>
+    </label>
   )
 }
 
@@ -273,7 +394,15 @@ function AddOptionSheet({
             </p>
             <p className="mt-1 text-[14px] text-text-muted-on-dark">
               {Math.round((extra / price) * 100)}% más que de contado · unos{' '}
-              {formatRate(impliedMonthlyRate(price, count, installment))} por mes
+              {formatRate(
+                optionRate(price, {
+                  id: 'tmp',
+                  kind: 'installments',
+                  count,
+                  installmentCents: installment,
+                }),
+              )}{' '}
+              por mes
             </p>
           </div>
         )}

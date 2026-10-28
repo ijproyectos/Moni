@@ -12,7 +12,8 @@ import { MovementRow } from '@/shared/ui/MovementRow'
 import { ShoppingBag, Target } from 'lucide-react'
 import { progress, percentLabel } from '@/features/goals/domain/goals'
 import { useGoals } from '@/features/goals/mock/goalsStore'
-import { ANTS_WEEK } from '@/features/insights/mock/antsData'
+import { BudgetAlertsCard } from '@/features/budgets/ui/BudgetAlertsCard'
+import { useAnts } from '@/features/insights/api/useAnts'
 import { formatArs } from '@/shared/lib/money'
 import { MoniGlyph, ProgressBar } from '@/shared/ui/kit'
 import type { MonthSummary } from '../domain/monthSummary'
@@ -99,6 +100,8 @@ export function HomeScreen({
               )}
             </Card>
 
+            <BudgetAlertsCard month={month} />
+
             <HomeShortcuts />
 
             {summary.recent.length > 0 && (
@@ -151,8 +154,9 @@ export function HomeScreen({
   )
 }
 
-/** Metas and Hormigas shortcut cards (simulated features). */
+/** Metas (simulated) and Hormigas (real data) shortcut cards. */
 function HomeShortcuts() {
+  const ants = useAnts(todayIso())
   const goals = useGoals().filter((g) => !g.shared)
   const saved = goals.reduce((sum, g) => sum + g.savedCents, 0)
   const target = goals.reduce((sum, g) => sum + g.targetCents, 0)
@@ -173,9 +177,9 @@ function HomeShortcuts() {
           <ShoppingBag aria-hidden="true" className="size-5" strokeWidth={2.25} /> Hormigas
         </span>
         <span className="mt-2 block font-display text-[22px] font-extrabold leading-7">
-          {formatArs(ANTS_WEEK.totalCents)}
+          {ants.data ? formatArs(ants.data.monthTotalCents) : '—'}
         </span>
-        <span className="block text-[15px] text-text-muted">esta semana</span>
+        <span className="block text-[15px] text-text-muted">este mes</span>
       </Link>
     </div>
   )

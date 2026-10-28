@@ -4,6 +4,7 @@ const MESSAGES: Record<string, string> = {
   account_not_found: 'La cuenta elegida no existe.',
   category_not_found: 'La categoría elegida no existe.',
   category_kind_mismatch: 'La categoría no corresponde al tipo de movimiento.',
+  category_archived: 'Esa categoría está archivada. Elegí otra.',
   account_archived: 'No podés cargar movimientos en una cuenta archivada.',
   voided_row_is_immutable: 'Este movimiento está anulado y ya no se puede modificar.',
   not_authenticated: 'Tu sesión venció. Volvé a ingresar.',
@@ -37,7 +38,13 @@ const MESSAGES: Record<string, string> = {
   invalid_settlement_target: 'Elegí a otra persona del grupo para saldar.',
   invalid_note: 'La nota puede tener hasta 200 caracteres.',
   not_settlement_receiver: 'Solo quien recibe el pago puede registrarlo.',
+  invalid_period: 'El período elegido no es válido. Probá con un rango de hasta 400 días.',
+  budgets_owner_category_active_key: 'Esa categoría ya tiene un límite por mes.',
   invite_code_unavailable: 'No pudimos generar el código. Probá de nuevo.',
+  ai_quota_exceeded:
+    'Llegaste al límite de cargas con Moni por hoy. Probá mañana o cargalo a mano.',
+  ai_unavailable: 'Moni no pudo entender eso ahora. Probá de nuevo en un ratito o cargalo a mano.',
+  invalid_request: 'No pudimos entender ese texto. Probá con algo más corto (hasta 500 letras).',
 }
 
 const FALLBACK = 'Algo salió mal. Probá de nuevo en un rato.'
