@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
+import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
-import { formatAmountInput } from '@/shared/lib/amountInput'
+import type { Category } from '@/features/categories/domain/category'
+import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
+import { todayIso } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { Button } from '@/shared/ui/Button'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
@@ -13,13 +15,18 @@ import {
   type AccountFormInput,
   type AccountFormValues,
 } from '../domain/account'
+import { defaultOpeningOrigin, originProblem, type OpeningOrigin } from '../domain/openingOrigin'
+import { OpeningOriginFields } from './OpeningOriginFields'
 
 interface AccountFormProps {
   initial?: Account
   isSubmitting: boolean
   submitError: string | null
-  onSubmit: (values: AccountFormValues) => void
+  /** `origin` says where the starting money comes from; it only matters for a new, non-card account. */
+  onSubmit: (values: AccountFormValues, origin: OpeningOrigin) => void
   onArchive?: () => void
+  /** Income categories offered for "Mi sueldo" / "Otro ingreso". */
+  incomeCategories?: readonly Category[]
   /** Extra fields shown before the save button (e.g. the simulated alias). */
   children?: ReactNode
 }
@@ -35,8 +42,11 @@ export function AccountForm({
   submitError,
   onSubmit,
   onArchive,
+  incomeCategories = [],
   children,
 }: AccountFormProps) {
+  const [origin, setOrigin] = useState<OpeningOrigin>(() => defaultOpeningOrigin(todayIso()))
+  const [originError, setOriginError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -56,9 +66,22 @@ export function AccountForm({
     },
   })
   const kind = watch('kind')
+  const openingText = watch('openingBalance') ?? ''
+  const openingCents = parseAmountInput(String(openingText)) ?? 0
+  // A new ordinary account asks where its starting money comes from; a card's debt keeps its own logic.
+  const asksOrigin = !initial && kind !== 'credit_card' && openingCents > 0
+  // Editing: a balance that is already a movement is changed with "Ajustar saldo", not here.
+  const showOpening = kind === 'credit_card' || !initial || initial.openingBalanceCents > 0
+
+  function submit(values: AccountFormValues) {
+    const problem = asksOrigin ? originProblem(origin) : null
+    setOriginError(problem)
+    if (problem) return
+    onSubmit(values, origin)
+  }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(submit)} noValidate className="flex flex-col gap-4">
       <label className="flex flex-col gap-1">
         <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
           Nombre
@@ -86,22 +109,36 @@ export function AccountForm({
         onChange={(value) => setValue('kind', value)}
       />
 
-      <div>
-        <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
-          {kind === 'credit_card' ? 'Deuda inicial' : 'Saldo inicial'}
-        </span>
-        <AmountInput
-          scale="md"
-          aria-label={kind === 'credit_card' ? 'Deuda inicial' : 'Saldo inicial'}
-          invalid={Boolean(errors.openingBalance)}
-          {...register('openingBalance')}
+      {showOpening && (
+        <div>
+          <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
+            {kind === 'credit_card' ? 'Deuda inicial' : 'Saldo inicial'}
+          </span>
+          <AmountInput
+            scale="md"
+            aria-label={kind === 'credit_card' ? 'Deuda inicial' : 'Saldo inicial'}
+            invalid={Boolean(errors.openingBalance)}
+            {...register('openingBalance')}
+          />
+          {errors.openingBalance && (
+            <p role="alert" className="mt-1 text-sm text-expense">
+              {errors.openingBalance.message}
+            </p>
+          )}
+        </div>
+      )}
+
+      {asksOrigin && (
+        <OpeningOriginFields
+          value={origin}
+          onChange={(next) => {
+            setOriginError(null)
+            setOrigin(next)
+          }}
+          categories={incomeCategories}
+          error={originError}
         />
-        {errors.openingBalance && (
-          <p role="alert" className="mt-1 text-sm text-expense">
-            {errors.openingBalance.message}
-          </p>
-        )}
-      </div>
+      )}
 
       {kind === 'credit_card' && (
         <div className="flex flex-col gap-3">

@@ -2,6 +2,7 @@ import { Copy, CreditCard, Plus } from 'lucide-react'
 import { useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
+import { useCategories } from '@/features/categories/api/useCategories'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
 import { toUserMessage } from '@/shared/lib/errors'
 import type { AccountKind } from '@/shared/lib/database.types'
@@ -29,10 +30,12 @@ import {
   type Account,
   type AccountFormValues,
 } from '../domain/account'
+import type { OpeningOrigin } from '../domain/openingOrigin'
 import { setAccountAlias, useAccountAliases, type AccountAlias } from '../mock/aliasStore'
 import { CardSummarySection } from '@/features/cards/ui/CardSummarySection'
 import { AccountForm } from './AccountForm'
 import { AdjustBalanceSection } from './AdjustBalanceSection'
+import { ClassifyOpeningSection } from './ClassifyOpeningSection'
 
 const KIND_SUBTITLES: Record<AccountKind, string> = {
   cash: 'Billetes que tenés encima',
@@ -56,6 +59,7 @@ export function AccountsPage() {
   const accounts = useAccounts()
   const create = useCreateAccount()
   const update = useUpdateAccount()
+  const incomeCategories = useCategories('income').data ?? []
   const archive = useArchiveAccount()
   const toast = useToast()
   const { openNew } = useMovementSheet()
@@ -78,7 +82,7 @@ export function AccountsPage() {
     setEditing(account ? { account } : {})
   }
 
-  async function save(values: AccountFormValues) {
+  async function save(values: AccountFormValues, origin: OpeningOrigin) {
     setSubmitError(null)
     try {
       if (editing?.account) {
@@ -88,7 +92,7 @@ export function AccountsPage() {
           previousKind: editing.account.kind,
         })
         setAccountAlias(editing.account.id, { ...aliasDraft, alias: aliasDraft.alias.trim() })
-      } else await create.mutateAsync(values)
+      } else await create.mutateAsync({ values, origin })
       toast.show(editing?.account ? 'Medio actualizado' : 'Medio creado', {
         mascotUrl: mascotHappy,
       })
@@ -291,7 +295,8 @@ export function AccountsPage() {
             initial={editing.account}
             isSubmitting={create.isPending || update.isPending}
             submitError={submitError}
-            onSubmit={(values) => void save(values)}
+            incomeCategories={incomeCategories}
+            onSubmit={(values, origin) => void save(values, origin)}
             onArchive={
               editing.account && list.length > 1
                 ? () => setArchiving(editing.account ?? null)
@@ -300,6 +305,13 @@ export function AccountsPage() {
           >
             {editing.account && (
               <>
+                {!isCreditCard(editing.account) && editing.account.openingBalanceCents > 0 && (
+                  <ClassifyOpeningSection
+                    account={editing.account}
+                    incomeCategories={incomeCategories}
+                    onDone={() => setEditing(null)}
+                  />
+                )}
                 <AdjustBalanceSection account={editing.account} onDone={() => setEditing(null)} />
                 {isCreditCard(editing.account) && (
                   <CardSummarySection

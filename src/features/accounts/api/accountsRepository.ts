@@ -2,6 +2,7 @@ import type { Account as AccountRow } from '@/shared/lib/database.types'
 import { getSupabase } from '@/shared/lib/supabase'
 import { fromCents, toCents } from '@/shared/lib/money'
 import type { Account, AccountFormValues } from '../domain/account'
+import { toOpeningRequest, type OpeningOrigin } from '../domain/openingOrigin'
 import type { Cents } from '@/shared/lib/money'
 
 function toAccount(row: AccountRow, balance: number): Account {
@@ -49,16 +50,57 @@ function cardSettings(values: AccountFormValues) {
   }
 }
 
-export async function createAccount(values: AccountFormValues): Promise<void> {
-  const { error } = await getSupabase()
-    .from('accounts')
-    .insert({
-      name: values.name,
-      kind: values.kind,
-      opening_balance: storedOpening(values),
-      ...(values.kind === 'credit_card' ? cardSettings(values) : {}),
+/**
+ * Creates the account. Money to start with on an ordinary account goes in as a movement, created together
+ * with the account by the database ("Saldo inicial", or a real income), so Actividad and the reports see it
+ * and the balance rises exactly once. A card keeps its starting debt on the account, as before.
+ */
+export async function createAccount(
+  values: AccountFormValues,
+  origin?: OpeningOrigin,
+): Promise<void> {
+  const supabase = getSupabase()
+  if (values.kind !== 'credit_card' && values.openingBalance > 0) {
+    const request = toOpeningRequest(
+      origin ?? { source: 'previous', categoryId: null, occurredOn: '' },
+    )
+    const { error } = await supabase.rpc('create_account_with_opening', {
+      p_name: values.name,
+      p_kind: values.kind,
+      p_amount: Number(fromCents(values.openingBalance)),
+      p_source: request.source,
+      p_category: request.categoryId,
+      p_on: request.occurredOn,
     })
+    if (error) throw error
+    return
+  }
+  const { error } = await supabase.from('accounts').insert({
+    name: values.name,
+    kind: values.kind,
+    opening_balance: storedOpening(values),
+    ...(values.kind === 'credit_card' ? cardSettings(values) : {}),
+  })
   if (error) throw error
+}
+
+/**
+ * Turns the starting balance an existing account carries into a movement of the same amount (the balance
+ * does not change). Returns the amount in cents.
+ */
+export async function classifyOpeningBalance(
+  accountId: string,
+  origin: OpeningOrigin,
+): Promise<Cents> {
+  const request = toOpeningRequest(origin)
+  const { data, error } = await getSupabase().rpc('classify_opening_balance', {
+    p_account: accountId,
+    p_source: request.source,
+    p_category: request.categoryId,
+    p_on: request.occurredOn,
+  })
+  if (error) throw error
+  return toCents(data ?? 0)
 }
 
 export async function updateAccount(

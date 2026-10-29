@@ -99,12 +99,22 @@ export function signedAmount(tx: Transaction): Cents {
 
 /** Kinds that put money into the account; every other kind takes it out. Same rule as `account_balances`. */
 export function addsToBalance(kind: string): boolean {
-  return kind === 'income' || kind === 'settlement_in' || kind === 'adjustment_in'
+  return (
+    kind === 'income' ||
+    kind === 'settlement_in' ||
+    kind === 'adjustment_in' ||
+    kind === 'opening_in'
+  )
 }
 
 /** Corrections of an account balance. They move the balance but are never income or expense. */
 export function isAdjustment(kind: string): boolean {
   return kind === 'adjustment_in' || kind === 'adjustment_out'
+}
+
+/** The money an account started with ("Saldo inicial"): moves the balance, is neither income nor expense. */
+export function isOpening(kind: string): boolean {
+  return kind === 'opening_in'
 }
 
 /**

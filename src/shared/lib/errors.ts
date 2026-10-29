@@ -55,7 +55,11 @@ const MESSAGES: Record<string, string> = {
   card_not_configured: 'Cargá el día de cierre y de vencimiento de la tarjeta para usar cuotas.',
   invalid_statement:
     'Ese resumen no es válido para esta tarjeta. Elegí uno cercano a la fecha de compra.',
-  invalid_date: 'La fecha de compra no es válida.',
+  invalid_date: 'La fecha no es válida.',
+  invalid_opening_source: 'Elegí de dónde viene esa plata.',
+  invalid_opening_kind: 'Esta opción no está disponible para ese tipo de cuenta.',
+  nothing_to_classify: 'Este medio no tiene un saldo inicial para clasificar.',
+  category_required: 'Elegí una categoría para el ingreso.',
   plan_not_found: 'La compra en cuotas no existe o ya está anulada.',
   installment_managed_by_plan: 'Las cuotas se anulan desde la compra completa.',
   ai_quota_exceeded:

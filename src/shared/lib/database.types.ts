@@ -12,6 +12,7 @@ export type TransactionKind =
   | 'settlement_in'
   | 'adjustment_in'
   | 'adjustment_out'
+  | 'opening_in'
 export type RowStatus = 'posted' | 'voided'
 export type GroupKind = 'casa' | 'viaje' | 'pareja' | 'amigos'
 export type GroupRole = 'owner' | 'member'
@@ -375,6 +376,28 @@ export interface Database {
       /** Migration 20261029000000: records the difference as one adjustment; returns it. */
       adjust_account_balance: {
         Args: { p_account: string; p_target: number; p_note?: string | null }
+        Returns: number
+      }
+      /** Migration 20261034000000: creates the account and its opening movement in one transaction. */
+      create_account_with_opening: {
+        Args: {
+          p_name: string
+          p_kind: string
+          p_amount: number
+          p_source: string
+          p_category?: string | null
+          p_on?: string | null
+        }
+        Returns: string
+      }
+      /** Migration 20261034000000: turns opening_balance into a movement; returns the amount. */
+      classify_opening_balance: {
+        Args: {
+          p_account: string
+          p_source: string
+          p_category?: string | null
+          p_on?: string | null
+        }
         Returns: number
       }
       /** Migration 20261030000000. */

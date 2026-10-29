@@ -19,6 +19,7 @@ import { countEntries, type ActivityDay, type ActivityEntry } from '../domain/ac
 import {
   addsToBalance,
   isAdjustment,
+  isOpening,
   isScheduled,
   type EntryKind,
   type Transaction,
@@ -275,8 +276,14 @@ function TransactionRow({
   onDelete: () => void
 }) {
   const isIncome = addsToBalance(transaction.kind)
-  const adjustment = isAdjustment(transaction.kind)
-  const categoryName = adjustment ? 'Ajuste de saldo' : (category?.name ?? 'Sin categoría')
+  const opening = isOpening(transaction.kind)
+  // Adjustments and the starting balance move the balance only; they have no category.
+  const adjustment = isAdjustment(transaction.kind) || opening
+  const categoryName = opening
+    ? 'Saldo inicial'
+    : adjustment
+      ? 'Ajuste de saldo'
+      : (category?.name ?? 'Sin categoría')
   // Only expenses and incomes can be edited; an adjustment is undone by voiding it.
   const editable =
     (transaction.kind === 'expense' || transaction.kind === 'income') &&
@@ -324,7 +331,8 @@ function TransactionRow({
       }
       onPress={editable ? onEdit : undefined}
       pressLabel={editable ? `Editar ${transaction.note?.trim() || categoryName}` : undefined}
-      onDelete={onDelete}
+      // The starting balance is fixed history: a wrong balance is fixed with "Ajustar saldo".
+      onDelete={opening ? undefined : onDelete}
       deleteLabel={`Anular ${transaction.note?.trim() || categoryName}`}
     />
   )

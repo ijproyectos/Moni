@@ -1,4 +1,9 @@
-import { adjustAccountBalance, createAccount, updateAccount } from './accountsRepository'
+import {
+  adjustAccountBalance,
+  classifyOpeningBalance,
+  createAccount,
+  updateAccount,
+} from './accountsRepository'
 
 const insert = vi.hoisted(() => vi.fn().mockResolvedValue({ error: null }))
 const update = vi.hoisted(() => vi.fn())
@@ -40,10 +45,82 @@ describe('accountsRepository', () => {
     })
   })
 
-  it('keeps the opening balance of a regular account as typed', async () => {
-    await createAccount({ ...none, name: 'Caja', kind: 'cash', openingBalance: 1_500_50 })
-    // No card columns at all: ordinary accounts never touch them.
-    expect(insert).toHaveBeenCalledWith({ name: 'Caja', kind: 'cash', opening_balance: 1500.5 })
+  it('an ordinary account without starting money is a plain insert', async () => {
+    await createAccount({ ...none, name: 'Caja', kind: 'cash', openingBalance: 0 })
+    // No card columns and no opening balance: ordinary accounts never touch them.
+    expect(insert).toHaveBeenCalledWith({ name: 'Caja', kind: 'cash', opening_balance: 0 })
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('starting money goes in as one movement created with the account, never as opening_balance', async () => {
+    rpc.mockResolvedValue({ data: 'new-id', error: null })
+    await createAccount(
+      { ...none, name: 'Galicia', kind: 'bank', openingBalance: 200_000_00 },
+      { source: 'previous', categoryId: null, occurredOn: '2026-10-29' },
+    )
+    expect(rpc).toHaveBeenCalledWith('create_account_with_opening', {
+      p_name: 'Galicia',
+      p_kind: 'bank',
+      p_amount: 200000,
+      p_source: 'previous',
+      p_category: null,
+      p_on: null,
+    })
+    expect(insert).not.toHaveBeenCalled()
+  })
+
+  it('"Mi sueldo" and "Otro ingreso" are real incomes with category and date', async () => {
+    rpc.mockResolvedValue({ data: 'new-id', error: null })
+    await createAccount(
+      { ...none, name: 'Galicia', kind: 'bank', openingBalance: 200_000_00 },
+      { source: 'salary', categoryId: 'cat-sueldo', occurredOn: '2026-10-05' },
+    )
+    expect(rpc).toHaveBeenCalledWith('create_account_with_opening', {
+      p_name: 'Galicia',
+      p_kind: 'bank',
+      p_amount: 200000,
+      p_source: 'income',
+      p_category: 'cat-sueldo',
+      p_on: '2026-10-05',
+    })
+  })
+
+  it('without an explicit origin the starting money is "Saldo inicial", never an income', async () => {
+    rpc.mockResolvedValue({ data: 'new-id', error: null })
+    await createAccount({ ...none, name: 'Caja', kind: 'cash', openingBalance: 5_000_00 })
+    expect(rpc).toHaveBeenCalledWith(
+      'create_account_with_opening',
+      expect.objectContaining({ p_source: 'previous', p_category: null }),
+    )
+  })
+
+  it('a failed creation surfaces the database error', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: '23514', message: 'category_kind_mismatch' },
+    })
+    await expect(
+      createAccount(
+        { ...none, name: 'X', kind: 'bank', openingBalance: 100 },
+        { source: 'other', categoryId: 'c', occurredOn: '2026-10-05' },
+      ),
+    ).rejects.toMatchObject({ message: 'category_kind_mismatch' })
+  })
+
+  it('classifying an existing account asks the database to move its balance into a movement', async () => {
+    rpc.mockResolvedValue({ data: 200000, error: null })
+    const cents = await classifyOpeningBalance('a1', {
+      source: 'salary',
+      categoryId: 'cat-sueldo',
+      occurredOn: '2026-10-05',
+    })
+    expect(rpc).toHaveBeenCalledWith('classify_opening_balance', {
+      p_account: 'a1',
+      p_source: 'income',
+      p_category: 'cat-sueldo',
+      p_on: '2026-10-05',
+    })
+    expect(cents).toBe(200_000_00)
   })
 
   it('applies the same rule when editing', async () => {

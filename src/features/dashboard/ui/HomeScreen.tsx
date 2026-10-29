@@ -17,7 +17,7 @@ import { useAnts } from '@/features/insights/api/useAnts'
 import { formatArs } from '@/shared/lib/money'
 import { MoniGlyph, ProgressBar } from '@/shared/ui/kit'
 import type { MonthSummary } from '../domain/monthSummary'
-import { addsToBalance, isAdjustment } from '@/features/transactions/domain/transaction'
+import { addsToBalance, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
 import { buildInsight } from '../domain/insight'
 import { CategoryDonut } from './CategoryDonut'
 import { HomeHeader } from './HomeHeader'
@@ -129,7 +129,7 @@ export function HomeScreen({
                         <li key={m.id}>
                           <MovementRow
                             leading={
-                              isAdjustment(m.kind) ? (
+                              isAdjustment(m.kind) || isOpening(m.kind) ? (
                                 <IconCircle icon={Scale} color="#064735" />
                               ) : (
                                 <CategoryIconCircle

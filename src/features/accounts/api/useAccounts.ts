@@ -4,8 +4,10 @@ import { dashboardKeys } from '@/features/dashboard/api/queryKeys'
 import { transactionKeys } from '@/features/transactions/api/queryKeys'
 import type { Cents } from '@/shared/lib/money'
 import type { Account, AccountFormValues } from '../domain/account'
+import type { OpeningOrigin } from '../domain/openingOrigin'
 import {
   adjustAccountBalance,
+  classifyOpeningBalance,
   createAccount,
   listAccounts,
   setAccountArchived,
@@ -35,10 +37,33 @@ function useInvalidateAccounts() {
     ])
 }
 
+/** A new account can bring a movement with it, so Movimientos and Inicio refresh too. */
+function useInvalidateAccountsAndMovements() {
+  const queryClient = useQueryClient()
+  const invalidateAccounts = useInvalidateAccounts()
+  const { user } = useAuth()
+  return () =>
+    Promise.all([
+      invalidateAccounts(),
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all(user?.id) }),
+    ])
+}
+
 export function useCreateAccount() {
-  const invalidate = useInvalidateAccounts()
+  const invalidate = useInvalidateAccountsAndMovements()
   return useMutation({
-    mutationFn: (values: AccountFormValues) => createAccount(values),
+    mutationFn: ({ values, origin }: { values: AccountFormValues; origin?: OpeningOrigin }) =>
+      createAccount(values, origin),
+    onSuccess: invalidate,
+  })
+}
+
+/** Classifies the starting balance of an existing account. Balance stays; the movement appears in Actividad. */
+export function useClassifyOpeningBalance() {
+  const invalidate = useInvalidateAccountsAndMovements()
+  return useMutation({
+    mutationFn: ({ id, origin }: { id: string; origin: OpeningOrigin }) =>
+      classifyOpeningBalance(id, origin),
     onSuccess: invalidate,
   })
 }
