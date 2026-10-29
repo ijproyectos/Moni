@@ -3,6 +3,15 @@ import { MemoryRouter } from 'react-router'
 import type { MonthSummary } from '../domain/monthSummary'
 import { HomeScreen } from './HomeScreen'
 
+// HomeScreen is presentational; the budget and ants hooks need a query client, so stub them here.
+const budgetStatus = vi.hoisted(() => ({ data: [] as unknown[] }))
+vi.mock('@/features/budgets/api/useBudgets', () => ({
+  useBudgetStatus: () => ({ data: budgetStatus.data }),
+}))
+vi.mock('@/features/insights/api/useAnts', () => ({
+  useAnts: () => ({ data: { monthTotalCents: 1_200_000 } }),
+}))
+
 const empty: MonthSummary = {
   incomeCents: 0,
   expenseCents: 0,
@@ -55,6 +64,10 @@ function renderHome(summary: MonthSummary) {
 }
 
 describe('HomeScreen', () => {
+  afterEach(() => {
+    budgetStatus.data = []
+  })
+
   it('shows a friendly insight and an empty state without data', () => {
     renderHome(empty)
     expect(screen.getByText(/todavía no cargaste gastos este mes/)).toBeInTheDocument()
@@ -100,5 +113,35 @@ describe('HomeScreen', () => {
     expect(
       screen.queryByRole('link', { name: /Restaurante|Gastos compartidos/ }),
     ).not.toBeInTheDocument()
+  })
+
+  it('shows the real ants total of the month in the shortcut', () => {
+    renderHome(withData)
+    expect(screen.getByRole('link', { name: /Hormigas/ })).toHaveTextContent('$12.000')
+    expect(screen.getByRole('link', { name: /Hormigas/ })).toHaveTextContent('este mes')
+  })
+
+  it('warns about budgets at 80% or more and stays quiet otherwise', () => {
+    renderHome(withData)
+    expect(screen.queryByText('Ojo con tus límites')).not.toBeInTheDocument()
+
+    budgetStatus.data = [
+      {
+        budgetId: 'b1',
+        categoryId: 'a',
+        name: 'Súper',
+        color: '#064735',
+        icon: 'ShoppingCart',
+        amountCents: 3_000_000,
+        spentCents: 3_824_000,
+        remainingCents: -824_000,
+        percent: 127.5,
+        state: 'over',
+      },
+    ]
+    renderHome(withData)
+    expect(screen.getByText('Ojo con tus límites')).toBeInTheDocument()
+    expect(screen.getByText('Te pasaste $8.240 en Súper')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver límites' })).toHaveAttribute('href', '/categorias')
   })
 })

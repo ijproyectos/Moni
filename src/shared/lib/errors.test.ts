@@ -16,8 +16,22 @@ describe('toUserMessage', () => {
   })
 
   it('translates join throttling and the uniform invite error', () => {
-    expect(toUserMessage({ code: '54000', message: 'too_many_attempts' })).toMatch(/Demasiados intentos/)
+    expect(toUserMessage({ code: '54000', message: 'too_many_attempts' })).toMatch(
+      /Demasiados intentos/,
+    )
     expect(toUserMessage(new Error('invite_invalid'))).toMatch(/no es válido/)
+  })
+
+  it('translates budget and period errors', () => {
+    expect(toUserMessage({ code: '22023', message: 'invalid_period' })).toMatch(/400 días/)
+    expect(
+      toUserMessage({
+        code: '23505',
+        message:
+          'duplicate key value violates unique constraint "budgets_owner_category_active_key"',
+      }),
+    ).toMatch(/ya tiene un límite/)
+    expect(toUserMessage({ code: '23514', message: 'category_archived' })).toMatch(/archivada/)
   })
 
   it('falls back for unknown errors', () => {

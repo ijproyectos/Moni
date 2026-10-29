@@ -7,8 +7,16 @@ import type { CategoryKind } from '@/shared/lib/database.types'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { useMonthSummary } from '@/features/dashboard/api/useMonthSummary'
-import { setBudget, useBudgets } from '@/features/budgets/mock/budgetsStore'
-import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
+import {
+  useArchiveBudget,
+  useBudgetStatus,
+  useCreateBudget,
+  useUpdateBudget,
+} from '@/features/budgets/api/useBudgets'
+import { budgetByCategory, parseBudgetLimit } from '@/features/budgets/domain/budget'
+import { BudgetBadge } from '@/features/budgets/ui/BudgetBadge'
+import { BudgetSuggestions } from '@/features/budgets/ui/BudgetSuggestions'
+import { formatAmountInput } from '@/shared/lib/amountInput'
 import { formatArs } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
 import { HeaderAddButton } from '@/shared/ui/kit'
@@ -58,25 +66,34 @@ export function CategoriesPage() {
   const spentById = new Map(
     (month.data?.byCategory ?? []).map((c) => [c.categoryId, c.amountCents]),
   )
-  const budgets = useBudgets()
+  const budgetStatus = useBudgetStatus(todayIso())
+  const budgetsByCategory = budgetByCategory(budgetStatus.data ?? [])
+  const createBudget = useCreateBudget()
+  const updateBudget = useUpdateBudget()
+  const archiveBudget = useArchiveBudget()
   const [limitText, setLimitText] = useState('')
 
   function startEditing(category?: Category) {
     setSubmitError(null)
-    const limit = category ? budgets[category.id] : undefined
+    const limit = category ? budgetsByCategory.get(category.id)?.amountCents : undefined
     setLimitText(limit ? formatAmountInput(limit) : '')
     setEditing(category ? { category } : {})
   }
 
   async function save(values: CategoryFormValues) {
     setSubmitError(null)
+    const limit = parseBudgetLimit(limitText)
+    if (editing?.category && !limit.ok) {
+      setSubmitError('Ingresá un límite mayor a cero, o dejalo vacío para no ponerlo.')
+      return
+    }
     try {
       if (editing?.category) {
         await update.mutateAsync({
           id: editing.category.id,
           values: { name: values.name, icon: values.icon, color: values.color },
         })
-        setBudget(editing.category.id, parseAmountInput(limitText))
+        if (limit.ok) await saveLimit(editing.category.id, limit.cents)
       } else {
         await create.mutateAsync({ ...values, kind })
       }
@@ -86,6 +103,18 @@ export function CategoriesPage() {
       setEditing(null)
     } catch (e) {
       setSubmitError(toUserMessage(e))
+    }
+  }
+
+  /** Creates, changes or archives the category's monthly limit so it matches what was typed. */
+  async function saveLimit(categoryId: string, cents: number | null) {
+    const current = budgetsByCategory.get(categoryId)
+    if (!current) {
+      if (cents !== null) await createBudget.mutateAsync({ categoryId, amountCents: cents })
+    } else if (cents === null) {
+      await archiveBudget.mutateAsync({ id: current.budgetId })
+    } else if (cents !== current.amountCents) {
+      await updateBudget.mutateAsync({ id: current.budgetId, amountCents: cents })
     }
   }
 
@@ -139,6 +168,7 @@ export function CategoriesPage() {
         <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
           {list.map((category) => {
             const spent = spentById.get(category.id) ?? 0
+            const budget = budgetsByCategory.get(category.id)
             return (
               <li key={category.id}>
                 <button
@@ -163,6 +193,7 @@ export function CategoriesPage() {
                           ? 'Sin gastos'
                           : 'Sin ingresos'}
                     </span>
+                    {budget && <BudgetBadge budget={budget} className="mt-1" />}
                   </span>
                   <Pencil aria-hidden="true" className="size-5 text-forest" strokeWidth={2} />
                 </button>
@@ -171,6 +202,8 @@ export function CategoriesPage() {
           })}
         </ul>
       )}
+
+      {kind === 'expense' && <BudgetSuggestions />}
 
       <p className="px-1 text-[15px] leading-5 text-text-muted">
         Tocá una categoría para cambiar el nombre, el ícono, el color o ponerle un límite.
@@ -189,7 +222,13 @@ export function CategoriesPage() {
                 ? 'Ya tenés una categoría con ese nombre.'
                 : null
             }
-            isSubmitting={create.isPending || update.isPending}
+            isSubmitting={
+              create.isPending ||
+              update.isPending ||
+              createBudget.isPending ||
+              updateBudget.isPending ||
+              archiveBudget.isPending
+            }
             submitError={submitError}
             onSubmit={(values) => void save(values)}
             onArchive={editing.category ? () => setArchiving(editing.category ?? null) : undefined}

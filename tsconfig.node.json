@@ -15,5 +15,9 @@
     "noUnusedParameters": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts"]
+  "include": [
+    "vite.config.ts",
+    "supabase/functions/parse-movements/lib.ts",
+    "supabase/functions/parse-movements/lib.test.ts"
+  ]
 }

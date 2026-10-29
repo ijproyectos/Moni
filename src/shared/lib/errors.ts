@@ -4,6 +4,7 @@ const MESSAGES: Record<string, string> = {
   account_not_found: 'La cuenta elegida no existe.',
   category_not_found: 'La categoría elegida no existe.',
   category_kind_mismatch: 'La categoría no corresponde al tipo de movimiento.',
+  category_archived: 'Esa categoría está archivada. Elegí otra.',
   account_archived: 'No podés cargar movimientos en una cuenta archivada.',
   voided_row_is_immutable: 'Este movimiento está anulado y ya no se puede modificar.',
   not_authenticated: 'Tu sesión venció. Volvé a ingresar.',
@@ -37,6 +38,8 @@ const MESSAGES: Record<string, string> = {
   invalid_settlement_target: 'Elegí a otra persona del grupo para saldar.',
   invalid_note: 'La nota puede tener hasta 200 caracteres.',
   not_settlement_receiver: 'Solo quien recibe el pago puede registrarlo.',
+  invalid_period: 'El período elegido no es válido. Probá con un rango de hasta 400 días.',
+  budgets_owner_category_active_key: 'Esa categoría ya tiene un límite por mes.',
   invite_code_unavailable: 'No pudimos generar el código. Probá de nuevo.',
   profile_not_found: 'No encontramos tu perfil. Cerrá sesión y volvé a entrar.',
   no_categories: 'Elegí al menos una categoría.',
@@ -46,14 +49,19 @@ const MESSAGES: Record<string, string> = {
   invalid_custom_category: 'Revisá las categorías que creaste: nombre, ícono y color.',
   invalid_custom_categories: 'Podés crear hasta 20 categorías en este paso.',
   invalid_installments: 'Elegí entre 2 y 60 cuotas.',
-  invalid_installment_number: 'La cuota en la que vas tiene que estar entre 1 y el total de cuotas.',
+  invalid_installment_number:
+    'La cuota en la que vas tiene que estar entre 1 y el total de cuotas.',
   not_a_credit_card: 'Elegí una tarjeta de crédito.',
   card_not_configured: 'Cargá el día de cierre y de vencimiento de la tarjeta para usar cuotas.',
-  invalid_statement: 'Ese resumen no es válido para esta tarjeta. Elegí uno cercano a la fecha de compra.',
+  invalid_statement:
+    'Ese resumen no es válido para esta tarjeta. Elegí uno cercano a la fecha de compra.',
   invalid_date: 'La fecha de compra no es válida.',
   plan_not_found: 'La compra en cuotas no existe o ya está anulada.',
   installment_managed_by_plan: 'Las cuotas se anulan desde la compra completa.',
-  category_archived: 'La categoría elegida está archivada.',
+  ai_quota_exceeded:
+    'Llegaste al límite de cargas con Moni por hoy. Probá mañana o cargalo a mano.',
+  ai_unavailable: 'Moni no pudo entender eso ahora. Probá de nuevo en un ratito o cargalo a mano.',
+  invalid_request: 'No pudimos entender ese texto. Probá con algo más corto (hasta 500 letras).',
 }
 
 const CONSTRAINT_MESSAGES: Record<string, string> = {

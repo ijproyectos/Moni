@@ -53,3 +53,14 @@ export function addDays(date: IsoDate, days: number): IsoDate {
   const [y, m, d] = date.split('-').map(Number) as [number, number, number]
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
 }
+
+/** Today's calendar date in Argentina (UTC-3, no DST), regardless of the device timezone. */
+export function argentinaTodayIso(now: Date = new Date()): IsoDate {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now)
+  return parts
+}

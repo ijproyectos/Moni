@@ -21,7 +21,10 @@ import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { useUpdateProfile } from '@/features/auth/api/useUpdateProfile'
 import { displayNameSchema, firstName, initialOf } from '@/features/auth/domain/profile'
-import { updateWeeklyDigest, useWeeklyDigestSettings } from '@/features/insights/mock/antsData'
+import {
+  updateWeeklyDigest,
+  useWeeklyDigestSettings,
+} from '@/features/insights/mock/digestSettings'
 import { useUpdateGoals } from '@/features/onboarding/api/useGoals'
 import {
   GOAL_OPTIONS,

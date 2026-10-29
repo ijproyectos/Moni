@@ -311,6 +311,37 @@ export interface Database {
         Update: never
         Relationships: []
       }
+      budgets: {
+        Row: {
+          id: string
+          owner_id: string
+          category_id: string
+          amount: number
+          archived_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          amount: number
+        }
+        Update: {
+          amount?: number
+          archived_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_usage: {
+        Row: {
+          id: string
+          owner_id: string
+          feature: string
+          created_at: string
+        }
+        Insert: Record<never, never>
+        Update: Record<never, never>
+        Relationships: []
+      }
     }
     Views: {
       account_balances: {
@@ -372,6 +403,26 @@ export interface Database {
       get_month_summary: {
         Args: { p_month: string }
         Returns: Json
+      }
+      get_period_summary: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
+      get_ant_expenses: {
+        Args: { p_month: string; p_max_amount?: number | null }
+        Returns: Json
+      }
+      get_budget_status: {
+        Args: { p_month: string }
+        Returns: Json
+      }
+      suggest_budgets: {
+        Args: Record<never, never>
+        Returns: Json
+      }
+      consume_ai_quota: {
+        Args: { p_feature: string; p_daily_limit?: number }
+        Returns: number
       }
       create_group: {
         Args: { p_name: string; p_kind: GroupKind }
@@ -473,6 +524,7 @@ export type CategoryTemplate = Database['public']['Tables']['category_templates'
 export type Category = Database['public']['Tables']['categories']['Row']
 export type Account = Database['public']['Tables']['accounts']['Row']
 export type Transaction = Database['public']['Tables']['transactions']['Row']
+export type Budget = Database['public']['Tables']['budgets']['Row']
 export type Transfer = Database['public']['Tables']['transfers']['Row']
 export type Group = Database['public']['Tables']['groups']['Row']
 export type GroupMemberRow = Database['public']['Tables']['group_members']['Row']

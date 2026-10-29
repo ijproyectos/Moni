@@ -1,4 +1,5 @@
 import {
+  argentinaTodayIso,
   daysInMonth,
   isIsoDate,
   monthRange,
@@ -37,5 +38,13 @@ describe('month helpers', () => {
   it('numbers weekdays from Monday', () => {
     expect(weekdayIndex('2026-10-26')).toBe(0) // Monday
     expect(weekdayIndex('2026-10-25')).toBe(6) // Sunday
+  })
+})
+
+describe('argentinaTodayIso', () => {
+  it('uses the Argentina calendar day, not the UTC one', () => {
+    // 01:30 UTC on the 29th is still the 28th at 22:30 in Buenos Aires.
+    expect(argentinaTodayIso(new Date('2026-10-29T01:30:00Z'))).toBe('2026-10-28')
+    expect(argentinaTodayIso(new Date('2026-10-29T03:00:00Z'))).toBe('2026-10-29')
   })
 })
