@@ -1,17 +1,20 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { OnboardingPage } from './OnboardingPage'
 
 const mutateAsync = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 
+vi.mock('@/features/auth/api/authContext', () => ({
+  useAuth: () => ({ user: { id: 'user-1' }, session: {}, isLoading: false }),
+}))
 vi.mock('@/features/auth/api/useProfile', () => ({
   useProfile: () => ({ data: { display_name: 'Jonatan Rios' } }),
 }))
 vi.mock('@/features/categories/api/useCategories', () => ({
-  useCreateCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCategoryTemplates: () => ({
     isError: false,
+    isLoading: false,
     data: [
       {
         slug: 'comida',
@@ -44,7 +47,7 @@ vi.mock('../api/useCompleteOnboarding', () => ({
   useCompleteOnboarding: () => ({ mutateAsync, isPending: false }),
 }))
 
-async function goToCategories() {
+function renderFlow() {
   const user = userEvent.setup()
   render(
     <MemoryRouter initialEntries={['/onboarding']}>
@@ -54,41 +57,76 @@ async function goToCategories() {
       </Routes>
     </MemoryRouter>,
   )
+  return user
+}
+
+async function goToCategories() {
+  const user = renderFlow()
   await user.click(screen.getByRole('button', { name: /Saber en qué se me va la plata/ }))
   await user.click(screen.getByRole('button', { name: 'Continuar' }))
   expect(
     screen.getByRole('heading', { name: 'Jonatan, así te va a ayudar Moni' }),
   ).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Saltar' }))
+  await user.click(screen.getByRole('checkbox', { name: /También uso dólares/ }))
   await user.click(screen.getByRole('button', { name: 'Continuar' }))
   return user
 }
 
 describe('OnboardingPage', () => {
-  beforeEach(() => mutateAsync.mockClear())
+  beforeEach(() => {
+    mutateAsync.mockClear()
+    window.sessionStorage.clear()
+  })
 
-  it('shows the selected category count and updates it as chips are toggled', async () => {
+  it('shows the selected category count and blocks continuing without categories', async () => {
     const user = await goToCategories()
     expect(screen.getByRole('button', { name: 'Continuar · 3 elegidas' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Comida' }))
     expect(screen.getByRole('button', { name: 'Continuar · 2 elegidas' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Seleccionar todas' }))
-    expect(screen.getByRole('button', { name: 'Continuar · 3 elegidas' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Quitar todas' }))
     expect(screen.getByRole('button', { name: 'Continuar · 0 elegidas' })).toBeDisabled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Elegí al menos una categoría')
   })
 
-  it('completes onboarding with goals and chosen slugs, then goes home', async () => {
+  it('goes back to the previous step keeping the answers', async () => {
+    const user = await goToCategories()
+    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    expect(screen.getByRole('checkbox', { name: /También uso dólares/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+  })
+
+  it('saves every answer at the end and goes home', async () => {
     const user = await goToCategories()
     await user.click(screen.getByRole('button', { name: 'Sueldo' }))
-    await user.click(screen.getByRole('button', { name: 'Continuar · 2 elegidas' }))
+    await user.click(screen.getByRole('button', { name: /Crear/ }))
+    await user.type(screen.getByLabelText('Nombre'), 'Gimnasio')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar · 3 elegidas' }))
     await user.click(screen.getByRole('button', { name: 'Más tarde' }))
     expect(mutateAsync).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Ahora no' }))
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalled())
     expect(mutateAsync).toHaveBeenCalledWith({
       goals: ['track_spending'],
       templateSlugs: ['comida', 'super'],
+      customCategories: [expect.objectContaining({ name: 'Gimnasio', kind: 'expense' })],
+      secondaryCurrency: 'USD',
+      notificationsOptIn: false,
     })
     expect(await screen.findByText('home')).toBeInTheDocument()
+  })
+
+  it('keeps the person on the last screen with an error when saving fails', async () => {
+    mutateAsync.mockRejectedValueOnce(new Error('offline'))
+    const user = await goToCategories()
+    await user.click(screen.getByRole('button', { name: 'Continuar · 3 elegidas' }))
+    await user.click(screen.getByRole('button', { name: 'Más tarde' }))
+    await user.click(screen.getByRole('button', { name: 'Ahora no' }))
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(screen.queryByText('home')).not.toBeInTheDocument()
   })
 })

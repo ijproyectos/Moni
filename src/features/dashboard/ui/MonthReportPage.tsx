@@ -12,7 +12,12 @@ import { Panel } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useMonthSummary } from '../api/useMonthSummary'
 
-const ACCOUNT_ICONS = { bank: CreditCard, wallet: WalletCards, cash: Banknote }
+const ACCOUNT_ICONS = {
+  bank: CreditCard,
+  wallet: WalletCards,
+  cash: Banknote,
+  credit_card: CreditCard,
+}
 
 // Screen 034 — Este mes (real data: month summary + accounts).
 export function MonthReportPage() {

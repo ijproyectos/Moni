@@ -6,16 +6,17 @@ import { todayIso, type IsoDate } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
 import { Card } from '@/shared/ui/Card'
-import { CategoryIconCircle } from '@/shared/ui/IconCircle'
+import { CategoryIconCircle, IconCircle } from '@/shared/ui/IconCircle'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { MovementRow } from '@/shared/ui/MovementRow'
-import { ShoppingBag, Target } from 'lucide-react'
+import { Scale, ShoppingBag, Target } from 'lucide-react'
 import { progress, percentLabel } from '@/features/goals/domain/goals'
 import { useGoals } from '@/features/goals/mock/goalsStore'
 import { ANTS_WEEK } from '@/features/insights/mock/antsData'
 import { formatArs } from '@/shared/lib/money'
 import { MoniGlyph, ProgressBar } from '@/shared/ui/kit'
 import type { MonthSummary } from '../domain/monthSummary'
+import { addsToBalance, isAdjustment } from '@/features/transactions/domain/transaction'
 import { buildInsight } from '../domain/insight'
 import { CategoryDonut } from './CategoryDonut'
 import { HomeHeader } from './HomeHeader'
@@ -27,6 +28,8 @@ interface HomeScreenProps {
   onMonthChange: (month: IsoDate) => void
   initial: string
   onAddMovement: () => void
+  /** Shortcut cards chosen by the person's goals (all shown by default). */
+  shortcuts?: { savings: boolean; ants: boolean }
 }
 
 export function HomeScreen({
@@ -36,6 +39,7 @@ export function HomeScreen({
   onMonthChange,
   initial,
   onAddMovement,
+  shortcuts = { savings: true, ants: true },
 }: HomeScreenProps) {
   const today = todayIso()
   const hasData =
@@ -99,7 +103,7 @@ export function HomeScreen({
               )}
             </Card>
 
-            <HomeShortcuts />
+            <HomeShortcuts showSavings={shortcuts.savings} showAnts={shortcuts.ants} />
 
             {summary.recent.length > 0 && (
               <section aria-labelledby="recent-title">
@@ -117,15 +121,19 @@ export function HomeScreen({
                 <Card className="py-1">
                   <ul className="divide-y divide-cream">
                     {summary.recent.map((m) => {
-                      const isIncome = m.kind === 'income'
+                      const isIncome = addsToBalance(m.kind)
                       return (
                         <li key={m.id}>
                           <MovementRow
                             leading={
-                              <CategoryIconCircle
-                                iconName={m.categoryIcon}
-                                color={m.categoryColor}
-                              />
+                              isAdjustment(m.kind) ? (
+                                <IconCircle icon={Scale} color="#064735" />
+                              ) : (
+                                <CategoryIconCircle
+                                  iconName={m.categoryIcon}
+                                  color={m.categoryColor}
+                                />
+                              )
                             }
                             title={m.note?.trim() || m.categoryName || 'Movimiento'}
                             subtitle={`${formatRelativeDay(m.occurredOn, today)} · ${m.categoryName ?? m.accountName}`}
@@ -151,32 +159,37 @@ export function HomeScreen({
   )
 }
 
-/** Metas and Hormigas shortcut cards (simulated features). */
-function HomeShortcuts() {
+/** Metas and Hormigas shortcut cards (simulated features), shown according to the person's goals. */
+function HomeShortcuts({ showSavings, showAnts }: { showSavings: boolean; showAnts: boolean }) {
   const goals = useGoals().filter((g) => !g.shared)
   const saved = goals.reduce((sum, g) => sum + g.savedCents, 0)
   const target = goals.reduce((sum, g) => sum + g.targetCents, 0)
   const value = target > 0 ? progress({ savedCents: saved, targetCents: target }) : 0
+  if (!showSavings && !showAnts) return null
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <Link to="/metas" className="rounded-[24px] border border-cream bg-white p-4">
-        <span className="flex items-center gap-2 text-[18px] font-extrabold">
-          <Target aria-hidden="true" className="size-5" strokeWidth={2.25} /> Metas
-        </span>
-        <ProgressBar value={value} className="mt-3" label="Avance de tus metas" />
-        <span className="mt-1.5 block text-[15px] text-text-muted">
-          {percentLabel(value)} juntado
-        </span>
-      </Link>
-      <Link to="/hormigas" className="rounded-[24px] border border-cream bg-white p-4">
-        <span className="flex items-center gap-2 text-[18px] font-extrabold">
-          <ShoppingBag aria-hidden="true" className="size-5" strokeWidth={2.25} /> Hormigas
-        </span>
-        <span className="mt-2 block font-display text-[22px] font-extrabold leading-7">
-          {formatArs(ANTS_WEEK.totalCents)}
-        </span>
-        <span className="block text-[15px] text-text-muted">esta semana</span>
-      </Link>
+    <div className={showSavings && showAnts ? 'grid grid-cols-2 gap-3' : 'grid gap-3'}>
+      {showSavings && (
+        <Link to="/metas" className="rounded-[24px] border border-cream bg-white p-4">
+          <span className="flex items-center gap-2 text-[18px] font-extrabold">
+            <Target aria-hidden="true" className="size-5" strokeWidth={2.25} /> Metas
+          </span>
+          <ProgressBar value={value} className="mt-3" label="Avance de tus metas" />
+          <span className="mt-1.5 block text-[15px] text-text-muted">
+            {percentLabel(value)} juntado
+          </span>
+        </Link>
+      )}
+      {showAnts && (
+        <Link to="/hormigas" className="rounded-[24px] border border-cream bg-white p-4">
+          <span className="flex items-center gap-2 text-[18px] font-extrabold">
+            <ShoppingBag aria-hidden="true" className="size-5" strokeWidth={2.25} /> Hormigas
+          </span>
+          <span className="mt-2 block font-display text-[22px] font-extrabold leading-7">
+            {formatArs(ANTS_WEEK.totalCents)}
+          </span>
+          <span className="block text-[15px] text-text-muted">esta semana</span>
+        </Link>
+      )}
     </div>
   )
 }

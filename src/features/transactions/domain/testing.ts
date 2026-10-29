@@ -12,6 +12,10 @@ export const makeTransaction = (overrides: Partial<Transaction> = {}): Transacti
   status: 'posted',
   voidedAt: null,
   sharedExpenseId: null,
+  statementClosingOn: null,
+  installmentPlanId: null,
+  installmentNumber: null,
+  installmentsTotal: null,
   createdAt: '2026-10-10T12:00:00Z',
   ...overrides,
 })

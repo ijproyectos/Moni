@@ -8,3 +8,6 @@ coverage
 !.env.example
 supabase/.temp
 supabase/.branches
+
+# Local Netlify folder
+.netlify

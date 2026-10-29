@@ -38,6 +38,28 @@ const MESSAGES: Record<string, string> = {
   invalid_note: 'La nota puede tener hasta 200 caracteres.',
   not_settlement_receiver: 'Solo quien recibe el pago puede registrarlo.',
   invite_code_unavailable: 'No pudimos generar el código. Probá de nuevo.',
+  profile_not_found: 'No encontramos tu perfil. Cerrá sesión y volvé a entrar.',
+  no_categories: 'Elegí al menos una categoría.',
+  too_many_goals: 'Elegí hasta 10 objetivos.',
+  invalid_goal: 'Revisá los objetivos elegidos.',
+  invalid_currency: 'Esa moneda todavía no está disponible.',
+  invalid_custom_category: 'Revisá las categorías que creaste: nombre, ícono y color.',
+  invalid_custom_categories: 'Podés crear hasta 20 categorías en este paso.',
+  invalid_installments: 'Elegí entre 2 y 60 cuotas.',
+  invalid_installment_number: 'La cuota en la que vas tiene que estar entre 1 y el total de cuotas.',
+  not_a_credit_card: 'Elegí una tarjeta de crédito.',
+  card_not_configured: 'Cargá el día de cierre y de vencimiento de la tarjeta para usar cuotas.',
+  invalid_statement: 'Ese resumen no es válido para esta tarjeta. Elegí uno cercano a la fecha de compra.',
+  invalid_date: 'La fecha de compra no es válida.',
+  plan_not_found: 'La compra en cuotas no existe o ya está anulada.',
+  installment_managed_by_plan: 'Las cuotas se anulan desde la compra completa.',
+  category_archived: 'La categoría elegida está archivada.',
+}
+
+const CONSTRAINT_MESSAGES: Record<string, string> = {
+  accounts_opening_balance_check:
+    'El saldo inicial no es válido para este tipo de cuenta: una tarjeta empieza con deuda y las demás con saldo cero o más.',
+  accounts_kind_check: 'Elegí un tipo de cuenta válido.',
 }
 
 const FALLBACK = 'Algo salió mal. Probá de nuevo en un rato.'
@@ -48,6 +70,10 @@ export function toUserMessage(error: unknown): string {
   if (typeof message === 'string') {
     const known = Object.keys(MESSAGES).find((key) => message.includes(key))
     if (known) return MESSAGES[known] ?? FALLBACK
+  }
+  if (typeof message === 'string') {
+    const constraint = Object.keys(CONSTRAINT_MESSAGES).find((key) => message.includes(key))
+    if (constraint) return CONSTRAINT_MESSAGES[constraint] ?? FALLBACK
   }
   if (code === '23505') return 'Ya existe un elemento con ese nombre.'
   if (code === '42501') return 'No tenés permiso para hacer eso.'

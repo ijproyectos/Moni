@@ -18,6 +18,12 @@ export interface Transaction {
   status: RowStatus
   voidedAt: string | null
   sharedExpenseId: string | null
+  /** Statement of a card charge (its closing date); null for anything else. */
+  statementClosingOn: IsoDate | null
+  /** Installment of a purchase in cuotas: plan, number and total. All null for ordinary movements. */
+  installmentPlanId: string | null
+  installmentNumber: number | null
+  installmentsTotal: number | null
   createdAt: string
 }
 
@@ -89,4 +95,25 @@ export function countsInStatistics(tx: Pick<Transaction, 'kind' | 'status'>): bo
 export function signedAmount(tx: Transaction): Cents {
   if (!countsInStatistics(tx)) return 0
   return tx.kind === 'income' ? tx.amountCents : -tx.amountCents
+}
+
+/** Kinds that put money into the account; every other kind takes it out. Same rule as `account_balances`. */
+export function addsToBalance(kind: string): boolean {
+  return kind === 'income' || kind === 'settlement_in' || kind === 'adjustment_in'
+}
+
+/** Corrections of an account balance. They move the balance but are never income or expense. */
+export function isAdjustment(kind: string): boolean {
+  return kind === 'adjustment_in' || kind === 'adjustment_out'
+}
+
+/**
+ * A card installment whose statement has not closed yet: part of the debt and of its month's report,
+ * but not an expense that already happened.
+ */
+export function isScheduled(
+  tx: Pick<Transaction, 'installmentPlanId' | 'occurredOn' | 'status'>,
+  today: IsoDate,
+): boolean {
+  return tx.installmentPlanId !== null && tx.status === 'posted' && tx.occurredOn > today
 }

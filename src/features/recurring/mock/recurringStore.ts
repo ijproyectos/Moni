@@ -1,7 +1,6 @@
-// Simulated subscriptions and installment purchases (Fijos y cuotas). In-memory only.
+// Simulated subscriptions (Fijos y cuotas). In-memory only. Installment purchases are real: see features/cards.
 import { createMockStore, mockId, useMockStore } from '@/shared/lib/mockStore'
 import type { Cents } from '@/shared/lib/money'
-import type { IsoDate } from '@/shared/lib/month'
 
 export interface Subscription {
   id: string
@@ -16,21 +15,8 @@ export interface Subscription {
   tint: string
 }
 
-export interface InstallmentPurchase {
-  id: string
-  name: string
-  method: string
-  installmentCents: Cents
-  total: number
-  paid: number
-  endDate: IsoDate
-  tint: string
-  color: string
-}
-
 interface RecurringState {
   subscriptions: Subscription[]
-  installments: InstallmentPurchase[]
   /** A charge Moni "found" in the movements and suggests adding. */
   suggestion: { name: string; monthlyCents: Cents; billingDay: number } | null
 }
@@ -65,30 +51,6 @@ const store = createMockStore<RecurringState>({
     sub('iCloud', 'Almacenamiento', 2_900, 3, 'Visa', '#6b4fb8', '#e7defa'),
     sub('Gimnasio', 'Deporte', 15_000, 5, 'Cuenta sueldo', '#8a5a00', '#fdeab8'),
   ],
-  installments: [
-    {
-      id: 'celu',
-      name: 'Celular',
-      method: 'Visa',
-      installmentCents: 30_000_00,
-      total: 12,
-      paid: 6,
-      endDate: '2027-04-10',
-      tint: '#d9ebe4',
-      color: '#2f7d6f',
-    },
-    {
-      id: 'zapas',
-      name: 'Zapatillas',
-      method: 'Visa',
-      installmentCents: 12_000_00,
-      total: 3,
-      paid: 2,
-      endDate: '2026-11-10',
-      tint: '#fdeab8',
-      color: '#8a5a00',
-    },
-  ],
   suggestion: { name: 'Disney+', monthlyCents: 6_900_00, billingDay: 11 },
 })
 
@@ -112,16 +74,6 @@ export function addSubscription(s: Omit<Subscription, 'id' | 'color' | 'tint'>) 
       suggestion: st.suggestion?.name === s.name ? null : st.suggestion,
     }
   })
-}
-
-export function addInstallmentPurchase(p: Omit<InstallmentPurchase, 'id' | 'color' | 'tint'>) {
-  store.set((st) => ({
-    ...st,
-    installments: [
-      ...st.installments,
-      { ...p, id: mockId('cuota'), tint: '#e3f2cf', color: '#2f7d1f' },
-    ],
-  }))
 }
 
 export function dismissSuggestion() {

@@ -1,30 +1,19 @@
-import { CalendarDays, CreditCard, ShoppingBag } from 'lucide-react'
+import { CalendarDays, CreditCard } from 'lucide-react'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
-import { formatMonthShortYear, monthNameOf } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
-import { addMonths } from '@/features/goals/domain/goals'
-import { todayIso } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
-import {
-  ChoiceChip,
-  HeaderAddButton,
-  IconTile,
-  MoniGlyph,
-  OptionRow,
-  Page,
-  Panel,
-  ProgressBar,
-  SectionLabel,
-  Toggle,
-} from '@/shared/ui/kit'
+import { ChoiceChip, HeaderAddButton, Page, SectionLabel, Toggle } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
-import { addInstallmentPurchase, addSubscription, useRecurring } from '../mock/recurringStore'
+import { useInstallmentViews } from '@/features/cards/api/useInstallmentViews'
+import { InstallmentsPanel } from '@/features/cards/ui/InstallmentsPanel'
+import { NewInstallmentSheet } from '@/features/cards/ui/NewInstallmentSheet'
+import { addSubscription, useRecurring } from '../mock/recurringStore'
 
 const METHODS = ['Visa', 'Cuenta sueldo', 'Billetera']
 
@@ -45,12 +34,7 @@ export function RecurringPage() {
     (s, x) => s + (x.period === 'yearly' ? Math.round(x.monthlyCents / 12) : x.monthlyCents),
     0,
   )
-  const monthlyCuotas = data.installments.reduce((s, x) => s + x.installmentCents, 0)
-  const leftCuotas = data.installments.reduce(
-    (s, x) => s + x.installmentCents * (x.total - x.paid),
-    0,
-  )
-  const [first, second] = [...data.installments].sort((a, b) => a.endDate.localeCompare(b.endDate))
+  const { monthlyCents: monthlyCuotas } = useInstallmentViews()
 
   return (
     <Page>
@@ -135,67 +119,7 @@ export function RecurringPage() {
           </ul>
         </>
       ) : (
-        <>
-          <section className="rounded-[28px] bg-forest p-5 text-cream">
-            <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
-              Pagás en cuotas
-            </p>
-            <p className="flex items-baseline gap-2">
-              <span className="font-display text-[44px] font-extrabold leading-[52px]">
-                {formatArs(monthlyCuotas)}
-              </span>
-              <span className="text-[17px] text-text-muted-on-dark">por mes</span>
-            </p>
-            <p className="text-[16px] text-text-muted-on-dark">
-              En total te quedan {formatArs(leftCuotas)} por pagar
-            </p>
-          </section>
-          {data.installments.map((c) => (
-            <Panel key={c.id}>
-              <div className="flex items-center gap-3">
-                <IconTile icon={ShoppingBag} bg={c.tint} color={c.color} />
-                <span className="flex-1">
-                  <span className="block text-[19px] font-extrabold">{c.name}</span>
-                  <span className="block text-[15px] text-text-muted">
-                    {c.method} · termina en {formatMonthShortYear(c.endDate).replace(' de ', ' ')}
-                  </span>
-                </span>
-                <span className="text-right">
-                  <span className="block text-[19px] font-extrabold">
-                    {formatArs(c.installmentCents)}
-                  </span>
-                  <span className="block text-[14px] text-text-muted">por mes</span>
-                </span>
-              </div>
-              <ProgressBar value={c.paid / c.total} className="mt-3" />
-              <div className="mt-2 flex justify-between text-[15px] font-extrabold">
-                <span>
-                  Cuota {c.paid} de {c.total}
-                </span>
-                <span>Faltan {formatArs(c.installmentCents * (c.total - c.paid))}</span>
-              </div>
-            </Panel>
-          ))}
-          {first && second && (
-            <Panel className="flex items-start gap-4">
-              <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40">
-                <MoniGlyph className="size-9" />
-              </span>
-              <p className="text-[16px] leading-6">
-                <strong className="font-extrabold">Moni dice:</strong> en{' '}
-                {monthNameOf(first.endDate)} dejás de pagar {first.name.toLowerCase()} y liberás{' '}
-                {formatArs(first.installmentCents)} por mes. En {monthNameOf(second.endDate)},{' '}
-                {formatArs(second.installmentCents)} más.
-              </p>
-            </Panel>
-          )}
-          <OptionRow
-            to="/metas/cuotas"
-            icon={<IconTile icon={CreditCard} bg="#fdeab8" />}
-            title="¿Vas a comprar algo en cuotas?"
-            subtitle="Compará si te conviene"
-          />
-        </>
+        <InstallmentsPanel />
       )}
 
       {sheet?.kind === 'sub' && (
@@ -313,98 +237,6 @@ function NewSubscriptionSheet({ preset, onClose }: { preset?: string; onClose: (
               remind,
             })
             toast.show(`${name} agregada`)
-            onClose()
-          }}
-        >
-          Guardar
-        </Button>
-      </div>
-    </BottomSheet>
-  )
-}
-
-// Screen 077 — Compra en cuotas.
-function NewInstallmentSheet({ monthlyNow, onClose }: { monthlyNow: number; onClose: () => void }) {
-  const toast = useToast()
-  const [name, setName] = useState('')
-  const [text, setText] = useState('')
-  const [count, setCount] = useState(12)
-  const [paid, setPaid] = useState(1)
-  const [method, setMethod] = useState('Visa')
-  const total = parseAmountInput(text) ?? 0
-  const per = count > 0 ? Math.round(total / count) : 0
-  const end = addMonths(todayIso(), count - paid + 1)
-
-  return (
-    <BottomSheet title="Compra en cuotas" onClose={onClose}>
-      <div className="flex flex-col gap-3">
-        <SectionLabel>¿Qué compraste?</SectionLabel>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Ej: Heladera"
-          aria-label="Qué compraste"
-          className="h-14 rounded-[18px] border border-sand bg-white px-4 text-[17px]"
-        />
-        <SectionLabel>Total de la compra</SectionLabel>
-        <AmountInput
-          aria-label="Total de la compra"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        <SectionLabel>¿En cuántas cuotas?</SectionLabel>
-        <div className="flex flex-wrap gap-2">
-          {[3, 6, 9, 12, 18].map((c) => (
-            <ChoiceChip
-              key={c}
-              selected={c === count}
-              onClick={() => setCount(c)}
-              className="size-12 px-0"
-            >
-              {c}
-            </ChoiceChip>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setPaid((p) => (p % count) + 1)}
-            className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-white px-4 text-[17px] font-extrabold"
-          >
-            <CalendarDays aria-hidden="true" className="size-5" /> Voy en la {paid}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMethod((m) => cycle(METHODS, m))}
-            className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-white px-4 text-[17px] font-extrabold"
-          >
-            <CreditCard aria-hidden="true" className="size-5" /> {method}
-          </button>
-        </div>
-        {per > 0 && (
-          <div className="rounded-[22px] bg-forest p-4 text-cream">
-            <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-lime">
-              Moni calcula
-            </p>
-            <p className="font-display text-[24px] font-extrabold">{formatArs(per)} por mes</p>
-            <p className="text-[15px] leading-5 text-text-muted-on-dark">
-              Terminás de pagar en {formatMonthShortYear(end).replace(' de ', ' ')}. Tus cuotas
-              pasan a {formatArs(monthlyNow + per)} por mes.
-            </p>
-          </div>
-        )}
-        <Button
-          disabled={!name.trim() || per <= 0}
-          onClick={() => {
-            addInstallmentPurchase({
-              name: name.trim(),
-              method,
-              installmentCents: per,
-              total: count,
-              paid: paid - 1,
-              endDate: end,
-            })
-            toast.show('Compra en cuotas guardada')
             onClose()
           }}
         >

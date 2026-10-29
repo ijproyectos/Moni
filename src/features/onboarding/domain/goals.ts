@@ -30,3 +30,48 @@ export function toggleGoal(selected: readonly string[], id: string): string[] {
 export function goalsToPersist(selected: readonly string[]): string[] {
   return selected.filter((g) => g !== ALL_GOALS_ID)
 }
+
+/** Sections of the app that can be personalized. Core screens (Inicio, Actividad, cuentas, categorías) are always shown. */
+export type AppFeature =
+  'reports' | 'ants' | 'savings' | 'aguinaldo' | 'recurring' | 'groups' | 'debts' | 'trips'
+
+export const ALL_FEATURES: readonly AppFeature[] = [
+  'reports',
+  'ants',
+  'savings',
+  'aguinaldo',
+  'recurring',
+  'groups',
+  'debts',
+  'trips',
+]
+
+/** What each goal turns on. "Presupuestos y metas" serves both saving and fixed-cost control. */
+export const GOAL_FEATURES: Record<string, readonly AppFeature[]> = {
+  track_spending: ['reports', 'ants'],
+  save_monthly: ['savings', 'aguinaldo'],
+  split_expenses: ['groups', 'debts'],
+  control_recurring: ['recurring', 'savings'],
+  plan_trips: ['trips'],
+}
+
+/** Known goal ids that can be stored (the aggregate "all" option is derived). */
+export function sanitizeGoals(goals: readonly string[] | null | undefined): string[] {
+  return SPECIFIC_IDS.filter((id) => goals?.includes(id))
+}
+
+/**
+ * Sections to feature for the saved goals. Without goals (onboarding skipped) nothing is hidden,
+ * since there is nothing to personalize from.
+ */
+export function featuresForGoals(goals: readonly string[] | null | undefined): Set<AppFeature> {
+  const known = sanitizeGoals(goals)
+  if (known.length === 0) return new Set(ALL_FEATURES)
+  return new Set(known.flatMap((g) => GOAL_FEATURES[g] ?? []))
+}
+
+/** Goals as shown in a selector: adds the derived "all" option when every goal is saved. */
+export function goalsForSelector(goals: readonly string[] | null | undefined): string[] {
+  const known = sanitizeGoals(goals)
+  return known.length === SPECIFIC_IDS.length ? [...known, ALL_GOALS_ID] : known
+}

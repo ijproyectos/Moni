@@ -3,6 +3,7 @@ import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
+import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
 import { monthStart, todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
@@ -31,6 +32,7 @@ export function HomePage() {
   const { data: profile } = useProfile()
   const summary = useMonthSummary(month)
   const { openNew } = useMovementSheet()
+  const features = useEnabledFeatures()
 
   if (summary.isLoading) return <HomeSkeleton />
   if (summary.isError || !summary.data) {
@@ -53,6 +55,7 @@ export function HomePage() {
       onMonthChange={setMonth}
       initial={initialOf(profile?.display_name, user?.email ?? '')}
       onAddMovement={() => openNew()}
+      shortcuts={{ savings: features.has('savings'), ants: features.has('ants') }}
     />
   )
 }

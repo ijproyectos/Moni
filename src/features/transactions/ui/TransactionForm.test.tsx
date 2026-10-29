@@ -1,22 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Account } from '@/features/accounts/domain/account'
+import { makeAccount } from '@/features/accounts/domain/testing'
 import type { Category } from '@/features/categories/domain/category'
 import { TransactionForm } from './TransactionForm'
 
 const ACCOUNT_ID = '11111111-1111-4111-8111-111111111111'
 const CATEGORY_ID = '22222222-2222-4222-8222-222222222222'
-const accounts: Account[] = [
-  {
-    id: ACCOUNT_ID,
-    name: 'Efectivo',
-    kind: 'cash',
-    currency: 'ARS',
-    openingBalanceCents: 0,
-    balanceCents: 0,
-    archivedAt: null,
-  },
-]
+const accounts: Account[] = [makeAccount({ id: ACCOUNT_ID })]
 const categories: Category[] = [
   {
     id: CATEGORY_ID,

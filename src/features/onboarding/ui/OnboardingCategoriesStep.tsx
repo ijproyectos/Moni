@@ -12,6 +12,7 @@ export interface CustomCategoryChip {
   name: string
   icon: string
   kind: 'expense' | 'income'
+  color: string
 }
 
 interface OnboardingCategoriesStepProps {
@@ -22,7 +23,7 @@ interface OnboardingCategoriesStepProps {
   onToggle: (slug: string) => void
   onToggleAll: () => void
   onCreate: () => void
-  onRemoveCustom: (name: string) => void
+  onRemoveCustom: (category: CustomCategoryChip) => void
   onContinue: () => void
 }
 
@@ -47,7 +48,7 @@ export function OnboardingCategoriesStep({
         Podés crear las tuyas ahora o después desde <em>Más › Categorías</em>.
       </p>
 
-      <div className="mt-6 flex items-center justify-between gap-3">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <ul
           className="flex items-center gap-4 text-[15px] text-text-muted-on-dark"
           aria-label="Referencias"
@@ -72,7 +73,7 @@ export function OnboardingCategoriesStep({
         <button
           type="button"
           onClick={onToggleAll}
-          className="min-h-11 rounded-full border-2 border-lime/30 px-4 text-[15px] font-extrabold text-cream"
+          className="min-h-11 whitespace-nowrap rounded-full border-2 border-lime/30 px-4 text-[15px] font-extrabold text-cream"
         >
           {allSelected ? 'Quitar todas' : 'Seleccionar todas'}
         </button>
@@ -92,14 +93,14 @@ export function OnboardingCategoriesStep({
         ))}
         {custom.map((category) => (
           <CategoryChip
-            key={category.name}
+            key={`${category.kind}-${category.name}`}
             surface="dark"
             label={category.name}
             icon={getCategoryIcon(category.icon)}
             dot={category.kind === 'expense' ? EXPENSE_DOT : INCOME_DOT}
             selected
             aria-label={`${category.name} (creada por vos, tocá para quitarla)`}
-            onClick={() => onRemoveCustom(category.name)}
+            onClick={() => onRemoveCustom(category)}
           />
         ))}
         <button
@@ -113,6 +114,11 @@ export function OnboardingCategoriesStep({
       </div>
 
       <div className="mt-auto pt-6">
+        {count === 0 && (
+          <p role="alert" className="mb-3 text-center text-sm text-blush">
+            Elegí al menos una categoría para seguir.
+          </p>
+        )}
         <Button onClick={onContinue} disabled={count === 0}>
           {`Continuar · ${count} ${count === 1 ? 'elegida' : 'elegidas'}`}
         </Button>

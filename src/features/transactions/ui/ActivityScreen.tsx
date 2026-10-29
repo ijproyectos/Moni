@@ -1,9 +1,10 @@
-import { ArrowLeftRight, Search } from 'lucide-react'
+import { ArrowLeftRight, Scale, Search } from 'lucide-react'
 import { useState } from 'react'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
 import type { Category } from '@/features/categories/domain/category'
 import { formatLongDay, formatRelativeDay } from '@/shared/lib/dates'
 import type { Cents } from '@/shared/lib/money'
+import { formatArs } from '@/shared/lib/money'
 import { todayIso, type IsoDate } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { CategoryChip } from '@/shared/ui/CategoryChip'
@@ -15,7 +16,13 @@ import { MovementRow } from '@/shared/ui/MovementRow'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Card } from '@/shared/ui/Card'
 import { countEntries, type ActivityDay, type ActivityEntry } from '../domain/activity'
-import type { EntryKind, Transaction } from '../domain/transaction'
+import {
+  addsToBalance,
+  isAdjustment,
+  isScheduled,
+  type EntryKind,
+  type Transaction,
+} from '../domain/transaction'
 import type { CalendarDayTotal } from '../domain/transactionQueries'
 import { ActivityCalendar } from './ActivityCalendar'
 
@@ -175,11 +182,17 @@ export function ActivityScreen(props: ActivityScreenProps) {
           <section key={day.date} aria-label={formatLongDay(day.date)}>
             <div className="mb-2 flex items-baseline justify-between px-1">
               <h2 className="font-display text-[17px] font-extrabold">{formatLongDay(day.date)}</h2>
-              <AmountDisplay
-                cents={day.netCents}
-                signed
-                className={`font-display text-[17px] font-extrabold ${day.netCents < 0 ? 'text-forest' : 'text-income'}`}
-              />
+              {day.scheduledCents > 0 && !day.entries.some((e) => isExecuted(e, today)) ? (
+                <span className="font-display text-[15px] font-extrabold text-text-muted">
+                  Programado {formatArs(-day.scheduledCents)}
+                </span>
+              ) : (
+                <AmountDisplay
+                  cents={day.netCents}
+                  signed
+                  className={`font-display text-[17px] font-extrabold ${day.netCents < 0 ? 'text-forest' : 'text-income'}`}
+                />
+              )}
             </div>
             <Card className="rounded-[24px] border-sand py-1">
               <ul className="divide-y divide-sand">
@@ -225,10 +238,15 @@ export function ActivityScreen(props: ActivityScreenProps) {
           title={
             pendingVoid.type === 'transfer'
               ? '¿Anular esta transferencia?'
-              : '¿Anular este movimiento?'
+              : pendingVoid.transaction.installmentPlanId
+                ? '¿Anular la compra en cuotas?'
+                : '¿Anular este movimiento?'
           }
           message={
-            voidError ?? 'Lo sacamos de tus balances y totales. Esta acción no se puede deshacer.'
+            voidError ??
+            (pendingVoid.type === 'transaction' && pendingVoid.transaction.installmentPlanId
+              ? 'Se anulan todas las cuotas de esta compra, también las que todavía no llegaron, y baja tu deuda. Esta acción no se puede deshacer.'
+              : 'Lo sacamos de tus balances y totales. Esta acción no se puede deshacer.')
           }
           confirmLabel="Anular"
           isBusy={isVoiding}
@@ -256,24 +274,62 @@ function TransactionRow({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const isIncome = transaction.kind === 'income'
-  const categoryName = category?.name ?? 'Sin categoría'
+  const isIncome = addsToBalance(transaction.kind)
+  const adjustment = isAdjustment(transaction.kind)
+  const categoryName = adjustment ? 'Ajuste de saldo' : (category?.name ?? 'Sin categoría')
+  // Only expenses and incomes can be edited; an adjustment is undone by voiding it.
+  const editable =
+    (transaction.kind === 'expense' || transaction.kind === 'income') &&
+    transaction.installmentPlanId === null
+  const scheduled = isScheduled(transaction, today)
+  const installment =
+    transaction.installmentNumber !== null && transaction.installmentsTotal !== null
+      ? `cuota ${transaction.installmentNumber}/${transaction.installmentsTotal}`
+      : null
   return (
     <MovementRow
-      leading={<CategoryIconCircle iconName={category?.icon} color={category?.color} />}
-      title={transaction.note?.trim() || categoryName}
-      subtitle={`${formatRelativeDay(transaction.occurredOn, today)} · ${categoryName}`}
+      leading={
+        adjustment ? (
+          <IconCircle icon={Scale} color="#064735" />
+        ) : (
+          <CategoryIconCircle iconName={category?.icon} color={category?.color} />
+        )
+      }
+      title={
+        installment
+          ? `${transaction.note?.trim() || categoryName} · ${installment}`
+          : transaction.note?.trim() || categoryName
+      }
+      subtitle={
+        scheduled
+          ? `Programada · cierra el ${formatRelativeDay(transaction.occurredOn, today)} · ${categoryName}`
+          : adjustment
+            ? formatRelativeDay(transaction.occurredOn, today)
+            : `${formatRelativeDay(transaction.occurredOn, today)} · ${categoryName}`
+      }
       trailing={
         <AmountDisplay
           cents={isIncome ? transaction.amountCents : -transaction.amountCents}
           signed
-          className={isIncome ? 'text-income' : 'text-expense'}
+          className={
+            scheduled
+              ? 'text-text-muted'
+              : adjustment
+                ? 'text-forest'
+                : isIncome
+                  ? 'text-income'
+                  : 'text-expense'
+          }
         />
       }
-      onPress={onEdit}
-      pressLabel={`Editar ${transaction.note?.trim() || categoryName}`}
+      onPress={editable ? onEdit : undefined}
+      pressLabel={editable ? `Editar ${transaction.note?.trim() || categoryName}` : undefined}
       onDelete={onDelete}
       deleteLabel={`Anular ${transaction.note?.trim() || categoryName}`}
     />
   )
+}
+
+function isExecuted(entry: ActivityEntry, today: IsoDate): boolean {
+  return entry.type === 'transfer' || !isScheduled(entry.transaction, today)
 }

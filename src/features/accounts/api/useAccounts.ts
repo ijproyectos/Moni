@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/api/authContext'
 import { dashboardKeys } from '@/features/dashboard/api/queryKeys'
-import type { AccountFormValues } from '../domain/account'
+import { transactionKeys } from '@/features/transactions/api/queryKeys'
+import type { Cents } from '@/shared/lib/money'
+import type { Account, AccountFormValues } from '../domain/account'
 import {
+  adjustAccountBalance,
   createAccount,
   listAccounts,
   setAccountArchived,
@@ -43,8 +46,15 @@ export function useCreateAccount() {
 export function useUpdateAccount() {
   const invalidate = useInvalidateAccounts()
   return useMutation({
-    mutationFn: ({ id, values }: { id: string; values: AccountFormValues }) =>
-      updateAccount(id, values),
+    mutationFn: ({
+      id,
+      values,
+      previousKind,
+    }: {
+      id: string
+      values: AccountFormValues
+      previousKind?: Account['kind']
+    }) => updateAccount(id, values, previousKind),
     onSuccess: invalidate,
   })
 }
@@ -55,5 +65,21 @@ export function useArchiveAccount() {
     mutationFn: ({ id, archived = true }: { id: string; archived?: boolean }) =>
       setAccountArchived(id, archived),
     onSuccess: invalidate,
+  })
+}
+
+/** Sets an account to its real balance. Refreshes balances, Inicio and Movimientos (the adjustment is listed there). */
+export function useAdjustAccountBalance() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: ({ id, targetCents, note }: { id: string; targetCents: Cents; note?: string }) =>
+      adjustAccountBalance(id, targetCents, note),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: accountKeys.all(user?.id) }),
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all(user?.id) }),
+        queryClient.invalidateQueries({ queryKey: transactionKeys.all(user?.id) }),
+      ]),
   })
 }

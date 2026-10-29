@@ -10,19 +10,31 @@ const REASONS = [
   'Contarte cuando alguien divide un gasto con vos',
 ]
 
-/** Asks the browser for notification permission when available; never blocks the flow. */
-async function requestNotifications() {
+/**
+ * Asks the browser for permission when available. Resolves to the person's choice: true unless the
+ * browser explicitly denied it. Never throws, so it cannot block the flow.
+ */
+async function requestNotifications(): Promise<boolean> {
   try {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      await Notification.requestPermission()
+    if (typeof Notification === 'undefined') return true
+    if (Notification.permission === 'default') {
+      return (await Notification.requestPermission()) !== 'denied'
     }
+    return Notification.permission !== 'denied'
   } catch {
-    // Unsupported or blocked: the person can enable them later.
+    return true
   }
 }
 
 // Screen 012 — Notificaciones.
-export function OnboardingNotificationsStep({ onContinue }: { onContinue: () => void }) {
+export function OnboardingNotificationsStep({
+  onContinue,
+  isBusy = false,
+}: {
+  /** Receives the answer: true = activar, false = más tarde. */
+  onContinue: (optIn: boolean) => void
+  isBusy?: boolean
+}) {
   return (
     <>
       <div className="relative mx-auto mt-6 size-[200px]">
@@ -51,14 +63,17 @@ export function OnboardingNotificationsStep({ onContinue }: { onContinue: () => 
 
       <div className="mt-auto flex flex-col items-center gap-1 pt-6">
         <Button
-          onClick={() => {
-            void requestNotifications()
-            onContinue()
-          }}
+          disabled={isBusy}
+          onClick={() => void requestNotifications().then((granted) => onContinue(granted))}
         >
           Activar notificaciones
         </Button>
-        <Button variant="ghost" onClick={onContinue} className="text-text-muted-on-dark">
+        <Button
+          variant="ghost"
+          disabled={isBusy}
+          onClick={() => onContinue(false)}
+          className="text-text-muted-on-dark"
+        >
           Más tarde
         </Button>
       </div>

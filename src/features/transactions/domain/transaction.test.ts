@@ -1,4 +1,9 @@
-import { signedAmount, transactionFormSchema, transferFormSchema } from './transaction'
+import {
+  addsToBalance,
+  signedAmount,
+  transactionFormSchema,
+  transferFormSchema,
+} from './transaction'
 import { makeTransaction } from './testing'
 
 const ID_A = '11111111-1111-4111-8111-111111111111'
@@ -59,5 +64,16 @@ describe('signedAmount', () => {
     expect(signedAmount(makeTransaction({ kind: 'expense' }))).toBe(-10000)
     expect(signedAmount(makeTransaction({ status: 'voided' }))).toBe(0)
     expect(signedAmount(makeTransaction({ kind: 'shared_payment' }))).toBe(0)
+  })
+})
+
+describe('addsToBalance', () => {
+  it('matches the database rule for what raises an account balance', () => {
+    expect(addsToBalance('income')).toBe(true)
+    expect(addsToBalance('settlement_in')).toBe(true)
+    expect(addsToBalance('adjustment_in')).toBe(true)
+    for (const kind of ['expense', 'shared_payment', 'settlement_out', 'adjustment_out']) {
+      expect(addsToBalance(kind)).toBe(false)
+    }
   })
 })

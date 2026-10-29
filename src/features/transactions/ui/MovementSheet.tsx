@@ -1,9 +1,14 @@
 import { Mic } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import mascotMoney from '@/assets/mascot/personaje_carga-de-dinero.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { isCreditCard } from '@/features/accounts/domain/account'
+import { checkOverdraft, type OverdraftWarning } from '@/features/accounts/domain/overdraft'
+import { OverdraftSheet } from '@/features/accounts/ui/OverdraftSheet'
+import { checkCreditLimit, type CreditLimitWarning } from '@/features/cards/domain/creditLimit'
+import { CreditLimitSheet } from '@/features/cards/ui/CreditLimitSheet'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
@@ -30,6 +35,10 @@ interface MovementSheetProps {
   initialMode: SheetMode
   /** Edit mode: prefilled and the kind cannot change. */
   transaction?: Transaction
+  /** Transfer tab: destination preselected (paying a credit card). */
+  transferTo?: string
+  /** Transfer tab: amount prefilled (e.g. the billed debt of the card). */
+  transferAmountCents?: number
   onClose: () => void
 }
 
@@ -39,8 +48,29 @@ const MODE_OPTIONS: readonly SegmentOption<SheetMode>[] = [
   { value: 'income', label: 'Ingreso', activeClassName: 'bg-lime text-forest' },
 ]
 
+type PendingOverdraft =
+  | {
+      type: 'limit'
+      values: TransactionFormValues
+      accountName: string
+      warning: CreditLimitWarning
+    }
+  | {
+      type: 'expense'
+      values: TransactionFormValues
+      accountName: string
+      warning: OverdraftWarning
+    }
+  | { type: 'transfer'; values: TransferFormValues; accountName: string; warning: OverdraftWarning }
+
 /** "Nuevo movimiento" sheet (screen 13): expense, income, transfer, or edit of an existing movement. */
-export function MovementSheet({ initialMode, transaction, onClose }: MovementSheetProps) {
+export function MovementSheet({
+  initialMode,
+  transaction,
+  transferTo,
+  transferAmountCents,
+  onClose,
+}: MovementSheetProps) {
   const isEdit = Boolean(transaction)
   const [mode, setMode] = useState<SheetMode>(
     transaction ? (transaction.kind as EntryKind) : initialMode,
@@ -73,7 +103,65 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
   const isLoading = accountsQuery.isLoading || categoriesQuery.isLoading
   const loadFailed = accountsQuery.isError || categoriesQuery.isError
 
+  // Every way of adding a movement (+ button, Inicio, Cuentas, Actividad) opens this sheet, so the
+  // overdraft warning lives here once. The ref stops a double tap from saving the movement twice.
+  const [pending, setPending] = useState<PendingOverdraft | null>(null)
+  const saving = useRef(false)
+  // Escape or a tap outside while the warning is open only dismisses the warning, not the whole sheet.
+  const pendingRef = useRef(pending)
+  useEffect(() => {
+    pendingRef.current = pending
+  }, [pending])
+
+  /** Fresh balances right before saving: another movement may have changed them since the sheet opened. */
+  async function currentAccounts() {
+    const fresh = await accountsQuery.refetch()
+    return fresh.data ?? accountsQuery.data ?? []
+  }
+
   async function saveTransaction(values: TransactionFormValues) {
+    if (saving.current) return
+    setSubmitError(null)
+    if (values.kind === 'expense') {
+      const account = (await currentAccounts()).find((a) => a.id === values.accountId)
+      // Editing: the movement's own amount is already inside the balance when the account is unchanged.
+      const released =
+        transaction?.kind === 'expense' && transaction.accountId === values.accountId
+          ? transaction.amountCents
+          : 0
+      // A credit card runs on debt, not on money in hand: buying with it never "falls short".
+      if (account && isCreditCard(account)) {
+        // A card runs on credit, not on money in hand: the only limit is the credit limit.
+        const limitWarning = checkCreditLimit({
+          limitCents: account.creditLimitCents,
+          balanceCents: account.balanceCents,
+          amountCents: values.amount,
+          releasedCents: released,
+        })
+        if (limitWarning) {
+          setPending({ type: 'limit', values, accountName: account.name, warning: limitWarning })
+          return
+        }
+      }
+      const warning =
+        account && !isCreditCard(account)
+          ? checkOverdraft({
+              balanceCents: account.balanceCents,
+              amountCents: values.amount,
+              releasedCents: released,
+            })
+          : null
+      if (account && warning) {
+        setPending({ type: 'expense', values, accountName: account.name, warning })
+        return
+      }
+    }
+    await commitTransaction(values)
+  }
+
+  async function commitTransaction(values: TransactionFormValues) {
+    if (saving.current) return
+    saving.current = true
     setSubmitError(null)
     try {
       if (transaction) {
@@ -90,10 +178,30 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
       onClose()
     } catch (e) {
       setSubmitError(toUserMessage(e))
+    } finally {
+      saving.current = false
+      setPending(null)
     }
   }
 
   async function saveTransfer(values: TransferFormValues) {
+    if (saving.current) return
+    setSubmitError(null)
+    const account = (await currentAccounts()).find((a) => a.id === values.fromAccountId)
+    const warning =
+      account && !isCreditCard(account)
+        ? checkOverdraft({ balanceCents: account.balanceCents, amountCents: values.amount })
+        : null
+    if (account && warning) {
+      setPending({ type: 'transfer', values, accountName: account.name, warning })
+      return
+    }
+    await commitTransfer(values)
+  }
+
+  async function commitTransfer(values: TransferFormValues) {
+    if (saving.current) return
+    saving.current = true
     setSubmitError(null)
     try {
       await createTransfer.mutateAsync(values)
@@ -101,6 +209,9 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
       onClose()
     } catch (e) {
       setSubmitError(toUserMessage(e))
+    } finally {
+      saving.current = false
+      setPending(null)
     }
   }
 
@@ -117,7 +228,7 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
   if (voice) return <VoiceSheet onClose={() => setVoice(false)} />
 
   return (
-    <BottomSheet title={title} onClose={onClose}>
+    <BottomSheet title={title} onClose={() => (pendingRef.current ? setPending(null) : onClose())}>
       <div className="flex flex-col gap-4">
         {mode !== 'transfer' && (
           <SegmentedControl
@@ -152,6 +263,8 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
           ) : (
             <TransferForm
               accounts={accounts}
+              defaultToAccountId={transferTo}
+              defaultAmountCents={transferAmountCents}
               isSubmitting={createTransfer.isPending}
               submitError={submitError}
               onSubmit={(values) => void saveTransfer(values)}
@@ -182,6 +295,31 @@ export function MovementSheet({ initialMode, transaction, onClose }: MovementShe
           </button>
         )}
       </div>
+      {pending?.type === 'limit' && (
+        <CreditLimitSheet
+          cardName={pending.accountName}
+          warning={pending.warning}
+          isBusy={createTransaction.isPending || updateTransaction.isPending}
+          onCancel={() => setPending(null)}
+          onContinue={() => void commitTransaction(pending.values)}
+        />
+      )}
+      {pending && pending.type !== 'limit' && (
+        <OverdraftSheet
+          accountName={pending.accountName}
+          warning={pending.warning}
+          movement={pending.type}
+          isBusy={
+            createTransaction.isPending || updateTransaction.isPending || createTransfer.isPending
+          }
+          onCancel={() => setPending(null)}
+          onContinue={() =>
+            void (pending.type === 'expense'
+              ? commitTransaction(pending.values)
+              : commitTransfer(pending.values))
+          }
+        />
+      )}
     </BottomSheet>
   )
 }

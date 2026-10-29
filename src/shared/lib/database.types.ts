@@ -3,9 +3,15 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type CategoryKind = 'expense' | 'income'
-export type AccountKind = 'cash' | 'bank' | 'wallet'
+export type AccountKind = 'cash' | 'bank' | 'wallet' | 'credit_card'
 export type TransactionKind =
-  'expense' | 'income' | 'shared_payment' | 'settlement_out' | 'settlement_in'
+  | 'expense'
+  | 'income'
+  | 'shared_payment'
+  | 'settlement_out'
+  | 'settlement_in'
+  | 'adjustment_in'
+  | 'adjustment_out'
 export type RowStatus = 'posted' | 'voided'
 export type GroupKind = 'casa' | 'viaje' | 'pareja' | 'amigos'
 export type GroupRole = 'owner' | 'member'
@@ -22,6 +28,9 @@ export interface Database {
           base_currency: string
           goals: string[]
           onboarding_completed_at: string | null
+          /** Added by the proposed migration 20261028000000; absent until it is applied. */
+          secondary_currency?: string | null
+          notifications_opt_in?: boolean | null
           created_at: string
           updated_at: string
         }
@@ -38,6 +47,8 @@ export interface Database {
           avatar_url?: string | null
           goals?: string[]
           onboarding_completed_at?: string | null
+          secondary_currency?: string | null
+          notifications_opt_in?: boolean | null
         }
         Relationships: []
       }
@@ -89,6 +100,10 @@ export interface Database {
           currency: string
           opening_balance: number
           archived_at: string | null
+          /** Card settings (migration 20261030000000); absent until it is applied. */
+          credit_limit?: number | null
+          closing_day?: number | null
+          due_day?: number | null
           created_at: string
           updated_at: string
         }
@@ -96,12 +111,18 @@ export interface Database {
           name: string
           kind: AccountKind
           opening_balance?: number
+          credit_limit?: number | null
+          closing_day?: number | null
+          due_day?: number | null
         }
         Update: {
           name?: string
           kind?: AccountKind
           opening_balance?: number
           archived_at?: string | null
+          credit_limit?: number | null
+          closing_day?: number | null
+          due_day?: number | null
         }
         Relationships: []
       }
@@ -119,6 +140,11 @@ export interface Database {
           voided_at: string | null
           shared_expense_id: string | null
           settlement_id: string | null
+          /** Statement a card charge belongs to and installment data (migration 20261030000000). */
+          statement_closing_on?: string | null
+          installment_plan_id?: string | null
+          installment_number?: number | null
+          installments_total?: number | null
           created_at: string
           updated_at: string
         }
@@ -138,6 +164,26 @@ export interface Database {
           note?: string | null
           status?: RowStatus
         }
+        Relationships: []
+      }
+      installment_plans: {
+        Row: {
+          id: string
+          owner_id: string
+          account_id: string
+          category_id: string
+          description: string
+          total_amount: number
+          installments_count: number
+          first_number: number
+          purchase_on: string
+          first_statement_closing_on: string
+          status: RowStatus
+          voided_at: string | null
+          created_at: string
+        }
+        Insert: never
+        Update: never
         Relationships: []
       }
       transfers: {
@@ -283,6 +329,45 @@ export interface Database {
       complete_onboarding: {
         Args: { p_goals: string[]; p_template_slugs: string[] }
         Returns: undefined
+      }
+      /** Proposed migration 20261028000000_onboarding_preferences. */
+      complete_onboarding_v2: {
+        Args: {
+          p_goals: string[]
+          p_template_slugs: string[]
+          p_custom_categories?: Json
+          p_secondary_currency?: string | null
+          p_notifications_opt_in?: boolean | null
+        }
+        Returns: undefined
+      }
+      /** Migration 20261029000000: records the difference as one adjustment; returns it. */
+      adjust_account_balance: {
+        Args: { p_account: string; p_target: number; p_note?: string | null }
+        Returns: number
+      }
+      /** Migration 20261030000000. */
+      create_installment_purchase: {
+        Args: {
+          p_account: string
+          p_description: string
+          p_category: string
+          p_total: number
+          p_count: number
+          p_current_number?: number
+          p_purchase_on?: string | null
+          p_first_closing?: string | null
+          p_request_key?: string | null
+        }
+        Returns: string
+      }
+      void_installment_plan: {
+        Args: { p_plan: string }
+        Returns: number
+      }
+      get_card_overview: {
+        Args: { p_account: string; p_today?: string | null }
+        Returns: Json
       }
       get_month_summary: {
         Args: { p_month: string }

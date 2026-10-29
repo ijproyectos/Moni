@@ -90,11 +90,12 @@ export function CategoryForm({
         </p>
       )}
 
-      <fieldset>
+      {/* min-w-0: a fieldset defaults to min-width: min-content and would grow to fit every option. */}
+      <fieldset className="min-w-0">
         <legend className="mb-2 text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
           Ícono
         </legend>
-        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(44px,1fr))] justify-items-center gap-2">
           {CATEGORY_ICON_NAMES.map((iconName) => {
             const Icon = getCategoryIcon(iconName)
             const selected = icon === iconName
@@ -106,7 +107,7 @@ export function CategoryForm({
                 aria-label={iconName}
                 onClick={() => setValue('icon', iconName)}
                 className={cn(
-                  'flex size-12 shrink-0 items-center justify-center rounded-[16px] border-2',
+                  'flex aspect-square w-full max-w-12 items-center justify-center rounded-[16px] border-2',
                   selected
                     ? 'border-forest bg-forest text-lime'
                     : 'border-sand bg-white text-forest',
@@ -119,11 +120,11 @@ export function CategoryForm({
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset className="min-w-0">
         <legend className="mb-2 text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
           Color
         </legend>
-        <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 py-1">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(44px,1fr))] justify-items-center gap-x-2 gap-y-3 p-1">
           {CATEGORY_COLORS.map((c) => (
             <button
               key={c}
@@ -132,7 +133,7 @@ export function CategoryForm({
               aria-label={`Color ${c}`}
               onClick={() => setValue('color', c)}
               className={cn(
-                'flex size-11 shrink-0 items-center justify-center rounded-full',
+                'flex aspect-square w-full max-w-11 items-center justify-center rounded-full',
                 color === c && 'ring-2 ring-forest ring-offset-2 ring-offset-canvas',
               )}
               style={{ backgroundColor: c, color: readableOn(c) }}

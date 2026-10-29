@@ -32,7 +32,7 @@ export function CategoryChip({
       type={type}
       aria-pressed={selected}
       className={cn(
-        'inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border-2 px-4 font-display text-base font-semibold transition',
+        'inline-flex min-h-11 max-w-full shrink-0 items-center gap-2 rounded-full border-2 px-4 py-1.5 font-display text-base font-semibold leading-5 transition',
         surface === 'light' &&
           (selected
             ? 'border-transparent bg-forest text-cream'
@@ -47,10 +47,15 @@ export function CategoryChip({
       {...props}
     >
       {dot && (
-        <span aria-hidden="true" className="size-2 rounded-full" style={{ backgroundColor: dot }} />
+        <span
+          aria-hidden="true"
+          className="size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: dot }}
+        />
       )}
-      {Icon && <Icon aria-hidden="true" className="size-[18px]" strokeWidth={2} />}
-      {label}
+      {Icon && <Icon aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={2} />}
+      {/* Long custom names wrap inside the chip instead of pushing it past the screen edge. */}
+      <span className="min-w-0 text-left [overflow-wrap:anywhere]">{label}</span>
     </button>
   )
 }

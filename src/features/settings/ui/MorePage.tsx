@@ -1,4 +1,5 @@
 import {
+  ChevronDown,
   ChevronRight,
   CreditCard,
   Gift,
@@ -12,10 +13,14 @@ import {
   Target,
   type LucideIcon,
 } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
+import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
+import type { AppFeature } from '@/features/onboarding/domain/goals'
+import { cn } from '@/shared/ui/cn'
 
 interface Tile {
   to: string
@@ -24,6 +29,8 @@ interface Tile {
   icon: LucideIcon
   bg: string
   color?: string
+  /** Shown up front only when the person's goals include it; otherwise under "Más herramientas". */
+  feature?: AppFeature
 }
 
 // Screen 018 — Más.
@@ -45,6 +52,7 @@ const TILES: Tile[] = [
   },
   {
     to: '/metas',
+    feature: 'savings',
     title: 'Presupuestos y metas',
     subtitle: 'Límites y ahorro',
     icon: Target,
@@ -52,6 +60,7 @@ const TILES: Tile[] = [
   },
   {
     to: '/fijos',
+    feature: 'recurring',
     title: 'Fijos y cuotas',
     subtitle: 'Suscripciones y cuotas',
     icon: RefreshCw,
@@ -66,6 +75,7 @@ const TILES: Tile[] = [
   },
   {
     to: '/viajes',
+    feature: 'trips',
     title: 'Viajes',
     subtitle: 'Presupuesto y gastos',
     icon: Send,
@@ -74,15 +84,24 @@ const TILES: Tile[] = [
   },
   {
     to: '/deudas',
+    feature: 'debts',
     title: 'Deudas',
     subtitle: 'Lo que debés y te deben',
     icon: HandCoins,
     bg: '#fbdcd7',
     color: '#b8321f',
   },
-  { to: '/aguinaldo', title: 'Aguinaldo', subtitle: 'Repartilo', icon: Gift, bg: '#e3f2cf' },
+  {
+    to: '/aguinaldo',
+    feature: 'aguinaldo',
+    title: 'Aguinaldo',
+    subtitle: 'Repartilo',
+    icon: Gift,
+    bg: '#e3f2cf',
+  },
   {
     to: '/hormigas',
+    feature: 'ants',
     title: 'Gastos hormiga',
     subtitle: 'Lo chico que se repite',
     icon: ShoppingBag,
@@ -91,6 +110,7 @@ const TILES: Tile[] = [
   },
   {
     to: '/este-mes',
+    feature: 'reports',
     title: 'Informes',
     subtitle: 'Tu mes y tu año',
     icon: ShoppingBasket,
@@ -103,6 +123,10 @@ export function MorePage() {
   const { data: profile, isLoading, isError } = useProfile()
   const displayName = profile?.display_name ?? user?.email ?? ''
   const initial = initialOf(profile?.display_name, user?.email ?? '')
+  const { has } = useEnabledFeatures()
+  const [showMore, setShowMore] = useState(false)
+  const featured = TILES.filter((t) => !t.feature || has(t.feature))
+  const others = TILES.filter((t) => t.feature && !has(t.feature))
 
   return (
     <section className="flex flex-col gap-3 px-4 pt-14">
@@ -164,26 +188,60 @@ export function MorePage() {
         <ChevronRight aria-hidden="true" className="size-6" />
       </Link>
 
-      <ul className="grid grid-cols-2 gap-3">
-        {TILES.map(({ to, title, subtitle, icon: Icon, bg, color }) => (
-          <li key={title}>
-            <Link
-              to={to}
-              className="flex h-full min-h-[172px] flex-col items-center justify-center gap-2 rounded-[24px] border border-sand bg-white p-4 text-center"
-            >
-              <span
-                aria-hidden="true"
-                className="flex size-[60px] items-center justify-center rounded-[18px]"
-                style={{ backgroundColor: bg, color: color ?? '#064735' }}
-              >
-                <Icon className="size-7" strokeWidth={2} />
-              </span>
-              <span className="text-[19px] font-extrabold leading-6">{title}</span>
-              <span className="text-[15px] leading-5 text-text-muted">{subtitle}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <TileGrid tiles={featured} />
+
+      {others.length > 0 && (
+        <>
+          <button
+            type="button"
+            aria-expanded={showMore}
+            aria-controls="mas-herramientas"
+            onClick={() => setShowMore((v) => !v)}
+            className="mt-1 flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white font-display text-[16px] font-extrabold text-forest"
+          >
+            Más herramientas
+            <ChevronDown
+              aria-hidden="true"
+              className={cn('size-5 transition-transform', showMore && 'rotate-180')}
+              strokeWidth={2.25}
+            />
+          </button>
+          {showMore && (
+            <div id="mas-herramientas">
+              <p className="mb-3 px-1 text-center text-[14px] text-text-muted">
+                No las elegiste como objetivo, pero están acá cuando las necesites. Podés cambiar
+                tus objetivos desde Perfil.
+              </p>
+              <TileGrid tiles={others} />
+            </div>
+          )}
+        </>
+      )}
     </section>
+  )
+}
+
+function TileGrid({ tiles }: { tiles: Tile[] }) {
+  return (
+    <ul className="grid grid-cols-2 gap-3">
+      {tiles.map(({ to, title, subtitle, icon: Icon, bg, color }) => (
+        <li key={title}>
+          <Link
+            to={to}
+            className="flex h-full min-h-[172px] flex-col items-center justify-center gap-2 rounded-[24px] border border-sand bg-white p-4 text-center"
+          >
+            <span
+              aria-hidden="true"
+              className="flex size-[60px] items-center justify-center rounded-[18px]"
+              style={{ backgroundColor: bg, color: color ?? '#064735' }}
+            >
+              <Icon className="size-7" strokeWidth={2} />
+            </span>
+            <span className="text-[19px] font-extrabold leading-6">{title}</span>
+            <span className="text-[15px] leading-5 text-text-muted">{subtitle}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   )
 }

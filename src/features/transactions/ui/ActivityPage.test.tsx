@@ -8,6 +8,7 @@ import { ActivityPage } from './ActivityPage'
 const FOOD = '22222222-2222-4222-8222-222222222222'
 const SALARY = '33333333-3333-4333-8333-333333333333'
 const voidTx = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const voidPlan = vi.hoisted(() => vi.fn().mockResolvedValue(1))
 const today = todayIso()
 
 vi.mock('../api/useTransactions', () => ({
@@ -35,6 +36,9 @@ vi.mock('../api/useTransactions', () => ({
   useTransfers: () => ({ isLoading: false, isError: false, data: [] }),
   useVoidTransaction: () => ({ mutateAsync: voidTx, isPending: false }),
   useVoidTransfer: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}))
+vi.mock('@/features/cards/api/useCards', () => ({
+  useVoidInstallmentPlan: () => ({ mutateAsync: voidPlan, isPending: false }),
 }))
 vi.mock('@/features/categories/api/useCategories', () => ({
   useCategories: () => ({

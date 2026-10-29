@@ -22,14 +22,23 @@ import {
   useCreateAccount,
   useUpdateAccount,
 } from '../api/useAccounts'
-import { ACCOUNT_KIND_LABELS, type Account, type AccountFormValues } from '../domain/account'
+import {
+  ACCOUNT_KIND_LABELS,
+  availableCredit,
+  isCreditCard,
+  type Account,
+  type AccountFormValues,
+} from '../domain/account'
 import { setAccountAlias, useAccountAliases, type AccountAlias } from '../mock/aliasStore'
+import { CardSummarySection } from '@/features/cards/ui/CardSummarySection'
 import { AccountForm } from './AccountForm'
+import { AdjustBalanceSection } from './AdjustBalanceSection'
 
 const KIND_SUBTITLES: Record<AccountKind, string> = {
   cash: 'Billetes que tenés encima',
   bank: 'Banco',
   wallet: 'Billetera virtual',
+  credit_card: 'Tarjeta de crédito',
 }
 
 /** Card colors, in stacking order (screen 063). */
@@ -73,7 +82,11 @@ export function AccountsPage() {
     setSubmitError(null)
     try {
       if (editing?.account) {
-        await update.mutateAsync({ id: editing.account.id, values })
+        await update.mutateAsync({
+          id: editing.account.id,
+          values,
+          previousKind: editing.account.kind,
+        })
         setAccountAlias(editing.account.id, { ...aliasDraft, alias: aliasDraft.alias.trim() })
       } else await create.mutateAsync(values)
       toast.show(editing?.account ? 'Medio actualizado' : 'Medio creado', {
@@ -160,6 +173,9 @@ export function AccountsPage() {
                           </span>
                           <span className="block text-[15px] opacity-80">
                             {KIND_SUBTITLES[account.kind] ?? ACCOUNT_KIND_LABELS[account.kind]}
+                            {account.closingDay && account.dueDay
+                              ? ` · cierra el ${account.closingDay}`
+                              : ''}
                             {!featured && alias?.alias ? ` · ${alias.alias}` : ''}
                           </span>
                         </span>
@@ -169,6 +185,21 @@ export function AccountsPage() {
                               Para cobrar
                             </span>
                           )
+                        ) : isCreditCard(account) ? (
+                          <span className="text-right">
+                            <span className="block text-[13px] opacity-80">
+                              {account.balanceCents > 0 ? 'A favor' : 'Deuda'}
+                            </span>
+                            <AmountDisplay
+                              cents={Math.abs(account.balanceCents)}
+                              className="text-[19px] font-extrabold"
+                            />
+                            {availableCredit(account) !== null && (
+                              <span className="block text-[13px] opacity-80">
+                                Disponible <AmountDisplay cents={availableCredit(account) ?? 0} />
+                              </span>
+                            )}
+                          </span>
                         ) : (
                           <AmountDisplay
                             cents={account.balanceCents}
@@ -186,11 +217,30 @@ export function AccountsPage() {
                             aria-hidden="true"
                             className="pointer-events-none absolute -bottom-16 right-10 size-44 rounded-full bg-white/15"
                           />
-                          <p className="text-[15px]">Saldo</p>
+                          <p className="text-[15px]">
+                            {isCreditCard(account)
+                              ? account.balanceCents > 0
+                                ? 'A favor'
+                                : 'Deuda'
+                              : 'Saldo'}
+                          </p>
                           <AmountDisplay
-                            cents={account.balanceCents}
+                            cents={
+                              isCreditCard(account)
+                                ? Math.abs(account.balanceCents)
+                                : account.balanceCents
+                            }
                             className="block font-display text-[40px] font-extrabold leading-[46px]"
                           />
+                          {isCreditCard(account) && availableCredit(account) !== null && (
+                            <p className="text-[15px]">
+                              Disponible{' '}
+                              <AmountDisplay
+                                cents={availableCredit(account) ?? 0}
+                                className="font-extrabold"
+                              />
+                            </p>
+                          )}
                           <div className="mt-3 flex items-center justify-between">
                             {alias?.alias ? (
                               <button
@@ -248,7 +298,34 @@ export function AccountsPage() {
                 : undefined
             }
           >
-            {editing.account && <AliasFields value={aliasDraft} onChange={setAliasDraft} />}
+            {editing.account && (
+              <>
+                <AdjustBalanceSection account={editing.account} onDone={() => setEditing(null)} />
+                {isCreditCard(editing.account) && (
+                  <CardSummarySection
+                    accountId={editing.account.id}
+                    onPay={(amountCents) => {
+                      const card = editing.account
+                      setEditing(null)
+                      if (card) openNew('transfer', { toAccountId: card.id, amountCents })
+                    }}
+                  />
+                )}
+                {isCreditCard(editing.account) && list.length >= 2 && (
+                  <Button
+                    variant="dark"
+                    onClick={() => {
+                      const card = editing.account
+                      setEditing(null)
+                      if (card) openNew('transfer', { toAccountId: card.id })
+                    }}
+                  >
+                    Pagar otro monto
+                  </Button>
+                )}
+                <AliasFields value={aliasDraft} onChange={setAliasDraft} />
+              </>
+            )}
           </AccountForm>
         </BottomSheet>
       )}

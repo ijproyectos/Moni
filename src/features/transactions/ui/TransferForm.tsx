@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import type { Account } from '@/features/accounts/domain/account'
+import { isCreditCard, type Account } from '@/features/accounts/domain/account'
+import { formatAmountInput } from '@/shared/lib/amountInput'
 import { todayIso } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { Button } from '@/shared/ui/Button'
@@ -12,6 +13,10 @@ import {
 
 interface TransferFormProps {
   accounts: readonly Account[]
+  /** Preselected destination (e.g. the card being paid). */
+  defaultToAccountId?: string
+  /** Preselected amount in cents (e.g. what a card has billed). */
+  defaultAmountCents?: number
   isSubmitting: boolean
   submitError: string | null
   onSubmit: (values: TransferFormValues) => void
@@ -22,7 +27,20 @@ const fieldClass =
 const labelClass = 'text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted'
 
 /** Presentational form for moving money between two own accounts. Transfers are not income or expense. */
-export function TransferForm({ accounts, isSubmitting, submitError, onSubmit }: TransferFormProps) {
+export function TransferForm({
+  accounts,
+  defaultToAccountId,
+  defaultAmountCents,
+  isSubmitting,
+  submitError,
+  onSubmit,
+}: TransferFormProps) {
+  const toId = accounts.find((a) => a.id === defaultToAccountId)?.id ?? accounts[1]?.id ?? ''
+  // Paying a card comes out of money you have, so prefer a non-card account as the origin.
+  const fromId =
+    accounts.find((a) => a.id !== toId && !isCreditCard(a))?.id ??
+    accounts.find((a) => a.id !== toId)?.id ??
+    ''
   const {
     register,
     handleSubmit,
@@ -30,9 +48,9 @@ export function TransferForm({ accounts, isSubmitting, submitError, onSubmit }: 
   } = useForm<TransferFormInput, unknown, TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
     defaultValues: {
-      fromAccountId: accounts[0]?.id ?? '',
-      toAccountId: accounts[1]?.id ?? '',
-      amount: '',
+      fromAccountId: fromId,
+      toAccountId: toId,
+      amount: defaultAmountCents ? formatAmountInput(defaultAmountCents) : '',
       occurredOn: todayIso(),
       note: '',
     },
@@ -61,7 +79,7 @@ export function TransferForm({ accounts, isSubmitting, submitError, onSubmit }: 
           <select className={fieldClass} {...register('fromAccountId')}>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.name}
+                {isCreditCard(a) ? `${a.name} · Tarjeta` : a.name}
               </option>
             ))}
           </select>
@@ -71,7 +89,7 @@ export function TransferForm({ accounts, isSubmitting, submitError, onSubmit }: 
           <select className={fieldClass} {...register('toAccountId')}>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.name}
+                {isCreditCard(a) ? `${a.name} · Tarjeta` : a.name}
               </option>
             ))}
           </select>

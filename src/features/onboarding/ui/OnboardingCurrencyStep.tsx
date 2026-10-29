@@ -1,5 +1,4 @@
 import { Check } from 'lucide-react'
-import { useState } from 'react'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { formatArs } from '@/shared/lib/money'
@@ -15,10 +14,16 @@ function ArgentinaFlag() {
   )
 }
 
-// Screen 010 — Moneda. Pesos are the main currency; dollars are an optional second one (not persisted yet).
-export function OnboardingCurrencyStep({ onContinue }: { onContinue: () => void }) {
-  const [usesDollars, setUsesDollars] = useState(true)
-
+// Screen 010 — Moneda. Pesos are the main currency; dollars are an optional second one.
+export function OnboardingCurrencyStep({
+  usesDollars,
+  onUsesDollarsChange,
+  onContinue,
+}: {
+  usesDollars: boolean
+  onUsesDollarsChange: (value: boolean) => void
+  onContinue: () => void
+}) {
   return (
     <>
       <OnboardingTitle
@@ -46,7 +51,7 @@ export function OnboardingCurrencyStep({ onContinue }: { onContinue: () => void 
         type="button"
         role="checkbox"
         aria-checked={usesDollars}
-        onClick={() => setUsesDollars((v) => !v)}
+        onClick={() => onUsesDollarsChange(!usesDollars)}
         className="mt-6 flex w-full items-center gap-4 rounded-[20px] bg-surface px-4 py-3 text-left"
       >
         <span

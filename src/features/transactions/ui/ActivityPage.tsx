@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { useVoidInstallmentPlan } from '@/features/cards/api/useCards'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { indexCategories } from '@/features/categories/domain/category'
 import { toUserMessage } from '@/shared/lib/errors'
@@ -37,6 +38,7 @@ export function ActivityPage() {
   const accounts = useAccounts({ includeArchived: true })
   const voidTransaction = useVoidTransaction()
   const voidTransfer = useVoidTransfer()
+  const voidPlan = useVoidInstallmentPlan()
   const toast = useToast()
   const { openEdit } = useMovementSheet()
 
@@ -78,12 +80,22 @@ export function ActivityPage() {
 
   async function handleVoid(entry: ActivityEntry) {
     try {
-      if (entry.type === 'transaction') await voidTransaction.mutateAsync(entry.id)
-      else await voidTransfer.mutateAsync(entry.id)
+      if (entry.type === 'transaction') {
+        // An installment is never voided alone: the whole purchase goes, so the plan stays consistent.
+        if (entry.transaction.installmentPlanId) {
+          await voidPlan.mutateAsync(entry.transaction.installmentPlanId)
+        } else await voidTransaction.mutateAsync(entry.id)
+      } else await voidTransfer.mutateAsync(entry.id)
     } catch (e) {
       throw new Error(toUserMessage(e))
     }
-    toast.show(entry.type === 'transfer' ? 'Transferencia anulada' : 'Movimiento anulado')
+    toast.show(
+      entry.type === 'transfer'
+        ? 'Transferencia anulada'
+        : entry.transaction.installmentPlanId
+          ? 'Compra en cuotas anulada'
+          : 'Movimiento anulado',
+    )
   }
 
   if (transactions.isLoading || transfers.isLoading) {

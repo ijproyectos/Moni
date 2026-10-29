@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import type { Account } from '@/features/accounts/domain/account'
+import { isCreditCard, type Account } from '@/features/accounts/domain/account'
 import type { Category } from '@/features/categories/domain/category'
 import { formatAmountInput } from '@/shared/lib/amountInput'
 import { todayIso } from '@/shared/lib/month'
@@ -142,7 +142,7 @@ export function TransactionForm({
           <select className={fieldClass} {...register('accountId')}>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.name}
+                {isCreditCard(a) ? `${a.name} · Tarjeta` : a.name}
               </option>
             ))}
           </select>

@@ -14,7 +14,7 @@ import type { TransactionQueryFilters } from './queryKeys'
 
 const toNumeric = (cents: number) => Number(fromCents(cents))
 
-function toTransaction(row: TransactionRow): Transaction {
+export function toTransaction(row: TransactionRow): Transaction {
   return {
     id: row.id,
     accountId: row.account_id,
@@ -26,6 +26,10 @@ function toTransaction(row: TransactionRow): Transaction {
     status: row.status,
     voidedAt: row.voided_at,
     sharedExpenseId: row.shared_expense_id,
+    statementClosingOn: row.statement_closing_on ?? null,
+    installmentPlanId: row.installment_plan_id ?? null,
+    installmentNumber: row.installment_number ?? null,
+    installmentsTotal: row.installments_total ?? null,
     createdAt: row.created_at,
   }
 }

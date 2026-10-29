@@ -1,7 +1,14 @@
 import type { Category } from '@/features/categories/domain/category'
 import type { Cents } from '@/shared/lib/money'
 import type { IsoDate } from '@/shared/lib/month'
-import { signedAmount, type EntryKind, type Transaction, type Transfer } from './transaction'
+import { todayIso } from '@/shared/lib/month'
+import {
+  isScheduled,
+  signedAmount,
+  type EntryKind,
+  type Transaction,
+  type Transfer,
+} from './transaction'
 import { filterTransactions } from './transactionQueries'
 
 export type ActivityEntry =
@@ -10,8 +17,10 @@ export type ActivityEntry =
 
 export interface ActivityDay {
   date: IsoDate
-  /** Income minus expense. Transfers never count. */
+  /** Income minus expense that already happened. Transfers and scheduled installments never count. */
   netCents: Cents
+  /** Installments of the day still to come (a positive amount); they are scheduled, not executed. */
+  scheduledCents: Cents
   entries: ActivityEntry[]
 }
 
@@ -37,8 +46,11 @@ export function buildActivity(input: {
   filters: ActivityFilters
   categoriesById: ReadonlyMap<string, Category>
   accountNamesById: ReadonlyMap<string, string>
+  /** Defaults to today; passed in tests. */
+  today?: IsoDate
 }): ActivityDay[] {
   const { transactions, transfers, filters, categoriesById, accountNamesById } = input
+  const today = input.today ?? todayIso()
 
   const matchingTransactions = filterTransactions(
     transactions,
@@ -67,7 +79,7 @@ export function buildActivity(input: {
   const dayOf = (date: IsoDate) => {
     const existing = days.get(date)
     if (existing) return existing
-    const created: ActivityDay = { date, netCents: 0, entries: [] }
+    const created: ActivityDay = { date, netCents: 0, scheduledCents: 0, entries: [] }
     days.set(date, created)
     return created
   }
@@ -80,7 +92,8 @@ export function buildActivity(input: {
       occurredOn: transaction.occurredOn,
       transaction,
     })
-    day.netCents += signedAmount(transaction)
+    if (isScheduled(transaction, today)) day.scheduledCents += transaction.amountCents
+    else day.netCents += signedAmount(transaction)
   }
   for (const transfer of matchingTransfers) {
     dayOf(transfer.occurredOn).entries.push({
