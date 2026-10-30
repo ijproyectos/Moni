@@ -37,6 +37,7 @@ export interface DbQuery extends PromiseLike<DbResult> {
   or(filters: string): DbQuery
   order(column: string, options?: { ascending?: boolean }): DbQuery
   limit(count: number): DbQuery
+  range(from: number, to: number): DbQuery
 }
 
 export interface Db {
@@ -59,6 +60,36 @@ class ToolDbError extends Error {
 function check(result: DbResult): unknown {
   if (result.error) throw new ToolDbError(result.error.code ?? 'db_error')
   return result.data
+}
+
+/**
+ * Future installment rows (dated today or later, the app's "still to pay" rule), paged so totals are exact up to
+ * installmentPageSize * installmentMaxPages rows. PostgREST caps a response at its max_rows (1000 by default in
+ * Supabase), hence the page size. Reaching the ceiling with a full last page reports `truncated`.
+ */
+async function fetchFutureInstallments(
+  db: Db,
+  today: string,
+): Promise<{ rows: unknown[]; truncated: boolean }> {
+  const size = LIMITS.installmentPageSize
+  const rows: unknown[] = []
+  for (let page = 0; page < LIMITS.installmentMaxPages; page++) {
+    const data = check(
+      await db
+        .from('transactions')
+        .select('installment_plan_id, occurred_on, amount')
+        .eq('status', 'posted')
+        .not('installment_plan_id', 'is', null)
+        .gte('occurred_on', today)
+        .order('occurred_on')
+        .order('id')
+        .range(page * size, page * size + size - 1),
+    )
+    const batch = Array.isArray(data) ? data : []
+    rows.push(...batch)
+    if (batch.length < size) return { rows, truncated: false }
+  }
+  return { rows, truncated: true }
 }
 
 /** Runs one tool call. Never throws and never returns raw database messages: the model gets short codes only. */
@@ -106,18 +137,25 @@ export async function executeTool(
       }
       case 'get_upcoming_dues': {
         const horizon = addDays(ctx.today, args.days)
+        const overdueFrom = addDays(ctx.today, -LIMITS.overdueWindowDays)
         const [occurrences, fixed, subs, installments] = await Promise.all([
           db
             .from('fixed_expense_occurrences')
-            .select('due_on, rescheduled_to, expected_amount, fixed_expenses(name)')
+            // !inner + parent filter: pausing a fixed expense keeps its pending occurrences, they are not due.
+            .select('due_on, rescheduled_to, expected_amount, fixed_expenses!inner(name, status)')
             .eq('status', 'pending')
-            .or(`due_on.lte.${horizon},rescheduled_to.lte.${horizon}`)
+            .eq('fixed_expenses.status', 'active')
+            // Effective date (rescheduled_to if set, else due_on) inside [overdueFrom, horizon]; the limit comes after.
+            .or(
+              `and(rescheduled_to.is.null,due_on.gte.${overdueFrom},due_on.lte.${horizon}),and(rescheduled_to.gte.${overdueFrom},rescheduled_to.lte.${horizon})`,
+            )
             .order('due_on')
-            .limit(60),
+            .limit(200),
           db
             .from('fixed_expenses')
             .select('name, amount, next_due_on')
             .eq('status', 'active')
+            .gte('next_due_on', overdueFrom)
             .lte('next_due_on', horizon)
             .order('next_due_on')
             .limit(60),
@@ -125,6 +163,7 @@ export async function executeTool(
             .from('subscriptions')
             .select('name, amount, next_charge_on')
             .eq('status', 'active')
+            .gte('next_charge_on', overdueFrom)
             .lte('next_charge_on', horizon)
             .order('next_charge_on')
             .limit(60),
@@ -134,7 +173,7 @@ export async function executeTool(
             .eq('status', 'posted')
             .eq('kind', 'expense')
             .not('installment_plan_id', 'is', null)
-            .gte('occurred_on', ctx.today)
+            .gte('occurred_on', ctx.today) // dated today = not yet charged (same rule as the app)
             .lte('occurred_on', horizon)
             .order('occurred_on')
             .limit(60),
@@ -162,27 +201,37 @@ export async function executeTool(
           installments: installmentRows,
           planNames,
           horizon,
+          overdueFrom,
         })
         return serializeToolResult(buildDues(items, ctx.today, args.days))
       }
       case 'get_installments': {
-        const [plans, future] = await Promise.all([
-          db
-            .from('installment_plans')
-            .select('id, description, installments_count, purchase_on')
-            .eq('status', 'posted')
-            .order('purchase_on', { ascending: false })
-            .limit(50),
-          db
-            .from('transactions')
-            .select('installment_plan_id, occurred_on, amount')
-            .eq('status', 'posted')
-            .not('installment_plan_id', 'is', null)
-            .gt('occurred_on', ctx.today)
-            .order('occurred_on')
-            .limit(1000),
-        ])
-        return serializeToolResult(summarizeInstallments(check(plans), check(future), ctx.today))
+        const { rows, truncated: rowsCut } = await fetchFutureInstallments(db, ctx.today)
+        // Plans come from the plan ids present in the future rows (not "the latest N plans").
+        const allIds = [
+          ...new Set(
+            rows
+              .map((r) => (r as { installment_plan_id?: unknown }).installment_plan_id)
+              .filter((id): id is string => typeof id === 'string'),
+          ),
+        ]
+        const plansCut = allIds.length > LIMITS.installmentMaxPlans
+        const ids = allIds.slice(0, LIMITS.installmentMaxPlans)
+        const plans: unknown[] = []
+        for (let i = 0; i < ids.length; i += LIMITS.installmentPlanChunk) {
+          const chunk = ids.slice(i, i + LIMITS.installmentPlanChunk)
+          const data = check(
+            await db
+              .from('installment_plans')
+              .select('id, description, installments_count, purchase_on')
+              .eq('status', 'posted')
+              .in('id', chunk),
+          )
+          if (Array.isArray(data)) plans.push(...data)
+        }
+        return serializeToolResult(
+          summarizeInstallments(plans, rows, ctx.today, { truncated: rowsCut || plansCut }),
+        )
       }
       case 'get_subscriptions': {
         const data = check(
