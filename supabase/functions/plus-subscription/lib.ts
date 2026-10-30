@@ -156,6 +156,24 @@ export function buildBackUrl(appUrl: string | undefined | null): string | null {
 // ---------------------------------------------------------------------------------------------------------
 // Preapproval request / response
 
+const TEST_PAYER_EMAIL = /^[a-z0-9._+-]{1,64}@testuser\.com$/i
+
+/**
+ * Payer email sent to Mercado Pago. It is always the authenticated user's email, with ONE test-only exception:
+ * while the application runs with a TEST seller (collector), Mercado Pago rejects a real payer ("Both payer and
+ * collector must be real or test users"), so the optional MP_TEST_PAYER_EMAIL secret may replace it. Only an
+ * address on Mercado Pago's own test domain (@testuser.com) is honoured; anything else is ignored, so the
+ * override can never point billing at an arbitrary real address and does nothing once real credentials are used.
+ */
+export function resolvePayerEmail(
+  userEmail: string,
+  testOverride: string | undefined | null,
+): { email: string; overridden: boolean } {
+  const candidate = testOverride?.trim()
+  if (candidate && TEST_PAYER_EMAIL.test(candidate)) return { email: candidate, overridden: true }
+  return { email: userEmail, overridden: false }
+}
+
 export interface PreapprovalInput {
   externalReference: string
   payerEmail: string

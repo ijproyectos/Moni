@@ -17,11 +17,38 @@ import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
 import { corsHeaders, jsonResponse, readBodyCapped } from '../_shared/http.ts'
 import { isAuthenticatedUserJwt, pickAllowedOrigin } from '../parse-movements/lib.ts'
 import { type ActionDeps, type ActionResult, createSubscription, runUserAction } from './actions.ts'
-import { buildBackUrl, MAX_BODY_BYTES, parseRequest, type SubscriptionRow } from './lib.ts'
+import {
+  buildBackUrl,
+  MAX_BODY_BYTES,
+  parseRequest,
+  resolvePayerEmail,
+  type SubscriptionRow,
+} from './lib.ts'
 
 const MP_TIMEOUT_MS = 10_000
 
-/** Calls Mercado Pago. Logs only the HTTP status (or the error class), never headers, bodies or the token. */
+/**
+ * Short, allowlisted diagnosis of a Mercado Pago error body: only `error`, `message` and the `cause[].code`/
+ * `description` fields, each cut to 200 characters. Never the raw body, headers, the token or any payer data.
+ */
+function describeMpError(body: unknown): string {
+  if (typeof body !== 'object' || body === null) return 'no_body'
+  const record = body as Record<string, unknown>
+  const clip = (value: unknown) => (typeof value === 'string' ? value.slice(0, 200) : null)
+  const causes = Array.isArray(record.cause)
+    ? record.cause.slice(0, 3).map((cause) => {
+        const c =
+          typeof cause === 'object' && cause !== null ? (cause as Record<string, unknown>) : {}
+        return {
+          code: clip(typeof c.code === 'number' ? String(c.code) : c.code),
+          description: clip(c.description),
+        }
+      })
+    : []
+  return JSON.stringify({ error: clip(record.error), message: clip(record.message), cause: causes })
+}
+
+/** Calls Mercado Pago. Logs the HTTP status and a short allowlisted error description, never headers, raw bodies or the token. */
 async function mpFetch(
   method: 'GET' | 'POST' | 'PUT',
   url: string,
@@ -41,7 +68,13 @@ async function mpFetch(
       signal: controller.signal,
     })
     if (!response.ok) {
-      console.error('plus-subscription: mercado pago call failed', method, response.status)
+      const errorBody = await response.json().catch(() => null)
+      console.error(
+        'plus-subscription: mercado pago call failed',
+        method,
+        response.status,
+        describeMpError(errorBody),
+      )
       return { status: response.status, json: null }
     }
     return { status: response.status, json: await response.json().catch(() => null) }
@@ -90,6 +123,8 @@ async function handle(req: Request, origin: string | null): Promise<Response> {
     console.error('plus-subscription: missing or invalid environment configuration')
     return jsonResponse(500, { error: 'server_misconfigured' }, origin)
   }
+  // The back_url is a public URL, not a secret: logging it makes a Mercado Pago "invalid back_url" diagnosable.
+  if (action === 'create') console.info('plus-subscription: back_url in use', backUrl)
 
   // Identity: the caller's own JWT, verified by Auth. Everything below keys off this id.
   const userClient = createClient(supabaseUrl, anonKey, {
@@ -151,7 +186,19 @@ async function handle(req: Request, origin: string | null): Promise<Response> {
   if (action === 'create') {
     // The payer e-mail comes from the authenticated user, never from the body.
     if (!user.email) return jsonResponse(400, { error: 'email_required' }, origin)
-    result = await createSubscription(deps, { userId: user.id, payerEmail: user.email, backUrl })
+    const testPayerEmail = Deno.env.get('MP_TEST_PAYER_EMAIL')
+    const payer = resolvePayerEmail(user.email, testPayerEmail)
+    // Diagnostic only: whether the test override was set, whether it was accepted, and the payer's email DOMAIN
+    // (never the address itself).
+    console.info(
+      'plus-subscription: payer',
+      JSON.stringify({
+        override_secret_set: Boolean(testPayerEmail?.trim()),
+        override_applied: payer.overridden,
+        payer_domain: payer.email.split('@')[1] ?? 'unknown',
+      }),
+    )
+    result = await createSubscription(deps, { userId: user.id, payerEmail: payer.email, backUrl })
   } else {
     result = await runUserAction(deps, { userId: user.id, action })
   }

@@ -8,6 +8,7 @@ import {
 import {
   ACTION_THROTTLED,
   buildBackUrl,
+  resolvePayerEmail,
   buildPreapprovalBody,
   canTransition,
   classifyMpFailure,
@@ -72,6 +73,43 @@ describe('parseRequest', () => {
       expect(parseRequest(body)).toEqual({ ok: false })
     },
   )
+})
+
+describe('resolvePayerEmail', () => {
+  it('keeps the authenticated email when there is no override', () => {
+    expect(resolvePayerEmail('ana@gmail.com', undefined)).toEqual({
+      email: 'ana@gmail.com',
+      overridden: false,
+    })
+    expect(resolvePayerEmail('ana@gmail.com', '  ')).toEqual({
+      email: 'ana@gmail.com',
+      overridden: false,
+    })
+  })
+
+  it('honours an override only on the Mercado Pago test domain', () => {
+    expect(resolvePayerEmail('ana@gmail.com', ' test_user_123@testuser.com ')).toEqual({
+      email: 'test_user_123@testuser.com',
+      overridden: true,
+    })
+    expect(resolvePayerEmail('ana@gmail.com', 'TEST_USER_1@TESTUSER.COM').overridden).toBe(true)
+  })
+
+  it('ignores an override that is not a test-domain address', () => {
+    for (const value of [
+      'victim@gmail.com',
+      'x@testuser.com.evil.com',
+      'x@evil.com?@testuser.com',
+      '@testuser.com',
+      'a b@testuser.com',
+      'a@b@testuser.com',
+    ]) {
+      expect(resolvePayerEmail('ana@gmail.com', value)).toEqual({
+        email: 'ana@gmail.com',
+        overridden: false,
+      })
+    }
+  })
 })
 
 describe('buildBackUrl', () => {
