@@ -86,7 +86,7 @@ export function GoalsPage() {
                 <button
                   type="button"
                   onClick={() => setCreatingShared(true)}
-                  className="flex min-h-[76px] w-full items-center gap-3 rounded-[22px] border-2 border-dashed border-[#d9c9a6] px-4 text-left"
+                  className="flex min-h-[76px] w-full items-center gap-3 rounded-[22px] border-2 border-dashed border-line px-4 text-left"
                 >
                   <IconTile icon={UsersRound} bg="#d9ebe4" />
                   <span className="flex-1">
@@ -103,7 +103,7 @@ export function GoalsPage() {
           <div className={FEATURES.aguinaldo ? 'grid grid-cols-2 gap-3' : 'grid gap-3'}>
             <Link
               to="/metas/cuotas"
-              className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-white px-3 py-3"
+              className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-card px-3 py-3"
             >
               <IconTile icon={CreditCard} bg="#fdeab8" className="size-11 shrink-0" />
               <span className="min-w-0">
@@ -114,7 +114,7 @@ export function GoalsPage() {
             {FEATURES.aguinaldo && (
               <Link
                 to="/aguinaldo"
-                className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-white px-3 py-3"
+                className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-card px-3 py-3"
               >
                 <IconTile icon={Gift} bg="#e3f2cf" className="size-11 shrink-0" />
                 <span className="min-w-0">
@@ -143,7 +143,7 @@ export function GoalsPage() {
           ) : (
             <>
               {all.length === 0 && (
-                <div className="rounded-[24px] border border-sand bg-white p-4">
+                <div className="rounded-[24px] border border-sand bg-card p-4">
                   <EmptyState
                     mascotUrl={mascotAssistant}
                     title="Todavía no tenés metas"
@@ -171,7 +171,7 @@ export function GoalsPage() {
                     type="button"
                     aria-expanded={showOthers}
                     onClick={() => setShowOthers((v) => !v)}
-                    className="min-h-11 self-start text-[16px] font-extrabold text-forest underline"
+                    className="min-h-11 self-start text-[16px] font-extrabold text-ink underline"
                   >
                     {showOthers ? 'Ocultar' : 'Ver'} pausadas, completadas y archivadas (
                     {others.length})
@@ -239,7 +239,7 @@ function SharedTeaser({ goal, onOpen }: { goal: Goal; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="flex min-h-[80px] w-full items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3 text-left"
+      className="flex min-h-[80px] w-full items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3 text-left"
     >
       <IconTile icon={Heart} bg="#fbdcd7" color="#b8321f" />
       <span className="min-w-0 flex-1">
@@ -273,15 +273,15 @@ function SharedOverview({ goal, today }: { goal: Goal; today: string }) {
         progressValue={value}
         aside={
           <span className="flex -space-x-2">
-            <Avatar name="Vos" size="sm" className="ring-2 ring-forest" />
-            <Avatar name={info.partner} size="sm" className="ring-2 ring-forest" />
+            <Avatar name="Vos" size="sm" className="ring-2 ring-ink" />
+            <Avatar name={info.partner} size="sm" className="ring-2 ring-ink" />
           </span>
         }
         footer={`Vos ${formatArs(info.mineCents)} · ${info.partner} ${formatArs(info.theirsCents)}`}
       />
       <Link
         to={`/metas/${goal.id}`}
-        className="block rounded-[24px] border border-sand bg-white p-4"
+        className="block rounded-[24px] border border-sand bg-card p-4"
       >
         <div className="flex items-center gap-3">
           <IconTile icon={Heart} bg="#fbdcd7" color="#b8321f" />

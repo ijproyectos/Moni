@@ -13,7 +13,7 @@ import { annualIncomeCents, monthlyIncomeForYear } from '../domain/monthlyIncome
 const MIN_YEAR = 2000
 
 const stepClass =
-  'flex size-11 items-center justify-center rounded-full border border-sand bg-white text-forest disabled:opacity-40'
+  'flex size-11 items-center justify-center rounded-full border border-sand bg-card text-ink disabled:opacity-40'
 
 // Ingresos por mes — income received each month of a year, with the annual total (real data:
 // one get_period_summary call for the whole year).

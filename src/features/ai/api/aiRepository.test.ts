@@ -1,6 +1,6 @@
 import { FunctionsFetchError, FunctionsHttpError } from '@supabase/supabase-js'
 import { onlineManager } from '@tanstack/react-query'
-import { toUserMessage } from '@/shared/lib/errors'
+import { PlusRequiredError, toUserMessage } from '@/shared/lib/errors'
 import { OfflineError } from '@/shared/lib/offline'
 import { AiError, parseMovements, parseReceipt } from './aiRepository'
 
@@ -45,6 +45,13 @@ describe('parseMovements', () => {
     expect(toUserMessage(error)).toBe(
       'Llegaste al límite de cargas con Moni por hoy. Probá mañana o cargalo a mano.',
     )
+  })
+
+  it('maps HTTP 402 plus_required to a typed PlusRequiredError', async () => {
+    invoke.mockResolvedValue({ data: null, error: httpError(402, { error: 'plus_required' }) })
+    await expect(parseMovements('x', '2026-10-28')).rejects.toBeInstanceOf(PlusRequiredError)
+    invoke.mockResolvedValue({ data: null, error: httpError(402, null) })
+    await expect(parseMovements('x', '2026-10-28')).rejects.toBeInstanceOf(PlusRequiredError)
   })
 
   it('maps network failures, unknown bodies and malformed data to ai_unavailable', async () => {
@@ -93,6 +100,11 @@ describe('parseReceipt', () => {
     const error = await parseReceipt(IMAGE, '2026-10-28').catch((e: unknown) => e)
     expect(error).toMatchObject({ code: 'ai_quota_exceeded' })
     expect(toUserMessage(error)).toMatch(/límite/)
+  })
+
+  it('maps HTTP 402 plus_required from parse-receipt to PlusRequiredError', async () => {
+    invoke.mockResolvedValue({ data: null, error: httpError(402, { error: 'plus_required' }) })
+    await expect(parseReceipt(IMAGE, '2026-10-28')).rejects.toBeInstanceOf(PlusRequiredError)
   })
 
   it('maps unsupported currency and unreadable receipts to specific messages', async () => {

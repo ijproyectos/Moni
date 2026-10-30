@@ -23,7 +23,7 @@
 --   * A reminder is limited to one per group / creditor / debtor every 24 hours (and cannot be sent when nothing is owed).
 --   * Transfer data is never read from the receiver's accounts here: the app sends what the person confirmed to share.
 --
--- Additive. Apply AFTER 20261108000000_account_transfer_data.sql.
+-- Additive. Apply AFTER 20261110000000_account_transfer_data.sql.
 -- Rollback:
 --   drop function public.remind_debt(uuid, uuid, numeric, text, text, text), public.report_payment(uuid, uuid, numeric),
 --     public.confirm_payment_report(uuid), public.reject_payment_report(uuid), public.cancel_payment_report(uuid);

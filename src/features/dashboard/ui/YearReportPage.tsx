@@ -1,3 +1,4 @@
+import { AssistantEntryLink } from '@/features/assistant/ui/AssistantEntryLink'
 import { ArrowDown, ArrowUp, ChevronRight, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 import mascotUrl from '@/assets/mascot/personaje_informe-del-mes.svg'
@@ -55,9 +56,11 @@ export function YearReportPage() {
         <img src={mascotUrl} alt="" className="size-24" />
       </section>
 
+      <AssistantEntryLink />
+
       <Link
         to="/ingresos"
-        className="flex min-h-14 items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3"
+        className="flex min-h-14 items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3"
       >
         <span className="flex size-11 items-center justify-center rounded-full bg-lime/40">
           <Wallet aria-hidden="true" className="size-5" />

@@ -52,7 +52,7 @@ export function BottomNav({ center }: { center?: ReactNode }) {
   return (
     <nav
       aria-label="Navegación principal"
-      className="pointer-events-auto relative grid h-16 grid-cols-[1fr_auto_1fr] items-center rounded-full bg-forest px-2 shadow-lg"
+      className="pointer-events-auto relative grid h-16 grid-cols-[1fr_auto_1fr] items-center rounded-full bg-forest px-2 shadow-lg dark:ring-1 dark:ring-white/15"
     >
       <div className="flex items-center justify-around">
         {left.map((item) => (

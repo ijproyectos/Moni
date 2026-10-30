@@ -77,7 +77,7 @@ export function DebtsPage() {
             const reminder = data.reminders.find((r) => r.noticeId === p.id)
             return (
               <div key={p.id} className="flex flex-col gap-3">
-                <div className="rounded-[24px] border border-sand bg-white p-4">
+                <div className="rounded-[24px] border border-sand bg-card p-4">
                   <div className="flex items-center gap-3">
                     <Avatar name={p.person} />
                     <span className="min-w-0 flex-1">
@@ -125,7 +125,7 @@ export function DebtsPage() {
                     <button
                       type="button"
                       onClick={() => setScheduling(p)}
-                      className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+                      className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
                     >
                       <Bell aria-hidden="true" className="size-5" /> Recordarme
                     </button>
@@ -137,7 +137,7 @@ export function DebtsPage() {
                     onClick={() => setScheduling(p)}
                     className="flex items-center gap-3 rounded-[24px] bg-lime/30 p-4 text-left"
                   >
-                    <span className="flex size-12 items-center justify-center rounded-full bg-white">
+                    <span className="flex size-12 items-center justify-center rounded-full bg-card">
                       <Bell aria-hidden="true" className="size-6" />
                     </span>
                     <span className="flex-1">
@@ -159,7 +159,7 @@ export function DebtsPage() {
       ) : (
         <>
           {data.owedToMe.map((p) => (
-            <div key={p.id} className="rounded-[24px] border border-sand bg-white p-4">
+            <div key={p.id} className="rounded-[24px] border border-sand bg-card p-4">
               <div className="flex items-center gap-3">
                 <Avatar name={p.person} />
                 <span className="min-w-0 flex-1">
@@ -186,14 +186,14 @@ export function DebtsPage() {
                     markReceived(p.id)
                     toast.show(`Anotado: ${p.person} te pagó`)
                   }}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
                 >
                   <Check aria-hidden="true" className="size-5" /> Ya me pagó
                 </button>
               </div>
             </div>
           ))}
-          <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3">
+          <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3">
             <span className="flex-1">
               <span className="block text-[17px] font-extrabold">Recordarles cada semana</span>
               <span className="block text-[15px] text-text-muted">
@@ -281,15 +281,15 @@ function ScheduleReminderSheet({
         <button
           type="button"
           onClick={() => setTime(TIMES[(TIMES.indexOf(time) + 1) % TIMES.length] ?? time)}
-          className="flex min-h-14 items-center justify-between rounded-[18px] border border-sand bg-white px-4"
+          className="flex min-h-14 items-center justify-between rounded-[18px] border border-sand bg-card px-4"
         >
           <span className="text-[17px] font-extrabold">Hora</span>
           <span className="text-[22px] font-extrabold">{time}</span>
         </button>
-        <div className="rounded-[22px] border border-sand bg-white p-4 shadow-sm">
+        <div className="rounded-[22px] border border-sand bg-card p-4 shadow-sm">
           <p className="flex items-center gap-2 text-[14px] text-text-muted">
             <img src={mascotUrl} alt="" className="size-6 rounded-md bg-lime" />
-            <strong className="font-extrabold text-forest">Moni</strong> ·{' '}
+            <strong className="font-extrabold text-ink">Moni</strong> ·{' '}
             {formatDayMonth(date).replace(' ', ' de ')}, {time}
           </p>
           <p className="mt-1 text-[18px] font-extrabold">

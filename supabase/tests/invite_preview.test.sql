@@ -1,4 +1,4 @@
--- pgTAP: run with `supabase test db` against a local stack (after 20261106000000_group_invite_preview.sql).
+-- pgTAP: run with `supabase test db` against a local stack (after 20261108000000_group_invite_preview.sql).
 begin;
 create extension if not exists pgtap with schema extensions;
 

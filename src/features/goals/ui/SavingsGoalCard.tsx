@@ -42,7 +42,7 @@ export function SavingsGoalCard({
       type="button"
       onClick={onOpen}
       aria-label={`${goal.name}, ${percentText(goal)} reservado`}
-      className="block w-full rounded-[24px] border border-sand bg-white p-4 text-left"
+      className="block w-full rounded-[24px] border border-sand bg-card p-4 text-left"
     >
       <div className="flex items-center gap-3">
         <IconTile icon={kind.icon} bg={kind.bg} color={kind.color} />
@@ -61,10 +61,7 @@ export function SavingsGoalCard({
         <span>de {formatArs(goal.targetCents)}</span>
       </div>
       <p
-        className={cn(
-          'mt-1 text-[15px] font-extrabold',
-          exceeded > 0 ? 'text-income' : 'text-forest',
-        )}
+        className={cn('mt-1 text-[15px] font-extrabold', exceeded > 0 ? 'text-income' : 'text-ink')}
       >
         {exceeded > 0
           ? `¡Superaste tu meta por ${formatArs(exceeded)}!`
@@ -73,9 +70,7 @@ export function SavingsGoalCard({
       {(status || reminder || !goal.accountUsable) && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[14px]">
           {status && (
-            <span className="rounded-full bg-sand px-3 py-1 font-extrabold text-forest">
-              {status}
-            </span>
+            <span className="rounded-full bg-sand px-3 py-1 font-extrabold text-ink">{status}</span>
           )}
           {reminder && (
             <span className="inline-flex items-center gap-1 text-text-muted">

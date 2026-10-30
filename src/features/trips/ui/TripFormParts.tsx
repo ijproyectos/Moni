@@ -9,7 +9,7 @@ import { MoniCalcCard, SectionLabel } from '@/shared/ui/kit'
 import { daysBetween } from '../domain/dates'
 
 export const tripFieldClass =
-  'h-14 rounded-[18px] border border-sand bg-white px-4 text-[17px] placeholder:text-text-muted'
+  'h-14 rounded-[18px] border border-sand bg-card px-4 text-[17px] placeholder:text-text-muted'
 
 /** Departure / return buttons, the budget field and what that makes per day. Shared by every trip form. */
 export function TripDatesBudget({
@@ -40,7 +40,7 @@ export function TripDatesBudget({
             type="button"
             onClick={() => onPick(k)}
             aria-label={k === 'from' ? 'Fecha de ida' : 'Fecha de vuelta'}
-            className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-white px-4 text-[17px] font-extrabold"
+            className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-card px-4 text-[17px] font-extrabold"
           >
             <CalendarDays aria-hidden="true" className="size-5 shrink-0" />{' '}
             {formatDayMonth(k === 'from' ? startsOn : endsOn).replace(' ', ' de ')}

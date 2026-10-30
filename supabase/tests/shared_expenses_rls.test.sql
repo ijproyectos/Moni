@@ -13,6 +13,10 @@ values
   ('33333333-3333-3333-3333-333333333333', 'c@example.com'),
   ('44444444-4444-4444-4444-444444444444', 'd@example.com');
 
+-- A already owns a fixture group and creates another one below: free users are limited to one (moni_plus).
+insert into public.plus_entitlements (user_id, source, expires_at)
+values ('11111111-1111-1111-1111-111111111111', 'promo', now() + interval '30 days');
+
 update public.profiles set display_name = 'Ana' where id = '11111111-1111-1111-1111-111111111111';
 update public.profiles set display_name = 'Beto' where id = '22222222-2222-2222-2222-222222222222';
 update public.profiles set display_name = 'Caro' where id = '33333333-3333-3333-3333-333333333333';

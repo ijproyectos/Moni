@@ -20,6 +20,16 @@ vi.mock('@/shared/lib/supabase', () => ({
   supabase: null,
   getSupabase: () => ({ functions: { invoke: mocks.invoke } }),
 }))
+const plusState = vi.hoisted(() => ({ isFree: false }))
+vi.mock('@/features/plus/api/usePlus', () => ({
+  usePlus: () => ({
+    isLoading: false,
+    isPlus: !plusState.isFree,
+    isFree: plusState.isFree,
+    expiresAt: null,
+  }),
+  useRedeemPromoCode: () => ({ mutateAsync: vi.fn(), isPending: false, data: undefined }),
+}))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 vi.mock('../api/transactionsRepository', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/transactionsRepository')>()),
@@ -102,6 +112,7 @@ function pickPhoto() {
 }
 
 beforeEach(() => {
+  plusState.isFree = false
   mocks.invoke.mockReset()
   mocks.createTransaction.mockReset()
   mocks.createTransaction.mockResolvedValue(undefined)
@@ -207,6 +218,57 @@ describe('QuickAdd add menu', () => {
     expect(screen.getByText('Sin conexión. Conectate para guardar cambios.')).toBeInTheDocument()
     await user.click(screen.getByRole('menuitem', { name: 'Manual' }))
     expect(openNew).toHaveBeenCalled()
+  })
+})
+
+describe('QuickAdd free plan gate', () => {
+  it('tags photo and voice with Plus and opens the upsell instead of the capability', async () => {
+    plusState.isFree = true
+    const { user } = renderQuickAdd()
+    await openMenu(user)
+    expect(screen.getAllByRole('menuitem').map((el) => el.textContent)).toEqual([
+      'Sacar fotoPlus',
+      'Por vozPlus',
+      'Manual',
+    ])
+
+    await user.click(screen.getByRole('menuitem', { name: /Por voz/ }))
+    expect(
+      await screen.findByRole('dialog', { name: /Cargar por voz es de Moni Plus/ }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Por voz' })).not.toBeInTheDocument()
+  })
+
+  it('does not open the file picker for a free user and keeps Manual free', async () => {
+    plusState.isFree = true
+    const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+    const { user, openNew } = renderQuickAdd()
+    await openMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: /Sacar foto/ }))
+    expect(click).not.toHaveBeenCalled()
+    expect(
+      await screen.findByRole('dialog', { name: /Escanear tickets es de Moni Plus/ }),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }))
+    await user.click(screen.getByRole('button', { name: 'Nuevo movimiento' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Manual' }))
+    expect(openNew).toHaveBeenCalled()
+  })
+
+  it('shows the upsell when the server answers 402 plus_required to a scan', async () => {
+    mocks.invoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(
+        new Response(JSON.stringify({ error: 'plus_required' }), { status: 402 }),
+      ),
+    })
+    const { user } = renderQuickAdd()
+    await openMenu(user)
+    await user.click(screen.getByRole('menuitem', { name: 'Sacar foto' }))
+    pickPhoto()
+    expect(
+      await screen.findByRole('dialog', { name: /Escanear tickets es de Moni Plus/ }),
+    ).toBeInTheDocument()
   })
 })
 

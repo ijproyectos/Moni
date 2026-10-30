@@ -16,7 +16,7 @@ import {
 } from '../domain/account'
 
 const inputClass =
-  'h-14 w-full min-w-0 rounded-[18px] border border-sand bg-canvas px-4 text-[17px] font-extrabold text-forest placeholder:font-normal placeholder:text-text-muted'
+  'h-14 w-full min-w-0 rounded-[18px] border border-sand bg-canvas px-4 text-[17px] font-extrabold text-ink placeholder:font-normal placeholder:text-text-muted'
 
 /**
  * "Datos para transferencias" of a bank or a wallet: an optional alias and CBU / CVU, kept in Supabase. Saving them only
@@ -71,7 +71,7 @@ export function TransferDataSection({
 
   if (editing) {
     return (
-      <section className="flex flex-col gap-3 rounded-[24px] border-2 border-forest bg-white p-4">
+      <section className="flex flex-col gap-3 rounded-[24px] border-2 border-ink bg-card p-4">
         <SectionLabel>Datos para transferencias</SectionLabel>
         <label className="flex flex-col gap-1">
           <span className="text-[14px] font-bold text-text-muted">Alias</span>
@@ -133,7 +133,7 @@ export function TransferDataSection({
   ].filter((r) => r.value)
 
   return (
-    <section className="rounded-[24px] border border-sand bg-white p-4">
+    <section className="rounded-[24px] border border-sand bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <SectionLabel>Datos para transferencias</SectionLabel>

@@ -105,7 +105,7 @@ export interface Database {
           credit_limit?: number | null
           closing_day?: number | null
           due_day?: number | null
-          /** Alias and CBU / CVU to receive transfers (migration 20261108000000); absent until it is applied. */
+          /** Alias and CBU / CVU to receive transfers (migration 20261110000000); absent until it is applied. */
           transfer_alias?: string | null
           transfer_cbu?: string | null
           created_at: string
@@ -151,7 +151,7 @@ export interface Database {
           installment_plan_id?: string | null
           installment_number?: number | null
           installments_total?: number | null
-          /** Personal trip this expense belongs to (migration 20261107000000). */
+          /** Personal trip this expense belongs to (migration 20261109000000). */
           trip_id?: string | null
           created_at: string
           updated_at: string
@@ -425,6 +425,18 @@ export interface Database {
         Update: Record<never, never>
         Relationships: []
       }
+      /** Migration 20261106000000_moni_plus: clients can only read their own row. */
+      plus_entitlements: {
+        Row: {
+          user_id: string
+          source: string
+          granted_at: string
+          expires_at: string
+        }
+        Insert: Record<never, never>
+        Update: Record<never, never>
+        Relationships: []
+      }
     }
     Views: {
       account_balances: {
@@ -688,6 +700,20 @@ export interface Database {
       suggest_budgets: {
         Args: Record<never, never>
         Returns: Json
+      }
+      /** Plus end date for the caller, or null on Free. */
+      my_plus_status: {
+        Args: Record<never, never>
+        Returns: string | null
+      }
+      is_plus: {
+        Args: Record<never, never>
+        Returns: boolean
+      }
+      /** New (or existing) Plus end date; null when the code is wrong. */
+      redeem_promo_code: {
+        Args: { p_code: string }
+        Returns: string | null
       }
       consume_ai_quota: {
         Args: { p_feature: string; p_daily_limit?: number }

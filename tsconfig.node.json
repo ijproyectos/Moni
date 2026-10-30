@@ -22,6 +22,14 @@
     "supabase/functions/_shared/http.ts",
     "supabase/functions/_shared/http.test.ts",
     "supabase/functions/parse-receipt/lib.ts",
-    "supabase/functions/parse-receipt/lib.test.ts"
+    "supabase/functions/parse-receipt/lib.test.ts",
+    "supabase/functions/insights-chat/lib.ts",
+    "supabase/functions/insights-chat/lib.test.ts",
+    "supabase/functions/insights-chat/tools.ts",
+    "supabase/functions/_shared/plusOffer.ts",
+    "supabase/functions/plus-subscription/lib.ts",
+    "supabase/functions/plus-subscription/lib.test.ts",
+    "supabase/functions/mp-webhook/lib.ts",
+    "supabase/functions/mp-webhook/lib.test.ts"
   ]
 }

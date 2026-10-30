@@ -520,7 +520,7 @@ export function extractToolInput(response: unknown): ExtractedToolInput {
 // ---------------------------------------------------------------------------------------------------------
 // Database error mapping
 
-export type QuotaErrorKind = 'quota_exceeded' | 'not_authenticated' | 'server_error'
+export type QuotaErrorKind = 'quota_exceeded' | 'plus_required' | 'not_authenticated' | 'server_error'
 
 /**
  * Classifies a PostgREST error from consume_ai_quota. Matches on the message marker, not only on SQLSTATE:
@@ -531,6 +531,8 @@ export type QuotaErrorKind = 'quota_exceeded' | 'not_authenticated' | 'server_er
 export function classifyQuotaError(error: { code?: string | null; message?: string | null }): QuotaErrorKind {
   const message = error.message ?? ''
   if (message.includes('ai_quota_exceeded')) return 'quota_exceeded'
+  // Free plan: the AI features need Moni Plus (the client shows the upsell on HTTP 402 + this code).
+  if (message.includes('plus_required')) return 'plus_required'
   if (message.includes('not_authenticated')) return 'not_authenticated'
   if (error.code === '42501' && /jwt/i.test(message)) return 'not_authenticated'
   // The anon-key JWT passes the gateway but has no EXECUTE grant on the RPC.

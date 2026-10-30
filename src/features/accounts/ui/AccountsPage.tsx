@@ -1,7 +1,11 @@
 import { CreditCard, Plus } from 'lucide-react'
 import { useState, type MouseEvent } from 'react'
+import { useSearchParams } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
+import { CardsPanel } from '@/features/cards/ui/CardsPanel'
+import { InstallmentsPanel } from '@/features/cards/ui/InstallmentsPanel'
+import { NewPurchaseSheet } from '@/features/cards/ui/NewPurchaseSheet'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
@@ -15,6 +19,7 @@ import { Button } from '@/shared/ui/Button'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { PageHeader } from '@/shared/ui/PageHeader'
+import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { useAccounts, useArchiveAccount, useCreateAccount } from '../api/useAccounts'
@@ -51,7 +56,18 @@ const CARD_TONES = [
 /** The card that was opened (its detail grows from where the card was in the list). */
 type Opened = { id: string; tone: string; origin: { top: number; height: number } } | null
 
-/** Medios de pago (063/064): real accounts with derived balances. Tapping one opens its detail (name, balance, transfer data). */
+/** Medios de pago also hosts the credit-card tools: the cards themselves and the purchases in cuotas. */
+type Tab = 'medios' | 'tarjetas' | 'cuotas'
+
+function tabFromParam(value: string | null): Tab {
+  return value === 'tarjetas' || value === 'cuotas' ? value : 'medios'
+}
+
+/**
+ * Medios de pago (063/064): real accounts with derived balances. Tapping one opens its detail (name, balance, transfer
+ * data). With a credit card, two more tabs show the card details (statements, limit) and the purchases in cuotas
+ * (`?tab=tarjetas|cuotas`).
+ */
 export function AccountsPage() {
   const accounts = useAccounts()
   const create = useCreateAccount()
@@ -61,6 +77,9 @@ export function AccountsPage() {
   const archive = useArchiveAccount()
   const toast = useToast()
   const { openNew } = useMovementSheet()
+  const [params, setParams] = useSearchParams()
+  const tab = tabFromParam(params.get('tab'))
+  const [newPurchase, setNewPurchase] = useState(false)
   const [creating, setCreating] = useState(false)
   const [opened, setOpened] = useState<Opened>(null)
   const [archiving, setArchiving] = useState<Account | null>(null)
@@ -69,6 +88,7 @@ export function AccountsPage() {
   const list = accounts.data ?? []
   const openedAccount = opened ? list.find((a) => a.id === opened.id) : undefined
   const featuredId = list[list.length - 1]?.id
+  const hasCards = list.some(isCreditCard)
 
   function startCreating() {
     setSubmitError(null)
@@ -109,11 +129,41 @@ export function AccountsPage() {
       <PageHeader
         title="Medios de pago"
         backTo="/mas"
-        action={<HeaderAddButton label="Nuevo medio de pago" onClick={startCreating} />}
+        action={
+          tab === 'cuotas' ? (
+            <HeaderAddButton label="Nueva compra en cuotas" onClick={() => setNewPurchase(true)} />
+          ) : (
+            <HeaderAddButton
+              label={tab === 'tarjetas' ? 'Agregar tarjeta' : 'Nuevo medio de pago'}
+              onClick={startCreating}
+            />
+          )
+        }
       />
-      <p className="-mt-1 text-[16px] text-text-muted">Tocá un medio para ver su detalle.</p>
+      {(hasCards || tab !== 'medios') && (
+        <SegmentedControl
+          label="Medios, tarjetas o cuotas"
+          value={tab}
+          onChange={(t) => setParams(t === 'medios' ? {} : { tab: t }, { replace: true })}
+          options={[
+            { value: 'medios', label: 'Medios' },
+            { value: 'tarjetas', label: 'Tarjetas' },
+            { value: 'cuotas', label: 'Cuotas' },
+          ]}
+        />
+      )}
+      {tab === 'medios' && (
+        <p className="-mt-1 text-[16px] text-text-muted">Tocá un medio para ver su detalle.</p>
+      )}
 
-      {accounts.isLoading ? (
+      {tab === 'cuotas' ? (
+        <InstallmentsPanel />
+      ) : tab === 'tarjetas' ? (
+        <CardsPanel
+          onEdit={(card) => openDetail(card, CARD_TONES[0] ?? 'bg-forest text-cream', null)}
+          onAdd={startCreating}
+        />
+      ) : accounts.isLoading ? (
         <div role="status" aria-label="Cargando cuentas" className="flex flex-col gap-3">
           <Skeleton className="h-24" />
           <Skeleton className="h-16" />
@@ -291,6 +341,7 @@ export function AccountsPage() {
           />
         </BottomSheet>
       )}
+      {newPurchase && <NewPurchaseSheet onClose={() => setNewPurchase(false)} />}
       {openedAccount && opened && (
         <AccountDetail
           account={openedAccount}

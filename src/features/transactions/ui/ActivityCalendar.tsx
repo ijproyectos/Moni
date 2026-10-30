@@ -138,7 +138,7 @@ export function ActivityCalendar({
                   <span
                     className={cn(
                       'text-[11px] font-extrabold',
-                      selected ? 'text-forest' : 'text-lime',
+                      selected ? 'text-ink' : 'text-lime',
                     )}
                   >
                     {hidden ? (

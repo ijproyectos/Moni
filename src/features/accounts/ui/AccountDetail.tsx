@@ -194,7 +194,7 @@ export function AccountDetail({
           type="button"
           onClick={requestClose}
           aria-label="Volver"
-          className="flex size-12 items-center justify-center rounded-full border border-sand bg-white text-forest"
+          className="flex size-12 items-center justify-center rounded-full border border-sand bg-card text-ink"
         >
           <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2.25} />
         </button>
@@ -278,7 +278,7 @@ export function AccountDetail({
             onDone={() => setMode('view')}
           />
 
-          <section className="rounded-[24px] border border-sand bg-white p-4">
+          <section className="rounded-[24px] border border-sand bg-card p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <SectionLabel>{card ? 'Deuda actual' : 'Saldo actual'}</SectionLabel>
@@ -317,7 +317,7 @@ export function AccountDetail({
           )}
 
           {!card && account.openingBalanceCents > 0 && (
-            <section className="rounded-[24px] border border-sand bg-white p-4">
+            <section className="rounded-[24px] border border-sand bg-card p-4">
               {mode === 'classify' ? (
                 <div className="flex flex-col gap-2">
                   <ClassifyOpeningSection
@@ -349,7 +349,7 @@ export function AccountDetail({
             <div className="flex flex-col gap-2">
               <Link
                 to="/tarjetas"
-                className="flex min-h-12 items-center justify-center rounded-full border-2 border-sand bg-white px-4 text-[16px] font-extrabold"
+                className="flex min-h-12 items-center justify-center rounded-full border-2 border-sand bg-card px-4 text-[16px] font-extrabold"
               >
                 Ver resumen y cuotas
               </Link>
@@ -431,7 +431,7 @@ function NameBlock({
 
   if (!editing) {
     return (
-      <section className="flex items-center justify-between gap-3 rounded-[24px] border border-sand bg-white p-4">
+      <section className="flex items-center justify-between gap-3 rounded-[24px] border border-sand bg-card p-4">
         <div className="min-w-0">
           <SectionLabel>Nombre</SectionLabel>
           <p className="break-words text-[20px] font-extrabold leading-7">{account.name}</p>
@@ -448,7 +448,7 @@ function NameBlock({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-[24px] border-2 border-forest bg-white p-4">
+    <section className="flex flex-col gap-3 rounded-[24px] border-2 border-ink bg-card p-4">
       <label className="flex flex-col gap-1">
         <SectionLabel>Nombre</SectionLabel>
         <input
@@ -458,7 +458,7 @@ function NameBlock({
           value={name}
           onChange={(e) => setName(e.target.value)}
           aria-label="Nombre del medio de pago"
-          className="h-14 w-full rounded-[18px] border border-sand bg-canvas px-4 text-[18px] font-extrabold text-forest"
+          className="h-14 w-full rounded-[18px] border border-sand bg-canvas px-4 text-[18px] font-extrabold text-ink"
         />
       </label>
       {card && (
@@ -488,7 +488,7 @@ function NameBlock({
                   aria-label={label as string}
                   value={value as string}
                   onChange={(e) => (set as (v: string) => void)(e.target.value)}
-                  className="h-14 w-full min-w-0 rounded-[18px] border border-sand bg-canvas px-4 text-[17px] text-forest"
+                  className="h-14 w-full min-w-0 rounded-[18px] border border-sand bg-canvas px-4 text-[17px] text-ink"
                 />
               </label>
             ))}

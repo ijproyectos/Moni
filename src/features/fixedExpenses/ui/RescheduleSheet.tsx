@@ -55,7 +55,7 @@ export function RescheduleSheet({ bill, onClose }: { bill: PendingBill; onClose:
             max={max}
             onChange={(e) => setDate(e.target.value)}
             aria-label="Nueva fecha"
-            className="h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest"
+            className="h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink"
           />
         </label>
         {error && (

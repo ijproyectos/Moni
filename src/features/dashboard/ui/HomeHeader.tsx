@@ -5,6 +5,7 @@ import { FEATURES } from '@/shared/config/features'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
 import { MonthPicker } from '@/shared/ui/MonthPicker'
+import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
 import type { Cents } from '@/shared/lib/money'
 import type { IsoDate } from '@/shared/lib/month'
 
@@ -21,6 +22,8 @@ interface HomeHeaderProps {
   reminderCount?: number
   /** Unread notices of groups (reminders and payments to confirm): they show the bell even while the old Avisos screen is off. */
   noticeCount?: number
+  /** Google account photo (or null to show the initial). */
+  photoUrl?: string | null
 }
 
 export function HomeHeader({
@@ -33,6 +36,7 @@ export function HomeHeader({
   expenseCents,
   reminderCount = 0,
   noticeCount = 0,
+  photoUrl = null,
 }: HomeHeaderProps) {
   const { hidden, toggle } = useHiddenAmounts()
   const { unread: unreadNotices } = useNotifications()
@@ -64,26 +68,32 @@ export function HomeHeader({
           <Link
             to="/perfil"
             aria-label="Perfil"
-            className="flex size-12 items-center justify-center rounded-full bg-lime font-display text-xl font-extrabold text-forest"
+            className="flex size-12 items-center justify-center rounded-full"
           >
-            {initial}
+            <PhotoOrInitial
+              url={photoUrl}
+              initial={initial}
+              alt="Tu foto de perfil"
+              className="size-12"
+              fallbackClassName="bg-lime font-display text-xl font-extrabold text-forest"
+            />
           </Link>
         </div>
       </div>
 
-      <div className="mt-3 flex items-start justify-between gap-3">
+      <div className="mt-1 flex items-start justify-between gap-3">
         <Link
           to="/cuentas"
           aria-label="Ver tus medios de pago"
           className="min-w-0 flex-1 rounded-[20px] outline-offset-4"
         >
-          <p className="text-[17px] text-text-muted-on-dark">Dinero disponible</p>
-          <p className="mt-0.5 flex items-baseline gap-1 font-display font-extrabold">
-            <span className="text-[30px] text-lime">$</span>
+          <p className="text-[15px] text-text-muted-on-dark">Dinero disponible</p>
+          <p className="flex items-baseline gap-1 font-display font-extrabold">
+            <span className="text-[22px] text-lime">$</span>
             <AmountDisplay
               cents={availableCents}
               bare
-              className="min-w-0 text-[clamp(38px,14vw,52px)] leading-[1.1] text-cream"
+              className="min-w-0 text-[clamp(30px,10vw,40px)] leading-[1.1] text-cream"
             />
           </p>
         </Link>

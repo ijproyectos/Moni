@@ -96,7 +96,7 @@ function KindOptions({ onChoose }: { onChoose: (kind: 'personal' | 'grupo') => v
           key={o.kind}
           type="button"
           onClick={() => onChoose(o.kind)}
-          className="flex items-center gap-4 rounded-[24px] border-2 border-sand bg-white p-4 text-left transition active:scale-[0.99]"
+          className="flex items-center gap-4 rounded-[24px] border-2 border-sand bg-card p-4 text-left transition active:scale-[0.99]"
         >
           <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-lime text-forest">
             <o.icon aria-hidden="true" className="size-6" />

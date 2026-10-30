@@ -52,6 +52,8 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         display: 'standalone',
+        // Brand forest for the install UI and the splash (the manifest cannot vary by theme; the page itself
+        // updates <meta name="theme-color"> at runtime, see src/features/settings/domain/theme.ts).
         theme_color: '#064735',
         background_color: '#064735',
         icons: [

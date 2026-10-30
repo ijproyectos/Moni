@@ -42,7 +42,7 @@ export function CreditLimitSheet({
           : ''}{' '}
         Podés continuar: el banco puede rechazarla.
       </p>
-      <dl className="mt-4 divide-y divide-sand rounded-[20px] border border-sand bg-white px-4 text-[16px]">
+      <dl className="mt-4 divide-y divide-sand rounded-[20px] border border-sand bg-card px-4 text-[16px]">
         <Row label="Límite" value={formatArs(warning.limitCents)} />
         <Row label="Deuda actual" value={formatArs(warning.debtCents)} />
         <Row label="Esta compra" value={formatArs(warning.amountCents)} />

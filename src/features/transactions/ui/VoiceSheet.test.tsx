@@ -18,6 +18,16 @@ vi.mock('@/shared/lib/supabase', () => ({
   supabase: null,
   getSupabase: () => ({ functions: { invoke: mocks.invoke } }),
 }))
+const plusState = vi.hoisted(() => ({ isFree: false }))
+vi.mock('@/features/plus/api/usePlus', () => ({
+  usePlus: () => ({
+    isLoading: false,
+    isPlus: !plusState.isFree,
+    isFree: plusState.isFree,
+    expiresAt: null,
+  }),
+  useRedeemPromoCode: () => ({ mutateAsync: vi.fn(), isPending: false, data: undefined }),
+}))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 vi.mock('../api/transactionsRepository', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/transactionsRepository')>()),
@@ -130,6 +140,7 @@ async function reachConfirmation(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
+  plusState.isFree = false
   FakeRecognition.instances = []
   mocks.invoke.mockReset()
   mocks.createTransaction.mockReset()
@@ -163,7 +174,7 @@ describe('VoiceSheet', () => {
 
   it('starts with the cat and no text form, only a prompt and a button to speak', () => {
     renderSheet()
-    expect(screen.getByText(/Contame qué gastaste o cobraste/)).toBeInTheDocument()
+    expect(screen.getByText('¡Hola! Contame qué gastaste o cobraste')).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Activar micrófono' })).toBeInTheDocument()
     expect(screen.queryByText('Terminé')).not.toBeInTheDocument()
@@ -254,7 +265,7 @@ describe('VoiceSheet', () => {
     expect(screen.getByText(/“dos”/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Eliminar' }))
-    expect(screen.getByText(/Contame qué gastaste o cobraste/)).toBeInTheDocument()
+    expect(screen.getByText('¡Hola! Contame qué gastaste o cobraste')).toBeInTheDocument()
     expect(screen.queryByText(/“dos”/)).not.toBeInTheDocument()
     expect(mocks.invoke).not.toHaveBeenCalled()
   })
@@ -529,5 +540,31 @@ describe('VoiceSheet', () => {
     await user.keyboard('{Escape}')
     expect(onClose).toHaveBeenCalled()
     expect(mocks.createTransaction).not.toHaveBeenCalled()
+  })
+})
+
+describe('VoiceSheet free plan gate', () => {
+  it('shows the Plus upsell instead of the capability and never starts the microphone', () => {
+    plusState.isFree = true
+    renderSheet()
+    expect(
+      screen.getByRole('dialog', { name: /Cargar por voz es de Moni Plus/ }),
+    ).toBeInTheDocument()
+    expect(FakeRecognition.instances).toHaveLength(0)
+  })
+
+  it('switches to the upsell when the server answers 402 plus_required', async () => {
+    mocks.invoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(
+        new Response(JSON.stringify({ error: 'plus_required' }), { status: 402 }),
+      ),
+    })
+    const { user } = renderSheet({ startWith: 'text' })
+    await user.type(screen.getByLabelText('Lo que gastaste o cobraste'), 'gasté 5 lucas')
+    await user.click(screen.getByRole('button', { name: 'Listo' }))
+    expect(
+      await screen.findByRole('dialog', { name: /Cargar por voz es de Moni Plus/ }),
+    ).toBeInTheDocument()
   })
 })

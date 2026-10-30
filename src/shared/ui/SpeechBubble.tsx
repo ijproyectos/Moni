@@ -3,7 +3,7 @@ import { cn } from './cn'
 
 /**
  * A conversation bubble with a small tip. `tip` says where it points: "down" for a bubble above the cat, "up" for one below
- * it. `from="moni"` is the cat talking (white); `from="you"` is what the person said (a soft lime).
+ * it. `from="moni"` is the cat talking (card surface); `from="you"` is what the person said (a soft lime).
  */
 export function SpeechBubble({
   children,
@@ -17,11 +17,11 @@ export function SpeechBubble({
   from?: 'moni' | 'you'
   className?: string
 } & Omit<React.HTMLAttributes<HTMLDivElement>, 'children' | 'className'>) {
-  const fill = from === 'moni' ? 'bg-white' : 'bg-[#eaf8d2]'
+  const fill = from === 'moni' ? 'bg-card' : 'bg-[#eaf8d2] dark:bg-[#24402f]'
   return (
     <div className={cn('relative w-full', className)}>
       <div
-        className={cn('rounded-[26px] px-4 py-3 text-[17px] leading-6 ring-1 ring-sand', fill)}
+        className={cn('rounded-[26px] px-4 py-3 text-[17px] leading-6 text-ink ring-1 ring-sand', fill)}
         {...rest}
       >
         {children}

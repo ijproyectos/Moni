@@ -57,7 +57,7 @@ export function SharedMovementForm({ draft, onSaved, onLeave }: SharedMovementFo
     return (
       <p className="rounded-[18px] bg-sand px-4 py-4 text-center text-[16px] leading-6">
         Todavía no tenés grupos para compartir este gasto.{' '}
-        <Link to="/grupos/nuevo" onClick={onLeave} className="font-extrabold text-forest underline">
+        <Link to="/grupos/nuevo" onClick={onLeave} className="font-extrabold text-ink underline">
           Crear grupo
         </Link>
       </p>

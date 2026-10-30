@@ -33,7 +33,7 @@ import {
 } from '../domain/savings'
 
 const fieldClass =
-  'h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest placeholder:text-text-muted'
+  'h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
 const FREQUENCIES: GoalFrequency[] = ['weekly', 'biweekly', 'monthly', 'free']
 const WEEKDAY_LETTERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
@@ -349,7 +349,7 @@ export function SavingsGoalFormSheet({
         />
 
         {frequency !== 'free' && (
-          <div className="flex flex-col gap-3 rounded-[22px] border border-sand bg-white p-4">
+          <div className="flex flex-col gap-3 rounded-[22px] border border-sand bg-card p-4">
             <div className="flex items-center gap-3">
               <span className="flex-1">
                 <span className="block text-[17px] font-extrabold">Recordarme ahorrar</span>
@@ -394,8 +394,8 @@ export function SavingsGoalFormSheet({
                         className={cn(
                           'flex size-11 flex-1 items-center justify-center rounded-full border-2 font-display text-[16px] font-extrabold',
                           weekdayIndex(firstDate) === i
-                            ? 'border-forest bg-forest text-cream'
-                            : 'border-sand bg-white text-forest',
+                            ? 'border-ink bg-forest text-cream'
+                            : 'border-sand bg-card text-ink',
                         )}
                       >
                         {letter}
@@ -416,7 +416,7 @@ export function SavingsGoalFormSheet({
                     className={fieldClass}
                   />
                 </label>
-                {schedule && <p className="text-[15px] font-extrabold text-forest">{schedule}</p>}
+                {schedule && <p className="text-[15px] font-extrabold text-ink">{schedule}</p>}
               </>
             )}
           </div>

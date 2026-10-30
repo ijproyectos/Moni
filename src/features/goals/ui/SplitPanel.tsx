@@ -37,7 +37,7 @@ export function SplitPanel({
           { value: 'half', label: 'Mitad y mitad' },
         ]}
       />
-      <div className="rounded-[20px] border border-sand bg-white p-4">
+      <div className="rounded-[20px] border border-sand bg-card p-4">
         <p className="text-[17px] font-extrabold">
           {mode === 'half' ? 'Cada uno aporta lo mismo' : 'Cada uno aporta según lo que gana'}
         </p>

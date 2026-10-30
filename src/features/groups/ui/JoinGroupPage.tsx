@@ -85,7 +85,7 @@ export function JoinWithCodePage() {
         }}
         aria-invalid={notFound || undefined}
         className={cn(
-          'mx-auto h-[72px] w-full rounded-[22px] border-2 bg-white text-center font-display text-[28px] font-extrabold uppercase tracking-[0.12em] placeholder:text-[#c4b38c]',
+          'mx-auto h-[72px] w-full rounded-[22px] border-2 bg-card text-center font-display text-[28px] font-extrabold uppercase tracking-[0.12em] placeholder:text-placeholder',
           notFound ? 'border-expense bg-blush/20 text-expense' : 'border-sand',
         )}
       />
@@ -177,7 +177,7 @@ export function JoinGroupPage() {
             to="/recomendar"
             className="flex items-center gap-3 rounded-[22px] bg-lime/30 px-4 py-3"
           >
-            <span className="flex size-12 items-center justify-center rounded-full bg-white">
+            <span className="flex size-12 items-center justify-center rounded-full bg-card">
               <Gift aria-hidden="true" className="size-5" />
             </span>
             <span className="flex-1">
@@ -253,7 +253,7 @@ export function JoinGroupPage() {
         </p>
       </section>
       <SectionLabel>Vas a entrar como</SectionLabel>
-      <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3">
+      <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3">
         <Avatar name={me} size="lg" />
         <span className="flex-1">
           <span className="block text-[18px] font-extrabold">{me}</span>
@@ -290,8 +290,8 @@ export function JoinGroupPage() {
 export function GroupLinkLandingPage() {
   const { code = '' } = useParams()
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center gap-4 bg-canvas px-6 pb-10 pt-10 text-center text-forest">
-      <span className="flex items-center gap-2 rounded-full border border-sand bg-white px-4 py-1.5 text-[15px]">
+    <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center gap-4 bg-canvas px-6 pb-10 pt-10 text-center text-ink">
+      <span className="flex items-center gap-2 rounded-full border border-sand bg-card px-4 py-1.5 text-[15px]">
         <Lock aria-hidden="true" className="size-4" /> moni.app
       </span>
       <img src={iconUrl} alt="Moni" className="mt-4 size-24" />
@@ -310,7 +310,7 @@ export function GroupLinkLandingPage() {
       </Link>
       <Link
         to={`/unirse/${code}`}
-        className="flex h-14 w-full items-center justify-center rounded-full border-2 border-sand bg-white text-[18px] font-extrabold"
+        className="flex h-14 w-full items-center justify-center rounded-full border-2 border-sand bg-card text-[18px] font-extrabold"
       >
         Descargar para Android
       </Link>

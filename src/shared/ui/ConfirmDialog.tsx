@@ -27,7 +27,7 @@ export function ConfirmDialog({
         <Button variant="dark" onClick={onConfirm} disabled={isBusy}>
           {confirmLabel}
         </Button>
-        <Button variant="ghost" onClick={onCancel} className="text-forest" data-autofocus>
+        <Button variant="ghost" onClick={onCancel} className="text-ink" data-autofocus>
           {cancelLabel}
         </Button>
       </div>

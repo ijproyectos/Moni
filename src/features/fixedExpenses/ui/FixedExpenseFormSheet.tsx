@@ -19,7 +19,7 @@ import { PERIOD_LABELS, type FixedExpense, type FixedPeriod } from '../domain/fi
 import { KindTile } from './KindTile'
 
 const fieldClass =
-  'h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest placeholder:text-text-muted'
+  'h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
 
 type Target =
   | { kind: 'catalog'; fixed: FixedKind }
@@ -206,7 +206,7 @@ export function FixedExpenseFormSheet({
           </div>
         </fieldset>
 
-        <div className="flex items-center gap-3 rounded-[18px] border border-sand bg-white px-4 py-3">
+        <div className="flex items-center gap-3 rounded-[18px] border border-sand bg-card px-4 py-3">
           <span className="flex-1">
             <span className="block text-[17px] font-extrabold">Recordarme el vencimiento</span>
             <span className="block text-[14px] text-text-muted">

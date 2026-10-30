@@ -2,7 +2,46 @@
 
 import { OfflineError, OFFLINE_MESSAGE } from './offline'
 
+/**
+ * The action needs Moni Plus (free plan). Raised from the database RPCs (`plus_required`, SQLSTATE 54000) and from
+ * the AI Edge Functions (HTTP 402 with `{ error: 'plus_required' }`). The UI turns it into the Plus upsell; the
+ * server is the source of truth, the client gate is only UX.
+ */
+export class PlusRequiredError extends Error {
+  constructor() {
+    super('plus_required')
+    this.name = 'PlusRequiredError'
+  }
+}
+
+export const PLUS_REQUIRED_CODE = 'plus_required'
+
+/** True for a PlusRequiredError or any error whose message carries the `plus_required` marker. */
+export function isPlusRequired(error: unknown): boolean {
+  if (error instanceof PlusRequiredError) return true
+  if (typeof error !== 'object' || error === null) return false
+  const { message } = error as { message?: unknown }
+  return typeof message === 'string' && message.includes(PLUS_REQUIRED_CODE)
+}
+
+/** Converts a PostgREST error carrying `plus_required` into a PlusRequiredError; any other error passes through. */
+export function mapPlusRequired<T>(error: T): T | PlusRequiredError {
+  return isPlusRequired(error) ? new PlusRequiredError() : error
+}
+
 const MESSAGES: Record<string, string> = {
+  plus_required: 'Esto es parte de Moni Plus. Con un código de acceso lo activás en un toque.',
+  already_subscribed: 'Ya tenés una suscripción activa a Moni Plus.',
+  too_many_requests: 'Esperá un minuto antes de intentar de nuevo.',
+  action_throttled: 'Esperá unos segundos antes de hacer otro cambio en tu suscripción.',
+  payment_provider_unavailable:
+    'Mercado Pago no responde en este momento. Probá de nuevo en un ratito.',
+  payment_provider_error: 'No pudimos iniciar el pago con Mercado Pago. Probá de nuevo en un rato.',
+  server_misconfigured: 'El pago con Mercado Pago no está disponible por ahora.',
+  billing_unavailable: 'No pudimos conectar con tu suscripción. Probá de nuevo en un rato.',
+  email_required: 'Tu cuenta necesita un email para suscribirse.',
+  promo_invalid: 'Ese código no es válido. Revisalo y probá de nuevo.',
+  promo_already_used: 'Ya usaste ese código y su período terminó.',
   account_not_found: 'La cuenta elegida no existe.',
   category_not_found: 'La categoría elegida no existe.',
   category_kind_mismatch: 'La categoría no corresponde al tipo de movimiento.',

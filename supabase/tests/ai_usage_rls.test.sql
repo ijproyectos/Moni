@@ -15,6 +15,15 @@ values
   ('44444444-4444-4444-4444-444444444444', 'd@example.com'),
   ('55555555-5555-5555-5555-555555555555', 'e@example.com');
 
+-- consume_ai_quota rejects free users for the AI features (moni_plus), so every fixture user is Plus.
+insert into public.plus_entitlements (user_id, source, expires_at)
+select id, 'promo', now() + interval '30 days' from auth.users
+where id in (
+  '11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222',
+  '33333333-3333-3333-3333-333333333333', '44444444-4444-4444-4444-444444444444',
+  '55555555-5555-5555-5555-555555555555'
+);
+
 insert into public.ai_usage (owner_id, feature)
 select '33333333-3333-3333-3333-333333333333', 'parse_movements' from generate_series(1, 100);
 

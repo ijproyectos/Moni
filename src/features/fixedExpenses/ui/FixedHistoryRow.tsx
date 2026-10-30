@@ -94,7 +94,7 @@ export function PaymentRow({
               type="button"
               onClick={() => onCorrect(payment)}
               aria-label={`Corregir pago de ${expense.name} del ${formatCompactDate(payment.paidOn)}`}
-              className="text-[14px] font-extrabold text-forest underline"
+              className="text-[14px] font-extrabold text-ink underline"
             >
               Corregir
             </button>

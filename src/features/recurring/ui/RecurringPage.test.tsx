@@ -35,7 +35,7 @@ function renderAt(url: string) {
       <Where />
       <Routes>
         <Route path="/recurrentes" element={<RecurringPage />} />
-        <Route path="/tarjetas" element={<p>tarjetas</p>} />
+        <Route path="/cuentas" element={<p>cuentas</p>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -77,8 +77,8 @@ describe('RecurringPage (Pagos recurrentes)', () => {
     expect(screen.getByTestId('where')).toHaveTextContent(/^\/recurrentes$/)
   })
 
-  it('an old ?tab=cuotas link goes to Tarjetas de crédito › Cuotas', () => {
+  it('an old ?tab=cuotas link goes to Medios de pago › Cuotas', () => {
     renderAt('/recurrentes?tab=cuotas')
-    expect(screen.getByTestId('where')).toHaveTextContent('/tarjetas?tab=cuotas')
+    expect(screen.getByTestId('where')).toHaveTextContent('/cuentas?tab=cuotas')
   })
 })

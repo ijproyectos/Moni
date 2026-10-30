@@ -16,6 +16,7 @@ import { HomePage } from '@/features/dashboard/ui/HomePage'
 import { MonthReportPage } from '@/features/dashboard/ui/MonthReportPage'
 import { IncomeByMonthPage } from '@/features/dashboard/ui/IncomeByMonthPage'
 import { YearReportPage } from '@/features/dashboard/ui/YearReportPage'
+import { AssistantPage } from '@/features/assistant/ui/AssistantPage'
 import { AntsPage } from '@/features/insights/ui/AntsPage'
 import { WeeklyDigestPage } from '@/features/insights/ui/WeeklyDigestPage'
 import { NotificationsPage } from '@/features/notifications/ui/NotificationsPage'
@@ -27,8 +28,10 @@ import {
   AguinaldoSplitPage,
 } from '@/features/aguinaldo/ui/AguinaldoPages'
 import { DebtsPage } from '@/features/notifications/ui/DebtsPage'
-import { CardsPage } from '@/features/cards/ui/CardsPage'
-import { LegacyFijosRedirect } from '@/features/recurring/ui/LegacyRedirects'
+import {
+  LegacyFijosRedirect,
+  LegacyTarjetasRedirect,
+} from '@/features/recurring/ui/LegacyRedirects'
 import { RecurringPage } from '@/features/recurring/ui/RecurringPage'
 import { GoalDetailPage } from '@/features/goals/ui/GoalDetailPage'
 import { GoalsPage } from '@/features/goals/ui/GoalsPage'
@@ -57,6 +60,7 @@ import { ActivityPage } from '@/features/transactions/ui/ActivityPage'
 import type { FeatureFlag } from '@/shared/config/features'
 import { AppShell } from './AppShell'
 import { FeatureGate } from './FeatureGate'
+import { PlusThanksRoute } from './PlusThanksRoute'
 
 /** Wraps a screen so it is only reachable while its flag is on (otherwise it redirects home). */
 function gated(flag: FeatureFlag, element: ReactElement) {
@@ -79,7 +83,8 @@ const simulatedRoutes = [
   { path: 'aguinaldo/listo', element: gated('aguinaldo', <AguinaldoDonePage />) },
   { path: 'recurrentes', element: <RecurringPage /> },
   { path: 'fijos', element: <LegacyFijosRedirect /> },
-  { path: 'tarjetas', element: <CardsPage /> },
+  // Old standalone credit-card screen: now Medios de pago (Tarjetas / Cuotas tabs).
+  { path: 'tarjetas', element: <LegacyTarjetasRedirect /> },
 ]
 
 /** Everything inside the app shell (private routes). */
@@ -102,9 +107,15 @@ export const appRoutes = [
   { path: 'cuentas', element: <AccountsPage /> },
   { path: 'categorias', element: <CategoriesPage /> },
   { path: 'perfil', element: <ProfilePage /> },
+  // Return page of the Mercado Pago checkout (back_url). Lazy: it is only opened once, right after paying.
+  {
+    path: 'plus/gracias',
+    element: <PlusThanksRoute />,
+  },
   { path: 'este-mes', element: <MonthReportPage /> },
   { path: 'tu-anio', element: <YearReportPage /> },
   { path: 'ingresos', element: <IncomeByMonthPage /> },
+  { path: 'informes/asistente', element: <AssistantPage /> },
   ...simulatedRoutes,
 ]
 

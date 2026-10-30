@@ -21,7 +21,7 @@ interface MovementDraftListProps {
 }
 
 const fieldClass =
-  'h-12 w-full rounded-[14px] border border-sand bg-white px-3 text-[16px] text-forest placeholder:text-text-muted'
+  'h-12 w-full rounded-[14px] border border-sand bg-card px-3 text-[16px] text-ink placeholder:text-text-muted'
 
 /** Confirmation list: every parsed movement is editable before anything is saved. */
 export function MovementDraftList({
@@ -47,7 +47,7 @@ export function MovementDraftList({
             key={draft.key}
             aria-label={`Movimiento ${n}`}
             className={cn(
-              'rounded-[22px] border-2 bg-white p-3',
+              'rounded-[22px] border-2 bg-card p-3',
               review ? 'border-gold' : 'border-sand',
             )}
           >
@@ -83,7 +83,7 @@ export function MovementDraftList({
                 aria-label={`Quitar movimiento ${n}`}
                 disabled={disabled}
                 onClick={() => onRemove(draft.key)}
-                className="flex size-11 items-center justify-center rounded-full bg-sand text-forest"
+                className="flex size-11 items-center justify-center rounded-full bg-sand text-ink"
               >
                 <Trash2 aria-hidden="true" className="size-5" />
               </button>

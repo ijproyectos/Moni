@@ -2,12 +2,14 @@ import { useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
+import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
 import { useSavings, useSavingsNoticeCount } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
 import { useUnreadNoticeCount } from '@/features/debts/api/useDebts'
+import { PlusBadge } from '@/features/plus/ui/PlusBadge'
 import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
 import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
@@ -65,10 +67,12 @@ export function HomePage() {
       latestMonth={latestMonth}
       onMonthChange={setMonth}
       initial={initialOf(profile?.display_name, user?.email ?? '')}
+      photoUrl={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
       onAddMovement={() => openNew()}
       shortcuts={{ savings: features.has('savings'), ants: features.has('ants') }}
       reminders={
         <>
+          <PlusBadge />
           <SavingsNotices />
           <RecurringReminders />
         </>

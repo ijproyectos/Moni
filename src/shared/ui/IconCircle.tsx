@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { cn } from './cn'
-import { getCategoryIcon, tint } from './categoryIcons'
+import { getCategoryIcon, themedColor, tint } from './categoryIcons'
 
 interface IconCircleProps {
   icon: LucideIcon
@@ -14,7 +14,7 @@ export function IconCircle({ icon: Icon, color = '#064735', className }: IconCir
     <span
       aria-hidden="true"
       className={cn('flex size-11 shrink-0 items-center justify-center rounded-full', className)}
-      style={{ backgroundColor: tint(color), color }}
+      style={{ backgroundColor: tint(color), color: themedColor(color) }}
     >
       <Icon className="size-5" strokeWidth={2} />
     </span>

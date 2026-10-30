@@ -26,7 +26,7 @@
 -- Additive: no existing table loses a column, no existing function changes. The only change to an existing table is the
 -- nullable transactions.trip_id (+ its grants).
 --
--- Apply AFTER 20261106000000_group_invite_preview.sql.
+-- Apply AFTER 20261108000000_group_invite_preview.sql.
 -- Rollback (only valid while no movement points to a trip, otherwise first run
 --   update public.transactions set trip_id = null where trip_id is not null):
 --   drop function public.set_group_trip(uuid, date, date, numeric);

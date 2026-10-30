@@ -9,7 +9,9 @@ import {
   type SpeechError,
 } from '@/features/ai/ui/useSpeechRecognition'
 import { useCategories } from '@/features/categories/api/useCategories'
-import { toUserMessage } from '@/shared/lib/errors'
+import { usePlus } from '@/features/plus/api/usePlus'
+import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
@@ -30,7 +32,7 @@ const SPEECH_MESSAGES: Record<SpeechError, string> = {
 const PAUSE_MS = 4500
 
 const smallButton =
-  'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-sand px-2.5 font-display text-[14px] font-extrabold text-forest transition hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-60'
+  'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-sand px-2.5 font-display text-[14px] font-extrabold text-ink transition hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-60'
 
 /** idle: first screen (or dictating, when the microphone is on) · review: the transcript · editing: the text box. */
 type Step = 'idle' | 'review' | 'editing' | 'confirm'
@@ -44,6 +46,13 @@ interface VoiceSheetProps {
 // Screen 016 — Carga por voz. Voice or text -> AI draft -> editable confirmation -> save. Nothing is saved
 // without the explicit "Guardar" tap, and only the transcript text (never audio) is sent to the function.
 export function VoiceSheet({ onClose, startWith = 'promo' }: VoiceSheetProps) {
+  const { isFree } = usePlus()
+  // Free plan: show the upsell instead of the capability (and never start the microphone).
+  if (isFree) return <PlusSheet reason="voice" onClose={onClose} />
+  return <VoiceCapture onClose={onClose} startWith={startWith} />
+}
+
+function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
   const online = useOnlineStatus()
   const [step, setStep] = useState<Step>(
     startWith === 'text' || !isSpeechSupported() ? 'editing' : 'idle',
@@ -55,6 +64,8 @@ export function VoiceSheet({ onClose, startWith = 'promo' }: VoiceSheetProps) {
   const [drafts, setDrafts] = useState<DraftMovement[]>([])
   const [notice, setNotice] = useState<string | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
+  // The server said the plan is Free even though the client thought otherwise.
+  const [plusRequired, setPlusRequired] = useState(false)
 
   const accountsQuery = useAccounts()
   const categoriesQuery = useCategories()
@@ -149,9 +160,14 @@ export function VoiceSheet({ onClose, startWith = 'promo' }: VoiceSheetProps) {
         setDrafts(next)
         setStep('confirm')
       },
-      onError: (error) => setParseError(toUserMessage(error)),
+      onError: (error) => {
+        if (isPlusRequired(error)) setPlusRequired(true)
+        else setParseError(toUserMessage(error))
+      },
     })
   }
+
+  if (plusRequired) return <PlusSheet reason="voice" onClose={onClose} />
 
   if (step === 'confirm') {
     return (
@@ -187,7 +203,7 @@ export function VoiceSheet({ onClose, startWith = 'promo' }: VoiceSheetProps) {
               onChange={(e) => setText(e.target.value)}
               placeholder="Gasté $8.000 en el súper"
               aria-label="Lo que gastaste o cobraste"
-              className="mt-1 w-full resize-none bg-transparent text-[17px] leading-6 text-forest outline-none placeholder:text-text-muted"
+              className="mt-1 w-full resize-none bg-transparent text-[17px] leading-6 text-ink outline-none placeholder:text-text-muted"
             />
           </label>
         </SpeechBubble>
@@ -307,7 +323,7 @@ export function VoiceSheet({ onClose, startWith = 'promo' }: VoiceSheetProps) {
               ? SPEECH_MESSAGES[speech.error]
               : notHeard
                 ? SPEECH_MESSAGES.no_speech
-                : '¡Hola! 🐱 Contame qué gastaste o cobraste'}
+                : '¡Hola! Contame qué gastaste o cobraste'}
           </SpeechBubble>
         )}
         <MoniFortuneCat

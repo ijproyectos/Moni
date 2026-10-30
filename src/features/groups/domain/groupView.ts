@@ -117,9 +117,7 @@ export function canVoidSettlement(
   return (
     settlement.status === 'posted' &&
     Boolean(meId) &&
-    (settlement.fromUser === meId ||
-      settlement.toUser === meId ||
-      settlement.createdBy === meId)
+    (settlement.fromUser === meId || settlement.toUser === meId || settlement.createdBy === meId)
   )
 }
 

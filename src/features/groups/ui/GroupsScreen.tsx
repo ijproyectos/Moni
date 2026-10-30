@@ -76,18 +76,18 @@ export function GroupsScreen({
         />
       ) : groups.length === 0 ? (
         <>
-          <div className="rounded-[28px] border border-sand bg-white">
+          <div className="rounded-[28px] border border-sand bg-card">
             <EmptyState
               mascotUrl={mascotGroup}
               title="Todavía no tenés grupos"
-              description="Armá uno para dividir los gastos de la casa, un viaje o lo que sea. Solo tu parte cuenta como gasto tuyo."
+              description="Armá uno para dividir los gastos de la casa, una salida o lo que sea. Solo tu parte cuenta como gasto tuyo."
               action={<Button onClick={onNewGroup}>Nuevo grupo</Button>}
               className="pb-6 [&_h2]:text-[24px] [&_h2]:font-extrabold [&_img]:size-44"
             />
           </div>
           <Link
             to="/grupos/unirse"
-            className="flex h-14 items-center justify-center gap-3 rounded-full border border-sand bg-white text-[17px] font-extrabold"
+            className="flex h-14 items-center justify-center gap-3 rounded-full border border-sand bg-card text-[17px] font-extrabold"
           >
             <KeyRound aria-hidden="true" className="size-5 -scale-x-100" strokeWidth={2} />
             Entrar a un grupo con un código
@@ -129,7 +129,7 @@ export function GroupsScreen({
                 <li key={group.id}>
                   <Link
                     to={`/grupos/${group.id}`}
-                    className="flex min-h-[92px] items-center gap-4 rounded-[24px] border border-sand bg-white p-4"
+                    className="flex min-h-[92px] items-center gap-4 rounded-[24px] border border-sand bg-card p-4"
                   >
                     <GroupKindTile kind={group.kind} />
                     <span className="min-w-0 flex-1">
@@ -163,10 +163,10 @@ export function GroupsScreen({
           </ul>
           <Link
             to="/grupos/unirse"
-            className="flex h-14 items-center justify-center gap-3 rounded-full border border-sand bg-white text-[17px] font-extrabold"
+            className="flex h-14 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-sand bg-card text-[16px] font-extrabold"
           >
-            <KeyRound aria-hidden="true" className="size-5 -scale-x-100" strokeWidth={2} />
-            Entrar con un código
+            <KeyRound aria-hidden="true" className="size-5 shrink-0 -scale-x-100" /> Entrar con un
+            código
           </Link>
         </>
       )}

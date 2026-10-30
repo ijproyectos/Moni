@@ -46,7 +46,7 @@ export function SavingsNotices({ className }: { className?: string }) {
           aria-label={`Recordatorio de ahorro: ${r.goal.name}`}
           className="flex flex-col gap-3 rounded-[24px] border border-gold/60 bg-gold/25 p-4"
         >
-          <p className="flex items-start gap-3 text-[17px] font-extrabold leading-6 text-forest">
+          <p className="flex items-start gap-3 text-[17px] font-extrabold leading-6 text-ink">
             <BellRing aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
             {r.text}
           </p>
@@ -63,7 +63,7 @@ export function SavingsNotices({ className }: { className?: string }) {
                 type="button"
                 onClick={() => setPostponing(r)}
                 aria-label={`Posponer el recordatorio de ${r.goal.name}`}
-                className="text-[15px] font-extrabold text-forest underline"
+                className="text-[15px] font-extrabold text-ink underline"
               >
                 Posponer
               </button>
@@ -72,7 +72,7 @@ export function SavingsNotices({ className }: { className?: string }) {
                 disabled={skip.isPending}
                 onClick={() => void skipReminder(r)}
                 aria-label={`Omitir el recordatorio de ${r.goal.name}`}
-                className="text-[15px] font-extrabold text-forest underline disabled:opacity-50"
+                className="text-[15px] font-extrabold text-ink underline disabled:opacity-50"
               >
                 Omitir
               </button>

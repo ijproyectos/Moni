@@ -123,7 +123,7 @@ export function SavingsGoalDetail({
           <p className="text-[15px] leading-5 text-text-muted">
             Saldo real {formatArs(account.balanceCents)} · reservado para metas{' '}
             {formatArs(account.reservedCents)} ·{' '}
-            <strong className={account.freeCents < 0 ? 'text-expense' : 'text-forest'}>
+            <strong className={account.freeCents < 0 ? 'text-expense' : 'text-ink'}>
               libre {formatArs(account.freeCents)}
             </strong>
           </p>
@@ -138,7 +138,7 @@ export function SavingsGoalDetail({
           {goal.suggestedCents !== null && ` · orientativo ${formatArs(goal.suggestedCents)}`}
         </p>
         {schedule && goal.remind && (
-          <p className="flex items-center gap-1 text-[15px] font-extrabold text-forest">
+          <p className="flex items-center gap-1 text-[15px] font-extrabold text-ink">
             <BellRing aria-hidden="true" className="size-4" />
             {schedule}
             {goal.status === 'active' &&
@@ -173,7 +173,7 @@ export function SavingsGoalDetail({
         goal.remind &&
         goal.reminderOn &&
         goal.reminderOn <= overview.today && (
-          <Button variant="ghost" className="text-forest" onClick={() => setSheet('snooze')}>
+          <Button variant="ghost" className="text-ink" onClick={() => setSheet('snooze')}>
             Posponer el recordatorio
           </Button>
         )}
@@ -212,7 +212,7 @@ export function SavingsGoalDetail({
                     className={
                       posted
                         ? m.kind === 'deposit'
-                          ? 'text-[17px] font-extrabold text-forest'
+                          ? 'text-[17px] font-extrabold text-ink'
                           : 'text-[17px] font-extrabold text-text-muted'
                         : 'text-[17px] font-extrabold text-text-muted line-through'
                     }
@@ -232,18 +232,18 @@ export function SavingsGoalDetail({
 
       <div className="flex flex-col gap-2">
         {goal.status !== 'archived' && (
-          <Button variant="ghost" className="text-forest" onClick={() => setSheet('edit')}>
+          <Button variant="ghost" className="text-ink" onClick={() => setSheet('edit')}>
             Editar meta
           </Button>
         )}
         {goal.status === 'active' && (
           <>
-            <Button variant="ghost" className="text-forest" onClick={() => setDialog('complete')}>
+            <Button variant="ghost" className="text-ink" onClick={() => setDialog('complete')}>
               Marcar como completada
             </Button>
             <Button
               variant="ghost"
-              className="text-forest"
+              className="text-ink"
               onClick={() =>
                 void change('paused', false, 'Meta pausada: sigue reservando su dinero')
               }

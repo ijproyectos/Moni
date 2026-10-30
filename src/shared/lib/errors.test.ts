@@ -1,4 +1,4 @@
-import { toUserMessage } from './errors'
+import { isPlusRequired, mapPlusRequired, PlusRequiredError, toUserMessage } from './errors'
 
 describe('toUserMessage', () => {
   it('translates known database exceptions', () => {
@@ -43,5 +43,27 @@ describe('toUserMessage', () => {
   it('falls back for unknown errors', () => {
     expect(toUserMessage(new Error('boom'))).toMatch(/Algo salió mal/)
     expect(toUserMessage(undefined)).toMatch(/Algo salió mal/)
+  })
+})
+
+describe('plus_required', () => {
+  it('detects the marker in RPC errors and in PlusRequiredError', () => {
+    expect(isPlusRequired({ code: '54000', message: 'plus_required' })).toBe(true)
+    expect(isPlusRequired(new PlusRequiredError())).toBe(true)
+    expect(isPlusRequired({ code: '54000', message: 'ai_quota_exceeded' })).toBe(false)
+    expect(isPlusRequired(null)).toBe(false)
+    expect(isPlusRequired('plus_required')).toBe(false)
+  })
+
+  it('maps an RPC error to a typed PlusRequiredError and leaves other errors alone', () => {
+    const mapped = mapPlusRequired({ code: '54000', message: 'plus_required' })
+    expect(mapped).toBeInstanceOf(PlusRequiredError)
+    const other = new Error('boom')
+    expect(mapPlusRequired(other)).toBe(other)
+  })
+
+  it('has a user message for the upsell and for a wrong promo code', () => {
+    expect(toUserMessage(new PlusRequiredError())).toMatch(/Moni Plus/)
+    expect(toUserMessage(new Error('promo_invalid'))).toMatch(/código no es válido/)
   })
 })

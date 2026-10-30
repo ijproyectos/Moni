@@ -101,7 +101,7 @@ export function AccountForm({
           maxLength={40}
           placeholder="Ej: Cuenta sueldo"
           aria-invalid={Boolean(errors.name) || undefined}
-          className="h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest placeholder:text-text-muted"
+          className="h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted"
           {...register('name')}
         />
         {errors.name && (
@@ -123,7 +123,7 @@ export function AccountForm({
                   type="button"
                   onClick={() => pickBrand(brand)}
                   aria-pressed={normalizeBrandName(typedName) === normalizeBrandName(brand.name)}
-                  className="flex min-h-11 items-center gap-2 rounded-full border-2 border-sand bg-white py-1 pl-1.5 pr-4 text-[16px] font-extrabold text-forest aria-pressed:border-forest"
+                  className="flex min-h-11 items-center gap-2 rounded-full border-2 border-sand bg-card py-1 pl-1.5 pr-4 text-[16px] font-extrabold text-ink aria-pressed:border-ink"
                 >
                   <BrandLogo brand={brand} size="sm" />
                   {brand.name}
@@ -249,7 +249,7 @@ const DayField = forwardRef<
         placeholder="Ej: 25"
         aria-label={label}
         aria-invalid={Boolean(error) || undefined}
-        className="h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest placeholder:text-text-muted"
+        className="h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted"
         {...props}
       />
       {error && (

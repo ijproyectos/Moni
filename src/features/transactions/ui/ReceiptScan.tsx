@@ -4,10 +4,11 @@ import { useAccounts } from '@/features/accounts/api/useAccounts'
 import type { useParseReceipt } from '@/features/ai/api/useParseReceipt'
 import { warningsNotice, type ParseResponse } from '@/features/ai/domain/draft'
 import { useCategories } from '@/features/categories/api/useCategories'
-import { prepareDrafts } from '../domain/prepareDrafts'
-import { toUserMessage } from '@/shared/lib/errors'
+import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
+import { prepareDrafts } from '../domain/prepareDrafts'
 import { DraftConfirmation } from './DraftConfirmation'
 
 interface ReceiptScanProps {
@@ -27,6 +28,10 @@ export function ReceiptScan({ scan, onRetry, onClose }: ReceiptScanProps) {
   function cancel() {
     scan.cancel()
     onClose()
+  }
+
+  if (scan.isError && isPlusRequired(scan.error)) {
+    return <PlusSheet reason="receipt" onClose={onClose} />
   }
 
   if (scan.isError) {

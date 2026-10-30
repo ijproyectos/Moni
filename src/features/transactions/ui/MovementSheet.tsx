@@ -303,7 +303,7 @@ export function MovementSheet({
         )}
 
         {mode === 'expense' && !isEdit && !isLoading && !loadFailed && (
-          <div className="flex items-center justify-between gap-3 rounded-[18px] border border-sand bg-white px-4 py-2">
+          <div className="flex items-center justify-between gap-3 rounded-[18px] border border-sand bg-card px-4 py-2">
             <span>
               <span className="block text-[17px] font-extrabold">Compartido</span>
               <span className="block text-[14px] text-text-muted">Dividirlo con un grupo</span>
@@ -326,7 +326,7 @@ export function MovementSheet({
           accounts.length < 2 ? (
             <p className="py-6 text-center text-[16px] leading-6 text-text-muted">
               Necesitás al menos dos cuentas para transferir.{' '}
-              <Link to="/cuentas" onClick={onClose} className="font-semibold text-forest underline">
+              <Link to="/cuentas" onClick={onClose} className="font-semibold text-ink underline">
                 Crear una cuenta
               </Link>
             </p>

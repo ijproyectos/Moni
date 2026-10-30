@@ -15,6 +15,8 @@ import {
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
+import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
+import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
@@ -143,21 +145,13 @@ export function MorePage() {
         aria-label="Ver mi perfil"
         className="flex items-center gap-4 rounded-[28px] bg-forest p-4 text-cream"
       >
-        {profile?.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="size-[72px] rounded-full object-cover"
-          />
-        ) : (
-          <span
-            aria-hidden="true"
-            className="flex size-[72px] items-center justify-center rounded-full bg-lime font-display text-3xl font-extrabold text-forest"
-          >
-            {initial}
-          </span>
-        )}
+        <PhotoOrInitial
+          url={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
+          initial={initial}
+          alt="Tu foto de perfil"
+          className="size-[72px] shrink-0"
+          fallbackClassName="bg-lime font-display text-3xl font-extrabold text-forest"
+        />
         <div className="min-w-0 flex-1">
           {isLoading ? (
             <p className="text-text-muted-on-dark">Cargando perfil…</p>
@@ -208,7 +202,7 @@ export function MorePage() {
             aria-expanded={showMore}
             aria-controls="mas-herramientas"
             onClick={() => setShowMore((v) => !v)}
-            className="mt-1 flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white font-display text-[16px] font-extrabold text-forest"
+            className="mt-1 flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card font-display text-[16px] font-extrabold text-ink"
           >
             Más herramientas
             <ChevronDown
@@ -239,7 +233,7 @@ function TileGrid({ tiles }: { tiles: Tile[] }) {
         <li key={title}>
           <Link
             to={to}
-            className="flex h-full min-h-[172px] flex-col items-center justify-center gap-2 rounded-[24px] border border-sand bg-white p-4 text-center"
+            className="flex h-full min-h-[172px] flex-col items-center justify-center gap-2 rounded-[24px] border border-sand bg-card p-4 text-center"
           >
             <span
               aria-hidden="true"

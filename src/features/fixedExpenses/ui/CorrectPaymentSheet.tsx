@@ -66,7 +66,7 @@ export function CorrectPaymentSheet({
             max={today}
             onChange={(e) => setPaidOn(e.target.value)}
             aria-label="Fecha de pago"
-            className="h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest"
+            className="h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink"
           />
         </label>
         <p className="text-[14px] leading-5 text-text-muted">

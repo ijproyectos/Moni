@@ -173,7 +173,7 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
           <Link
             key={g.id}
             to={`/grupos/${g.id}`}
-            className="block rounded-[28px] border border-sand bg-white p-5"
+            className="block rounded-[28px] border border-sand bg-card p-5"
           >
             <div className="flex items-center justify-between">
               <span className="rounded-full bg-lime/40 px-3 py-1 text-[13px] font-extrabold uppercase tracking-[0.1em]">

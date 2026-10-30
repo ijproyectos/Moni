@@ -10,6 +10,8 @@ export interface AddAction {
   circle: string
   /** Not available now (e.g. no connection): shown dimmed and not selectable. */
   disabled?: boolean
+  /** Small tag next to the name (e.g. "Plus"). */
+  badge?: string
   onSelect: () => void
 }
 
@@ -64,7 +66,7 @@ export function AddActionMenu({
       aria-label="Agregar movimiento"
       className={cn(
         'pointer-events-auto absolute bottom-[calc(100%+32px)] left-1/2 w-[min(20.5rem,calc(100vw-2rem))] -translate-x-1/2 origin-bottom',
-        'rounded-[32px] bg-white px-3 pb-3 pt-4 shadow-[0_14px_40px_rgba(6,71,53,0.28)] ring-1 ring-sand',
+        'rounded-[32px] bg-card px-3 pb-3 pt-4 shadow-[0_14px_40px_rgba(6,71,53,0.28)] ring-1 ring-sand',
         'motion-safe:animate-[menu-pop_240ms_cubic-bezier(0.2,0.9,0.3,1.15)]',
         className,
       )}
@@ -91,9 +93,14 @@ export function AddActionMenu({
               >
                 <action.icon className="size-7" strokeWidth={2.25} />
               </span>
-              <span className="text-[15px] font-extrabold leading-5 text-forest">
+              <span className="text-[15px] font-extrabold leading-5 text-ink">
                 {action.label}
               </span>
+              {action.badge && (
+                <span className="-mt-1.5 rounded-full bg-gold px-2 py-0.5 text-[12px] font-extrabold leading-4 text-forest">
+                  {action.badge}
+                </span>
+              )}
             </button>
           </li>
         ))}
@@ -103,7 +110,7 @@ export function AddActionMenu({
       )}
       <span
         aria-hidden="true"
-        className="absolute -bottom-2 left-1/2 size-5 -translate-x-1/2 rotate-45 rounded-[4px] bg-white ring-1 ring-sand [clip-path:polygon(100%_0,100%_100%,0_100%)]"
+        className="absolute -bottom-2 left-1/2 size-5 -translate-x-1/2 rotate-45 rounded-[4px] bg-card ring-1 ring-sand [clip-path:polygon(100%_0,100%_100%,0_100%)]"
       />
     </div>
   )

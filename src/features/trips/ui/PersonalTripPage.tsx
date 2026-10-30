@@ -140,7 +140,7 @@ export function PersonalTripPage() {
       </section>
 
       {summary.byCategory.length > 0 && (
-        <section className="rounded-[24px] border border-sand bg-white p-4">
+        <section className="rounded-[24px] border border-sand bg-card p-4">
           <h2 className="text-[22px] font-extrabold">En qué gastaste</h2>
           <ul className="mt-1 divide-y divide-sand">
             {summary.byCategory.map((row) => {
@@ -168,11 +168,11 @@ export function PersonalTripPage() {
       {expensesQuery.isLoading ? (
         <Skeleton className="h-24" />
       ) : expenses.length === 0 ? (
-        <p className="rounded-[24px] border border-sand bg-white p-4 text-[16px] text-text-muted">
+        <p className="rounded-[24px] border border-sand bg-card p-4 text-[16px] text-text-muted">
           Todavía no cargaste gastos de este viaje.
         </p>
       ) : (
-        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white px-4">
+        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card px-4">
           {expenses.map((t) => {
             const category = t.categoryId ? categoryById.get(t.categoryId) : undefined
             return (

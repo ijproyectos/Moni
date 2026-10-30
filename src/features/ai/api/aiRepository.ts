@@ -1,4 +1,5 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
+import { PLUS_REQUIRED_CODE, PlusRequiredError } from '@/shared/lib/errors'
 import { assertOnline } from '@/shared/lib/offline'
 import { getSupabase } from '@/shared/lib/supabase'
 import { parseResponseSchema, type ParseResponse } from '../domain/draft'
@@ -9,6 +10,15 @@ export class AiError extends Error {
     super(code)
     this.name = 'AiError'
   }
+}
+
+/** Turns a failed function call into the error the UI understands: HTTP 402 / `plus_required` is the free-plan gate. */
+export async function toAiError(error: unknown): Promise<AiError | PlusRequiredError> {
+  if (!(error instanceof FunctionsHttpError)) return new AiError('ai_unavailable')
+  const status = (error.context as Response | undefined)?.status
+  const code = await codeFromHttpError(error)
+  if (status === 402 || code === PLUS_REQUIRED_CODE) return new PlusRequiredError()
+  return new AiError(code)
 }
 
 async function codeFromHttpError(error: FunctionsHttpError): Promise<string> {
@@ -28,9 +38,7 @@ export async function parseMovements(text: string, today: string): Promise<Parse
     body: { text, today },
   })
   if (error) {
-    throw new AiError(
-      error instanceof FunctionsHttpError ? await codeFromHttpError(error) : 'ai_unavailable',
-    )
+    throw await toAiError(error)
   }
   const parsed = parseResponseSchema.safeParse(data)
   if (!parsed.success) throw new AiError('ai_unavailable')
@@ -54,9 +62,7 @@ export async function parseReceipt(
   })
   if (error) {
     if (signal?.aborted) throw new AiError('cancelled')
-    throw new AiError(
-      error instanceof FunctionsHttpError ? await codeFromHttpError(error) : 'ai_unavailable',
-    )
+    throw await toAiError(error)
   }
   const parsed = parseResponseSchema.safeParse(data)
   if (!parsed.success || parsed.data.movements.length === 0) throw new AiError('ai_unavailable')

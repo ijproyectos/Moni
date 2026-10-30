@@ -102,7 +102,7 @@ export function SharedGoalSheet({
           placeholder="Ej: Fondo para el depto"
           aria-label="Nombre"
           maxLength={40}
-          className="h-14 rounded-[18px] border border-sand bg-white px-4 text-[17px] placeholder:text-text-muted"
+          className="h-14 rounded-[18px] border border-sand bg-card px-4 text-[17px] placeholder:text-text-muted"
         />
         <SectionLabel className="mt-1">¿Cuánto necesitan?</SectionLabel>
         <AmountInput

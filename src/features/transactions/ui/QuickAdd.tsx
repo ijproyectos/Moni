@@ -1,6 +1,9 @@
 import { Camera, Mic, Plus } from 'lucide-react'
 import { useRef, useState, type ChangeEvent } from 'react'
 import { useParseReceipt } from '@/features/ai/api/useParseReceipt'
+import { usePlus } from '@/features/plus/api/usePlus'
+import type { PlusGateReason } from '@/features/plus/domain/plus'
+import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { AddActionMenu, type AddAction } from '@/shared/ui/AddActionMenu'
@@ -20,6 +23,9 @@ export function QuickAdd() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
   const [receiptOpen, setReceiptOpen] = useState(false)
+  // Free plan: voice and photo open the Plus upsell instead (the server enforces it too).
+  const { isFree } = usePlus()
+  const [upsell, setUpsell] = useState<PlusGateReason | null>(null)
   // Remount the voice screen per opening so its state starts clean.
   const [voiceCount, setVoiceCount] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -60,19 +66,23 @@ export function QuickAdd() {
       icon: Camera,
       circle: 'bg-[#8a6bd1]',
       disabled: !online,
+      badge: isFree ? 'Plus' : undefined,
       onSelect: () => {
         closeMenu()
-        openPicker()
+        if (isFree) setUpsell('receipt')
+        else openPicker()
       },
     },
     {
       id: 'voice',
       label: 'Por voz',
       icon: Mic,
-      circle: 'bg-expense',
+      circle: 'bg-[#b8321f]',
       disabled: !online,
+      badge: isFree ? 'Plus' : undefined,
       onSelect: () => {
         closeMenu()
+        if (isFree) return setUpsell('voice')
         setVoiceCount((n) => n + 1)
         setVoiceOpen(true)
       },
@@ -125,6 +135,7 @@ export function QuickAdd() {
         open={menuOpen}
         onClick={() => setMenuOpen((v) => !v)}
       />
+      {upsell && <PlusSheet reason={upsell} onClose={() => setUpsell(null)} />}
       {voiceOpen && <VoiceSheet key={voiceCount} onClose={() => setVoiceOpen(false)} />}
       {receiptOpen && (
         <ReceiptScan

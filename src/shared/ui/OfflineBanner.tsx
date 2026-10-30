@@ -39,7 +39,7 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className="sticky top-0 z-40 mx-auto w-full max-w-[430px] bg-sand px-4 py-2 text-center text-[14px] font-semibold text-forest"
+      className="sticky top-0 z-40 mx-auto w-full max-w-[430px] bg-sand px-4 py-2 text-center text-[14px] font-semibold text-ink"
     >
       Sin conexión · Estás viendo datos guardados
       {lastUpdated > 0 && (

@@ -111,7 +111,7 @@ export function GroupDebtsSheet({
             No pudimos calcular tus deudas. Probá de nuevo.
           </p>
         ) : shown.length === 0 ? (
-          <div className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4">
+          <div className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4">
             <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-lime/40">
               <Handshake aria-hidden="true" className="size-6" />
             </span>
@@ -128,7 +128,7 @@ export function GroupDebtsSheet({
           <>
             <p className="text-[15px] text-text-muted">
               {tab === 'owed' ? 'En total te deben ' : 'En total debés '}
-              <strong className="font-extrabold text-forest">{formatArs(total)}</strong>
+              <strong className="font-extrabold text-ink">{formatArs(total)}</strong>
               {shown.length > 1 ? ` entre ${shown.length} deudas.` : '.'}
             </p>
             <ul className="flex flex-col gap-3">
@@ -136,7 +136,7 @@ export function GroupDebtsSheet({
                 const owed = debt.direction === 'owed'
                 const shared = owed ? null : sharedTransferFor(debt, notices.data ?? [])
                 return (
-                  <li key={debt.key} className="rounded-[24px] border border-sand bg-white p-4">
+                  <li key={debt.key} className="rounded-[24px] border border-sand bg-card p-4">
                     <div className="flex items-center gap-3">
                       <Avatar name={debt.otherName} />
                       <span className="min-w-0 flex-1">
@@ -241,7 +241,7 @@ export function GroupDebtsSheet({
                                 onClick={() =>
                                   void copyText(value ?? '', toast, `${label} copiado`)
                                 }
-                                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white"
+                                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card"
                               >
                                 <Copy aria-hidden="true" className="size-4" />
                               </button>
@@ -291,7 +291,7 @@ export function GroupDebtsSheet({
         )}
 
         {history.length > 0 && (
-          <div className="rounded-[24px] border border-sand bg-white">
+          <div className="rounded-[24px] border border-sand bg-card">
             <button
               type="button"
               aria-expanded={showHistory}

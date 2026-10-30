@@ -93,7 +93,7 @@ export function GroupNoticesPage() {
                 key={n.id}
                 className={cn(
                   'rounded-[24px] border bg-white p-4',
-                  fresh.current?.has(n.id) ? 'border-forest' : 'border-sand',
+                  fresh.current?.has(n.id) ? 'border-ink' : 'border-sand',
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -125,7 +125,7 @@ export function GroupNoticesPage() {
                             type="button"
                             aria-label={`Copiar ${label}`}
                             onClick={() => void copyText(value ?? '', toast, `${label} copiado`)}
-                            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white"
+                            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card"
                           >
                             <Copy aria-hidden="true" className="size-4" />
                           </button>

@@ -1,6 +1,7 @@
 import { Banknote, ChevronLeft, CreditCard, WalletCards } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { AssistantEntryLink } from '@/features/assistant/ui/AssistantEntryLink'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { availableBalance } from '@/features/accounts/domain/account'
 import { formatArs } from '@/shared/lib/money'
@@ -8,6 +9,7 @@ import { monthStart, todayIso } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { CategoryIconCircle } from '@/shared/ui/IconCircle'
 import { MonthPicker } from '@/shared/ui/MonthPicker'
+import { themedColor } from '@/shared/ui/categoryIcons'
 import { Panel } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useMonthSummary } from '../api/useMonthSummary'
@@ -69,6 +71,7 @@ export function MonthReportPage() {
       </header>
 
       <div className="flex flex-col gap-4 px-4 pt-4">
+        <AssistantEntryLink />
         <Panel>
           <div className="flex items-baseline justify-between">
             <h2 className="text-[22px] font-extrabold">Por categoría</h2>
@@ -81,7 +84,7 @@ export function MonthReportPage() {
                   <span
                     key={s.categoryId}
                     className="rounded-full"
-                    style={{ flexGrow: s.percent, backgroundColor: s.color }}
+                    style={{ flexGrow: s.percent, backgroundColor: themedColor(s.color) }}
                   />
                 ))}
               </div>
@@ -94,7 +97,7 @@ export function MonthReportPage() {
                       <span className="flex items-center gap-1.5 text-[15px] text-text-muted">
                         <span
                           className="size-2.5 rounded-full"
-                          style={{ backgroundColor: s.color }}
+                          style={{ backgroundColor: themedColor(s.color) }}
                         />
                         {Math.round(s.percent)}% del total
                       </span>

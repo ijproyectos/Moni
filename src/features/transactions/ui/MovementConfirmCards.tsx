@@ -103,7 +103,7 @@ function PillSelect({
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          'h-9 w-full min-w-0 appearance-none truncate rounded-full py-0 pl-3 pr-8 text-[14px] font-bold text-forest',
+          'h-9 w-full min-w-0 appearance-none truncate rounded-full py-0 pl-3 pr-8 text-[14px] font-bold text-ink',
           warn ? 'bg-gold/30 ring-1 ring-gold' : 'bg-sand',
         )}
       >
@@ -111,7 +111,7 @@ function PillSelect({
       </select>
       <ChevronDown
         aria-hidden="true"
-        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-forest"
+        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-ink"
       />
     </span>
   )
@@ -154,7 +154,7 @@ export function MovementConfirmCards({
           <li
             key={draft.key}
             aria-label={`Movimiento ${n}`}
-            className={cn('rounded-[24px] bg-white ring-1 ring-sand', dense ? 'p-3' : 'p-3.5')}
+            className={cn('rounded-[24px] bg-card ring-1 ring-sand', dense ? 'p-3' : 'p-3.5')}
           >
             <div className="flex items-center justify-between gap-2">
               <div role="group" aria-label={`Tipo del movimiento ${n}`} className="flex gap-1">
@@ -205,7 +205,7 @@ export function MovementConfirmCards({
                   dense
                     ? 'font-display text-[26px] font-extrabold leading-8'
                     : 'font-display text-[34px] font-extrabold leading-10',
-                  draft.kind === 'expense' ? 'text-forest' : 'text-[#2a7a1f]',
+                  draft.kind === 'expense' ? 'text-ink' : 'text-income',
                   cents === null || cents <= 0 ? '!text-text-muted !text-[24px]' : '',
                 )}
               />
@@ -218,7 +218,7 @@ export function MovementConfirmCards({
                 onChange={(note) => onChange(draft.key, { note })}
                 className={cn(
                   dense ? 'text-[15px] leading-5' : 'text-[17px] leading-6',
-                  draft.note.trim() === '' ? 'text-text-muted' : 'text-forest',
+                  draft.note.trim() === '' ? 'text-text-muted' : 'text-ink',
                 )}
               />
             </div>
@@ -279,7 +279,7 @@ export function MovementConfirmCards({
             </div>
 
             {hint && !error && (
-              <p className="mt-1.5 text-[13px] font-semibold text-[#8a5a00]">{hint}</p>
+              <p className="mt-1.5 text-[13px] font-semibold text-[#8a5a00] dark:text-gold">{hint}</p>
             )}
             {error && (
               <p role="alert" className="mt-1.5 text-[13px] font-semibold text-expense">

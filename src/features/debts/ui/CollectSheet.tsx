@@ -10,7 +10,7 @@ import {
 import { TransferDataSection } from '@/features/accounts/ui/TransferDataSection'
 import { toUserMessage } from '@/shared/lib/errors'
 import { formatArs } from '@/shared/lib/money'
-import { copyText } from '@/shared/lib/share'
+import { copyText, whatsappUrl } from '@/shared/lib/share'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
@@ -61,7 +61,12 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
     }
   }
 
-  async function shareNative() {
+  async function share() {
+    // Devices without the native share menu (desktop) open WhatsApp with the message ready to send.
+    if (!canShare) {
+      window.open(whatsappUrl(message), '_blank', 'noopener,noreferrer')
+      return
+    }
     try {
       await navigator.share({ text: message })
     } catch {
@@ -100,7 +105,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
                     onClick={() => (withData ? setPickId(a.id) : setAddingId(a.id))}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-[20px] border-2 bg-white px-4 py-3 text-left',
-                      selected ? 'border-forest' : 'border-sand',
+                      selected ? 'border-ink' : 'border-sand',
                     )}
                   >
                     <span className="min-w-0 flex-1">
@@ -122,7 +127,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
               onClick={() => setPickId(null)}
               className={cn(
                 'flex w-full items-center gap-3 rounded-[20px] border-2 bg-white px-4 py-3 text-left',
-                picked === null ? 'border-forest' : 'border-sand',
+                picked === null ? 'border-ink' : 'border-sand',
               )}
             >
               <span className="flex-1 text-[17px] font-extrabold">
@@ -135,7 +140,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
         {options.length === 0 && (
           <p className="text-[15px] leading-5 text-text-muted">
             Todavía no tenés bancos ni billeteras cargados.{' '}
-            <Link to="/cuentas" onClick={onClose} className="font-extrabold text-forest underline">
+            <Link to="/cuentas" onClick={onClose} className="font-extrabold text-ink underline">
               Agregar un medio de pago
             </Link>
           </p>
@@ -162,16 +167,10 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
           <Button
             variant="ghost"
             className="border-2 border-sand"
-            onClick={() => void shareNative()}
-            disabled={!canShare}
+            onClick={() => void share()}
           >
             <Share2 aria-hidden="true" className="mr-2 size-5" /> Compartir
           </Button>
-          {!canShare && (
-            <p className="-mt-1 text-center text-[13px] leading-4 text-text-muted">
-              Este dispositivo no abre el menú de compartir: usá «Copiar mensaje».
-            </p>
-          )}
           <Button
             variant="ghost"
             className="border-2 border-sand"

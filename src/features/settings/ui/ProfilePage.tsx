@@ -1,11 +1,14 @@
 import {
   Banknote,
+  CalendarX,
   Bell,
   Camera,
   ChevronLeft,
   CreditCard,
   Images,
   LogOut,
+  Moon,
+  Gift,
   Shapes,
   ShoppingBasket,
   Sparkles,
@@ -19,6 +22,8 @@ import { Link } from 'react-router'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { signOut } from '@/features/auth/api/authActions'
 import { useAuth } from '@/features/auth/api/authContext'
+import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
+import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { useUpdateProfile } from '@/features/auth/api/useUpdateProfile'
 import { displayNameSchema, firstName, initialOf } from '@/features/auth/domain/profile'
@@ -26,6 +31,12 @@ import {
   updateWeeklyDigest,
   useWeeklyDigestSettings,
 } from '@/features/insights/mock/digestSettings'
+import { useSubscriptionState } from '@/features/plus/api/useBilling'
+import { usePlus } from '@/features/plus/api/usePlus'
+import { isCancellable } from '@/features/plus/domain/billing'
+import { CancelPlusSheet } from '@/features/plus/ui/CancelPlusSheet'
+import { formatPlusExpiry } from '@/features/plus/domain/plus'
+import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { useUpdateGoals } from '@/features/onboarding/api/useGoals'
 import {
   GOAL_OPTIONS,
@@ -37,6 +48,7 @@ import {
 import { loadLocalPreferences } from '@/features/onboarding/domain/localPreferences'
 import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
 import { toUserMessage } from '@/shared/lib/errors'
+import { shareLink } from '@/shared/lib/share'
 import { formatArs } from '@/shared/lib/money'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
@@ -54,14 +66,17 @@ import {
   Toggle,
 } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
+import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { FEATURES } from '@/shared/config/features'
+import { useTheme } from '../api/useTheme'
+import { THEME_LABELS, THEME_MODES } from '../domain/theme'
 import { updateProfileExtras, useProfileExtras } from '../mock/profileExtrasStore'
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
-type Sheet = 'edit' | 'income' | 'goals' | 'signout' | 'delete' | null
+type Sheet = 'edit' | 'income' | 'goals' | 'plus' | 'cancelPlus' | 'signout' | 'delete' | null
 
 function ProfilePhoto({
   url,
@@ -77,26 +92,18 @@ function ProfilePhoto({
   const box = size === 'lg' ? 'size-[110px] text-[48px]' : 'size-[100px] text-[44px]'
   return (
     <div className="relative mx-auto w-fit">
-      {url ? (
-        <img
-          src={url}
-          alt=""
-          referrerPolicy="no-referrer"
-          className={`${box} rounded-full object-cover`}
-        />
-      ) : (
-        <span
-          aria-hidden="true"
-          className={`${box} flex items-center justify-center rounded-full bg-lime font-display font-extrabold text-forest`}
-        >
-          {initial}
-        </span>
-      )}
+      <PhotoOrInitial
+        url={url}
+        initial={initial}
+        alt="Tu foto de perfil"
+        className={box}
+        fallbackClassName="bg-lime font-display font-extrabold text-forest"
+      />
       <button
         type="button"
         onClick={onCamera}
         aria-label="Cambiar foto"
-        className="absolute -bottom-1 -right-1 flex size-10 items-center justify-center rounded-full border-4 border-canvas bg-forest text-cream"
+        className="absolute -bottom-1 -right-1 flex size-11 items-center justify-center rounded-full border-4 border-canvas bg-forest text-cream"
       >
         <Camera aria-hidden="true" className="size-4" />
       </button>
@@ -115,11 +122,20 @@ export function ProfilePage() {
   const [sheet, setSheet] = useState<Sheet>(null)
   const [isSigningOut, setIsSigningOut] = useState(false)
   const queryClient = useQueryClient()
+  const plus = usePlus()
+  const subscription = useSubscriptionState()
 
   const saved = profile?.display_name ?? ''
   const shortName = firstName(saved) || user?.email?.split('@')[0] || 'Vos'
   const initial = initialOf(saved, user?.email ?? '')
-  const photo = extras.photoRemoved ? null : (extras.localPhotoUrl ?? profile?.avatar_url ?? null)
+  // A photo picked on this device wins; otherwise the Google account photo, then the stored profile one.
+  const photo = extras.photoRemoved
+    ? null
+    : resolveAvatarUrl({
+        uploadedUrl: extras.localPhotoUrl,
+        user,
+        profileUrl: profile?.avatar_url,
+      })
   const createdAt = (profile as { created_at?: string } | undefined)?.created_at
   const since = createdAt
     ? `Desde ${MONTHS[Number(createdAt.slice(5, 7)) - 1]} ${createdAt.slice(0, 4)}`
@@ -128,6 +144,17 @@ export function ProfilePage() {
   const localPrefs = user ? loadLocalPreferences(user.id) : null
   const usesUsd = (profile?.secondary_currency ?? localPrefs?.secondaryCurrency) === 'USD'
   const goalCount = sanitizeGoals(profile?.goals).length
+
+  function recommend() {
+    // Web Share API when the device has it, otherwise the link is copied.
+    void shareLink(
+      {
+        url: window.location.origin,
+        text: 'Probá Moni, la app para llevar tus gastos y repartirlos con tus amigos.',
+      },
+      toast,
+    )
+  }
 
   async function handleSignOut() {
     setIsSigningOut(true)
@@ -156,7 +183,7 @@ export function ProfilePage() {
           {user?.email && <p className="text-[16px] text-text-muted">{user.email}</p>}
           <div className="mt-1 flex gap-2">
             <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold">
-              Plan gratis
+              {plus.isPlus ? 'Moni Plus' : 'Plan gratis'}
             </span>
             {since && (
               <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold">
@@ -236,6 +263,7 @@ export function ProfilePage() {
           subtitle={usesUsd ? 'Peso argentino (ARS) · también dólares' : 'Peso argentino (ARS)'}
           chevron={false}
         />
+        <AppearanceRow />
         {FEATURES.weeklyDigest && (
           <OptionRow
             className="rounded-none border-0"
@@ -252,6 +280,41 @@ export function ProfilePage() {
             }
           />
         )}
+      </ProfileGroup>
+
+      <SectionLabel className="mt-1">Moni Plus</SectionLabel>
+      <ProfileGroup>
+        <OptionRow
+          className="rounded-none border-0"
+          icon={<IconTile icon={Sparkles} bg="#f6e7b4" className="size-11" />}
+          title={plus.isPlus ? 'Moni Plus' : 'Pasar a Moni Plus'}
+          subtitle={
+            plus.isPlus && plus.expiresAt
+              ? `Activo hasta el ${formatPlusExpiry(plus.expiresAt, true)}`
+              : 'Voz, tickets y más grupos · suscripción o código'
+          }
+          onClick={() => setSheet('plus')}
+        />
+        {isCancellable(subscription.data) && (
+          <OptionRow
+            className="rounded-none border-0"
+            icon={<IconTile icon={CalendarX} bg="#fbdcd7" color="#b8321f" className="size-11" />}
+            title="Cancelar suscripción"
+            subtitle={
+              plus.expiresAt
+                ? `Seguís con Plus hasta el ${formatPlusExpiry(plus.expiresAt, true)}`
+                : 'Seguís con Plus hasta que termine lo que pagaste'
+            }
+            onClick={() => setSheet('cancelPlus')}
+          />
+        )}
+        <OptionRow
+          className="rounded-none border-0"
+          icon={<IconTile icon={Gift} bg="#e3f2cf" className="size-11" />}
+          title="Recomendá a un amigo"
+          subtitle="Compartí el link de Moni"
+          onClick={recommend}
+        />
       </ProfileGroup>
 
       <SectionLabel className="mt-1">Cuenta</SectionLabel>
@@ -283,6 +346,10 @@ export function ProfilePage() {
       )}
       {FEATURES.monthlyIncome && sheet === 'income' && (
         <IncomeSheet value={extras.monthlyIncomeCents} onClose={() => setSheet(null)} />
+      )}
+      {sheet === 'plus' && <PlusSheet onClose={() => setSheet(null)} />}
+      {sheet === 'cancelPlus' && (
+        <CancelPlusSheet expiresAt={plus.expiresAt} onClose={() => setSheet(null)} />
       )}
       {sheet === 'goals' && (
         <GoalsSheet saved={profile?.goals ?? []} onClose={() => setSheet(null)} />
@@ -375,8 +442,8 @@ function GoalsSheet({ saved, onClose }: { saved: readonly string[]; onClose: () 
                 aria-pressed={checked}
                 onClick={() => setDraft((d) => toggleGoal(d, goal.id))}
                 className={
-                  'flex min-h-14 w-full items-center gap-3 rounded-[18px] border-2 bg-white px-4 py-2 text-left text-[16px] font-semibold leading-5 text-forest ' +
-                  (checked ? 'border-forest' : 'border-sand')
+                  'flex min-h-14 w-full items-center gap-3 rounded-[18px] border-2 bg-card px-4 py-2 text-left text-[16px] font-semibold leading-5 text-ink ' +
+                  (checked ? 'border-ink' : 'border-sand')
                 }
               >
                 <span className="flex-1">{goal.label}</span>
@@ -398,9 +465,33 @@ function GoalsSheet({ saved, onClose }: { saved: readonly string[]; onClose: () 
   )
 }
 
+/** Apariencia: Claro / Oscuro / Sistema, saved on this device only. */
+function AppearanceRow() {
+  const { mode, setMode } = useTheme()
+  return (
+    <div className="flex flex-col gap-3 px-4 py-3">
+      <span className="flex items-center gap-3">
+        <IconTile icon={Moon} bg="#d9ebe4" className="size-11" />
+        <span className="flex-1">
+          <span className="block text-[17px] font-extrabold leading-6">Apariencia</span>
+          <span className="block text-[14px] leading-5 text-text-muted">
+            Solo en este dispositivo
+          </span>
+        </span>
+      </span>
+      <SegmentedControl
+        label="Apariencia"
+        value={mode}
+        onChange={setMode}
+        options={THEME_MODES.map((m) => ({ value: m, label: THEME_LABELS[m] }))}
+      />
+    </div>
+  )
+}
+
 function ProfileGroup({ children }: { children: ReactNode }) {
   return (
-    <div className="divide-y divide-sand overflow-hidden rounded-[24px] border border-sand bg-white px-1">
+    <div className="divide-y divide-sand overflow-hidden rounded-[24px] border border-sand bg-card px-1">
       {children}
     </div>
   )
@@ -459,21 +550,21 @@ function EditProfileSheet({
           <button
             type="button"
             onClick={() => cameraRef.current?.click()}
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-sand bg-white text-[15px] font-extrabold"
+            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-sand bg-card text-[15px] font-extrabold"
           >
             <Camera aria-hidden="true" className="size-4" /> Sacar foto
           </button>
           <button
             type="button"
             onClick={() => galleryRef.current?.click()}
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-sand bg-white text-[15px] font-extrabold"
+            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-sand bg-card text-[15px] font-extrabold"
           >
             <Images aria-hidden="true" className="size-4" /> Galería
           </button>
           <button
             type="button"
             onClick={() => updateProfileExtras({ localPhotoUrl: null, photoRemoved: true })}
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-sand bg-white text-[15px] font-extrabold text-expense"
+            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-sand bg-card text-[15px] font-extrabold text-expense"
           >
             <Trash2 aria-hidden="true" className="size-4" /> Quitar
           </button>
@@ -499,7 +590,7 @@ function EditProfileSheet({
           onChange={(e) => setDraft(e.target.value)}
           aria-label="Nombre"
           maxLength={60}
-          className="h-14 rounded-[18px] border border-sand bg-white px-4 text-[17px]"
+          className="h-14 rounded-[18px] border border-sand bg-card px-4 text-[17px]"
         />
         <SectionLabel>Mail</SectionLabel>
         <input

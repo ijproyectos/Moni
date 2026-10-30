@@ -12,14 +12,14 @@ type Tab = 'suscripciones' | 'gastos-fijos'
 
 /**
  * Pagos recurrentes: Suscripciones (charged by Moni on their dates) and Gastos fijos (Moni reminds, the person
- * registers the real payment). Installments live in Tarjetas de crédito.
+ * registers the real payment). Installments live in Medios de pago › Cuotas.
  */
 export function RecurringPage() {
   const [params, setParams] = useSearchParams()
   const [sheet, setSheet] = useState<null | 'sub' | 'fixed'>(null)
 
-  // Old links: ?tab=cuotas now lives under Tarjetas de crédito.
-  if (params.get('tab') === 'cuotas') return <Navigate to="/tarjetas?tab=cuotas" replace />
+  // Old links: ?tab=cuotas now lives under Medios de pago.
+  if (params.get('tab') === 'cuotas') return <Navigate to="/cuentas?tab=cuotas" replace />
   const tab: Tab = params.get('tab') === 'gastos-fijos' ? 'gastos-fijos' : 'suscripciones'
 
   return (

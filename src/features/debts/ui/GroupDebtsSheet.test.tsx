@@ -273,7 +273,7 @@ describe('Me deben: Enviar cobro', () => {
     )
   })
 
-  it('"Compartir" opens the device share menu with the message (no WhatsApp-only button)', async () => {
+  it('"Compartir" opens the device share menu with the message (there is no WhatsApp-only button)', async () => {
     const share = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'share', { value: share, configurable: true })
     try {
@@ -289,12 +289,21 @@ describe('Me deben: Enviar cobro', () => {
     }
   })
 
-  it('without the device share menu, "Compartir" is off and says to copy instead', async () => {
+  it('without the device share menu, "Compartir" opens WhatsApp with the same message', async () => {
     Reflect.deleteProperty(navigator, 'share')
-    const { sheet } = await openCollect()
-    expect(within(sheet).getByRole('button', { name: 'Compartir' })).toBeDisabled()
-    expect(within(sheet).getByText(/usá «Copiar mensaje»/)).toBeVisible()
-    expect(within(sheet).queryByRole('link', { name: /WhatsApp/ })).toBeNull()
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    try {
+      const { user, sheet } = await openCollect()
+      await user.click(within(sheet).getByRole('button', { name: /Galicia/ }))
+      await user.click(within(sheet).getByRole('button', { name: 'Compartir' }))
+      expect(open).toHaveBeenCalledTimes(1)
+      const url = String(open.mock.calls[0]?.[0])
+      expect(url).toMatch(/^https:\/\/wa\.me\/\?text=/)
+      expect(decodeURIComponent(url)).toContain('Alias: ana.galicia')
+      expect(state.remind).not.toHaveBeenCalled()
+    } finally {
+      open.mockRestore()
+    }
   })
 
   it('"Copiar mensaje" copies the whole message and sends nothing', async () => {

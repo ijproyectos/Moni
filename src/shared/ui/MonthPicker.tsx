@@ -36,7 +36,7 @@ export function MonthPicker({
         onClick={() => setOpen((o) => !o)}
         className={cn(
           'flex min-h-11 items-center gap-2 font-display text-xl font-medium',
-          tone === 'dark' ? 'text-text-muted-on-dark' : 'text-forest',
+          tone === 'dark' ? 'text-text-muted-on-dark' : 'text-ink',
         )}
       >
         {formatMonthYear(value)}
@@ -63,7 +63,7 @@ export function MonthPicker({
                     setOpen(false)
                   }}
                   className={cn(
-                    'flex min-h-11 w-full items-center rounded-md px-3 font-display text-base font-medium text-forest',
+                    'flex min-h-11 w-full items-center rounded-md px-3 font-display text-base font-medium text-ink',
                     month === value && 'bg-lime',
                   )}
                 >

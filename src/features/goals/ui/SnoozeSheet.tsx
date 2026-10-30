@@ -58,7 +58,7 @@ export function SnoozeSheet({ goal, onClose }: { goal: SavingsGoal; onClose: () 
               min={tomorrow}
               max={addDays(today, 90)}
               onChange={(e) => setDate(e.target.value)}
-              className="h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest"
+              className="h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink"
             />
             <Button disabled={!valid || snooze.isPending} onClick={() => void apply(date)}>
               Posponer
