@@ -61,6 +61,7 @@ export function HomeScreen({
         latestMonth={latestMonth}
         onMonthChange={onMonthChange}
         initial={initial}
+        availableCents={summary.availableBalanceCents}
         balanceCents={summary.balanceCents}
         incomeCents={summary.incomeCents}
         expenseCents={summary.expenseCents}

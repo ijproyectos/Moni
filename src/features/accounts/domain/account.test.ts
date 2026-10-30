@@ -55,6 +55,49 @@ describe('availableBalance', () => {
   })
 })
 
+describe('availableBalance: the "Dinero disponible" of Inicio', () => {
+  it('adds cash, banks and wallets only: no cards, no archived accounts, nothing of savings goals', () => {
+    const accounts = [
+      account({ id: 'cash', kind: 'cash', balanceCents: 12_000_00 }),
+      account({ id: 'galicia', kind: 'bank', balanceCents: 216_000_00 }),
+      account({ id: 'santander', kind: 'bank', balanceCents: 300_000_00 }),
+      account({ id: 'mp', kind: 'wallet', balanceCents: 40_000_00 }),
+      // Debt of a card, a card with credit in favor and a limit: none of them is money in hand.
+      account({
+        id: 'visa',
+        kind: 'credit_card',
+        balanceCents: -418_333_33,
+        creditLimitCents: 900_000_00,
+      }),
+      account({
+        id: 'favor',
+        kind: 'credit_card',
+        balanceCents: 5_000_00,
+        creditLimitCents: 100_000_00,
+      }),
+      account({
+        id: 'old',
+        kind: 'bank',
+        balanceCents: 99_999_00,
+        archivedAt: '2026-10-01T00:00:00Z',
+      }),
+    ]
+    expect(availableBalance(accounts)).toBe(568_000_00)
+  })
+
+  it('counts a transfer between own accounts once (the total does not change)', () => {
+    const before = [
+      account({ balanceCents: 100_000_00 }),
+      account({ id: 'b', balanceCents: 50_000_00 }),
+    ]
+    const after = [
+      account({ balanceCents: 70_000_00 }),
+      account({ id: 'b', balanceCents: 80_000_00 }),
+    ]
+    expect(availableBalance(after)).toBe(availableBalance(before))
+  })
+})
+
 describe('credit cards', () => {
   it('keeps card debt out of the available balance and reports it separately', () => {
     const accounts = [
