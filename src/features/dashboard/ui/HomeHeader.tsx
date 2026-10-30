@@ -16,6 +16,8 @@ interface HomeHeaderProps {
   balanceCents: Cents
   incomeCents: Cents
   expenseCents: Cents
+  /** Reminders (e.g. tomorrow's charges) that add to the bell's count. */
+  reminderCount?: number
 }
 
 export function HomeHeader({
@@ -26,9 +28,11 @@ export function HomeHeader({
   balanceCents,
   incomeCents,
   expenseCents,
+  reminderCount = 0,
 }: HomeHeaderProps) {
   const { hidden, toggle } = useHiddenAmounts()
-  const { unread } = useNotifications()
+  const { unread: unreadNotices } = useNotifications()
+  const unread = unreadNotices + reminderCount
   const total = incomeCents + expenseCents
   const expenseShare = total > 0 ? Math.max(expenseCents / total, 0.28) : 0.5
   const incomeShare = total > 0 ? Math.max(incomeCents / total, 0.28) : 0.5

@@ -13,6 +13,7 @@ import {
   useNotifications,
   type PaymentNotice,
 } from '../mock/notificationsStore'
+import { SubscriptionReminders } from '@/features/subscriptions/ui/SubscriptionReminders'
 import { RemindSheet } from './RemindSheet'
 
 // Screens 021 / 022 / 128 — Avisos.
@@ -41,6 +42,7 @@ export function NotificationsPage() {
 
       {tab === 'pagos' ? (
         <>
+          <SubscriptionReminders />
           <SectionLabel
             action={
               <Link to="/deudas" className="text-[14px] font-extrabold uppercase tracking-[0.1em]">

@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
+import { useSyncDueSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
 import { MyInitialContext } from '@/shared/ui/myInitialContext'
 import { MovementSheetProvider } from '@/features/transactions/ui/MovementSheetProvider'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
@@ -39,6 +40,8 @@ export function AppShell() {
   const { user } = useAuth()
   const { data: profile } = useProfile()
   const initial = initialOf(profile?.display_name, user?.email ?? '') || 'V'
+  // Safety net for the server job: register what is already due for this person when the app opens.
+  useSyncDueSubscriptions()
   return (
     <MyInitialContext.Provider value={initial}>
       <MovementSheetProvider>

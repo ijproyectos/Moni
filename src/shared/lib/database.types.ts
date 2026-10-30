@@ -400,6 +400,45 @@ export interface Database {
         }
         Returns: number
       }
+      /** Migration 20261101000000 (subscriptions). */
+      get_subscription_overview: { Args: { p_today?: string | null }; Returns: Json }
+      process_my_due_subscriptions: { Args: Record<string, never>; Returns: number }
+      create_subscription: {
+        Args: {
+          p_service: string
+          p_name: string
+          p_plan: string | null
+          p_amount: number
+          p_period: string
+          p_next_on: string
+          p_account: string
+          p_category: string
+          p_remind?: boolean
+          p_request_key?: string | null
+        }
+        Returns: string
+      }
+      update_subscription: {
+        Args: {
+          p_id: string
+          p_name: string
+          p_plan: string | null
+          p_amount: number
+          p_period: string
+          p_next_on: string
+          p_account: string
+          p_category: string
+          p_remind: boolean
+        }
+        Returns: undefined
+      }
+      set_subscription_status: { Args: { p_id: string; p_status: string }; Returns: undefined }
+      mark_subscription_charge_not_charged: { Args: { p_charge: string }; Returns: undefined }
+      link_subscription_charge: {
+        Args: { p_charge: string; p_transaction: string }
+        Returns: undefined
+      }
+      dismiss_subscription_duplicate: { Args: { p_charge: string }; Returns: undefined }
       /** Migration 20261030000000. */
       create_installment_purchase: {
         Args: {

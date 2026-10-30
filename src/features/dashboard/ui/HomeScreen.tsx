@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
@@ -31,6 +32,10 @@ interface HomeScreenProps {
   onAddMovement: () => void
   /** Shortcut cards chosen by the person's goals (all shown by default). */
   shortcuts?: { savings: boolean; ants: boolean }
+  /** In-app reminders shown above the insight (e.g. tomorrow's subscription charges). */
+  reminders?: ReactNode
+  /** Reminders counted next to the unread notices on the bell. */
+  reminderCount?: number
 }
 
 export function HomeScreen({
@@ -41,6 +46,8 @@ export function HomeScreen({
   initial,
   onAddMovement,
   shortcuts = { savings: true, ants: true },
+  reminders,
+  reminderCount = 0,
 }: HomeScreenProps) {
   const today = todayIso()
   const hasData =
@@ -57,9 +64,12 @@ export function HomeScreen({
         balanceCents={summary.balanceCents}
         incomeCents={summary.incomeCents}
         expenseCents={summary.expenseCents}
+        reminderCount={reminderCount}
       />
 
       <div className="flex flex-col gap-4 px-4 pt-4">
+        {reminders}
+
         <Card className="flex items-center gap-4 rounded-[24px] p-4">
           <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40 text-forest">
             <MoniGlyph className="size-9" />

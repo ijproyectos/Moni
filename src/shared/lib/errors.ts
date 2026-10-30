@@ -56,6 +56,12 @@ const MESSAGES: Record<string, string> = {
   invalid_statement:
     'Ese resumen no es válido para esta tarjeta. Elegí uno cercano a la fecha de compra.',
   invalid_date: 'La fecha no es válida.',
+  invalid_status: 'Ese estado no es válido.',
+  invalid_transition: 'Ese cambio no se puede hacer en el estado actual.',
+  subscription_not_found: 'No encontramos esa suscripción.',
+  subscription_cancelled: 'Reactivá la suscripción para poder editarla.',
+  charge_not_found: 'No encontramos ese cobro.',
+  invalid_link: 'Ese gasto no se puede vincular a este cobro.',
   invalid_opening_source: 'Elegí de dónde viene esa plata.',
   invalid_opening_kind: 'Esta opción no está disponible para ese tipo de cuenta.',
   nothing_to_classify: 'Este medio no tiene un saldo inicial para clasificar.',
