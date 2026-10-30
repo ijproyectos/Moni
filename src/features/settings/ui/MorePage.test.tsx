@@ -44,20 +44,23 @@ describe('MorePage navigation', () => {
     expect(screen.queryByText('Fijos y cuotas')).toBeNull()
   })
 
-  it('with a credit card, "Tarjetas de crédito" leads to /tarjetas', () => {
-    accountsData.current = [makeAccount({ id: 'v', name: 'Visa', kind: 'credit_card' })]
-    renderPage()
-    const tile = screen.getByRole('link', { name: /Tarjetas de crédito/ })
-    expect(tile).toHaveAttribute('href', '/tarjetas')
-    expect(tile).toHaveTextContent('Resúmenes, límite y cuotas')
-  })
-
-  it('without a card the same tile offers to add one from Medios de pago', () => {
-    accountsData.current = [makeAccount({ id: 'c', name: 'Efectivo' })]
-    renderPage()
-    const tile = screen.getByRole('link', { name: /Tarjetas de crédito/ })
-    expect(tile).toHaveAttribute('href', '/cuentas')
-    expect(tile).toHaveTextContent('Agregá una desde Medios de pago')
+  it('has no standalone "Tarjetas de crédito" tile, with or without a card: cards live in Medios de pago', () => {
+    for (const accounts of [
+      [makeAccount({ id: 'v', name: 'Visa', kind: 'credit_card' })],
+      [makeAccount({ id: 'c', name: 'Efectivo' })],
+    ]) {
+      accountsData.current = accounts
+      const { unmount } = render(
+        <MemoryRouter>
+          <MorePage />
+        </MemoryRouter>,
+      )
+      expect(screen.queryByRole('link', { name: /Tarjetas de crédito/ })).toBeNull()
+      expect(screen.queryByRole('link', { name: /^Medios de pago/ })).toHaveTextContent(
+        'Tarjetas, cuotas y efectivo',
+      )
+      unmount()
+    }
   })
 
   it('keeps Medios de pago next to it', () => {

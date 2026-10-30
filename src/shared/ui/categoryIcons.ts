@@ -100,8 +100,21 @@ export const CATEGORY_COLORS: readonly string[] = [
 
 export const DEFAULT_CATEGORY_COLOR = '#2F9E8F'
 
+const BRAND_FOREST = '#064735'
+
+/**
+ * Display value for a stored category color. The brand forest has no contrast on dark surfaces, so it maps
+ * to a theme token (identical in the light theme, a lighter green in the dark one); the rest pass through.
+ */
+export function themedColor(color: string): string {
+  return color.toLowerCase() === BRAND_FOREST ? 'var(--color-category-groceries)' : color
+}
+
 /** Light tint of a category color for icon circles ("#E5533D" -> 15% alpha). */
 export function tint(color: string): string {
+  if (color.toLowerCase() === BRAND_FOREST) {
+    return 'color-mix(in srgb, var(--color-category-groceries) 15%, transparent)'
+  }
   return /^#[0-9A-Fa-f]{6}$/.test(color) ? `${color}26` : 'transparent'
 }
 

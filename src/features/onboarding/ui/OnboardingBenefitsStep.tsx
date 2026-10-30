@@ -88,10 +88,10 @@ export function OnboardingBenefitsStep({
             <div className="flex aspect-[1.35] w-full items-center justify-center rounded-[22px] bg-cream">
               <img src={slide.image} alt="" className="h-[88%] w-auto" />
             </div>
-            <span className="mt-4 rounded-full bg-lime/45 px-4 py-1 text-[13px] font-extrabold uppercase tracking-[0.08em] text-forest">
+            <span className="mt-4 rounded-full bg-lime/45 px-4 py-1 text-[13px] font-extrabold uppercase tracking-[0.08em] text-ink">
               {slide.tag}
             </span>
-            <h2 className="mt-3 font-display text-[26px] font-extrabold leading-[30px] text-forest">
+            <h2 className="mt-3 font-display text-[26px] font-extrabold leading-[30px] text-ink">
               {slide.title}
             </h2>
             <p className="mt-2 text-[15px] leading-[22px] text-text-muted">{slide.text}</p>

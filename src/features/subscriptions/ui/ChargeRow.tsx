@@ -136,7 +136,7 @@ export function ChargeRow({
               disabled={busy}
               onClick={() => onDismiss(charge)}
               aria-label={`No es duplicado, ${subscription.name}`}
-              className="text-forest"
+              className="text-ink"
             >
               No es duplicado
             </Button>
@@ -149,7 +149,7 @@ export function ChargeRow({
           type="button"
           onClick={() => onOpenDetail(charge)}
           aria-label={`Ver ${subscription.name}`}
-          className="self-start text-[14px] font-extrabold text-forest underline"
+          className="self-start text-[14px] font-extrabold text-ink underline"
         >
           Ver suscripción
         </button>

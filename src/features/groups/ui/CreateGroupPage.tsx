@@ -15,7 +15,8 @@ import {
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
-import { toUserMessage } from '@/shared/lib/errors'
+import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { Avatar, SectionLabel, SplitBar, Toggle } from '@/shared/ui/kit'
@@ -90,7 +91,7 @@ export function CreateGroupPage() {
               onClick={() =>
                 o.kind === 'viaje' ? navigate('/viajes?nuevo=grupo') : setKind(o.kind)
               }
-              className="flex w-full items-center gap-4 rounded-[24px] border border-sand bg-white p-4 text-left"
+              className="flex w-full items-center gap-4 rounded-[24px] border border-sand bg-card p-4 text-left"
             >
               <span className="flex size-[60px] shrink-0 items-center justify-center rounded-[18px] bg-lime/40">
                 <o.icon aria-hidden="true" className="size-7" strokeWidth={2} />
@@ -153,6 +154,8 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
   const [recurring, setRecurring] = useState<Recurring[]>(DEFAULT_RECURRING)
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<{ id: string; name: string } | null>(null)
+  // Free plan: the server rejects a second active group; show the Plus upsell instead of an error.
+  const [upsell, setUpsell] = useState(false)
   const couple = kind === 'pareja'
   const partner = guests[0]
 
@@ -170,9 +173,12 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
       // Next step: show the invite code before landing on the group.
       setCreated({ id: groupId, name: name.trim() })
     } catch (e) {
-      setError(toUserMessage(e))
+      if (isPlusRequired(e)) setUpsell(true)
+      else setError(toUserMessage(e))
     }
   }
+
+  if (upsell) return <PlusSheet reason="group" onClose={() => setUpsell(false)} />
 
   if (created) {
     const finish = () => {
@@ -217,7 +223,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
         {couple ? (
           <>
             <SectionLabel className="mt-1">Tu pareja</SectionLabel>
-            <div className="rounded-[24px] border border-sand bg-white p-4">
+            <div className="rounded-[24px] border border-sand bg-card p-4">
               {partner ? (
                 <div className="flex items-center gap-3">
                   <Avatar name={partner.name} />
@@ -271,7 +277,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                   ]}
                 />
                 {split === 'income' ? (
-                  <div className="rounded-[20px] border border-sand bg-white p-4">
+                  <div className="rounded-[20px] border border-sand bg-card p-4">
                     <div className="flex justify-between text-[17px] font-extrabold">
                       <span>Vos 60 %</span>
                       <span>{partner?.name ?? 'Tu pareja'} 40 %</span>
@@ -299,7 +305,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
             <SectionLabel className="mt-1">
               {kind === 'casa' ? 'Quiénes viven' : 'Quiénes están'}
             </SectionLabel>
-            <div className="rounded-[24px] border border-sand bg-white px-4 py-2">
+            <div className="rounded-[24px] border border-sand bg-card px-4 py-2">
               <ul className="divide-y divide-sand">
                 <li className="flex items-center gap-3 py-2">
                   <Avatar name="Vos" />
@@ -330,7 +336,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                 <button
                   type="button"
                   onClick={() => setAdding(true)}
-                  className="my-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-dashed border-[#d9c9a6] text-[17px] font-extrabold"
+                  className="my-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-dashed border-line text-[17px] font-extrabold"
                 >
                   <Plus aria-hidden="true" className="size-5" /> Agregar persona
                 </button>
@@ -371,7 +377,7 @@ export function RecurringList({
   onChange: (items: Recurring[]) => void
 }) {
   return (
-    <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white px-4">
+    <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card px-4">
       {items.map((r) => {
         const Icon = RECURRING_ICONS[r.icon]
         return (

@@ -6,7 +6,9 @@ import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { useParseMovements } from '@/features/ai/api/useParseMovements'
 import { toDrafts, warningsNotice, type DraftMovement } from '@/features/ai/domain/draft'
 import { useSpeechRecognition, type SpeechError } from '@/features/ai/ui/useSpeechRecognition'
-import { toUserMessage } from '@/shared/lib/errors'
+import { usePlus } from '@/features/plus/api/usePlus'
+import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { Button } from '@/shared/ui/Button'
@@ -33,6 +35,13 @@ type Step = 'input' | 'confirm'
  * speech service.
  */
 export function VoiceScreen({ onClose }: VoiceScreenProps) {
+  const { isFree } = usePlus()
+  // Free plan: show the upsell instead of the capability (and never start the microphone).
+  if (isFree) return <PlusSheet reason="voice" onClose={onClose} />
+  return <VoiceCapture onClose={onClose} />
+}
+
+function VoiceCapture({ onClose }: VoiceScreenProps) {
   const online = useOnlineStatus()
   const titleId = useId()
 
@@ -42,6 +51,8 @@ export function VoiceScreen({ onClose }: VoiceScreenProps) {
   const [drafts, setDrafts] = useState<DraftMovement[]>([])
   const [notice, setNotice] = useState<string | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
+  // The server said the plan is Free even though the client thought otherwise.
+  const [plusRequired, setPlusRequired] = useState(false)
 
   const accountsQuery = useAccounts()
   const parse = useParseMovements()
@@ -75,7 +86,10 @@ export function VoiceScreen({ onClose }: VoiceScreenProps) {
         setDrafts(next)
         setStep('confirm')
       },
-      onError: (error) => setParseError(toUserMessage(error)),
+      onError: (error) => {
+        if (isPlusRequired(error)) setPlusRequired(true)
+        else setParseError(toUserMessage(error))
+      },
     })
   }
 
@@ -89,6 +103,8 @@ export function VoiceScreen({ onClose }: VoiceScreenProps) {
     setParseError(null)
     speech.start()
   }
+
+  if (plusRequired) return <PlusSheet reason="voice" onClose={onClose} />
 
   if (step === 'confirm') {
     return (
@@ -121,7 +137,7 @@ export function VoiceScreen({ onClose }: VoiceScreenProps) {
             type="button"
             aria-label="Cerrar"
             onClick={onClose}
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-sand text-forest"
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-sand text-ink"
           >
             <X aria-hidden="true" className="size-5" strokeWidth={2} />
           </button>
@@ -182,7 +198,7 @@ export function VoiceScreen({ onClose }: VoiceScreenProps) {
             autoFocus={!voiceMode}
             onChange={(e) => setText(e.target.value)}
             placeholder="Gasté 5 lucas en el bondi, 18 en el almuerzo y cobré el sueldo"
-            className="w-full resize-none rounded-[18px] border border-sand bg-white p-4 text-[17px] leading-6 text-forest placeholder:text-text-muted"
+            className="w-full resize-none rounded-[18px] border border-sand bg-card p-4 text-[17px] leading-6 text-ink placeholder:text-text-muted"
           />
         </label>
         {parseError && (

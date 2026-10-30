@@ -56,7 +56,7 @@ export function CardSummarySection({
       {data.statements.length > 0 && (
         <ul
           aria-label="Resúmenes"
-          className="divide-y divide-sand rounded-[20px] border border-sand bg-white"
+          className="divide-y divide-sand rounded-[20px] border border-sand bg-card"
         >
           {data.statements.map((statement) => (
             <StatementRow
@@ -96,7 +96,7 @@ function Figures({ data }: { data: CardOverview }) {
       { label: 'Deuda total', cents: data.debtTotalCents, strong: true },
     ]
   return (
-    <dl className="divide-y divide-sand rounded-[20px] border border-sand bg-white px-4 text-[16px]">
+    <dl className="divide-y divide-sand rounded-[20px] border border-sand bg-card px-4 text-[16px]">
       {rows.map((row) => (
         <div key={row.label} className="flex items-center justify-between gap-3 py-3">
           <dt className={cn(row.strong ? 'font-extrabold' : 'text-text-muted')}>

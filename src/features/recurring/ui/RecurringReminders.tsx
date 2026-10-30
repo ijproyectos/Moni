@@ -23,7 +23,7 @@ export function RecurringReminders({ className }: { className?: string }) {
         <Link
           key={r.key}
           to={r.to}
-          className="flex items-start gap-3 text-[17px] font-extrabold leading-6 text-forest"
+          className="flex items-start gap-3 text-[17px] font-extrabold leading-6 text-ink"
         >
           <BellRing aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
           {r.text}

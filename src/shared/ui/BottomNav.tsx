@@ -25,7 +25,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="flex h-16 items-center gap-1 rounded-full bg-forest p-2 shadow-lg"
+      className="flex min-h-16 items-center gap-1 rounded-full bg-forest p-2 shadow-lg dark:ring-1 dark:ring-white/15"
     >
       {items.map(({ to, label, icon: Icon, end }) => (
         <NavLink

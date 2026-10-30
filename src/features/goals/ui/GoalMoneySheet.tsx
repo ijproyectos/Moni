@@ -78,13 +78,12 @@ export function GoalMoneySheet({
         <p className="text-[15px] leading-5 text-text-muted">
           {deposit ? (
             <>
-              Libre en {goal.accountName}:{' '}
-              <strong className="text-forest">{formatArs(free)}</strong>
+              Libre en {goal.accountName}: <strong className="text-ink">{formatArs(free)}</strong>
             </>
           ) : (
             <>
               Reservado en esta meta:{' '}
-              <strong className="text-forest">{formatArs(goal.reservedCents)}</strong>
+              <strong className="text-ink">{formatArs(goal.reservedCents)}</strong>
             </>
           )}
         </p>

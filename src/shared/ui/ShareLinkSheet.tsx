@@ -54,7 +54,7 @@ export function ShareLinkSheet({
   ]
   return (
     <BottomSheet title={title} onClose={onClose}>
-      <div className="rounded-[22px] border border-sand bg-white p-4">
+      <div className="rounded-[22px] border border-sand bg-card p-4">
         <SectionLabel>Así le llega</SectionLabel>
         <div className="mt-2 rounded-[16px] bg-sand px-4 py-3 text-[16px] leading-6">
           {message}
@@ -64,7 +64,7 @@ export function ShareLinkSheet({
       {code && (
         <p className="mt-2 text-center text-[15px] text-text-muted">
           También podés pasarle el código{' '}
-          <strong className="font-extrabold text-forest">{code}</strong>
+          <strong className="font-extrabold text-ink">{code}</strong>
         </p>
       )}
       <div className="mt-4 grid grid-cols-4 gap-2">
@@ -78,7 +78,7 @@ export function ShareLinkSheet({
             <span
               className={cn(
                 'flex size-14 items-center justify-center rounded-full',
-                i === 0 ? 'bg-forest text-cream' : 'bg-white text-forest',
+                i === 0 ? 'bg-forest text-cream' : 'bg-card text-ink',
               )}
             >
               <o.icon aria-hidden="true" className="size-6" />

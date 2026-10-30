@@ -32,7 +32,7 @@ export function MovementRow({
     <>
       {leading}
       <span className="min-w-0 flex-1 text-left">
-        <span className="block truncate font-display text-[18px] font-extrabold leading-6 text-forest">
+        <span className="block truncate font-display text-[18px] font-extrabold leading-6 text-ink">
           {title}
         </span>
         {subtitle && (

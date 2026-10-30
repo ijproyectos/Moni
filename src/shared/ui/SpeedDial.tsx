@@ -11,6 +11,8 @@ export interface SpeedDialItem {
   /** Background of the round button (a Tailwind `bg-*` class). */
   toneClassName: string
   disabled?: boolean
+  /** Small tag next to the label (e.g. "Plus"). */
+  badge?: string
   onSelect: () => void
 }
 
@@ -98,6 +100,11 @@ export function SpeedDial({ label, items, note, onClose }: SpeedDialProps) {
                   <span className="font-display text-[20px] font-extrabold text-white drop-shadow">
                     {item.label}
                   </span>
+                  {item.badge && (
+                    <span className="-ml-1 rounded-full bg-gold px-2 py-0.5 text-[12px] font-extrabold text-forest">
+                      {item.badge}
+                    </span>
+                  )}
                   <span
                     className={cn(
                       'flex size-14 items-center justify-center rounded-full text-forest shadow-lg transition group-hover:brightness-95 group-active:scale-95',

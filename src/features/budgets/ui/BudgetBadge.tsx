@@ -2,8 +2,8 @@ import { cn } from '@/shared/ui/cn'
 import { budgetBadge, type BudgetStatus } from '../domain/budget'
 
 const TONE = {
-  ok: 'bg-sand text-forest',
-  warning: 'bg-gold/45 text-forest',
+  ok: 'bg-sand text-ink',
+  warning: 'bg-gold/45 text-ink',
   over: 'bg-[#fbdcd7] text-[#b8321f]',
 } as const
 

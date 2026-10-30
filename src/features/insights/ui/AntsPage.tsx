@@ -141,7 +141,7 @@ function AntsContent({
         )}
       </section>
       <Panel className="flex items-start gap-4">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40 text-forest">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40 text-ink">
           <MoniGlyph className="size-9" />
         </span>
         <p className="text-[16px] leading-6">

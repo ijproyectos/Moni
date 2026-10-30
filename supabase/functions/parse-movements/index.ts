@@ -161,6 +161,7 @@ async function handle(req: Request, origin: string | null): Promise<Response> {
   if (quota.error) {
     const kind = classifyQuotaError(quota.error)
     if (kind === 'quota_exceeded') return json(429, { error: 'ai_quota_exceeded' }, origin)
+    if (kind === 'plus_required') return json(402, { error: 'plus_required' }, origin)
     if (kind === 'not_authenticated') return json(401, { error: 'not_authenticated' }, origin)
     console.error('parse-movements: quota check failed', quota.error.code)
     return json(500, { error: 'server_error' }, origin)

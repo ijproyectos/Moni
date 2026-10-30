@@ -57,7 +57,7 @@ export function YearReportPage() {
 
       <Link
         to="/ingresos"
-        className="flex min-h-14 items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3"
+        className="flex min-h-14 items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3"
       >
         <span className="flex size-11 items-center justify-center rounded-full bg-lime/40">
           <Wallet aria-hidden="true" className="size-5" />

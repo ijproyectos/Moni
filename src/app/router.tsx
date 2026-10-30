@@ -26,8 +26,10 @@ import {
   AguinaldoSplitPage,
 } from '@/features/aguinaldo/ui/AguinaldoPages'
 import { DebtsPage } from '@/features/notifications/ui/DebtsPage'
-import { CardsPage } from '@/features/cards/ui/CardsPage'
-import { LegacyFijosRedirect } from '@/features/recurring/ui/LegacyRedirects'
+import {
+  LegacyFijosRedirect,
+  LegacyTarjetasRedirect,
+} from '@/features/recurring/ui/LegacyRedirects'
 import { RecurringPage } from '@/features/recurring/ui/RecurringPage'
 import { GoalDetailPage } from '@/features/goals/ui/GoalDetailPage'
 import { GoalsPage } from '@/features/goals/ui/GoalsPage'
@@ -77,7 +79,8 @@ const simulatedRoutes = [
   { path: 'aguinaldo/listo', element: gated('aguinaldo', <AguinaldoDonePage />) },
   { path: 'recurrentes', element: <RecurringPage /> },
   { path: 'fijos', element: <LegacyFijosRedirect /> },
-  { path: 'tarjetas', element: <CardsPage /> },
+  // Old standalone credit-card screen: now Medios de pago (Tarjetas / Cuotas tabs).
+  { path: 'tarjetas', element: <LegacyTarjetasRedirect /> },
 ]
 
 /** Everything inside the app shell (private routes). */

@@ -165,7 +165,7 @@ export function CategoriesPage() {
           description="Creá la primera para ordenar tus movimientos."
         />
       ) : (
-        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
           {list.map((category) => {
             const spent = spentById.get(category.id) ?? 0
             const budget = budgetsByCategory.get(category.id)
@@ -195,7 +195,7 @@ export function CategoriesPage() {
                     </span>
                     {budget && <BudgetBadge budget={budget} className="mt-1" />}
                   </span>
-                  <Pencil aria-hidden="true" className="size-5 text-forest" strokeWidth={2} />
+                  <Pencil aria-hidden="true" className="size-5 text-ink" strokeWidth={2} />
                 </button>
               </li>
             )
@@ -234,7 +234,7 @@ export function CategoriesPage() {
             onArchive={editing.category ? () => setArchiving(editing.category ?? null) : undefined}
           >
             {editing.category?.kind === 'expense' && (
-              <label className="flex items-center gap-3 rounded-[18px] border border-sand bg-white px-4 py-3">
+              <label className="flex items-center gap-3 rounded-[18px] border border-sand bg-card px-4 py-3">
                 <span className="flex-1">
                   <span className="block text-[17px] font-extrabold">Límite por mes</span>
                   <span className="block text-[14px] text-text-muted">

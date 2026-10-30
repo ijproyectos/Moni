@@ -7,6 +7,7 @@ import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
 import { useSavings, useSavingsNoticeCount } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
+import { PlusBadge } from '@/features/plus/ui/PlusBadge'
 import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
 import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
@@ -67,6 +68,7 @@ export function HomePage() {
       shortcuts={{ savings: features.has('savings'), ants: features.has('ants') }}
       reminders={
         <>
+          <PlusBadge />
           <SavingsNotices />
           <RecurringReminders />
         </>

@@ -391,7 +391,7 @@ export function SharedExpenseForm({
               }}
               className={cn(
                 'inline-flex min-h-12 items-center gap-1.5 rounded-full border-2 pl-1 pr-3 text-[16px] font-extrabold',
-                active ? 'border-forest bg-forest text-cream' : 'border-sand bg-white',
+                active ? 'border-ink bg-forest text-cream' : 'border-sand bg-card',
               )}
             >
               <Avatar name={p.name} size="sm" />
@@ -402,7 +402,7 @@ export function SharedExpenseForm({
       </div>
       {multiPayer && Object.keys(payers).length > 0 && (
         <>
-          <div className="divide-y divide-sand rounded-[22px] border border-sand bg-white px-4">
+          <div className="divide-y divide-sand rounded-[22px] border border-sand bg-card px-4">
             {Object.keys(payers).map((id) => {
               const person = people.find((p) => p.id === id)
               return (
@@ -437,7 +437,7 @@ export function SharedExpenseForm({
 
       <fieldset>
         <legend className="sr-only">Entre quiénes</legend>
-        <ul className="flex flex-col divide-y divide-sand rounded-[22px] border border-sand bg-white">
+        <ul className="flex flex-col divide-y divide-sand rounded-[22px] border border-sand bg-card">
           {people.map((p) => {
             const checked = selected.includes(p.id)
             const share = shareOf(p.id)
@@ -455,7 +455,7 @@ export function SharedExpenseForm({
                     aria-hidden="true"
                     className={cn(
                       'flex size-7 shrink-0 items-center justify-center rounded-[8px] border-2 peer-focus-visible:ring-2 peer-focus-visible:ring-gold',
-                      checked ? 'border-forest bg-forest text-lime' : 'border-[#d9c9a6] bg-white',
+                      checked ? 'border-ink bg-forest text-lime' : 'border-line bg-card',
                     )}
                   >
                     {checked && <Check className="size-4" strokeWidth={3} />}
@@ -639,7 +639,7 @@ export function SharedExpenseForm({
             type="button"
             onClick={onDelete}
             aria-label="Eliminar gasto"
-            className="flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-sand bg-white text-expense"
+            className="flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-sand bg-card text-expense"
           >
             <Trash2 aria-hidden="true" className="size-5" />
           </button>
@@ -694,7 +694,7 @@ function SumLine({ ok, text }: { ok: boolean; text: string }) {
       aria-live="polite"
       className={cn(
         'flex items-center gap-2 rounded-[14px] px-3 py-2 text-[15px] font-extrabold',
-        ok ? 'bg-lime/30 text-forest' : 'bg-blush/30 text-expense',
+        ok ? 'bg-lime/30 text-ink' : 'bg-blush/30 text-expense',
       )}
     >
       {ok && <Check aria-hidden="true" className="size-4" strokeWidth={3} />}

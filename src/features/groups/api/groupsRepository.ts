@@ -5,6 +5,7 @@ import type {
   SharedExpenseRow,
   SharedExpenseSplitRow,
 } from '@/shared/lib/database.types'
+import { mapPlusRequired } from '@/shared/lib/errors'
 import { fromCents, toCents } from '@/shared/lib/money'
 import { getSupabase } from '@/shared/lib/supabase'
 import type {
@@ -194,7 +195,8 @@ export async function createGroup(values: GroupFormValues): Promise<string> {
     p_name: values.name,
     p_kind: values.kind,
   })
-  if (error) throw error
+  // Free plan: a second active group raises 'plus_required' (see 20261106000000_moni_plus.sql).
+  if (error) throw mapPlusRequired(error)
   return data
 }
 

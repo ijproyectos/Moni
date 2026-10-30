@@ -35,7 +35,7 @@ export function CatalogSheet({
             placeholder="Buscar servicio"
             aria-label="Buscar servicio"
             data-autofocus
-            className="h-14 w-full rounded-full border border-sand bg-white pl-12 pr-4 text-[17px] text-forest placeholder:text-text-muted"
+            className="h-14 w-full rounded-full border border-sand bg-card pl-12 pr-4 text-[17px] text-ink placeholder:text-text-muted"
           />
         </label>
 
@@ -54,10 +54,10 @@ export function CatalogSheet({
                   <button
                     type="button"
                     onClick={() => onPick(service)}
-                    className="flex h-full min-h-[104px] w-full flex-col items-center justify-start gap-2 rounded-[18px] border border-sand bg-white px-1.5 py-3 text-center"
+                    className="flex h-full min-h-[104px] w-full flex-col items-center justify-start gap-2 rounded-[18px] border border-sand bg-card px-1.5 py-3 text-center"
                   >
                     <ServiceLogo serviceId={service.id} size="md" className="border-0" />
-                    <span className="line-clamp-2 w-full break-words text-[14px] font-extrabold leading-[18px] text-forest">
+                    <span className="line-clamp-2 w-full break-words text-[14px] font-extrabold leading-[18px] text-ink">
                       {service.name}
                     </span>
                   </button>

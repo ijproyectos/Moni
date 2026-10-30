@@ -31,7 +31,7 @@ import { paymentQuestion } from '../domain/labels'
 import { KindTile } from './KindTile'
 
 const fieldClass =
-  'h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest placeholder:text-text-muted'
+  'h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
 
 type Pending =
   | { type: 'overdraft'; warning: OverdraftWarning; accountName: string }
@@ -153,9 +153,7 @@ export function RegisterPaymentSheet({
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <KindTile kindId={bill.expense.kindId} size="lg" />
-          <p className="text-[18px] font-extrabold leading-6 text-forest">
-            {paymentQuestion(bill)}
-          </p>
+          <p className="text-[18px] font-extrabold leading-6 text-ink">{paymentQuestion(bill)}</p>
         </div>
 
         <p className="text-[14px] leading-5 text-text-muted">
@@ -243,7 +241,7 @@ export function RegisterPaymentSheet({
           </div>
         )}
 
-        <div className="flex items-center gap-3 rounded-[18px] border border-sand bg-white px-4 py-3">
+        <div className="flex items-center gap-3 rounded-[18px] border border-sand bg-card px-4 py-3">
           <span className="flex-1">
             <span className="block text-[17px] font-extrabold">
               Usar este importe como próximo estimado

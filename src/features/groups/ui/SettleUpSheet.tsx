@@ -163,7 +163,7 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
             <button
               type="button"
               onClick={() => toast.show(`Le avisamos a ${other}`)}
-              className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
             >
               <Bell aria-hidden="true" className="size-5" /> Avisarle a {other}
             </button>
@@ -171,7 +171,7 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
           <button
             type="button"
             onClick={() => void copyText(message, toast, 'Mensaje copiado')}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
           >
             <Copy aria-hidden="true" className="size-5" /> Copiar mensaje
           </button>

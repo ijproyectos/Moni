@@ -155,7 +155,7 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
               type="button"
               onClick={() => void share()}
               disabled={!online}
-              className={cn(actionClass, 'border-2 border-sand bg-white')}
+              className={cn(actionClass, 'border-2 border-sand bg-card')}
             >
               <Upload aria-hidden="true" className="size-5" />
               Compartir

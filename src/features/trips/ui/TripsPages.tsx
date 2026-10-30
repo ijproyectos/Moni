@@ -115,7 +115,7 @@ export function TripsPage() {
           <Link
             key={g.id}
             to={`/grupos/${g.id}`}
-            className="block rounded-[28px] border border-sand bg-white p-5"
+            className="block rounded-[28px] border border-sand bg-card p-5"
           >
             <div className="flex items-center justify-between">
               <span className="rounded-full bg-lime/40 px-3 py-1 text-[13px] font-extrabold uppercase tracking-[0.1em]">
@@ -160,7 +160,7 @@ export function TripsPage() {
           {trips.past.map((p) => (
             <div
               key={p.id}
-              className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4"
+              className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4"
             >
               <IconTile icon={Send} bg="#e3f2cf" />
               <span className="flex-1">
@@ -284,7 +284,7 @@ function NewTripSheet({
           aria-label="Destino"
           maxLength={60}
           placeholder="Ej: Semana en Salta"
-          className="h-14 rounded-[18px] border border-sand bg-white px-4 text-[17px] placeholder:text-text-muted"
+          className="h-14 rounded-[18px] border border-sand bg-card px-4 text-[17px] placeholder:text-text-muted"
         />
         <div className="grid grid-cols-2 gap-2">
           {(['from', 'to'] as const).map((k) => (
@@ -293,7 +293,7 @@ function NewTripSheet({
               type="button"
               onClick={() => setPicking(k)}
               aria-label={k === 'from' ? 'Fecha de ida' : 'Fecha de vuelta'}
-              className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-white px-4 text-[17px] font-extrabold"
+              className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-card px-4 text-[17px] font-extrabold"
             >
               <CalendarDays aria-hidden="true" className="size-5" />{' '}
               {formatDayMonth(k === 'from' ? from : to).replace(' ', ' de ')}
@@ -309,7 +309,7 @@ function NewTripSheet({
           onChange={(e) => setBudgetText(e.target.value)}
         />
         {mode === 'solo' ? (
-          <div className="flex items-center gap-3 rounded-[20px] border border-sand bg-white px-4 py-3">
+          <div className="flex items-center gap-3 rounded-[20px] border border-sand bg-card px-4 py-3">
             <span className="flex size-11 items-center justify-center rounded-full bg-gold/40">
               <MoniGlyph className="size-5" />
             </span>
@@ -320,7 +320,7 @@ function NewTripSheet({
             <Toggle label="Ahorrar para este viaje" checked={saving} onChange={setSaving} />
           </div>
         ) : (
-          <div className="rounded-[22px] border border-sand bg-white p-4">
+          <div className="rounded-[22px] border border-sand bg-card p-4">
             <div className="flex items-center justify-between">
               <span className="text-[17px] font-extrabold">Quiénes van</span>
               <AvatarStack people={[{ name: 'Vos' }, ...guests]} />
@@ -332,7 +332,7 @@ function NewTripSheet({
             <button
               type="button"
               onClick={() => setPicking('people')}
-              className="mt-3 flex min-h-11 items-center gap-2 rounded-full border-2 border-dashed border-[#d9c9a6] px-4 text-[16px] font-extrabold"
+              className="mt-3 flex min-h-11 items-center gap-2 rounded-full border-2 border-dashed border-line px-4 text-[16px] font-extrabold"
             >
               <Plus aria-hidden="true" className="size-4" /> Invitar
             </button>
@@ -427,7 +427,7 @@ export function SoloTripPage() {
           </p>
         </div>
       </section>
-      <section className="rounded-[24px] border border-sand bg-white p-4">
+      <section className="rounded-[24px] border border-sand bg-card p-4">
         <h2 className="text-[22px] font-extrabold">Presupuesto por rubro</h2>
         <ul className="mt-1 divide-y divide-sand">
           {trip.items.map((it) => {
@@ -455,7 +455,7 @@ export function SoloTripPage() {
           {formatArs(trip.budgetCents)}.
         </p>
       )}
-      <div className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4">
+      <div className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4">
         <span className="flex size-12 items-center justify-center rounded-full bg-lime text-[18px] font-extrabold">
           <Target aria-hidden="true" className="size-5" />
         </span>

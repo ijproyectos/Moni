@@ -127,7 +127,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
             leading={<IconCircle icon={ArrowLeftRight} color="#064735" />}
             title={entry.transfer.note?.trim() || 'Transferencia'}
             subtitle={`${formatRelativeDay(entry.occurredOn, today)} · ${accountNamesById.get(entry.transfer.fromAccountId) ?? 'Cuenta'} → ${accountNamesById.get(entry.transfer.toAccountId) ?? 'Cuenta'}`}
-            trailing={<AmountDisplay cents={entry.transfer.amountCents} className="text-forest" />}
+            trailing={<AmountDisplay cents={entry.transfer.amountCents} className="text-ink" />}
             onDelete={() => setPendingVoid(entry)}
             deleteLabel="Anular transferencia"
           />
@@ -156,13 +156,13 @@ export function ActivityScreen(props: ActivityScreenProps) {
             value={props.search}
             onChange={(e) => props.onSearchChange(e.target.value)}
             placeholder="Buscar por nota o categoría…"
-            className="h-14 w-full rounded-full border border-sand bg-white pl-12 pr-4 text-[17px] text-forest placeholder:text-text-muted"
+            className="h-14 w-full rounded-full border border-sand bg-card pl-12 pr-4 text-[17px] text-ink placeholder:text-text-muted"
           />
         </label>
         <div
           role="group"
           aria-label="Vista de actividad"
-          className="flex h-14 shrink-0 items-center gap-1 rounded-full border border-sand bg-white p-1"
+          className="flex h-14 shrink-0 items-center gap-1 rounded-full border border-sand bg-card p-1"
         >
           {VIEW_OPTIONS.map(({ value, label, icon: Icon }) => {
             const active = props.view === value
@@ -266,7 +266,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
                 signed={group.direction !== 'neutral'}
                 className={cn(
                   'font-display text-[17px] font-extrabold',
-                  group.direction === 'in' ? 'text-income' : 'text-forest',
+                  group.direction === 'in' ? 'text-income' : 'text-ink',
                 )}
               />
             </div>
@@ -288,7 +288,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
                 <AmountDisplay
                   cents={day.netCents}
                   signed
-                  className={`font-display text-[17px] font-extrabold ${day.netCents < 0 ? 'text-forest' : 'text-income'}`}
+                  className={`font-display text-[17px] font-extrabold ${day.netCents < 0 ? 'text-ink' : 'text-income'}`}
                 />
               )}
             </div>
@@ -395,7 +395,7 @@ function TransactionRow({
             scheduled
               ? 'text-text-muted'
               : adjustment
-                ? 'text-forest'
+                ? 'text-ink'
                 : isIncome
                   ? 'text-income'
                   : 'text-expense'

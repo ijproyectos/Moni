@@ -126,7 +126,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       </section>
 
       {reminders.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-[22px] border-2 border-dashed border-[#d9c9a6] px-4 py-3">
+        <div className="flex flex-col gap-2 rounded-[22px] border-2 border-dashed border-line px-4 py-3">
           {reminders.map((r) => (
             <p key={r.subscriptionId} className="flex items-start gap-2 text-[16px] leading-5">
               <BellRing aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
@@ -142,7 +142,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       )}
 
       {subscriptions.length === 0 && (
-        <div className="rounded-[24px] border border-sand bg-white p-4">
+        <div className="rounded-[24px] border border-sand bg-card p-4">
           <EmptyState
             mascotUrl={mascotAssistant}
             title="Todavía no cargaste suscripciones"
@@ -155,7 +155,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {attention.length > 0 && (
         <>
           <SectionLabel>Para revisar</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
             {attention.map((c) => {
               const s = byId.get(c.subscriptionId)
               return s ? (
@@ -176,7 +176,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {upcoming.length > 0 && (
         <>
           <SectionLabel>Próximos cobros</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
             {upcoming.map((s) => (
               <SubscriptionRow
                 key={s.id}
@@ -192,7 +192,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {history.length > 0 && (
         <>
           <SectionLabel>Historial de pagos</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
             {shown.map((c) => {
               const s = byId.get(c.subscriptionId)
               return s ? (
@@ -208,7 +208,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
             })}
           </ul>
           {history.length > HISTORY_SHOWN && !showAll && (
-            <Button variant="ghost" className="text-forest" onClick={() => setShowAll(true)}>
+            <Button variant="ghost" className="text-ink" onClick={() => setShowAll(true)}>
               Ver todo el historial
             </Button>
           )}
@@ -218,7 +218,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {paused.length > 0 && (
         <>
           <SectionLabel>Pausadas</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
             {paused.map((s) => (
               <SubscriptionRow
                 key={s.id}
@@ -235,7 +235,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {cancelled.length > 0 && (
         <>
           <SectionLabel>Canceladas en Moni</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
             {cancelled.map((s) => (
               <SubscriptionRow
                 key={s.id}

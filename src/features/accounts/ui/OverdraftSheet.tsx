@@ -41,7 +41,7 @@ export function OverdraftSheet({
         {movement === 'transfer' ? 'Esta transferencia' : 'Este gasto'} es mayor que lo que tenés en{' '}
         <strong>{accountName}</strong>. Si seguís, la cuenta queda en negativo.
       </p>
-      <dl className="mt-4 divide-y divide-sand rounded-[20px] border border-sand bg-white px-4 text-[16px]">
+      <dl className="mt-4 divide-y divide-sand rounded-[20px] border border-sand bg-card px-4 text-[16px]">
         <Row label="Saldo actual" value={formatArs(warning.balanceCents)} />
         <Row
           label={movement === 'transfer' ? 'Transferencia' : 'Gasto'}

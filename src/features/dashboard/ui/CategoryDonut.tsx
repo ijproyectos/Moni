@@ -1,6 +1,7 @@
 import type { CategorySlice } from '../domain/monthSummary'
 import { donutArcs } from '../domain/donut'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
+import { themedColor } from '@/shared/ui/categoryIcons'
 
 const RADIUS = 70
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
@@ -28,7 +29,14 @@ export function CategoryDonut({ slices, totalCents }: CategoryDonutProps) {
           role="img"
           aria-label="Gastos por categoría"
         >
-          <circle cx="88" cy="88" r={RADIUS} fill="none" stroke="#f3e8d2" strokeWidth="26" />
+          <circle
+            cx="88"
+            cy="88"
+            r={RADIUS}
+            fill="none"
+            stroke="var(--color-sand)"
+            strokeWidth="26"
+          />
           {sorted.map((slice, i) => {
             const arc = arcs[i]
             if (!arc || arc.length <= 0) return null
@@ -39,7 +47,7 @@ export function CategoryDonut({ slices, totalCents }: CategoryDonutProps) {
                 cy="88"
                 r={RADIUS}
                 fill="none"
-                stroke={slice.color}
+                stroke={themedColor(slice.color)}
                 strokeWidth="26"
                 strokeDasharray={`${arc.length} ${CIRCUMFERENCE - arc.length}`}
                 strokeDashoffset={-arc.offset}
@@ -53,7 +61,7 @@ export function CategoryDonut({ slices, totalCents }: CategoryDonutProps) {
           </span>
           <AmountDisplay
             cents={totalCents}
-            className="font-display text-lg font-extrabold text-forest"
+            className="font-display text-lg font-extrabold text-ink"
           />
         </div>
       </div>
@@ -63,10 +71,10 @@ export function CategoryDonut({ slices, totalCents }: CategoryDonutProps) {
             <span
               aria-hidden="true"
               className="size-3 shrink-0 rounded-full"
-              style={{ backgroundColor: slice.color }}
+              style={{ backgroundColor: themedColor(slice.color) }}
             />
-            <span className="min-w-0 flex-1 truncate text-forest">{slice.name}</span>
-            <span className="font-display font-extrabold text-forest">
+            <span className="min-w-0 flex-1 truncate text-ink">{slice.name}</span>
+            <span className="font-display font-extrabold text-ink">
               {Math.round(slice.percent)}%
             </span>
           </li>

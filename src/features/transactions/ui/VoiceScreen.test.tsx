@@ -17,6 +17,16 @@ vi.mock('@/shared/lib/supabase', () => ({
   supabase: null,
   getSupabase: () => ({ functions: { invoke: mocks.invoke } }),
 }))
+const plusState = vi.hoisted(() => ({ isFree: false }))
+vi.mock('@/features/plus/api/usePlus', () => ({
+  usePlus: () => ({
+    isLoading: false,
+    isPlus: !plusState.isFree,
+    isFree: plusState.isFree,
+    expiresAt: null,
+  }),
+  useRedeemPromoCode: () => ({ mutateAsync: vi.fn(), isPending: false, data: undefined }),
+}))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 vi.mock('../api/transactionsRepository', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/transactionsRepository')>()),
@@ -120,6 +130,7 @@ async function reachConfirmation(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
+  plusState.isFree = false
   FakeRecognition.instances = []
   mocks.invoke.mockReset()
   mocks.createTransaction.mockReset()
@@ -334,5 +345,31 @@ describe('VoiceScreen', () => {
     expect(screen.getByRole('button', { name: 'Listo' })).toBeDisabled()
     expect(screen.getByText('Sin conexión. Conectate para guardar cambios.')).toBeInTheDocument()
     act(() => onlineManager.setOnline(true))
+  })
+})
+
+describe('VoiceScreen free plan gate', () => {
+  it('shows the Plus upsell instead of the capability and never starts the microphone', () => {
+    plusState.isFree = true
+    renderSheet()
+    expect(
+      screen.getByRole('dialog', { name: /Cargar por voz es de Moni Plus/ }),
+    ).toBeInTheDocument()
+    expect(FakeRecognition.instances).toHaveLength(0)
+  })
+
+  it('switches to the upsell when the server answers 402 plus_required', async () => {
+    mocks.invoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(
+        new Response(JSON.stringify({ error: 'plus_required' }), { status: 402 }),
+      ),
+    })
+    const { user } = renderSheet()
+    act(() => FakeRecognition.instances[0]?.say('gasté 5 lucas'))
+    await user.click(screen.getByRole('button', { name: 'Listo' }))
+    expect(
+      await screen.findByRole('dialog', { name: /Cargar por voz es de Moni Plus/ }),
+    ).toBeInTheDocument()
   })
 })

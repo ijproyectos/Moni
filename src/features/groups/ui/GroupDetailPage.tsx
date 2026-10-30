@@ -198,7 +198,7 @@ export function GroupDetailPage() {
         <Link
           to="/grupos"
           aria-label="Volver a Grupos"
-          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-white"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-card"
         >
           <ChevronLeft aria-hidden="true" className="size-6" />
         </Link>
@@ -210,7 +210,7 @@ export function GroupDetailPage() {
           type="button"
           aria-label="Invitar"
           onClick={() => setSheet({ type: 'invite' })}
-          className="ml-auto flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-white"
+          className="ml-auto flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-card"
         >
           <UserPlus aria-hidden="true" className="size-6" />
         </button>
@@ -218,7 +218,7 @@ export function GroupDetailPage() {
           type="button"
           aria-label="Opciones del grupo"
           onClick={() => setSheet({ type: 'group' })}
-          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-white"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-card"
         >
           <Ellipsis aria-hidden="true" className="size-6" />
         </button>
@@ -331,7 +331,7 @@ export function GroupDetailPage() {
       {FEATURES.sharedGoals && kind === 'pareja' && sharedGoal && (
         <Link
           to={`/metas/${sharedGoal.id}`}
-          className="flex items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3"
+          className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3"
         >
           <span className="flex size-12 items-center justify-center rounded-full bg-blush/50 text-expense">
             <Heart aria-hidden="true" className="size-5" />
@@ -362,7 +362,7 @@ export function GroupDetailPage() {
       )}
 
       {kind === 'casa' && overlay.recurring.some((r) => r.enabled) && (
-        <section className="rounded-[24px] border border-sand bg-white px-4 py-3">
+        <section className="rounded-[24px] border border-sand bg-card px-4 py-3">
           <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
             Se repiten cada mes
           </p>
@@ -423,11 +423,11 @@ export function GroupDetailPage() {
       </div>
 
       {ledger.expenses.length === 0 ? (
-        <p className="rounded-[24px] border border-sand bg-white p-5 text-center text-[16px] text-text-muted">
+        <p className="rounded-[24px] border border-sand bg-card p-5 text-center text-[16px] text-text-muted">
           Todavía no hay gastos. Cargá el primero y Moni hace las cuentas.
         </p>
       ) : (
-        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
           {(kind === 'casa' ? monthExpenses : ledger.expenses).map((e) => {
             const Icon = icon(e)
             const payerId = e.payers[0]?.personId ?? ''
@@ -506,7 +506,7 @@ export function GroupDetailPage() {
       {(settlements.data ?? []).filter((s) => s.status === 'posted').length > 0 && (
         <section>
           <h2 className="px-1 text-[18px] font-extrabold">Pagos registrados</h2>
-          <ul className="mt-2 divide-y divide-sand rounded-[24px] border border-sand bg-white">
+          <ul className="mt-2 divide-y divide-sand rounded-[24px] border border-sand bg-card">
             {(settlements.data ?? [])
               .filter((s) => s.status === 'posted')
               .map((s) => (
@@ -571,7 +571,7 @@ export function GroupDetailPage() {
         {kind === 'casa' ? (
           <Button
             variant="ghost"
-            className="h-14 flex-1 rounded-full border-2 border-sand bg-white text-forest"
+            className="h-14 flex-1 rounded-full border-2 border-sand bg-card text-ink"
             onClick={() => setSheet({ type: 'settle' })}
           >
             <Check aria-hidden="true" className="mr-2 size-5" /> Saldar
@@ -579,7 +579,7 @@ export function GroupDetailPage() {
         ) : kind !== 'pareja' ? (
           <Link
             to={`/grupos/${groupId}/resumen`}
-            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[18px] font-extrabold"
+            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[18px] font-extrabold"
           >
             <Upload aria-hidden="true" className="size-5" /> Resumen
           </Link>

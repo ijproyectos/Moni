@@ -74,10 +74,10 @@ export function HomeScreen({
         {reminders}
 
         <Card className="flex items-center gap-4 rounded-[24px] p-4">
-          <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40 text-forest">
+          <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40 text-ink">
             <MoniGlyph className="size-9" />
           </span>
-          <p className="text-[17px] leading-6 text-forest">
+          <p className="text-[17px] leading-6 text-ink">
             <strong className="font-extrabold">Sugerido:</strong> {buildInsight(summary.byCategory)}
           </p>
         </Card>
@@ -195,7 +195,7 @@ function HomeShortcuts({
   return (
     <div className={showSavings && showAnts ? 'grid grid-cols-2 gap-3' : 'grid gap-3'}>
       {showSavings && (
-        <Link to="/metas" className="rounded-[24px] border border-cream bg-white p-4">
+        <Link to="/metas" className="rounded-[24px] border border-cream bg-card p-4">
           <span className="flex items-center gap-2 text-[18px] font-extrabold">
             <Target aria-hidden="true" className="size-5" strokeWidth={2.25} /> Metas
           </span>
@@ -206,7 +206,7 @@ function HomeShortcuts({
         </Link>
       )}
       {showAnts && (
-        <Link to="/hormigas" className="rounded-[24px] border border-cream bg-white p-4">
+        <Link to="/hormigas" className="rounded-[24px] border border-cream bg-card p-4">
           <span className="flex items-center gap-2 text-[18px] font-extrabold">
             <ShoppingBag aria-hidden="true" className="size-5" strokeWidth={2.25} /> Hormigas
           </span>

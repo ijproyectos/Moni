@@ -24,7 +24,7 @@ export function SectionLabel({
       <p
         className={cn(
           'text-[13px] font-extrabold uppercase tracking-[0.1em]',
-          tone === 'muted' ? 'text-text-muted' : 'text-forest',
+          tone === 'muted' ? 'text-text-muted' : 'text-ink',
         )}
       >
         {children}
@@ -127,7 +127,7 @@ export function MoniSays({
   return (
     <div
       className={cn(
-        'flex items-start gap-3 rounded-[18px] bg-lime/30 px-4 py-3 text-[16px] leading-[22px] text-forest',
+        'flex items-start gap-3 rounded-[18px] bg-lime/30 px-4 py-3 text-[16px] leading-[22px] text-ink',
         className,
       )}
     >
@@ -160,7 +160,7 @@ export function MoniCalcCard({
     <div
       className={cn(
         'flex items-center gap-4 rounded-[24px] p-3',
-        dark ? 'bg-forest text-cream' : 'border border-sand bg-white text-forest',
+        dark ? 'bg-forest text-cream' : 'border border-sand bg-card text-ink',
         className,
       )}
     >
@@ -207,7 +207,7 @@ export function ChoiceChip({
       aria-pressed={selected}
       className={cn(
         'inline-flex min-h-12 items-center justify-center gap-2 rounded-full border-2 px-5 text-[17px] font-extrabold transition',
-        selected ? 'border-forest bg-forest text-cream' : 'border-sand bg-white text-forest',
+        selected ? 'border-ink bg-forest text-cream' : 'border-sand bg-card text-ink',
         className,
       )}
       {...props}
@@ -229,7 +229,7 @@ export function DashedButton({
     <button
       type={type}
       className={cn(
-        'flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] border-2 border-dashed border-[#d9c9a6] text-[17px] font-extrabold text-forest',
+        'flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] border-2 border-dashed border-line text-[17px] font-extrabold text-ink',
         className,
       )}
       {...props}
@@ -258,7 +258,7 @@ export function Toggle({
       onClick={() => onChange(!checked)}
       className={cn(
         'relative h-8 w-14 shrink-0 rounded-full transition',
-        checked ? 'bg-lime' : 'bg-[#e0d3b6]',
+        checked ? 'bg-lime' : 'bg-track',
       )}
     >
       <span
@@ -318,7 +318,7 @@ export function Avatar({
     <span
       aria-hidden="true"
       className={cn(
-        'flex shrink-0 items-center justify-center rounded-full font-extrabold text-forest',
+        'flex shrink-0 items-center justify-center rounded-full font-extrabold text-ink',
         size === 'sm' && 'size-8 text-[14px]',
         size === 'md' && 'size-12 text-[18px]',
         size === 'lg' && 'size-14 text-[22px]',
@@ -357,23 +357,19 @@ export function OptionRow({
     <>
       {icon}
       <span className="min-w-0 flex-1 text-left">
-        <span className="block text-[17px] font-extrabold leading-6 text-forest">{title}</span>
+        <span className="block text-[17px] font-extrabold leading-6 text-ink">{title}</span>
         {subtitle && (
           <span className="block text-[14px] leading-5 text-text-muted">{subtitle}</span>
         )}
       </span>
       {trailing}
       {chevron && (
-        <ChevronRight
-          aria-hidden="true"
-          className="size-5 shrink-0 text-forest"
-          strokeWidth={2.25}
-        />
+        <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink" strokeWidth={2.25} />
       )}
     </>
   )
   const cls = cn(
-    'flex min-h-[72px] w-full items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3',
+    'flex min-h-[72px] w-full items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3',
     className,
   )
   if (to) {
@@ -400,7 +396,7 @@ export function CheckDot({ checked, className }: { checked: boolean; className?:
       aria-hidden="true"
       className={cn(
         'flex size-7 shrink-0 items-center justify-center rounded-full border-2',
-        checked ? 'border-forest bg-forest text-lime' : 'border-[#d9c9a6] bg-white',
+        checked ? 'border-ink bg-forest text-lime' : 'border-line bg-card',
         className,
       )}
     >
@@ -412,9 +408,7 @@ export function CheckDot({ checked, className }: { checked: boolean; className?:
 /** Plain white card with the design's border and radius. */
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={cn('rounded-[24px] border border-sand bg-white p-4', className)}>
-      {children}
-    </div>
+    <div className={cn('rounded-[24px] border border-sand bg-card p-4', className)}>{children}</div>
   )
 }
 

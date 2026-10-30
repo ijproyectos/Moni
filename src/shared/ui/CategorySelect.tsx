@@ -54,7 +54,7 @@ export function CategorySelect({
         <span
           aria-hidden="true"
           data-testid="category-select-icon"
-          className="pointer-events-none absolute left-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-sand text-forest"
+          className="pointer-events-none absolute left-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-sand text-ink"
           style={
             selected ? { backgroundColor: selected.color, color: readableOn(selected.color) } : {}
           }
@@ -66,7 +66,7 @@ export function CategorySelect({
           value={value}
           onChange={handleChange}
           aria-invalid={invalid || undefined}
-          className="h-14 w-full rounded-[18px] border border-sand bg-white pl-14 pr-4 text-[17px] text-forest"
+          className="h-14 w-full rounded-[18px] border border-sand bg-card pl-14 pr-4 text-[17px] text-ink"
         >
           <option value="" disabled>
             Elegí una categoría

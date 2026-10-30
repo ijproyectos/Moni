@@ -96,7 +96,7 @@ export function SubscriptionDetailSheet({
               </Button>
               <Button
                 variant="ghost"
-                className="text-forest"
+                className="text-ink"
                 disabled={setStatus.isPending}
                 onClick={() => void change('paused', `${s.name} pausada`)}
               >
@@ -113,7 +113,7 @@ export function SubscriptionDetailSheet({
               >
                 Reactivar
               </Button>
-              <Button variant="ghost" className="text-forest" onClick={onEdit}>
+              <Button variant="ghost" className="text-ink" onClick={onEdit}>
                 Editar
               </Button>
             </>

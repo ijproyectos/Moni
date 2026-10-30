@@ -11,7 +11,7 @@ interface PageHeaderProps {
 }
 
 const BACK_CLASS =
-  'flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-white text-forest'
+  'flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-card text-ink'
 
 /** Header for second-level pages: back button, title, optional action. */
 export function PageHeader({ title, backTo, backLabel = 'Volver', action }: PageHeaderProps) {

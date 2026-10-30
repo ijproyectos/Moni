@@ -58,7 +58,7 @@ export function PeoplePage() {
       <p className="-mt-2 text-[16px] text-text-muted">
         {name} · {ledger.people.length} {ledger.people.length === 1 ? 'persona' : 'personas'}
       </p>
-      <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+      <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
         {ledger.people.map((p) => {
           const net = ledger.nets[p.id] ?? 0
           return (
@@ -108,7 +108,7 @@ export function PeoplePage() {
           igual, pero no reciben avisos.
         </p>
       )}
-      <div className="flex items-center justify-between gap-3 rounded-[24px] border border-sand bg-white p-4">
+      <div className="flex items-center justify-between gap-3 rounded-[24px] border border-sand bg-card p-4">
         <div>
           <SectionLabel>Código del grupo</SectionLabel>
           <p className="mt-1 font-display text-[19px] font-extrabold tracking-[0.08em]">
@@ -273,14 +273,14 @@ function EditPersonSheet({
           <button
             type="button"
             onClick={onInvite}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
           >
             <UserPlus aria-hidden="true" className="size-5" /> Invitarlo a Moni
           </button>
           <button
             type="button"
             onClick={onRemove}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold text-expense"
+            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold text-expense"
           >
             <Trash2 aria-hidden="true" className="size-5" /> Quitar del grupo
           </button>
@@ -344,7 +344,7 @@ function InviteToMoniSheet({
             await ensureCode()
             setPreview(true)
           }}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+          className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
         >
           <Upload aria-hidden="true" className="size-5" /> Compartir
         </button>

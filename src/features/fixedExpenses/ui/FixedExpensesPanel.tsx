@@ -123,7 +123,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
       </section>
 
       {expenses.length === 0 && (
-        <div className="rounded-[24px] border border-sand bg-white p-4">
+        <div className="rounded-[24px] border border-sand bg-card p-4">
           <EmptyState
             mascotUrl={mascotAssistant}
             title="Todavía no cargaste gastos fijos"
@@ -174,7 +174,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
           {others.length === 0 ? (
             <p className="text-[15px] text-text-muted">No hay gastos fijos en esta lista.</p>
           ) : (
-            <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+            <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
               {others.map((e) => (
                 <ExpenseRow key={e.id} expense={e} muted onOpen={() => setOpenId(e.id)} />
               ))}
@@ -206,7 +206,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
             <button
               type="button"
               onClick={() => setFilter('paused')}
-              className="rounded-[18px] border border-dashed border-[#d9c9a6] px-4 py-3 text-left text-[15px] leading-5"
+              className="rounded-[18px] border border-dashed border-line px-4 py-3 text-left text-[15px] leading-5"
             >
               Tenés <strong>{pausedBills.length}</strong>{' '}
               {pausedBills.length === 1 ? 'vencimiento pendiente' : 'vencimientos pendientes'} de
@@ -218,7 +218,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
           {upcoming.length === 0 ? (
             <p className="text-[15px] text-text-muted">No hay gastos fijos activos.</p>
           ) : (
-            <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+            <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
               {upcoming.map((e) => (
                 <ExpenseRow key={e.id} expense={e} onOpen={() => setOpenId(e.id)} />
               ))}
@@ -230,7 +230,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
             <p className="text-[15px] text-text-muted">Todavía no registraste pagos.</p>
           ) : (
             <>
-              <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+              <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
                 {shown.map((item) => {
                   if (item.type === 'payment') {
                     return (
@@ -254,7 +254,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
                 })}
               </ul>
               {history.length > HISTORY_SHOWN && !showAll && (
-                <Button variant="ghost" className="text-forest" onClick={() => setShowAll(true)}>
+                <Button variant="ghost" className="text-ink" onClick={() => setShowAll(true)}>
                   Ver todo el historial
                 </Button>
               )}
@@ -349,7 +349,7 @@ function PendingBillCard({
   return (
     <li
       className={cn(
-        'flex flex-col gap-3 rounded-[24px] border bg-white p-4',
+        'flex flex-col gap-3 rounded-[24px] border bg-card p-4',
         bill.state === 'overdue' ? 'border-expense/50' : 'border-sand',
       )}
     >
@@ -388,7 +388,7 @@ function PendingBillCard({
           type="button"
           onClick={() => onMove(bill)}
           aria-label={`Cambiar fecha de ${bill.expense.name}`}
-          className="text-[15px] font-extrabold text-forest underline"
+          className="text-[15px] font-extrabold text-ink underline"
         >
           Cambiar fecha
         </button>
@@ -396,7 +396,7 @@ function PendingBillCard({
           type="button"
           onClick={() => onSkip(bill)}
           aria-label={`Omitir ${bill.expense.name}`}
-          className="text-[15px] font-extrabold text-forest underline"
+          className="text-[15px] font-extrabold text-ink underline"
         >
           Omitir
         </button>

@@ -94,7 +94,7 @@ export function EditGroupSheet({
               ]}
             />
             {split === 'income' && (
-              <div className="rounded-[20px] border border-sand bg-white p-4">
+              <div className="rounded-[20px] border border-sand bg-card p-4">
                 <div className="flex justify-between text-[17px] font-extrabold">
                   <span>Vos {Math.round(overlay.incomeShare * 100)} %</span>
                   <span>
@@ -113,7 +113,7 @@ export function EditGroupSheet({
         <button
           type="button"
           onClick={() => navigate(`/grupos/${groupId}/personas`)}
-          className="flex items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3 text-left"
+          className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3 text-left"
         >
           <AvatarStack people={people} size="md" />
           <span className="flex-1">
@@ -131,14 +131,14 @@ export function EditGroupSheet({
           <button
             type="button"
             onClick={onLeave}
-            className="flex min-h-12 items-center justify-center gap-1 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+            className="flex min-h-12 items-center justify-center gap-1 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
           >
             <ChevronLeft aria-hidden="true" className="size-5" /> Salir del grupo
           </button>
           <button
             type="button"
             onClick={onRemove}
-            className="flex min-h-12 items-center justify-center gap-1 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold text-expense"
+            className="flex min-h-12 items-center justify-center gap-1 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold text-expense"
           >
             <Trash2 aria-hidden="true" className="size-5" /> Eliminar grupo
           </button>

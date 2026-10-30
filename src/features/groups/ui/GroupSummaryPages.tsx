@@ -63,7 +63,7 @@ export function GroupSummaryPage() {
   return (
     <Page className="pb-28">
       <PageHeader title="Resumen" backTo={`/grupos/${groupId}`} />
-      <article className="rounded-[24px] border border-sand bg-white p-4 shadow-sm">
+      <article className="rounded-[24px] border border-sand bg-card p-4 shadow-sm">
         <header className="flex items-center gap-3">
           <img src={mascotUrl} alt="" className="size-12 rounded-[12px] bg-lime p-1" />
           <div>
@@ -121,7 +121,7 @@ export function GroupSummaryPage() {
                 <td className="py-1 text-right font-extrabold">{formatArs(e.amountCents)}</td>
               </tr>
             ))}
-            <tr className="border-t-2 border-forest">
+            <tr className="border-t-2 border-ink">
               <td className="pt-2 text-[17px] font-extrabold" colSpan={2}>
                 Total
               </td>
@@ -232,7 +232,7 @@ export function ShareSummaryPage() {
             {involved.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4"
+                className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4"
               >
                 <Avatar name={p.name} size="lg" />
                 <span className="flex-1">
@@ -249,7 +249,7 @@ export function ShareSummaryPage() {
                     onClick={() =>
                       void copyText(`${name}: ${lineFor(p)}`, toast, 'Mensaje copiado')
                     }
-                    className="flex min-h-11 items-center gap-1.5 rounded-full border-2 border-forest px-3 text-[15px] font-extrabold"
+                    className="flex min-h-11 items-center gap-1.5 rounded-full border-2 border-ink px-3 text-[15px] font-extrabold"
                   >
                     <Copy aria-hidden="true" className="size-4" /> Copiar
                   </button>
@@ -281,7 +281,7 @@ export function ShareSummaryPage() {
           <button
             type="button"
             onClick={() => setChoosingAlias(true)}
-            className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4 text-left"
+            className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4 text-left"
           >
             <IconTile icon={WalletCards} bg="#e3f2cf" />
             <span className="flex-1">
@@ -307,7 +307,7 @@ export function ShareSummaryPage() {
               .map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3"
+                  className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3"
                 >
                   <Avatar name={p.name} />
                   <span className="flex-1">
@@ -323,7 +323,7 @@ export function ShareSummaryPage() {
                         'Mensaje copiado',
                       )
                     }
-                    className="flex min-h-11 items-center gap-1.5 rounded-full border-2 border-forest px-3 text-[15px] font-extrabold"
+                    className="flex min-h-11 items-center gap-1.5 rounded-full border-2 border-ink px-3 text-[15px] font-extrabold"
                   >
                     <Copy aria-hidden="true" className="size-4" /> Copiar
                   </button>
@@ -349,8 +349,8 @@ export function ShareSummaryPage() {
                   type="button"
                   onClick={() => patchOverlay(groupId, { collectAlias: a.alias })}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-[20px] border-2 bg-white px-4 py-3 text-left',
-                    myAlias === a.alias ? 'border-forest' : 'border-sand',
+                    'flex w-full items-center gap-3 rounded-[20px] border-2 bg-card px-4 py-3 text-left',
+                    myAlias === a.alias ? 'border-ink' : 'border-sand',
                   )}
                 >
                   <IconTile icon={CreditCard} bg="#e3f2cf" />
@@ -411,7 +411,7 @@ export function NoticesSentPage() {
         {involved.map((p) => (
           <li
             key={p.id}
-            className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4"
+            className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4"
           >
             <Avatar name={p.name} size="lg" />
             <span className="flex-1">
@@ -429,7 +429,7 @@ export function NoticesSentPage() {
               <button
                 type="button"
                 onClick={() => void copyText(`${name}: ${line(p)}`, toast, 'Mensaje copiado')}
-                className="flex min-h-11 items-center gap-1.5 rounded-full border-2 border-forest px-3 text-[15px] font-extrabold"
+                className="flex min-h-11 items-center gap-1.5 rounded-full border-2 border-ink px-3 text-[15px] font-extrabold"
               >
                 <Copy aria-hidden="true" className="size-4" /> Copiar
               </button>

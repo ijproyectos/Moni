@@ -58,7 +58,7 @@ export function OpeningOriginFields({
                 'flex min-h-14 w-full flex-col justify-center rounded-[18px] border-2 px-4 py-2 text-left transition',
                 selected
                   ? 'border-transparent bg-forest text-cream'
-                  : 'border-cream bg-white text-forest',
+                  : 'border-cream bg-card text-ink',
               )}
             >
               <span className="font-display text-[17px] font-extrabold leading-5">
@@ -102,7 +102,7 @@ export function OpeningOriginFields({
               type="date"
               value={value.occurredOn}
               onChange={(e) => onChange({ ...value, occurredOn: e.target.value })}
-              className="h-14 w-full rounded-[18px] border border-sand bg-white px-4 text-[17px] text-forest"
+              className="h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink"
             />
           </label>
           <p className="text-[14px] leading-5 text-text-muted">

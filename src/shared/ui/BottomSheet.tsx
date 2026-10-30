@@ -35,10 +35,7 @@ export function BottomSheet({ title, subtitle, onClose, children }: BottomSheetP
         <div aria-hidden="true" className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-sand" />
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2
-              id={titleId}
-              className="font-display text-[28px] font-extrabold leading-8 text-forest"
-            >
+            <h2 id={titleId} className="font-display text-[28px] font-extrabold leading-8 text-ink">
               {title}
             </h2>
             {subtitle && <p className="mt-0.5 text-[15px] text-text-muted">{subtitle}</p>}
@@ -47,7 +44,7 @@ export function BottomSheet({ title, subtitle, onClose, children }: BottomSheetP
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-sand text-forest"
+            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-sand text-ink"
           >
             <X aria-hidden="true" className="size-5" strokeWidth={2} />
           </button>

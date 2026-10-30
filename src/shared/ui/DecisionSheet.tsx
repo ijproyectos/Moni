@@ -25,7 +25,7 @@ interface DecisionSheetProps {
 const TONES = {
   primary: 'bg-lime text-forest',
   danger: 'bg-expense text-cream',
-  outline: 'border-2 border-sand bg-white text-forest',
+  outline: 'border-2 border-sand bg-card text-ink',
 }
 
 // Confirmation sheets of screens 088 / 092 / 107-118: icon + question, impact and stacked actions.
@@ -74,7 +74,7 @@ export function DecisionSheet({
         </div>
         {children && <div className="mt-4 text-[17px] leading-6">{children}</div>}
         {changes && (
-          <ul className="mt-4 divide-y divide-sand rounded-[20px] border border-sand bg-white px-4">
+          <ul className="mt-4 divide-y divide-sand rounded-[20px] border border-sand bg-card px-4">
             {changes.map((c) => (
               <li key={c.label} className="flex items-center gap-2 py-3 text-[16px]">
                 <span className="flex-1 text-text-muted">{c.label}</span>

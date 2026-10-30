@@ -38,7 +38,7 @@ export function OnboardingCurrencyStep({
 
       <div
         aria-label="Moneda principal: Peso argentino, ARS"
-        className="mx-auto mt-8 flex min-h-[60px] w-fit items-center gap-3 rounded-full bg-canvas px-5 text-forest"
+        className="mx-auto mt-8 flex min-h-[60px] w-fit items-center gap-3 rounded-full bg-canvas px-5 text-ink"
       >
         <ArgentinaFlag />
         <span className="font-display text-[20px] font-extrabold">Peso argentino</span>

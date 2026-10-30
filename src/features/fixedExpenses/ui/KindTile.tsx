@@ -23,7 +23,7 @@ export function KindTile({
     <span
       aria-hidden="true"
       className={cn(
-        'flex shrink-0 items-center justify-center border border-sand bg-lime/30 text-forest',
+        'flex shrink-0 items-center justify-center border border-sand bg-lime/30 text-ink',
         SIZES[size],
         className,
       )}

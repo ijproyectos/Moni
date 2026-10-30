@@ -36,7 +36,7 @@ export function BudgetSuggestions() {
       <p className="px-1 text-[15px] leading-5 text-text-muted">
         Según lo que gastaste en los últimos 3 meses. Podés cambiarlo cuando quieras.
       </p>
-      <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+      <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
         {list.map((s) => (
           <li key={s.categoryId} className="flex items-center gap-3 px-4 py-3">
             <CategoryIconCircle iconName={s.icon} color={s.color} className="size-12" />

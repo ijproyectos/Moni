@@ -137,7 +137,7 @@ export function NewInstallmentSheet({
         {cards.length === 0 && !accounts.isLoading && (
           <p
             role="status"
-            className="rounded-[18px] border border-sand bg-white p-4 text-[16px] leading-6"
+            className="rounded-[18px] border border-sand bg-card p-4 text-[16px] leading-6"
           >
             Para cargar cuotas primero necesitás una tarjeta con su día de cierre y de vencimiento.{' '}
             <Link to="/cuentas" onClick={onClose} className="font-extrabold underline">
@@ -152,7 +152,7 @@ export function NewInstallmentSheet({
           placeholder="Ej: Heladera"
           maxLength={80}
           aria-label="Qué compraste"
-          className="h-14 rounded-[18px] border border-sand bg-white px-4 text-[17px]"
+          className="h-14 rounded-[18px] border border-sand bg-card px-4 text-[17px]"
         />
         <SectionLabel>Total de la compra</SectionLabel>
         <AmountInput
@@ -191,7 +191,7 @@ export function NewInstallmentSheet({
             type="button"
             aria-label={`Voy en la cuota ${safeCurrent}`}
             onClick={() => setCurrent((p) => (Math.min(p, count) % count) + 1)}
-            className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-white px-4 text-[17px] font-extrabold"
+            className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-card px-4 text-[17px] font-extrabold"
           >
             <CalendarDays aria-hidden="true" className="size-5" /> Voy en la {safeCurrent}
           </button>
@@ -203,7 +203,7 @@ export function NewInstallmentSheet({
               const idx = cards.findIndex((a) => a.id === card?.id)
               setCardId(cards[(idx + 1) % cards.length]?.id ?? null)
             }}
-            className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-white px-4 text-[17px] font-extrabold disabled:opacity-60"
+            className="flex min-h-14 items-center gap-2 rounded-[18px] border border-sand bg-card px-4 text-[17px] font-extrabold disabled:opacity-60"
           >
             <CreditCard aria-hidden="true" className="size-5" /> {card?.name ?? 'Sin tarjeta'}
           </button>
@@ -213,7 +213,7 @@ export function NewInstallmentSheet({
             type="button"
             onClick={() => setFirstChoice((i) => (i + 1) % preview.options.length)}
             aria-label="Cambiar el resumen de la primera cuota"
-            className="rounded-[18px] border border-sand bg-white px-4 py-3 text-left text-[15px] leading-5"
+            className="rounded-[18px] border border-sand bg-card px-4 py-3 text-left text-[15px] leading-5"
           >
             <span className="block font-extrabold">
               Cuota {first.number} en el resumen del {formatCompactDate(first.closingOn)}

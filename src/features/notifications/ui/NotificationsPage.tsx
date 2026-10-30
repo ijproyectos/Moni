@@ -58,7 +58,7 @@ export function NotificationsPage() {
             <p className="text-[15px] text-text-muted">No tenés pagos pendientes.</p>
           )}
           {data.toPay.map((p) => (
-            <div key={p.id} className="rounded-[24px] border border-sand bg-white p-4">
+            <div key={p.id} className="rounded-[24px] border border-sand bg-card p-4">
               <div className="flex items-center gap-3">
                 <Avatar name={p.person} />
                 <span>
@@ -84,7 +84,7 @@ export function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => void copyText(p.alias, toast, 'Alias copiado')}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
                 >
                   <Copy aria-hidden="true" className="size-5" /> Copiar alias
                 </button>
@@ -107,7 +107,7 @@ export function NotificationsPage() {
           {data.owedToMe.map((p) => (
             <div
               key={p.id}
-              className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4"
+              className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4"
             >
               <Avatar name={p.person} />
               <span className="min-w-0 flex-1">
@@ -133,7 +133,7 @@ export function NotificationsPage() {
             to="/aguinaldo"
             className="flex items-center gap-3 rounded-[24px] border border-lime/60 bg-lime/25 p-4"
           >
-            <span className="flex size-12 items-center justify-center rounded-full bg-white">
+            <span className="flex size-12 items-center justify-center rounded-full bg-card">
               <Gift aria-hidden="true" className="size-6" />
             </span>
             <span className="flex-1">
@@ -144,7 +144,7 @@ export function NotificationsPage() {
           </Link>
           <Link
             to="/hormigas"
-            className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4"
+            className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4"
           >
             <span className="flex size-12 items-center justify-center rounded-full bg-gold/40">
               <ShoppingBag aria-hidden="true" className="size-6" />
@@ -167,7 +167,7 @@ export function NotificationsPage() {
           </p>
           <ul className="flex flex-col gap-3">
             {data.activity.map((a) => (
-              <li key={a.id} className="rounded-[24px] border border-sand bg-white p-4">
+              <li key={a.id} className="rounded-[24px] border border-sand bg-card p-4">
                 <div className="flex items-start gap-3">
                   <Avatar name={a.person} />
                   <div className="min-w-0 flex-1">
@@ -193,7 +193,7 @@ export function NotificationsPage() {
                       <button
                         type="button"
                         onClick={() => a.action && navigate(a.action.to)}
-                        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+                        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
                       >
                         {a.action.icon === 'gift' && <Gift aria-hidden="true" className="size-5" />}
                         {a.action.label}

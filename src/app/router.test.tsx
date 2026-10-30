@@ -49,3 +49,21 @@ describe('feature-flagged routes', () => {
     expect(FEATURES.pro).toBe(false)
   })
 })
+
+describe('old credit-card route', () => {
+  it('/tarjetas redirects into Medios de pago so old links do not 404', async () => {
+    render(
+      <MemoryRouter initialEntries={['/tarjetas?tab=cuotas']}>
+        <Routes>
+          <Route path="/cuentas" element={<p>cuentas stub</p>} />
+          {appRoutes
+            .filter((r) => r.path === 'tarjetas')
+            .map((r) => (
+              <Route key={r.path} path={`/${r.path}`} element={r.element} />
+            ))}
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText('cuentas stub')).toBeInTheDocument()
+  })
+})

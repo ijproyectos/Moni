@@ -65,7 +65,7 @@ export function ServiceLogo({
   }
   const Icon = service ? GENERIC_ICONS[service.category] : Repeat
   return (
-    <span className={cn(base, 'bg-lime/30 text-forest')} aria-hidden="true">
+    <span className={cn(base, 'bg-lime/30 text-ink')} aria-hidden="true">
       <Icon className="size-full" strokeWidth={2} />
     </span>
   )

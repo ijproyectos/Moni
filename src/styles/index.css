@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
 /* Brand tokens — source of truth: Moni brand manual v1.0 (Oct 2026). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-*: initial;
 
@@ -19,6 +21,13 @@
   --color-text-muted-on-dark: #a9c4b8;
   --color-white: #ffffff;
   --color-sand: #f3e8d2;
+  /* Semantic roles that flip in the dark theme. `forest`, `lime`, `gold`, `blush`, `cream` are fixed brand
+     fills; use `ink` for text/borders on neutral surfaces and `card` for raised white surfaces. */
+  --color-ink: #064735;
+  --color-card: #ffffff;
+  --color-line: #d9c9a6;
+  --color-track: #e0d3b6;
+  --color-placeholder: #c4b38c;
   --color-expense: #b8321f;
   --color-income: #2f7d1f;
   --color-scrim: rgb(6 71 53 / 0.55);
@@ -43,6 +52,33 @@
   --radius-lg: 20px;
   --radius-xl: 24px;
   --radius-2xl: 28px;
+}
+
+/*
+ * Dark theme: only the semantic tokens are redefined. The class is set on <html> by the inline script in
+ * index.html (before first paint) and kept in sync by src/features/settings/ui/useTheme.
+ */
+html.dark {
+  color-scheme: dark;
+  --color-canvas: #0c1914;
+  --color-card: #14261f;
+  --color-sand: #25403a;
+  --color-ink: #eaf3ed;
+  --color-line: #3b5a50;
+  --color-track: #3b5148;
+  --color-placeholder: #7c988b;
+  --color-text-muted: #a2bbb0;
+  --color-expense: #ff8f7e;
+  --color-income: #8fdc78;
+  --color-scrim: rgb(0 0 0 / 0.65);
+  --color-category-groceries: #5fc9a0;
+}
+
+/* Bright brand fills keep dark text in both themes, including descendants that use the neutral tokens. */
+html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
+  --color-ink: #064735;
+  --color-text-muted: #3f5a50;
+  color: #064735;
 }
 
 @keyframes sheet-in {
@@ -75,6 +111,83 @@
   }
 }
 
+/*
+ * Density: the whole UI is laid out in fixed px, so one global lever scales everything. CSS `zoom` on <html>
+ * renders at ZOOM of the design size (0.89 = 11% smaller). Without `zoom` support the factor stays 1.
+ * Viewport-based sizes and the 430px column are divided by the factor so they still fill the screen, and
+ * tap targets are raised so they stay >= 44px after scaling.
+ */
+:root {
+  --ui-zoom: 1;
+  --tap: 44px;
+}
+@supports (zoom: 1) {
+  :root {
+    --ui-zoom: 0.89;
+    --tap: calc(44px / var(--ui-zoom));
+  }
+  html {
+    zoom: var(--ui-zoom);
+  }
+}
+.min-h-dvh {
+  min-height: calc(100dvh / var(--ui-zoom));
+}
+.max-h-\[92dvh\] {
+  max-height: calc(92dvh / var(--ui-zoom));
+}
+.max-w-\[430px\] {
+  max-width: calc(430px / var(--ui-zoom));
+}
+.max-w-\[398px\] {
+  max-width: calc(398px / var(--ui-zoom));
+}
+.max-w-\[390px\] {
+  max-width: calc(390px / var(--ui-zoom));
+}
+/* Legibility floors: small text is scaled less so it stays >= 14px (body), 13px, 12.5px or 12px on screen. */
+.text-\[15px\] {
+  font-size: max(15px, calc(14px / var(--ui-zoom)));
+}
+.text-\[14px\],
+.text-sm {
+  font-size: max(14px, calc(13px / var(--ui-zoom)));
+}
+.text-\[13px\] {
+  font-size: max(13px, calc(12.5px / var(--ui-zoom)));
+}
+.text-\[12px\],
+.text-xs {
+  font-size: max(12px, calc(12px / var(--ui-zoom)));
+}
+.min-h-11,
+.h-11 {
+  min-height: var(--tap);
+}
+.h-11 {
+  height: var(--tap);
+}
+.size-11 {
+  width: var(--tap);
+  height: var(--tap);
+}
+.min-w-11 {
+  min-width: var(--tap);
+}
+.min-h-12 {
+  min-height: max(48px, var(--tap));
+}
+.h-12 {
+  height: max(48px, var(--tap));
+}
+.size-12 {
+  width: max(48px, var(--tap));
+  height: max(48px, var(--tap));
+}
+.min-w-12 {
+  min-width: max(48px, var(--tap));
+}
+
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
@@ -82,9 +195,9 @@
 
   body {
     margin: 0;
-    min-height: 100dvh;
+    min-height: calc(100dvh / var(--ui-zoom));
     background-color: var(--color-canvas);
-    color: var(--color-forest);
+    color: var(--color-ink);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
   }

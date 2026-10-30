@@ -561,6 +561,11 @@ describe('classifyQuotaError', () => {
     expect(classifyQuotaError({ code: '54000', message: 'something else' })).toBe('server_error')
   })
 
+  it('maps the free-plan marker to plus_required (HTTP 402 in the functions)', () => {
+    expect(classifyQuotaError({ code: '54000', message: 'plus_required' })).toBe('plus_required')
+    expect(classifyQuotaError({ code: 'P0001', message: 'plus_required' })).toBe('plus_required')
+  })
+
   it('treats 42501 as 401 only for not_authenticated or JWT problems', () => {
     expect(classifyQuotaError({ code: '42501', message: 'not_authenticated' })).toBe('not_authenticated')
     expect(classifyQuotaError({ code: '42501', message: 'invalid JWT' })).toBe('not_authenticated')

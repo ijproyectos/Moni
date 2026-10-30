@@ -8,6 +8,7 @@ import { monthStart, todayIso } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { CategoryIconCircle } from '@/shared/ui/IconCircle'
 import { MonthPicker } from '@/shared/ui/MonthPicker'
+import { themedColor } from '@/shared/ui/categoryIcons'
 import { Panel } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useMonthSummary } from '../api/useMonthSummary'
@@ -81,7 +82,7 @@ export function MonthReportPage() {
                   <span
                     key={s.categoryId}
                     className="rounded-full"
-                    style={{ flexGrow: s.percent, backgroundColor: s.color }}
+                    style={{ flexGrow: s.percent, backgroundColor: themedColor(s.color) }}
                   />
                 ))}
               </div>
@@ -94,7 +95,7 @@ export function MonthReportPage() {
                       <span className="flex items-center gap-1.5 text-[15px] text-text-muted">
                         <span
                           className="size-2.5 rounded-full"
-                          style={{ backgroundColor: s.color }}
+                          style={{ backgroundColor: themedColor(s.color) }}
                         />
                         {Math.round(s.percent)}% del total
                       </span>

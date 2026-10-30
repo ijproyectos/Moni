@@ -4,6 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#064735" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      // Applies the saved appearance before the first paint (no light flash in dark mode).
+      // Keep in sync with src/features/settings/domain/theme.ts.
+      ;(function () {
+        try {
+          var mode = null
+          try {
+            mode = window.localStorage.getItem('moni.theme')
+          } catch (e) {}
+          var dark =
+            mode === 'dark' ||
+            (mode !== 'light' &&
+              typeof window.matchMedia === 'function' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          if (dark) document.documentElement.classList.add('dark')
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) meta.setAttribute('content', dark ? '#0c1914' : '#064735')
+        } catch (e) {}
+      })()
+    </script>
     <meta name="description" content="Moni — tu plata, bajo control. Sin vueltas." />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

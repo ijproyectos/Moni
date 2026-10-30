@@ -115,7 +115,7 @@ export function FixedExpenseDetailSheet({
           {expense.status === 'active' && (
             <Button
               variant="ghost"
-              className="text-forest"
+              className="text-ink"
               disabled={setStatus.isPending}
               onClick={() => void change('paused', `${expense.name} pausado`)}
             >
@@ -125,7 +125,7 @@ export function FixedExpenseDetailSheet({
           {expense.status !== 'active' && (
             <Button
               variant={expense.status === 'removed' ? 'dark' : 'ghost'}
-              className={expense.status === 'removed' ? undefined : 'text-forest'}
+              className={expense.status === 'removed' ? undefined : 'text-ink'}
               disabled={setStatus.isPending}
               onClick={() => void change('active', `${expense.name} reactivado`)}
             >

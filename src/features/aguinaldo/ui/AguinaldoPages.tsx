@@ -36,6 +36,7 @@ import {
   SectionLabel,
   Toggle,
 } from '@/shared/ui/kit'
+import { themedColor } from '@/shared/ui/categoryIcons'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import {
   addDestination,
@@ -104,7 +105,7 @@ export function AguinaldoPage() {
           {isDefaultDate ? 'Otra fecha' : formatDayMonth(plan.payDate)}
         </ChoiceChip>
       </div>
-      <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3">
+      <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3">
         <span className="flex-1">
           <span className="block text-[17px] font-extrabold">Avisarme cuando cobre</span>
           <span className="block text-[15px] text-text-muted">
@@ -178,12 +179,12 @@ export function AguinaldoSplitPage() {
             <span
               key={d.id}
               className="rounded-full"
-              style={{ flexGrow: d.cents, backgroundColor: d.color }}
+              style={{ flexGrow: d.cents, backgroundColor: themedColor(d.color) }}
             />
           ))}
         </div>
       </section>
-      <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
+      <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
         {plan.destinations.map((d) => {
           const visual = KIND_ICONS[d.kind]
           return (
@@ -191,7 +192,7 @@ export function AguinaldoSplitPage() {
               <span
                 aria-hidden="true"
                 className="h-10 w-1.5 shrink-0 rounded-full"
-                style={{ backgroundColor: d.color }}
+                style={{ backgroundColor: themedColor(d.color) }}
               />
               <IconTile
                 icon={d.kind === 'goal' && d.name.includes('emergencia') ? Banknote : visual.icon}
@@ -302,7 +303,7 @@ export function AguinaldoSplitPage() {
             <Button
               variant="ghost"
               onClick={() => setAdding(false)}
-              className="h-14 rounded-full border-2 border-sand bg-white text-forest"
+              className="h-14 rounded-full border-2 border-sand bg-card text-ink"
             >
               Cancelar
             </Button>
@@ -341,13 +342,16 @@ export function AguinaldoDonePage() {
         <ul className="flex flex-col gap-2.5">
           {plan.destinations.map((d) => (
             <li key={d.id} className="flex items-center gap-3 text-[16px]">
-              <span className="size-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+              <span
+                className="size-2.5 rounded-full"
+                style={{ backgroundColor: themedColor(d.color) }}
+              />
               <span className="flex-1">{d.name}</span>
               <strong className="font-extrabold">{formatArs(d.cents)}</strong>
             </li>
           ))}
         </ul>
-        <div className="mt-3 flex items-center justify-between border-t border-forest pt-3">
+        <div className="mt-3 flex items-center justify-between border-t border-ink pt-3">
           <strong className="text-[17px] font-extrabold">Total</strong>
           <strong className="font-display text-[24px] font-extrabold">
             {formatArs(plan.amountCents)}

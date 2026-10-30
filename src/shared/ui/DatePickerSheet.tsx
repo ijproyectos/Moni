@@ -38,7 +38,7 @@ export function DatePickerSheet({
 
   return (
     <BottomSheet title={title} onClose={onClose}>
-      <div className="rounded-[24px] border border-sand bg-white p-3">
+      <div className="rounded-[24px] border border-sand bg-card p-3">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -82,7 +82,7 @@ export function DatePickerSheet({
                 onClick={() => setSelected(date)}
                 className={cn(
                   'mx-auto flex size-11 items-center justify-center rounded-full text-[17px] font-extrabold',
-                  active ? 'bg-forest text-cream' : 'text-forest',
+                  active ? 'bg-forest text-cream' : 'text-ink',
                   disabled && 'opacity-30',
                 )}
               >

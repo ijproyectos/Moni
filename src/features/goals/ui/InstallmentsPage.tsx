@@ -80,7 +80,7 @@ export function InstallmentsPage() {
   return (
     <Page className="pb-6">
       <PageHeader title="¿Conviene en cuotas?" />
-      <div className="rounded-[24px] border border-sand bg-white p-4">
+      <div className="rounded-[24px] border border-sand bg-card p-4">
         <div className="flex justify-between text-[16px]">
           <span className="font-extrabold">{name}</span>
           <span className="text-text-muted">Precio de contado</span>
@@ -143,7 +143,7 @@ export function InstallmentsPage() {
                 setAguinaldo(parseAmountInput(e.target.value) ?? aguinaldo)
                 setEditing(null)
               }}
-              className="w-32 rounded-full border border-sand bg-white px-3 py-1 text-right text-[15px]"
+              className="w-32 rounded-full border border-sand bg-card px-3 py-1 text-right text-[15px]"
             />
           ) : (
             <button
@@ -163,7 +163,7 @@ export function InstallmentsPage() {
       <ul
         role="radiogroup"
         aria-label="Opciones"
-        className="flex flex-col gap-1 rounded-[24px] border border-sand bg-white p-2"
+        className="flex flex-col gap-1 rounded-[24px] border border-sand bg-card p-2"
       >
         {options.map((o) => {
           const active = o.id === selected?.id
@@ -177,7 +177,7 @@ export function InstallmentsPage() {
                 onClick={() => setSelectedId(o.id)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-[18px] border-2 px-3 py-2.5 text-left',
-                  active ? 'border-forest' : 'border-transparent',
+                  active ? 'border-ink' : 'border-transparent',
                 )}
               >
                 <CheckDot checked={active} />
@@ -316,7 +316,7 @@ function PercentField({
   invalid: boolean
 }) {
   return (
-    <label className="flex flex-col gap-1 rounded-[18px] border border-sand bg-white px-3 py-2">
+    <label className="flex flex-col gap-1 rounded-[18px] border border-sand bg-card px-3 py-2">
       <span className="text-[14px] font-extrabold leading-5">{label}</span>
       <span className="flex items-baseline gap-1 text-[22px] font-extrabold">
         <input
@@ -326,7 +326,7 @@ function PercentField({
           placeholder={placeholder}
           aria-label={label}
           aria-invalid={invalid}
-          className={cn('w-full min-w-0 bg-transparent outline-none', invalid && 'text-[#b8321f]')}
+          className={cn('w-full min-w-0 bg-transparent outline-none', invalid && 'text-expense')}
         />
         %
       </span>
