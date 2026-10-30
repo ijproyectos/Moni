@@ -206,7 +206,7 @@ export function SubscriptionFormSheet({
           ]}
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
               Próximo cobro

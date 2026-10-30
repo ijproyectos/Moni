@@ -91,6 +91,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
   }
 
   const rowHandlers = {
+    onOpenDetail: (c: SubscriptionCharge) => setOpenId(c.subscriptionId),
     onNotCharged: (c: SubscriptionCharge) => setReverting(c),
     onLink: (c: SubscriptionCharge) =>
       c.possibleDuplicate
@@ -190,7 +191,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
 
       {history.length > 0 && (
         <>
-          <SectionLabel>Historial de cobros</SectionLabel>
+          <SectionLabel>Historial de pagos</SectionLabel>
           <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-white">
             {shown.map((c) => {
               const s = byId.get(c.subscriptionId)
@@ -267,9 +268,9 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       )}
       {reverting && (
         <ConfirmDialog
-          title="¿No se cobró?"
-          message={`Moni anula el gasto de ${formatArs(reverting.amountCents)} del ${formatCompactDate(reverting.dueOn)} y devuelve el importe a la cuenta. El cobro queda en el historial como «No se cobró».`}
-          confirmLabel="Sí, no se cobró"
+          title="¿Anular este cobro?"
+          message={`Moni anula el gasto de ${formatArs(reverting.amountCents)} del ${formatCompactDate(reverting.dueOn)} y devuelve el importe a la cuenta. El cobro queda en el historial como «Sin cobro». Si el servicio sí te cobró, no lo anules.`}
+          confirmLabel="Anular cobro"
           cancelLabel="Volver"
           isBusy={notCharged.isPending}
           onConfirm={() => {

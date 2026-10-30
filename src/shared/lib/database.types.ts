@@ -439,6 +439,71 @@ export interface Database {
         Returns: undefined
       }
       dismiss_subscription_duplicate: { Args: { p_charge: string }; Returns: undefined }
+      /** Migration 20261102000000 (fixed expenses). */
+      get_fixed_expense_overview: { Args: { p_today?: string | null }; Returns: Json }
+      get_fixed_expense_duplicates: {
+        Args: {
+          p_occurrence: string
+          p_amount: number
+          p_paid_on: string
+          p_account?: string | null
+        }
+        Returns: Json
+      }
+      process_my_fixed_expenses: { Args: Record<string, never>; Returns: number }
+      create_fixed_expense: {
+        Args: {
+          p_kind: string
+          p_name: string
+          p_amount: number
+          p_period: string
+          p_next_on: string
+          p_account: string
+          p_category: string
+          p_remind?: boolean
+          p_request_key?: string | null
+        }
+        Returns: string
+      }
+      update_fixed_expense: {
+        Args: {
+          p_id: string
+          p_name: string
+          p_amount: number
+          p_period: string
+          p_next_on: string
+          p_account: string
+          p_category: string
+          p_remind: boolean
+        }
+        Returns: undefined
+      }
+      set_fixed_expense_status: { Args: { p_id: string; p_status: string }; Returns: undefined }
+      register_fixed_expense_payment: {
+        Args: {
+          p_occurrence: string
+          p_amount: number
+          p_paid_on: string
+          p_account?: string | null
+          p_update_estimate?: boolean
+          p_request_key?: string | null
+        }
+        Returns: string
+      }
+      link_fixed_expense_payment: {
+        Args: { p_occurrence: string; p_transaction: string }
+        Returns: string
+      }
+      skip_fixed_expense_occurrence: { Args: { p_occurrence: string }; Returns: undefined }
+      reschedule_fixed_expense_occurrence: {
+        Args: { p_occurrence: string; p_new_date: string }
+        Returns: undefined
+      }
+      void_fixed_expense_payment: { Args: { p_payment: string }; Returns: undefined }
+      correct_fixed_expense_payment: {
+        Args: { p_payment: string; p_amount: number; p_paid_on: string }
+        Returns: undefined
+      }
       /** Migration 20261030000000. */
       create_installment_purchase: {
         Args: {

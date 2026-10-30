@@ -1,54 +1,59 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Navigate, useSearchParams } from 'react-router'
+import { NewFixedExpenseFlow } from '@/features/fixedExpenses/ui/NewFixedExpenseFlow'
+import { FixedExpensesPanel } from '@/features/fixedExpenses/ui/FixedExpensesPanel'
+import { NewSubscriptionFlow } from '@/features/subscriptions/ui/NewSubscriptionFlow'
+import { SubscriptionsPanel } from '@/features/subscriptions/ui/SubscriptionsPanel'
 import { HeaderAddButton, Page } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
-import { useInstallmentViews } from '@/features/cards/api/useInstallmentViews'
-import { InstallmentsPanel } from '@/features/cards/ui/InstallmentsPanel'
-import { NewInstallmentSheet } from '@/features/cards/ui/NewInstallmentSheet'
-import { NewSubscriptionFlow } from '@/features/subscriptions/ui/NewSubscriptionFlow'
-import { SubscriptionsPanel } from '@/features/subscriptions/ui/SubscriptionsPanel'
 
-// Screens 074 / 075 / 076 / 077 — Fijos y cuotas.
+type Tab = 'suscripciones' | 'gastos-fijos'
+
+/**
+ * Pagos recurrentes: Suscripciones (charged by Moni on their dates) and Gastos fijos (Moni reminds, the person
+ * registers the real payment). Installments live in Tarjetas de crédito.
+ */
 export function RecurringPage() {
   const [params, setParams] = useSearchParams()
-  const tab = params.get('tab') === 'cuotas' ? 'cuotas' : 'subs'
-  const [sheet, setSheet] = useState<null | { kind: 'sub' } | { kind: 'cuota' }>(null)
+  const [sheet, setSheet] = useState<null | 'sub' | 'fixed'>(null)
 
-  const { monthlyCents: monthlyCuotas } = useInstallmentViews()
+  // Old links: ?tab=cuotas now lives under Tarjetas de crédito.
+  if (params.get('tab') === 'cuotas') return <Navigate to="/tarjetas?tab=cuotas" replace />
+  const tab: Tab = params.get('tab') === 'gastos-fijos' ? 'gastos-fijos' : 'suscripciones'
 
   return (
     <Page>
       <PageHeader
-        title="Fijos y cuotas"
+        title="Pagos recurrentes"
         backTo="/mas"
         action={
           <HeaderAddButton
-            label={tab === 'subs' ? 'Nueva suscripción' : 'Nueva compra en cuotas'}
-            onClick={() => setSheet(tab === 'subs' ? { kind: 'sub' } : { kind: 'cuota' })}
+            label={tab === 'suscripciones' ? 'Nueva suscripción' : 'Nuevo gasto fijo'}
+            onClick={() => setSheet(tab === 'suscripciones' ? 'sub' : 'fixed')}
           />
         }
       />
       <SegmentedControl
-        label="Tipo"
+        label="Tipo de pago recurrente"
         value={tab}
-        onChange={(t) => setParams(t === 'cuotas' ? { tab: 'cuotas' } : {}, { replace: true })}
+        onChange={(t) =>
+          setParams(t === 'gastos-fijos' ? { tab: 'gastos-fijos' } : {}, { replace: true })
+        }
         options={[
-          { value: 'subs', label: 'Suscripciones' },
-          { value: 'cuotas', label: 'Cuotas' },
+          { value: 'suscripciones', label: 'Suscripciones' },
+          { value: 'gastos-fijos', label: 'Gastos fijos' },
         ]}
       />
 
-      {tab === 'subs' ? (
-        <SubscriptionsPanel onAdd={() => setSheet({ kind: 'sub' })} />
+      {tab === 'suscripciones' ? (
+        <SubscriptionsPanel onAdd={() => setSheet('sub')} />
       ) : (
-        <InstallmentsPanel />
+        <FixedExpensesPanel onAdd={() => setSheet('fixed')} />
       )}
 
-      {sheet?.kind === 'sub' && <NewSubscriptionFlow onClose={() => setSheet(null)} />}
-      {sheet?.kind === 'cuota' && (
-        <NewInstallmentSheet monthlyNow={monthlyCuotas} onClose={() => setSheet(null)} />
-      )}
+      {sheet === 'sub' && <NewSubscriptionFlow onClose={() => setSheet(null)} />}
+      {sheet === 'fixed' && <NewFixedExpenseFlow onClose={() => setSheet(null)} />}
     </Page>
   )
 }

@@ -56,6 +56,11 @@ const MESSAGES: Record<string, string> = {
   invalid_statement:
     'Ese resumen no es válido para esta tarjeta. Elegí uno cercano a la fecha de compra.',
   invalid_date: 'La fecha no es válida.',
+  fixed_expense_not_found: 'No encontramos ese gasto fijo.',
+  fixed_expense_removed: 'Reactivá el seguimiento para poder editarlo.',
+  occurrence_not_found: 'No encontramos ese vencimiento.',
+  payment_not_found: 'No encontramos ese pago.',
+  already_resolved: 'Ese vencimiento ya fue resuelto. Actualizá la pantalla.',
   invalid_status: 'Ese estado no es válido.',
   invalid_transition: 'Ese cambio no se puede hacer en el estado actual.',
   subscription_not_found: 'No encontramos esa suscripción.',

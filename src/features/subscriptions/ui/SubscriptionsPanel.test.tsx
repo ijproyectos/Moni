@@ -111,18 +111,21 @@ describe('SubscriptionsPanel', () => {
     expect(screen.getByText(/Todavía no enviamos notificaciones push/)).toBeInTheDocument()
   })
 
-  it('warns about a negative balance and lets the person say it was not charged', async () => {
+  it('warns about a negative balance and points to the detail, where the charge can be voided', async () => {
     const { user } = setup({
       subscriptions: [sub({})],
       charges: [charge({ negativeBalance: true, balanceAfterCents: -7_000_00 })],
     })
     expect(screen.getByRole('alert')).toHaveTextContent(/saldo negativo \(-\$7\.000\)/)
-    await user.click(
-      screen.getAllByRole('button', { name: /No se cobró Netflix/ })[0] as HTMLElement,
-    )
+    // The list has no void action of its own: it only leads to the detail.
+    expect(screen.queryByRole('button', { name: /Anular cobro/ })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Ver Netflix' }))
+    await user.click(screen.getByRole('button', { name: /Anular cobro Netflix/ }))
+    expect(screen.getByText('¿Anular este cobro?')).toBeInTheDocument()
     expect(screen.getByText(/anula el gasto de \$18\.000/)).toBeInTheDocument()
+    expect(screen.getByText(/Si el servicio sí te cobró, no lo anules/)).toBeInTheDocument()
     expect(notCharged).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Sí, no se cobró' }))
+    await user.click(screen.getByRole('button', { name: 'Anular cobro' }))
     expect(notCharged).toHaveBeenCalledWith('ch1')
   })
 
@@ -157,10 +160,24 @@ describe('SubscriptionsPanel', () => {
     expect(dismiss).toHaveBeenCalledWith('ch1')
   })
 
-  it('a charge that was not collected stays in the history, struck through', () => {
+  it('a voided charge is shown as "Sin cobro" in the history of payments, with no action', () => {
     setup({ subscriptions: [sub({})], charges: [charge({ status: 'not_charged' })] })
-    expect(screen.getByText('No se cobró')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /No se cobró Netflix/ })).toBeNull()
+    expect(screen.getByText('Historial de pagos')).toBeInTheDocument()
+    expect(screen.queryByText('Historial de cobros')).toBeNull()
+    expect(screen.getByText('Sin cobro')).toBeInTheDocument()
+    expect(screen.queryByText('No se cobró')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Anular cobro/ })).toBeNull()
+  })
+
+  it('the detail lists the payments with their state and the void action only for charges that stand', async () => {
+    const { user } = setup({
+      subscriptions: [sub({})],
+      charges: [charge({}), charge({ id: 'ch0', dueOn: '2026-09-18', status: 'not_charged' })],
+    })
+    await user.click(screen.getByRole('button', { name: /^Netflix, cobra/ }))
+    expect(screen.getAllByText('Historial de pagos').length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /Anular cobro Netflix/ })).toHaveLength(1)
+    expect(screen.getAllByText('Sin cobro').length).toBeGreaterThan(0)
   })
 
   it('cancelling asks first and says it does not cancel the real service', async () => {

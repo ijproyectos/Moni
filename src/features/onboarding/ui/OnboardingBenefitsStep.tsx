@@ -33,7 +33,7 @@ const SLIDES = [
   {
     tag: 'Presupuestos y fijos',
     title: 'Frená antes de pasarte',
-    text: 'Límites por categoría y control de suscripciones, fijos y cuotas.',
+    text: 'Límites por categoría y control de suscripciones y gastos fijos.',
     image: mascotBudget,
   },
   {

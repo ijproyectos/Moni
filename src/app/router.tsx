@@ -24,6 +24,8 @@ import {
   AguinaldoSplitPage,
 } from '@/features/aguinaldo/ui/AguinaldoPages'
 import { DebtsPage } from '@/features/notifications/ui/DebtsPage'
+import { CardsPage } from '@/features/cards/ui/CardsPage'
+import { LegacyFijosRedirect } from '@/features/recurring/ui/LegacyRedirects'
 import { RecurringPage } from '@/features/recurring/ui/RecurringPage'
 import { GoalDetailPage } from '@/features/goals/ui/GoalDetailPage'
 import { GoalsPage } from '@/features/goals/ui/GoalsPage'
@@ -64,7 +66,9 @@ const simulatedRoutes = [
   { path: 'aguinaldo', element: <AguinaldoPage /> },
   { path: 'aguinaldo/reparto', element: <AguinaldoSplitPage /> },
   { path: 'aguinaldo/listo', element: <AguinaldoDonePage /> },
-  { path: 'fijos', element: <RecurringPage /> },
+  { path: 'recurrentes', element: <RecurringPage /> },
+  { path: 'fijos', element: <LegacyFijosRedirect /> },
+  { path: 'tarjetas', element: <CardsPage /> },
 ]
 
 /** Everything inside the app shell (private routes). */

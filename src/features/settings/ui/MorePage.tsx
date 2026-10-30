@@ -15,6 +15,8 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { isCreditCard } from '@/features/accounts/domain/account'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
@@ -59,10 +61,10 @@ const TILES: Tile[] = [
     bg: '#e3f2cf',
   },
   {
-    to: '/fijos',
+    to: '/recurrentes',
     feature: 'recurring',
-    title: 'Fijos y cuotas',
-    subtitle: 'Suscripciones y cuotas',
+    title: 'Pagos recurrentes',
+    subtitle: 'Suscripciones y gastos fijos',
     icon: RefreshCw,
     bg: '#e3f2cf',
   },
@@ -118,15 +120,33 @@ const TILES: Tile[] = [
   },
 ]
 
+// Tarjetas de crédito: resúmenes, límite y cuotas. Without a card it leads to Medios de pago to add one.
+const CARDS_TILE: Tile = {
+  to: '/tarjetas',
+  title: 'Tarjetas de crédito',
+  subtitle: 'Resúmenes, límite y cuotas',
+  icon: CreditCard,
+  bg: '#e3f2cf',
+}
+const ADD_CARD_TILE: Tile = {
+  ...CARDS_TILE,
+  to: '/cuentas',
+  subtitle: 'Agregá una desde Medios de pago',
+}
+
 export function MorePage() {
   const { user } = useAuth()
+  const accounts = useAccounts()
+  const hasCards = (accounts.data ?? []).some(isCreditCard)
   const { data: profile, isLoading, isError } = useProfile()
   const displayName = profile?.display_name ?? user?.email ?? ''
   const initial = initialOf(profile?.display_name, user?.email ?? '')
   const { has } = useEnabledFeatures()
   const [showMore, setShowMore] = useState(false)
-  const featured = TILES.filter((t) => !t.feature || has(t.feature))
-  const others = TILES.filter((t) => t.feature && !has(t.feature))
+  const cardsTile = hasCards ? CARDS_TILE : ADD_CARD_TILE
+  const tiles = TILES.flatMap((t) => (t.to === '/cuentas' ? [t, cardsTile] : [t]))
+  const featured = tiles.filter((t) => !t.feature || has(t.feature))
+  const others = tiles.filter((t) => t.feature && !has(t.feature))
 
   return (
     <section className="flex flex-col gap-3 px-4 pt-14">

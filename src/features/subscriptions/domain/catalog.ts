@@ -92,7 +92,6 @@ export const CATALOG: readonly CatalogService[] = [
   // Membresías
   s('uber-one', 'Uber One', 'memberships', 'uber'),
   s('rappi-pro', 'Rappi Pro', 'memberships', 'rappi'),
-  s('membresia', 'Otra membresía', 'memberships'),
 ]
 
 export const CUSTOM_SERVICE_ID = 'custom'

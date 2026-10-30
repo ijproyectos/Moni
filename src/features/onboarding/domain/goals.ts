@@ -9,7 +9,7 @@ export const GOAL_OPTIONS: readonly GoalOption[] = [
   { id: 'track_spending', label: 'Saber en qué se me va la plata' },
   { id: 'save_monthly', label: 'Ahorrar todos los meses' },
   { id: 'split_expenses', label: 'Dividir gastos con mi pareja o amigos' },
-  { id: 'control_recurring', label: 'Controlar suscripciones, gastos fijos y cuotas' },
+  { id: 'control_recurring', label: 'Controlar suscripciones y gastos fijos' },
   { id: 'plan_trips', label: 'Planear mis viajes' },
   { id: ALL_GOALS_ID, label: 'Todo lo anterior' },
 ]

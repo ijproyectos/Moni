@@ -1,5 +1,6 @@
 import { Copy, CreditCard, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { useCategories } from '@/features/categories/api/useCategories'
@@ -313,6 +314,14 @@ export function AccountsPage() {
                   />
                 )}
                 <AdjustBalanceSection account={editing.account} onDone={() => setEditing(null)} />
+                {isCreditCard(editing.account) && (
+                  <Link
+                    to="/tarjetas"
+                    className="self-start text-[15px] font-extrabold text-forest underline"
+                  >
+                    Ver resumen y cuotas en Tarjetas de crédito
+                  </Link>
+                )}
                 {isCreditCard(editing.account) && (
                   <CardSummarySection
                     accountId={editing.account.id}

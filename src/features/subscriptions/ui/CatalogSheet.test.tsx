@@ -44,8 +44,18 @@ describe('CatalogSheet', () => {
     const { user, onCustom } = setup()
     await user.type(screen.getByRole('searchbox', { name: 'Buscar servicio' }), 'Mi club')
     expect(screen.getByText(/No encontramos «Mi club»/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Agregar «Mi club»' }))
+    await user.click(screen.getByRole('button', { name: 'Agregar otra suscripción' }))
     expect(onCustom).toHaveBeenCalledWith('Mi club')
+  })
+
+  it('has a single "Agregar otra suscripción" option and no generic membership card', () => {
+    setup()
+    expect(screen.getAllByRole('button', { name: 'Agregar otra suscripción' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Otra membresía' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Otra suscripción' })).toBeNull()
+    // The gym and VPN entries stay: they are concrete categories, not a catch-all.
+    expect(screen.getByRole('button', { name: 'Otro gimnasio' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'VPN' })).toBeInTheDocument()
   })
 
   it('picking a service returns it', async () => {

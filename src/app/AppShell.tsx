@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
+import { useSyncFixedExpenses } from '@/features/fixedExpenses/api/useFixedExpenses'
 import { useSyncDueSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
 import { MyInitialContext } from '@/shared/ui/myInitialContext'
 import { MovementSheetProvider } from '@/features/transactions/ui/MovementSheetProvider'
@@ -42,6 +43,8 @@ export function AppShell() {
   const initial = initialOf(profile?.display_name, user?.email ?? '') || 'V'
   // Safety net for the server job: register what is already due for this person when the app opens.
   useSyncDueSubscriptions()
+  // Due fixed expenses become pending bills (nothing is charged or registered by itself).
+  useSyncFixedExpenses()
   return (
     <MyInitialContext.Provider value={initial}>
       <MovementSheetProvider>

@@ -134,7 +134,7 @@ export function SubscriptionDetailSheet({
           )}
         </div>
 
-        <SectionLabel>Historial de cobros</SectionLabel>
+        <SectionLabel>Historial de pagos</SectionLabel>
         {own.length === 0 ? (
           <p className="text-[15px] text-text-muted">Todavía no hay cobros registrados.</p>
         ) : (
@@ -146,6 +146,7 @@ export function SubscriptionDetailSheet({
                 subscription={s}
                 today={today}
                 busy={busy}
+                showRevert
                 onNotCharged={onNotCharged}
                 onLink={onLink}
                 onDismiss={onDismiss}

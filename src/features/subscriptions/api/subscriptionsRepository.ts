@@ -79,7 +79,7 @@ export async function setSubscriptionStatus(id: string, status: SubscriptionStat
   if (error) throw error
 }
 
-/** "No se cobró": voids the automatic expense and keeps the charge as the record. */
+/** "Anular cobro" (the charge is then listed as "Sin cobro"): voids the automatic expense and keeps the charge as the record. */
 export async function markChargeNotCharged(chargeId: string): Promise<void> {
   const { error } = await getSupabase().rpc('mark_subscription_charge_not_charged', {
     p_charge: chargeId,

@@ -69,7 +69,7 @@ export function CatalogSheet({
 
         <DashedButton onClick={() => onCustom(typed)}>
           <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
-          {typed ? `Agregar «${typed}»` : 'Otra suscripción'}
+          Agregar otra suscripción
         </DashedButton>
       </div>
     </BottomSheet>

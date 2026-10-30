@@ -28,6 +28,8 @@ export function ChargeRow({
   subscription,
   today,
   busy,
+  showRevert = false,
+  onOpenDetail,
   onNotCharged,
   onLink,
   onDismiss,
@@ -36,22 +38,26 @@ export function ChargeRow({
   subscription: Subscription
   today: string
   busy?: boolean
+  /** The "Anular cobro" action lives in the detail of the subscription, never in the lists. */
+  showRevert?: boolean
+  /** Opens the subscription's detail (where a charge can be voided). */
+  onOpenDetail?: (charge: SubscriptionCharge) => void
   onNotCharged: (charge: SubscriptionCharge) => void
   onLink: (charge: SubscriptionCharge) => void
   onDismiss: (charge: SubscriptionCharge) => void
 }) {
   const effective = isEffectiveCharge(charge)
   const status = charge.voidedElsewhere
-    ? 'No se cobró'
+    ? 'Sin cobro'
     : charge.status === 'not_charged'
-      ? 'No se cobró'
+      ? 'Sin cobro'
       : charge.status === 'linked'
         ? 'Ya estaba cargado por vos'
         : charge.status === 'failed'
           ? 'No se pudo registrar'
           : 'Cobrado'
   const duplicate = effective ? charge.possibleDuplicate : null
-  const canRevert = effective && charge.dueOn >= addDays(today, -REVERT_WINDOW_DAYS)
+  const canRevert = showRevert && effective && charge.dueOn >= addDays(today, -REVERT_WINDOW_DAYS)
 
   return (
     <li className="flex flex-col gap-2 px-4 py-3">
@@ -91,7 +97,7 @@ export function ChargeRow({
           <span>
             Este cobro dejó {subscription.accountName} en saldo negativo
             {charge.balanceAfterCents !== null && ` (${formatArs(charge.balanceAfterCents)})`}. Si
-            en realidad no se cobró, marcalo.
+            en realidad no se cobró, abrí la suscripción y anulá el cobro.
           </span>
         </div>
       )}
@@ -104,7 +110,7 @@ export function ChargeRow({
           <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-expense" />
           <span>
             Con este cobro la deuda de {subscription.accountName} superó su límite de crédito. Si en
-            realidad no se cobró, marcalo.
+            realidad no se cobró, abrí la suscripción y anulá el cobro.
           </span>
         </div>
       )}
@@ -138,15 +144,26 @@ export function ChargeRow({
         </div>
       )}
 
+      {!showRevert && onOpenDetail && effective && (charge.negativeBalance || charge.overLimit) && (
+        <button
+          type="button"
+          onClick={() => onOpenDetail(charge)}
+          aria-label={`Ver ${subscription.name}`}
+          className="self-start text-[14px] font-extrabold text-forest underline"
+        >
+          Ver suscripción
+        </button>
+      )}
+
       {canRevert && (
         <button
           type="button"
           disabled={busy}
           onClick={() => onNotCharged(charge)}
-          aria-label={`No se cobró ${subscription.name} del ${formatCompactDate(charge.dueOn)}`}
-          className="self-start text-[14px] font-extrabold text-forest underline disabled:opacity-50"
+          aria-label={`Anular cobro ${subscription.name} del ${formatCompactDate(charge.dueOn)}`}
+          className="self-start text-[14px] font-extrabold text-expense underline disabled:opacity-50"
         >
-          No se cobró
+          Anular cobro
         </button>
       )}
     </li>

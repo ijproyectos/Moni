@@ -57,6 +57,13 @@ describe('subscription catalog', () => {
     }
   })
 
+  it('has no catch-all membership; the gym and VPN entries stay', () => {
+    const names = CATALOG.map((s) => s.name)
+    expect(names).not.toContain('Otra membresía')
+    expect(names).toContain('Otro gimnasio')
+    expect(names).toContain('VPN')
+  })
+
   it('every logo a service points to exists locally, and no logo file is orphaned', () => {
     const used = CATALOG.flatMap((s) => (s.logo ? [s.logo] : []))
     for (const logo of used) {
