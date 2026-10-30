@@ -51,6 +51,6 @@ describe('plusBadgeText', () => {
 
 describe('upsell copy', () => {
   it('is honest that payments are not available yet', () => {
-    expect(PLUS_PAYMENTS_NOTE).toMatch(/Todavía no se puede pagar/)
+    expect(PLUS_PAYMENTS_NOTE).toMatch(/Mercado Pago/)
   })
 })

@@ -5,7 +5,8 @@ import { PlusSheet } from './PlusSheet'
 import { PlusBadge } from './PlusBadge'
 
 const rpc = vi.hoisted(() => vi.fn())
-vi.mock('@/shared/lib/supabase', () => ({ getSupabase: () => ({ rpc }) }))
+const invoke = vi.hoisted(() => vi.fn())
+vi.mock('@/shared/lib/supabase', () => ({ getSupabase: () => ({ rpc, functions: { invoke } }) }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 
 function renderWithClient(ui: React.ReactElement) {
@@ -17,14 +18,19 @@ function renderWithClient(ui: React.ReactElement) {
 describe('PlusSheet', () => {
   beforeEach(() => {
     rpc.mockReset()
+    invoke.mockReset()
+    invoke.mockResolvedValue({ data: { status: 'none' }, error: null })
     vi.useRealTimers()
   })
 
-  it('explains honestly that payments are not available and asks for a code', async () => {
+  it('offers the Mercado Pago subscription and still asks for a promo code', async () => {
     rpc.mockResolvedValue({ data: null, error: null })
     renderWithClient(<PlusSheet reason="group" onClose={vi.fn()} />)
     expect(screen.getByRole('dialog', { name: 'Tu plan Free tiene un grupo' })).toBeInTheDocument()
-    expect(screen.getByText(/Todavía no se puede pagar Moni Plus/)).toBeInTheDocument()
+    expect(screen.getByText(/Pagás con Mercado Pago/)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: 'Suscribirme · $2.999/mes' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Canjear código' })).toBeDisabled()
   })
 

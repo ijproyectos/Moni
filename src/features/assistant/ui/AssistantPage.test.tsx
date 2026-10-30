@@ -68,7 +68,10 @@ describe('AssistantPage', () => {
   })
 
   it('shows the quota error with a retry', async () => {
-    invoke.mockResolvedValueOnce({ data: null, error: httpError(429, { error: 'ai_quota_exceeded' }) })
+    invoke.mockResolvedValueOnce({
+      data: null,
+      error: httpError(429, { error: 'ai_quota_exceeded' }),
+    })
     const user = setup()
     await user.click(screen.getByRole('button', { name: '¿Cuánto gasté este mes?' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/límite de preguntas/)
@@ -88,7 +91,9 @@ describe('AssistantPage', () => {
     invoke.mockResolvedValue({ data: null, error: httpError(402, { error: 'plus_required' }) })
     const user = setup()
     await user.click(screen.getByRole('button', { name: '¿Cuánto gasté este mes?' }))
-    expect(await screen.findByRole('dialog', { name: 'El asistente es de Moni Plus' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('dialog', { name: 'El asistente es de Moni Plus' }),
+    ).toBeInTheDocument()
   })
 
   it('gates Free users with the upsell and never calls the function', async () => {
@@ -97,6 +102,7 @@ describe('AssistantPage', () => {
     expect(screen.queryByLabelText('Tu pregunta')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Conocer Moni Plus' }))
     expect(screen.getByRole('dialog', { name: 'El asistente es de Moni Plus' })).toBeInTheDocument()
-    expect(invoke).not.toHaveBeenCalled()
+    // The upsell sheet reads the billing state (plus-subscription); the assistant function itself is never called.
+    expect(invoke.mock.calls.filter(([name]) => name === 'insights-chat')).toHaveLength(0)
   })
 })

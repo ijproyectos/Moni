@@ -58,6 +58,7 @@ import { ActivityPage } from '@/features/transactions/ui/ActivityPage'
 import type { FeatureFlag } from '@/shared/config/features'
 import { AppShell } from './AppShell'
 import { FeatureGate } from './FeatureGate'
+import { PlusThanksRoute } from './PlusThanksRoute'
 
 /** Wraps a screen so it is only reachable while its flag is on (otherwise it redirects home). */
 function gated(flag: FeatureFlag, element: ReactElement) {
@@ -103,6 +104,11 @@ export const appRoutes = [
   { path: 'cuentas', element: <AccountsPage /> },
   { path: 'categorias', element: <CategoriesPage /> },
   { path: 'perfil', element: <ProfilePage /> },
+  // Return page of the Mercado Pago checkout (back_url). Lazy: it is only opened once, right after paying.
+  {
+    path: 'plus/gracias',
+    element: <PlusThanksRoute />,
+  },
   { path: 'este-mes', element: <MonthReportPage /> },
   { path: 'tu-anio', element: <YearReportPage /> },
   { path: 'ingresos', element: <IncomeByMonthPage /> },

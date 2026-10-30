@@ -31,6 +31,14 @@ export function mapPlusRequired<T>(error: T): T | PlusRequiredError {
 
 const MESSAGES: Record<string, string> = {
   plus_required: 'Esto es parte de Moni Plus. Con un código de acceso lo activás en un toque.',
+  already_subscribed: 'Ya tenés una suscripción activa a Moni Plus.',
+  too_many_requests: 'Esperá un minuto antes de intentar de nuevo.',
+  payment_provider_unavailable:
+    'Mercado Pago no responde en este momento. Probá de nuevo en un ratito.',
+  payment_provider_error: 'No pudimos iniciar el pago con Mercado Pago. Probá de nuevo en un rato.',
+  server_misconfigured: 'El pago con Mercado Pago no está disponible por ahora.',
+  billing_unavailable: 'No pudimos conectar con tu suscripción. Probá de nuevo en un rato.',
+  email_required: 'Tu cuenta necesita un email para suscribirse.',
   promo_invalid: 'Ese código no es válido. Revisalo y probá de nuevo.',
   promo_already_used: 'Ya usaste ese código y su período terminó.',
   account_not_found: 'La cuenta elegida no existe.',

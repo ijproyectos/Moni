@@ -2,4 +2,5 @@
 export const plusKeys = {
   all: (userId: string | undefined) => ['plus', userId] as const,
   status: (userId: string | undefined) => ['plus', userId, 'status'] as const,
+  subscription: (userId: string | undefined) => ['plus', userId, 'subscription'] as const,
 }

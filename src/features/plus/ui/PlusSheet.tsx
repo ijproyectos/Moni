@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
+import { useSubscriptionState } from '../api/useBilling'
 import { usePlus, useRedeemPromoCode } from '../api/usePlus'
 import {
   formatPlusExpiry,
@@ -11,6 +12,7 @@ import {
   PLUS_REASON_COPY,
   type PlusGateReason,
 } from '../domain/plus'
+import { PlusSubscribe } from './PlusSubscribe'
 
 interface PlusSheetProps {
   onClose: () => void
@@ -25,6 +27,7 @@ interface PlusSheetProps {
 export function PlusSheet({ onClose, reason = 'generic' }: PlusSheetProps) {
   const plus = usePlus()
   const redeem = useRedeemPromoCode()
+  const subscription = useSubscriptionState()
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -54,9 +57,13 @@ export function PlusSheet({ onClose, reason = 'generic' }: PlusSheetProps) {
               <li key={perk}>· {perk}</li>
             ))}
           </ul>
-          <p className="text-[15px] leading-5 text-text-muted">
-            Cuando termine, tu cuenta vuelve a la versión Free sin cargos ni renovación automática.
-          </p>
+          {subscription.data !== 'authorized' && (
+            <p className="text-[15px] leading-5 text-text-muted">
+              Si no te suscribís, cuando termine tu cuenta vuelve a la versión Free sin cargos ni
+              renovación automática.
+            </p>
+          )}
+          <PlusSubscribe />
           <Button onClick={onClose}>Listo</Button>
         </div>
       </BottomSheet>
@@ -76,6 +83,7 @@ export function PlusSheet({ onClose, reason = 'generic' }: PlusSheetProps) {
             <li key={perk}>· {perk}</li>
           ))}
         </ul>
+        <PlusSubscribe />
         <p className="rounded-[18px] bg-sand/60 px-4 py-3 text-[15px] leading-5">
           {PLUS_PAYMENTS_NOTE}
         </p>

@@ -1,5 +1,6 @@
 import {
   Banknote,
+  CalendarX,
   Bell,
   Camera,
   ChevronLeft,
@@ -30,7 +31,10 @@ import {
   updateWeeklyDigest,
   useWeeklyDigestSettings,
 } from '@/features/insights/mock/digestSettings'
+import { useSubscriptionState } from '@/features/plus/api/useBilling'
 import { usePlus } from '@/features/plus/api/usePlus'
+import { isCancellable } from '@/features/plus/domain/billing'
+import { CancelPlusSheet } from '@/features/plus/ui/CancelPlusSheet'
 import { formatPlusExpiry } from '@/features/plus/domain/plus'
 import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { useUpdateGoals } from '@/features/onboarding/api/useGoals'
@@ -72,7 +76,7 @@ import { updateProfileExtras, useProfileExtras } from '../mock/profileExtrasStor
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
-type Sheet = 'edit' | 'income' | 'goals' | 'plus' | 'signout' | 'delete' | null
+type Sheet = 'edit' | 'income' | 'goals' | 'plus' | 'cancelPlus' | 'signout' | 'delete' | null
 
 function ProfilePhoto({
   url,
@@ -119,6 +123,7 @@ export function ProfilePage() {
   const [isSigningOut, setIsSigningOut] = useState(false)
   const queryClient = useQueryClient()
   const plus = usePlus()
+  const subscription = useSubscriptionState()
 
   const saved = profile?.display_name ?? ''
   const shortName = firstName(saved) || user?.email?.split('@')[0] || 'Vos'
@@ -286,10 +291,23 @@ export function ProfilePage() {
           subtitle={
             plus.isPlus && plus.expiresAt
               ? `Activo hasta el ${formatPlusExpiry(plus.expiresAt, true)}`
-              : 'Voz, tickets y más grupos · con código de acceso'
+              : 'Voz, tickets y más grupos · suscripción o código'
           }
           onClick={() => setSheet('plus')}
         />
+        {isCancellable(subscription.data) && (
+          <OptionRow
+            className="rounded-none border-0"
+            icon={<IconTile icon={CalendarX} bg="#fbdcd7" color="#b8321f" className="size-11" />}
+            title="Cancelar suscripción"
+            subtitle={
+              plus.expiresAt
+                ? `Seguís con Plus hasta el ${formatPlusExpiry(plus.expiresAt, true)}`
+                : 'Seguís con Plus hasta que termine lo que pagaste'
+            }
+            onClick={() => setSheet('cancelPlus')}
+          />
+        )}
         <OptionRow
           className="rounded-none border-0"
           icon={<IconTile icon={Gift} bg="#e3f2cf" className="size-11" />}
@@ -330,6 +348,9 @@ export function ProfilePage() {
         <IncomeSheet value={extras.monthlyIncomeCents} onClose={() => setSheet(null)} />
       )}
       {sheet === 'plus' && <PlusSheet onClose={() => setSheet(null)} />}
+      {sheet === 'cancelPlus' && (
+        <CancelPlusSheet expiresAt={plus.expiresAt} onClose={() => setSheet(null)} />
+      )}
       {sheet === 'goals' && (
         <GoalsSheet saved={profile?.goals ?? []} onClose={() => setSheet(null)} />
       )}

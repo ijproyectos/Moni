@@ -6,7 +6,7 @@ export type PlusGateReason = 'voice' | 'receipt' | 'group' | 'assistant' | 'gene
 export const FREE_BADGE = 'Versión Free · sin suscripción'
 
 export const PLUS_PAYMENTS_NOTE =
-  'Todavía no se puede pagar Moni Plus desde la app. Por ahora se activa con un código de acceso y dura 30 días.'
+  'Pagás con Mercado Pago, se renueva cada mes y cancelás cuando quieras. También podés canjear un código de acceso: dura 30 días.'
 
 export const PLUS_PERKS = [
   'Cargá gastos hablando',

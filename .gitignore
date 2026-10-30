@@ -11,3 +11,6 @@ supabase/.branches
 
 # Local Netlify folder
 .netlify
+
+# Mercado Pago wizard state (local only)
+.mp-integrate-progress.md
