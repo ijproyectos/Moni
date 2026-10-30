@@ -12,22 +12,13 @@ import { OfflineBanner } from '@/shared/ui/OfflineBanner'
 
 /** The bottom bar only lives on the four main tabs; inner screens are full height (designs/). */
 const TAB_PATHS = ['/', '/actividad', '/grupos', '/mas']
-const FAB_PATHS = ['/', '/actividad']
 
 function ShellBottomBar() {
   const { pathname: path } = useLocation()
-  const showNav = TAB_PATHS.includes(path)
-  const showFab = FAB_PATHS.includes(path)
-  if (!showNav && !showFab) return null
+  if (!TAB_PATHS.includes(path)) return null
   return (
-    <div
-      className={
-        'fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-[430px] items-center gap-4 px-4 pb-[max(env(safe-area-inset-bottom),16px)] ' +
-        (showNav && showFab ? 'justify-between' : showNav ? 'justify-center' : 'justify-end')
-      }
-    >
-      {showNav && <BottomNav />}
-      {showFab && <QuickAdd />}
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <BottomNav center={<QuickAdd key={path} />} />
     </div>
   )
 }

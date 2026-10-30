@@ -99,18 +99,6 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
   }
 }
 
-/* Speed-dial items rise from the "+" button; the delay is set per item. */
-@keyframes dial-in {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 /*
  * Density: the whole UI is laid out in fixed px, so one global lever scales everything. CSS `zoom` on <html>
  * renders at ZOOM of the design size (0.89 = 11% smaller). Without `zoom` support the factor stays 1.
@@ -188,6 +176,18 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
   min-width: max(48px, var(--tap));
 }
 
+/* The add menu leaves the cat: it grows from the button and settles with a small bounce. */
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
@@ -224,4 +224,166 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/*
+ * Moni's cat (MoniCat.tsx), a lucky cat: it only moves when it is touched. Opening raises and waves the paw, pops a coin and
+ * blinks; closing lowers the paw with a small goodbye. About 600 ms each, and nothing at all with reduced motion (the paw
+ * just shows while the menu is open).
+ */
+.moni-paw,
+.moni-coin {
+  transform-box: view-box;
+}
+.moni-paw {
+  transform-origin: 184px 98px;
+}
+.moni-coin {
+  transform-origin: 206px 16px;
+}
+.moni-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.moni-cat {
+  transform-origin: 50% 90%;
+}
+.moni-cat[data-phase='open'] .moni-paw {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .moni-cat[data-phase='open'] {
+    animation: moni-hop 420ms ease-out;
+  }
+  .moni-cat[data-phase='open'] .moni-paw {
+    animation: moni-paw-up 640ms cubic-bezier(0.3, 0.8, 0.3, 1) both;
+  }
+  .moni-cat[data-phase='open'] .moni-coin {
+    animation: moni-coin 700ms ease-out both;
+  }
+  .moni-cat[data-phase='open'] .moni-eyes {
+    animation: moni-blink 360ms ease-in-out 120ms;
+  }
+  .moni-cat[data-phase='close'] {
+    animation: moni-bye 500ms ease-in-out;
+  }
+  .moni-cat[data-phase='close'] .moni-paw {
+    animation: moni-paw-down 480ms ease-in both;
+  }
+}
+@keyframes moni-hop {
+  0% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(1px) scale(1.04, 0.93); }
+  60% { transform: translateY(-4px) scale(0.98, 1.04); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+@keyframes moni-paw-up {
+  0% { opacity: 0; transform: rotate(60deg) scale(0.6); }
+  30% { opacity: 1; transform: rotate(-16deg) scale(1); }
+  50% { transform: rotate(8deg); }
+  70% { transform: rotate(-9deg); }
+  100% { opacity: 1; transform: rotate(0deg); }
+}
+@keyframes moni-paw-down {
+  0% { opacity: 1; transform: rotate(0deg); }
+  30% { opacity: 1; transform: rotate(-14deg); }
+  100% { opacity: 0; transform: rotate(60deg) scale(0.6); }
+}
+@keyframes moni-coin {
+  0% { opacity: 0; transform: translateY(24px) scale(0.4, 0.4); }
+  30% { opacity: 1; transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-8px) scale(0.2, 1); }
+  70% { opacity: 1; transform: translateY(-14px) scale(1, 1); }
+  100% { opacity: 0; transform: translateY(-24px) scale(1, 1); }
+}
+@keyframes moni-blink {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.12); }
+}
+@keyframes moni-bye {
+  0% { transform: rotate(0deg); }
+  30% { transform: rotate(-5deg) translateY(-2px); }
+  60% { transform: rotate(4deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes moni-blink-loop {
+  0%, 90%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(0.12); }
+}
+@keyframes moni-talk {
+  0% { transform: scaleY(1); }
+  40% { transform: scaleY(1.9); }
+  100% { transform: scaleY(1); }
+}
+
+/*
+ * The full-body lucky cat of the voice screen (MoniFortuneCat.tsx). Only while it listens: the paw, held up in front of the
+ * body with the pad towards the person, beckons (the forearm leans in and the hand folds forward at the wrist, so it comes
+ * towards the viewer and goes back), it blinks, its mouth moves with each new word and the sound lines pulse. The body and
+ * head stay still. While it thinks it only beckons slowly and blinks. With reduced motion nothing moves (the sound lines
+ * just show while it listens).
+ */
+.fc-forearm,
+.fc-hand {
+  transform-box: view-box;
+}
+.fc-forearm {
+  transform-origin: 148px 186px;
+}
+.fc-hand {
+  transform-origin: 166px 144px;
+}
+.fc-eyes,
+.fc-mouth {
+  transform-box: fill-box;
+}
+.fc-eyes {
+  transform-origin: center;
+}
+.fc-mouth {
+  transform-origin: 50% 0;
+}
+.fc-sound {
+  opacity: 0;
+}
+.fortune-cat[data-mode='listening'] .fc-sound {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fortune-cat[data-mode] .fc-eyes {
+    animation: moni-blink-loop 3.6s ease-in-out infinite;
+  }
+  .fortune-cat[data-mode='listening'] .fc-forearm {
+    animation: moni-beckon-arm 1.15s ease-in-out infinite;
+  }
+  .fortune-cat[data-mode='listening'] .fc-hand {
+    animation: moni-beckon-hand 1.15s ease-in-out infinite;
+  }
+  .fortune-cat[data-mode='thinking'] .fc-forearm {
+    animation: moni-beckon-arm 2.4s ease-in-out infinite;
+  }
+  .fortune-cat[data-mode='thinking'] .fc-hand {
+    animation: moni-beckon-hand 2.4s ease-in-out infinite;
+  }
+  .fortune-cat[data-mode='listening'] .fc-mouth {
+    animation: moni-talk 260ms ease-out;
+  }
+  .fortune-cat[data-mode='listening'] .fc-sound {
+    animation: moni-sound 1.2s ease-in-out infinite;
+  }
+}
+/* The forearm leans in a little; the hand folds forward at the wrist (it looks shorter and bigger as it comes closer). */
+@keyframes moni-beckon-arm {
+  0%, 100% { transform: rotate(0deg) scale(1, 1); }
+  45% { transform: rotate(-5deg) scale(1.02, 0.96); }
+}
+@keyframes moni-beckon-hand {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1, 1); }
+  20% { transform: translate(0.5px, -1px) rotate(5deg) scale(0.97, 1.04); }
+  45% { transform: translate(-2px, 5px) rotate(-12deg) scale(1.08, 0.78); }
+  70% { transform: translate(0, 1px) rotate(-3deg) scale(1.02, 0.94); }
+}
+@keyframes moni-sound {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
 }
