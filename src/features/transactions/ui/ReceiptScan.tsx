@@ -2,7 +2,9 @@ import { useState } from 'react'
 import mascotAttentive from '@/assets/mascot/expresion_atento.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import type { useParseReceipt } from '@/features/ai/api/useParseReceipt'
-import { toDrafts, warningsNotice, type ParseResponse } from '@/features/ai/domain/draft'
+import { warningsNotice, type ParseResponse } from '@/features/ai/domain/draft'
+import { useCategories } from '@/features/categories/api/useCategories'
+import { prepareDrafts } from '../domain/prepareDrafts'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
@@ -72,15 +74,9 @@ function ReceiptConfirmation({
   onClose: () => void
 }) {
   const accounts = useAccounts().data ?? []
+  const categories = useCategories().data ?? []
   // Drafts are computed once: from then on the confirmation list owns (and edits) them.
-  const [drafts] = useState(() => toDrafts(response, accounts[0]?.id ?? ''))
+  const [drafts] = useState(() => prepareDrafts(response, accounts, categories))
   const [notice] = useState(() => warningsNotice(response.warnings))
-  return (
-    <DraftConfirmation
-      initialDrafts={drafts}
-      notice={notice}
-      intro="Esto es lo que leí en la factura. Corregí lo que haga falta: no se guarda nada hasta que lo confirmes."
-      onClose={onClose}
-    />
-  )
+  return <DraftConfirmation initialDrafts={drafts} notice={notice} onClose={onClose} />
 }

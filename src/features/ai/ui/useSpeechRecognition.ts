@@ -43,9 +43,11 @@ export function isSpeechSupported(): boolean {
 interface Options {
   /** Called with the full transcript so far (final + interim) every time it changes. */
   onTranscript: (text: string) => void
+  /** Silence that ends the dictation. Defaults to {@link SILENCE_MS}. */
+  silenceMs?: number
 }
 
-export function useSpeechRecognition({ onTranscript }: Options) {
+export function useSpeechRecognition({ onTranscript, silenceMs = SILENCE_MS }: Options) {
   const [supported] = useState(isSpeechSupported)
   const [listening, setListening] = useState(false)
   const [error, setError] = useState<SpeechError | null>(null)
@@ -87,7 +89,7 @@ export function useSpeechRecognition({ onTranscript }: Options) {
 
     const armSilenceTimer = () => {
       clearTimer()
-      timerRef.current = window.setTimeout(() => recognition.stop(), SILENCE_MS)
+      timerRef.current = window.setTimeout(() => recognition.stop(), silenceMs)
     }
 
     recognition.onresult = (event) => {
@@ -119,7 +121,7 @@ export function useSpeechRecognition({ onTranscript }: Options) {
       recognitionRef.current = null
       setError('unavailable')
     }
-  }, [clearTimer])
+  }, [clearTimer, silenceMs])
 
   // Release the microphone when the sheet closes.
   useEffect(

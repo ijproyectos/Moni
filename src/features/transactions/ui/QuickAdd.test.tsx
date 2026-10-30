@@ -119,7 +119,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('QuickAdd speed dial', () => {
+describe('QuickAdd add menu', () => {
   it('opens a menu with exactly Sacar foto, Por voz and Manual, in that order', async () => {
     const { user } = renderQuickAdd()
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
@@ -148,7 +148,7 @@ describe('QuickAdd speed dial', () => {
     expect(screen.getByRole('menuitem', { name: 'Manual' })).toHaveFocus()
   })
 
-  it('closes with Escape, the X and the backdrop, and gives focus back to the + button', async () => {
+  it('closes with Escape, the backdrop and a second tap on the cat, and gives focus back to it', async () => {
     const { user } = renderQuickAdd()
     const fab = screen.getByRole('button', { name: 'Nuevo movimiento' })
 
@@ -158,12 +158,13 @@ describe('QuickAdd speed dial', () => {
     expect(fab).toHaveFocus()
 
     await openMenu(user)
-    await user.click(screen.getByRole('button', { name: 'Cerrar menú' }))
+    await user.click(screen.getByRole('button', { name: 'Cerrar menú de movimientos' }))
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
 
     await openMenu(user)
-    await user.click(screen.getByTestId('speed-dial-backdrop'))
+    await user.click(screen.getByTestId('add-menu-backdrop'))
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(fab).toHaveFocus()
   })
 
   it('"Manual" opens the usual new-movement sheet', async () => {
@@ -175,11 +176,11 @@ describe('QuickAdd speed dial', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
-  it('"Por voz" opens the full-screen listening screen', async () => {
+  it('"Por voz" opens the voice conversation with the cat', async () => {
     const { user } = renderQuickAdd()
     await openMenu(user)
     await user.click(screen.getByRole('menuitem', { name: 'Por voz' }))
-    expect(screen.getByRole('dialog', { name: 'Por voz' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Carga por voz' })).toBeInTheDocument()
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
@@ -222,18 +223,23 @@ describe('QuickAdd receipt scan', () => {
       },
       signal: expect.any(AbortSignal),
     })
-    expect(screen.getByLabelText('Monto del movimiento 1')).toHaveValue('12.345,50')
-    expect(screen.getByLabelText('Nota del movimiento 1')).toHaveValue('Carrefour Express')
+    expect(
+      screen.getByRole('button', { name: 'Monto del movimiento 1: $12.345,50' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Nota del movimiento 1: Carrefour Express' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText('Fecha del movimiento 1')).toHaveValue('2026-10-27')
-    expect(screen.getByLabelText('Cuenta del movimiento 1')).toHaveValue(ACCOUNT_ID)
+    // A single account is not a guess: it is the only one there is.
+    expect(screen.getByLabelText('Cuenta del movimiento 1')).toHaveDisplayValue('Efectivo')
     expect(mocks.createTransaction).not.toHaveBeenCalled()
   })
 
-  it('saves the edited draft only after the explicit Guardar tap', async () => {
+  it('saves the draft only after the explicit Confirmar tap', async () => {
     const { user } = renderQuickAdd()
     pickPhoto()
     await screen.findByText('Revisá y guardá')
-    await user.click(screen.getByRole('button', { name: 'Guardar 1 movimiento' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar gasto' }))
     await waitFor(() => expect(mocks.createTransaction).toHaveBeenCalledTimes(1))
     expect(mocks.createTransaction.mock.calls[0]?.[0]).toMatchObject({
       kind: 'expense',
