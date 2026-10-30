@@ -4,6 +4,9 @@ import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
+import { useSavings, useSavingsNoticeCount } from '@/features/goals/api/useSavings'
+import { activeTotals } from '@/features/goals/domain/savings'
+import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
 import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
 import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
@@ -36,6 +39,9 @@ export function HomePage() {
   const { openNew } = useMovementSheet()
   const features = useEnabledFeatures()
   const reminders = useRecurringReminders()
+  const savings = useSavings()
+  const savingsNotices = useSavingsNoticeCount()
+  const goalTotals = activeTotals(savings.data?.goals ?? [])
 
   if (summary.isLoading) return <HomeSkeleton />
   if (summary.isError || !summary.data) {
@@ -59,8 +65,14 @@ export function HomePage() {
       initial={initialOf(profile?.display_name, user?.email ?? '')}
       onAddMovement={() => openNew()}
       shortcuts={{ savings: features.has('savings'), ants: features.has('ants') }}
-      reminders={<RecurringReminders />}
-      reminderCount={reminders.length}
+      reminders={
+        <>
+          <SavingsNotices />
+          <RecurringReminders />
+        </>
+      }
+      reminderCount={reminders.length + savingsNotices}
+      goals={{ reservedCents: goalTotals.reservedCents, targetCents: goalTotals.targetCents }}
     />
   )
 }

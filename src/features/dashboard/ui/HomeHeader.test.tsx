@@ -38,8 +38,9 @@ describe('HomeHeader: only two financial indicators', () => {
     expect(link).toHaveTextContent('Dinero disponible')
     expect(link).toHaveTextContent('568.000')
     expect(link).toHaveAttribute('href', '/cuentas')
-    expect(link).toHaveTextContent(/efectivo, bancos y billeteras/i)
-    expect(link).toHaveTextContent(/Sin tarjetas ni metas/)
+    // Only the title and the amount: no explanatory line under it.
+    expect(link).not.toHaveTextContent(/efectivo|billeteras|tarjetas|metas/i)
+    expect(link.querySelectorAll('p')).toHaveLength(2)
   })
 
   it('shows "Balance del mes" with income and expenses underneath, labelled', () => {

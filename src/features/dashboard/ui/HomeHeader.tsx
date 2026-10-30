@@ -81,9 +81,6 @@ export function HomeHeader({
               className="min-w-0 text-[clamp(38px,14vw,52px)] leading-[1.1] text-cream"
             />
           </p>
-          <p className="text-[14px] leading-5 text-text-muted-on-dark">
-            Hoy en efectivo, bancos y billeteras. Sin tarjetas ni metas.
-          </p>
         </Link>
         <button
           type="button"
@@ -102,7 +99,7 @@ export function HomeHeader({
 
       <section
         aria-label="Balance del mes"
-        className="mt-4 rounded-[26px] bg-white/10 p-4 ring-1 ring-white/10"
+        className="mt-2 rounded-[26px] bg-white/10 p-4 ring-1 ring-white/10"
       >
         <Link
           to="/este-mes"

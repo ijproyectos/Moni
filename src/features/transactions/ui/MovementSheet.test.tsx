@@ -16,6 +16,12 @@ const createTx = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const updateTx = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const createTr = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const accountsData = vi.hoisted(() => ({ current: [] as Account[] }))
+// Reserves of the savings goals per account, as the fresh read before saving returns them.
+const savingsData = vi.hoisted(() => ({
+  current: null as null | {
+    accounts: { id: string; name: string; balanceCents: number; reservedCents: number }[]
+  },
+}))
 
 function account(
   id: string,
@@ -60,6 +66,9 @@ vi.mock('@/features/categories/api/useCategories', () => ({
     ],
   }),
 }))
+vi.mock('@/features/goals/api/useSavings', () => ({
+  useFreshSavings: () => () => Promise.resolve(savingsData.current),
+}))
 vi.mock('../api/useTransactions', () => ({
   useCreateTransaction: () => ({ mutateAsync: createTx, isPending: false }),
   useUpdateTransaction: () => ({ mutateAsync: updateTx, isPending: false }),
@@ -88,6 +97,7 @@ describe('MovementSheet overdraft warning', () => {
     updateTx.mockClear()
     createTr.mockClear()
     accountsData.current = [account(CASH, 'Efectivo', 10_000_00), account(BANK, 'Banco', 50_000_00)]
+    savingsData.current = null
   })
 
   it('saves straight away when the account covers the expense', async () => {
@@ -241,5 +251,88 @@ describe('MovementSheet overdraft warning', () => {
     await fillExpense(user, '100000')
     await waitFor(() => expect(onClose).toHaveBeenCalled())
     expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+})
+
+describe('MovementSheet: spending money reserved for savings goals', () => {
+  beforeEach(() => {
+    createTx.mockClear()
+    createTr.mockClear()
+    accountsData.current = [
+      account(CASH, 'Efectivo', 10_000_00),
+      account(BANK, 'Galicia', 150_000_00),
+    ]
+    savingsData.current = {
+      accounts: [
+        { id: BANK, name: 'Galicia', balanceCents: 150_000_00, reservedCents: 30_000_00 },
+        { id: CASH, name: 'Efectivo', balanceCents: 10_000_00, reservedCents: 0 },
+      ],
+    }
+  })
+
+  async function pickBank(user: ReturnType<typeof userEvent.setup>) {
+    await user.selectOptions(screen.getByLabelText('Cuenta'), 'Galicia')
+  }
+
+  it('warns BEFORE saving an expense that leaves the account under its reserved money, with the numbers', async () => {
+    const { user } = renderSheet()
+    await pickBank(user)
+    await fillExpense(user, '130000')
+    const dialog = await screen.findByRole('alertdialog')
+    expect(dialog).toHaveTextContent('Ojo con tus ahorros')
+    expect(dialog).toHaveTextContent('$30.000 reservados para tus metas en Galicia')
+    expect(dialog).toHaveTextContent('el saldo quedaría en $20.000')
+    expect(dialog).toHaveTextContent('te faltarían $10.000')
+    expect(createTx).not.toHaveBeenCalled()
+  })
+
+  it('cancelling saves nothing; continuing records the expense exactly once and never blocks', async () => {
+    const { user, onClose } = renderSheet()
+    await pickBank(user)
+    await fillExpense(user, '130000')
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    expect(createTx).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(await screen.findByRole('button', { name: 'Continuar igual' }))
+    await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('does not warn while the reserves stay covered', async () => {
+    const { user } = renderSheet()
+    await pickBank(user)
+    await fillExpense(user, '120000') // 150.000 - 120.000 = 30.000 = reserved: still covered
+    await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+
+  it('does not warn on an account with nothing reserved, nor on incomes', async () => {
+    const { user } = renderSheet()
+    await fillExpense(user, '4000')
+    await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+
+  it('also warns on a transfer out of the account (card payments are transfers)', async () => {
+    // Galicia first: it is the origin account the transfer starts from.
+    accountsData.current = [
+      account(BANK, 'Galicia', 150_000_00),
+      account(CASH, 'Efectivo', 10_000_00),
+    ]
+    const { user } = renderSheet({ initialMode: 'transfer' })
+    await user.type(screen.getByLabelText('Monto'), '140000')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    expect(await screen.findByRole('alertdialog')).toHaveTextContent('Ojo con tus ahorros')
+    expect(createTr).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Continuar igual' }))
+    await waitFor(() => expect(createTr).toHaveBeenCalledTimes(1))
+  })
+
+  it('still saves normally if the reserves cannot be read (the warning is a courtesy, never a blocker)', async () => {
+    savingsData.current = null
+    const { user } = renderSheet()
+    await pickBank(user)
+    await fillExpense(user, '140000')
+    await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
   })
 })

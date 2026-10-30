@@ -3,6 +3,12 @@ import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { checkOverdraft, type OverdraftWarning } from '@/features/accounts/domain/overdraft'
 import { isCreditCard } from '@/features/accounts/domain/account'
 import { OverdraftSheet } from '@/features/accounts/ui/OverdraftSheet'
+import { useFreshSavings } from '@/features/goals/api/useSavings'
+import {
+  checkSavingsCommitted,
+  type SavingsCommittedWarning,
+} from '@/features/goals/domain/savings'
+import { SavingsCommittedSheet } from '@/features/goals/ui/SavingsCommittedSheet'
 import { checkCreditLimit, type CreditLimitWarning } from '@/features/cards/domain/creditLimit'
 import { CreditLimitSheet } from '@/features/cards/ui/CreditLimitSheet'
 import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
@@ -30,6 +36,7 @@ const fieldClass =
 type Pending =
   | { type: 'overdraft'; warning: OverdraftWarning; accountName: string }
   | { type: 'limit'; warning: CreditLimitWarning; accountName: string }
+  | { type: 'savings'; warning: SavingsCommittedWarning }
 
 /**
  * "Registrar pago": the only moment a fixed expense becomes a movement. The real amount and the payment day
@@ -47,6 +54,7 @@ export function RegisterPaymentSheet({
   const accounts = useAccounts()
   const register = useRegisterPayment()
   const link = useLinkExistingExpense()
+  const freshSavings = useFreshSavings()
   const requestKey = useRef(crypto.randomUUID())
   const saving = useRef(false)
   const today = argentinaTodayIso()
@@ -94,7 +102,7 @@ export function RegisterPaymentSheet({
     }
   }
 
-  function submit() {
+  async function submit() {
     if (!valid || saving.current) return
     const account = accountList.find((a) => a.id === accountId)
     if (account) {
@@ -106,6 +114,18 @@ export function RegisterPaymentSheet({
         })
         if (warning) return setPending({ type: 'limit', warning, accountName: account.name })
       } else {
+        // Paying a bill with money that is reserved for savings goals: warn first, never block.
+        const overview = await freshSavings()
+        const fresh = overview?.accounts.find((a) => a.id === account.id)
+        const committed = fresh
+          ? checkSavingsCommitted({
+              accountName: fresh.name,
+              balanceCents: fresh.balanceCents,
+              reservedCents: fresh.reservedCents,
+              amountCents,
+            })
+          : null
+        if (committed) return setPending({ type: 'savings', warning: committed })
         const warning = checkOverdraft({ balanceCents: account.balanceCents, amountCents })
         if (warning) return setPending({ type: 'overdraft', warning, accountName: account.name })
       }
@@ -242,7 +262,7 @@ export function RegisterPaymentSheet({
             {error}
           </p>
         )}
-        <Button disabled={!valid || busy} onClick={submit}>
+        <Button disabled={!valid || busy} onClick={() => void submit()}>
           {register.isPending ? 'Registrando…' : 'Registrar pago'}
         </Button>
       </div>
@@ -250,6 +270,14 @@ export function RegisterPaymentSheet({
       {pending?.type === 'overdraft' && (
         <OverdraftSheet
           accountName={pending.accountName}
+          warning={pending.warning}
+          isBusy={register.isPending}
+          onCancel={() => setPending(null)}
+          onContinue={() => void commit()}
+        />
+      )}
+      {pending?.type === 'savings' && (
+        <SavingsCommittedSheet
           warning={pending.warning}
           isBusy={register.isPending}
           onCancel={() => setPending(null)}

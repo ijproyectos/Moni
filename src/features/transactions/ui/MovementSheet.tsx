@@ -8,6 +8,12 @@ import { isCreditCard } from '@/features/accounts/domain/account'
 import { checkOverdraft, type OverdraftWarning } from '@/features/accounts/domain/overdraft'
 import { OverdraftSheet } from '@/features/accounts/ui/OverdraftSheet'
 import { checkCreditLimit, type CreditLimitWarning } from '@/features/cards/domain/creditLimit'
+import { useFreshSavings } from '@/features/goals/api/useSavings'
+import {
+  checkSavingsCommitted,
+  type SavingsCommittedWarning,
+} from '@/features/goals/domain/savings'
+import { SavingsCommittedSheet } from '@/features/goals/ui/SavingsCommittedSheet'
 import { CreditLimitSheet } from '@/features/cards/ui/CreditLimitSheet'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { toUserMessage } from '@/shared/lib/errors'
@@ -62,6 +68,12 @@ type PendingOverdraft =
       warning: OverdraftWarning
     }
   | { type: 'transfer'; values: TransferFormValues; accountName: string; warning: OverdraftWarning }
+  | {
+      type: 'savings'
+      movement: 'expense' | 'transfer'
+      values: TransactionFormValues | TransferFormValues
+      warning: SavingsCommittedWarning
+    }
 
 /** "Nuevo movimiento" sheet (screen 13): expense, income, transfer, or edit of an existing movement. */
 export function MovementSheet({
@@ -84,6 +96,7 @@ export function MovementSheet({
   const createTransaction = useCreateTransaction()
   const updateTransaction = useUpdateTransaction()
   const createTransfer = useCreateTransfer()
+  const freshSavings = useFreshSavings()
 
   const accounts = useMemo(
     () =>
@@ -119,6 +132,24 @@ export function MovementSheet({
     return fresh.data ?? accountsQuery.data ?? []
   }
 
+  /** Would this movement leave the account under what its savings goals reserve? (A card holds no reserves.) */
+  async function savingsWarning(
+    accountId: string,
+    amountCents: number,
+    releasedCents = 0,
+  ): Promise<SavingsCommittedWarning | null> {
+    const overview = await freshSavings()
+    const account = overview?.accounts.find((a) => a.id === accountId)
+    if (!account) return null
+    return checkSavingsCommitted({
+      accountName: account.name,
+      balanceCents: account.balanceCents,
+      reservedCents: account.reservedCents,
+      amountCents,
+      releasedCents,
+    })
+  }
+
   async function saveTransaction(values: TransactionFormValues) {
     if (saving.current) return
     setSubmitError(null)
@@ -140,6 +171,13 @@ export function MovementSheet({
         })
         if (limitWarning) {
           setPending({ type: 'limit', values, accountName: account.name, warning: limitWarning })
+          return
+        }
+      }
+      if (account && !isCreditCard(account)) {
+        const committed = await savingsWarning(account.id, values.amount, released)
+        if (committed) {
+          setPending({ type: 'savings', movement: 'expense', values, warning: committed })
           return
         }
       }
@@ -188,6 +226,13 @@ export function MovementSheet({
     if (saving.current) return
     setSubmitError(null)
     const account = (await currentAccounts()).find((a) => a.id === values.fromAccountId)
+    if (account && !isCreditCard(account)) {
+      const committed = await savingsWarning(account.id, values.amount)
+      if (committed) {
+        setPending({ type: 'savings', movement: 'transfer', values, warning: committed })
+        return
+      }
+    }
     const warning =
       account && !isCreditCard(account)
         ? checkOverdraft({ balanceCents: account.balanceCents, amountCents: values.amount })
@@ -317,7 +362,21 @@ export function MovementSheet({
           onContinue={() => void commitTransaction(pending.values)}
         />
       )}
-      {pending && pending.type !== 'limit' && (
+      {pending?.type === 'savings' && (
+        <SavingsCommittedSheet
+          warning={pending.warning}
+          isBusy={
+            createTransaction.isPending || updateTransaction.isPending || createTransfer.isPending
+          }
+          onCancel={() => setPending(null)}
+          onContinue={() =>
+            void (pending.movement === 'expense'
+              ? commitTransaction(pending.values as TransactionFormValues)
+              : commitTransfer(pending.values as TransferFormValues))
+          }
+        />
+      )}
+      {pending && pending.type !== 'limit' && pending.type !== 'savings' && (
         <OverdraftSheet
           accountName={pending.accountName}
           warning={pending.warning}

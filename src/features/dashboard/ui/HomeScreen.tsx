@@ -11,8 +11,7 @@ import { CategoryIconCircle, IconCircle } from '@/shared/ui/IconCircle'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { MovementRow } from '@/shared/ui/MovementRow'
 import { Scale, ShoppingBag, Target } from 'lucide-react'
-import { progress, percentLabel } from '@/features/goals/domain/goals'
-import { useGoals } from '@/features/goals/mock/goalsStore'
+import { percentLabel } from '@/features/goals/domain/goals'
 import { BudgetAlertsCard } from '@/features/budgets/ui/BudgetAlertsCard'
 import { useAnts } from '@/features/insights/api/useAnts'
 import { formatArs } from '@/shared/lib/money'
@@ -36,6 +35,8 @@ interface HomeScreenProps {
   reminders?: ReactNode
   /** Reminders counted next to the unread notices on the bell. */
   reminderCount?: number
+  /** What the active savings goals reserve and aim for (real data, passed from the page). */
+  goals?: { reservedCents: number; targetCents: number }
 }
 
 export function HomeScreen({
@@ -48,6 +49,7 @@ export function HomeScreen({
   shortcuts = { savings: true, ants: true },
   reminders,
   reminderCount = 0,
+  goals = { reservedCents: 0, targetCents: 0 },
 }: HomeScreenProps) {
   const today = todayIso()
   const hasData =
@@ -117,7 +119,11 @@ export function HomeScreen({
 
             <BudgetAlertsCard month={month} />
 
-            <HomeShortcuts showSavings={shortcuts.savings} showAnts={shortcuts.ants} />
+            <HomeShortcuts
+              showSavings={shortcuts.savings}
+              showAnts={shortcuts.ants}
+              goals={goals}
+            />
 
             {summary.recent.length > 0 && (
               <section aria-labelledby="recent-title">
@@ -173,13 +179,19 @@ export function HomeScreen({
   )
 }
 
-/** Metas (simulated) and Hormigas (real data) shortcut cards, shown according to the person's goals. */
-function HomeShortcuts({ showSavings, showAnts }: { showSavings: boolean; showAnts: boolean }) {
+/** Metas and Hormigas (real data) shortcut cards, shown according to the person's goals. */
+function HomeShortcuts({
+  showSavings,
+  showAnts,
+  goals,
+}: {
+  showSavings: boolean
+  showAnts: boolean
+  goals: { reservedCents: number; targetCents: number }
+}) {
   const ants = useAnts(todayIso())
-  const goals = useGoals().filter((g) => !g.shared)
-  const saved = goals.reduce((sum, g) => sum + g.savedCents, 0)
-  const target = goals.reduce((sum, g) => sum + g.targetCents, 0)
-  const value = target > 0 ? progress({ savedCents: saved, targetCents: target }) : 0
+  // Real goals: what is reserved over what the active goals aim for (the bar never goes past full).
+  const value = goals.targetCents > 0 ? Math.min(1, goals.reservedCents / goals.targetCents) : 0
   if (!showSavings && !showAnts) return null
   return (
     <div className={showSavings && showAnts ? 'grid grid-cols-2 gap-3' : 'grid gap-3'}>

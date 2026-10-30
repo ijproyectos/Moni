@@ -439,6 +439,66 @@ export interface Database {
         Returns: undefined
       }
       dismiss_subscription_duplicate: { Args: { p_charge: string }; Returns: undefined }
+      /** Migration 20261103000000 (savings goals). */
+      get_savings_overview: { Args: { p_today?: string | null }; Returns: Json }
+      create_savings_goal: {
+        Args: {
+          p_name: string
+          p_icon: string
+          p_target: number
+          p_account: string
+          p_target_date?: string | null
+          p_initial?: number | null
+          p_frequency?: string
+          p_suggested?: number | null
+          p_remind?: boolean
+          p_first_reminder_on?: string | null
+          p_request_key?: string | null
+        }
+        Returns: string
+      }
+      update_savings_goal: {
+        Args: {
+          p_goal: string
+          p_name: string
+          p_icon: string
+          p_target: number
+          p_account: string
+          p_target_date: string | null
+          p_frequency: string
+          p_suggested: number | null
+          p_remind: boolean
+          p_first_reminder_on: string | null
+        }
+        Returns: undefined
+      }
+      set_savings_goal_status: {
+        Args: { p_goal: string; p_status: string; p_release?: boolean }
+        Returns: undefined
+      }
+      add_goal_deposit: {
+        Args: {
+          p_goal: string
+          p_amount: number
+          p_on?: string | null
+          p_note?: string | null
+          p_request_key?: string | null
+        }
+        Returns: string
+      }
+      withdraw_goal_reserve: {
+        Args: {
+          p_goal: string
+          p_amount: number
+          p_on?: string | null
+          p_note?: string | null
+          p_request_key?: string | null
+        }
+        Returns: string
+      }
+      void_goal_movement: { Args: { p_movement: string }; Returns: undefined }
+      snooze_goal_reminder: { Args: { p_goal: string; p_until: string }; Returns: undefined }
+      skip_goal_reminder: { Args: { p_goal: string }; Returns: undefined }
       /** Migration 20261102000000 (fixed expenses). */
       get_fixed_expense_overview: { Args: { p_today?: string | null }; Returns: Json }
       get_fixed_expense_duplicates: {

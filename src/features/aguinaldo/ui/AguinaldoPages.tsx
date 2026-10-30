@@ -15,7 +15,7 @@ import {
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import mascotUrl from '@/assets/mascot/personaje_carga-de-dinero.svg'
-import { useGoals } from '@/features/goals/mock/goalsStore'
+import { useGoalNames } from '@/features/goals/api/useSavings'
 import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
 import { formatDayMonth } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
@@ -144,7 +144,7 @@ const KIND_ICONS: Record<DestinationKind, { icon: LucideIcon; bg: string; color:
 export function AguinaldoSplitPage() {
   const navigate = useNavigate()
   const plan = useAguinaldo()
-  const goals = useGoals()
+  const goals = useGoalNames()
   const [adding, setAdding] = useState(false)
   const assigned = plan.destinations.reduce((s, d) => s + d.cents, 0)
   const left = plan.amountCents - assigned

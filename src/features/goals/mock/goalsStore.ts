@@ -13,73 +13,8 @@ export const MOCK_SPACES = [
 ]
 export const MOCK_SOURCES = ['Cuenta sueldo', 'Billetera', 'Efectivo'] as const
 
-const INITIAL: Goal[] = [
-  {
-    id: 'notebook',
-    name: 'Notebook nueva',
-    targetCents: 900_000_00,
-    savedCents: 450_000_00,
-    dueDate: '2027-03-31',
-    icon: 'house',
-    contributions: [
-      {
-        id: 'c3',
-        label: 'Aporte de octubre',
-        date: '2026-10-20',
-        source: 'Cuenta sueldo',
-        cents: 90_000_00,
-      },
-      {
-        id: 'c2',
-        label: 'Aporte de septiembre',
-        date: '2026-09-20',
-        source: 'Cuenta sueldo',
-        cents: 90_000_00,
-      },
-      {
-        id: 'c1',
-        label: 'Aporte inicial',
-        date: '2026-08-20',
-        source: 'Efectivo',
-        cents: 270_000_00,
-      },
-    ],
-  },
-  {
-    id: 'emergencia',
-    name: 'Fondo de emergencia',
-    targetCents: 1_500_000_00,
-    savedCents: 600_000_00,
-    dueDate: '2027-06-30',
-    icon: 'banknote',
-    contributions: [
-      {
-        id: 'e1',
-        label: 'Aporte inicial',
-        date: '2026-07-05',
-        source: 'Cuenta sueldo',
-        cents: 600_000_00,
-      },
-    ],
-  },
-  {
-    id: 'vacaciones',
-    name: 'Vacaciones de verano',
-    targetCents: 600_000_00,
-    savedCents: 360_000_00,
-    dueDate: '2027-01-15',
-    icon: 'plane',
-    contributions: [
-      {
-        id: 'v1',
-        label: 'Aporte inicial',
-        date: '2026-09-01',
-        source: 'Billetera',
-        cents: 360_000_00,
-      },
-    ],
-  },
-]
+/** Personal goals are real now (Supabase). Only the shared goals, still simulated, live in this memory. */
+const INITIAL: Goal[] = []
 
 const store = createMockStore<Goal[]>(INITIAL)
 

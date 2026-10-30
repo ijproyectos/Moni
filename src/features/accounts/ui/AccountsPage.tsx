@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { useCategories } from '@/features/categories/api/useCategories'
+import { useSavings } from '@/features/goals/api/useSavings'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
 import { toUserMessage } from '@/shared/lib/errors'
 import type { AccountKind } from '@/shared/lib/database.types'
@@ -61,6 +62,8 @@ export function AccountsPage() {
   const create = useCreateAccount()
   const update = useUpdateAccount()
   const incomeCategories = useCategories('income').data ?? []
+  // What the savings goals reserve in each account (virtual: the real balance is the one shown on the right).
+  const reserve = new Map((useSavings().data?.accounts ?? []).map((a) => [a.id, a]))
   const archive = useArchiveAccount()
   const toast = useToast()
   const { openNew } = useMovementSheet()
@@ -183,6 +186,17 @@ export function AccountsPage() {
                               : ''}
                             {!featured && alias?.alias ? ` · ${alias.alias}` : ''}
                           </span>
+                          {!isCreditCard(account) &&
+                            (reserve.get(account.id)?.reservedCents ?? 0) > 0 && (
+                              <span className="mt-0.5 block text-[14px] font-extrabold">
+                                Reservado para metas{' '}
+                                <AmountDisplay
+                                  cents={reserve.get(account.id)?.reservedCents ?? 0}
+                                />{' '}
+                                · {(reserve.get(account.id)?.freeCents ?? 0) < 0 ? '⚠ ' : ''}libre{' '}
+                                <AmountDisplay cents={reserve.get(account.id)?.freeCents ?? 0} />
+                              </span>
+                            )}
                         </span>
                         {featured ? (
                           alias?.forCollecting && (

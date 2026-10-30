@@ -13,6 +13,7 @@ import {
   useNotifications,
   type PaymentNotice,
 } from '../mock/notificationsStore'
+import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
 import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
 import { RemindSheet } from './RemindSheet'
 
@@ -42,6 +43,7 @@ export function NotificationsPage() {
 
       {tab === 'pagos' ? (
         <>
+          <SavingsNotices />
           <RecurringReminders />
           <SectionLabel
             action={

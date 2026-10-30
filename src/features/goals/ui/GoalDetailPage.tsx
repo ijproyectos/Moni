@@ -1,21 +1,17 @@
 import { Navigate, useParams } from 'react-router'
 import { useState } from 'react'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
-import { formatDayMonth, formatMonthShortYear, formatShortDate } from '@/shared/lib/dates'
+import { formatMonthShortYear } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
-import { Avatar, MoniCalcCard, MoniGlyph, Page, Panel, ProgressBar } from '@/shared/ui/kit'
+import { Avatar, MoniCalcCard, Page, Panel, ProgressBar } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
-import {
-  monthlyNeeded,
-  monthsUntil,
-  percentLabel,
-  progress,
-  splitMonthly,
-  type Goal,
-} from '../domain/goals'
+import { monthlyNeeded, percentLabel, progress, splitMonthly, type Goal } from '../domain/goals'
+import { useSavings } from '../api/useSavings'
 import { updateShared, useGoal } from '../mock/goalsStore'
+import { SavingsGoalDetail } from './SavingsGoalDetail'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { ContributeSheet } from './ContributeSheet'
 import { GoalInviteSheet } from './GoalInviteSheet'
 import { SavingsHero } from './goalVisuals'
@@ -25,8 +21,21 @@ import { SplitPanel } from './SplitPanel'
 export function GoalDetailPage() {
   const { id } = useParams()
   const goal = useGoal(id)
+  const savings = useSavings()
   const [contributing, setContributing] = useState(false)
-  if (!goal) return <Navigate to="/metas" replace />
+  // Personal goals are real (Supabase); a shared goal (still simulated) is looked up in the local simulation.
+  const real = savings.data?.goals.find((g) => g.id === id)
+  if (real && savings.data) return <SavingsGoalDetail goal={real} overview={savings.data} />
+  if (!goal) {
+    if (savings.isLoading) {
+      return (
+        <Page>
+          <Skeleton className="h-48" />
+        </Page>
+      )
+    }
+    return <Navigate to="/metas" replace />
+  }
   return goal.shared ? (
     <SharedGoalDetail
       goal={goal}
@@ -35,7 +44,7 @@ export function GoalDetailPage() {
       setContributing={setContributing}
     />
   ) : (
-    <PersonalGoalDetail goal={goal} contributing={contributing} setContributing={setContributing} />
+    <Navigate to="/metas" replace />
   )
 }
 
@@ -43,66 +52,6 @@ interface DetailProps {
   goal: Goal
   contributing: boolean
   setContributing: (v: boolean) => void
-}
-
-function PersonalGoalDetail({ goal, contributing, setContributing }: DetailProps) {
-  const today = todayIso()
-  const monthly = monthlyNeeded(goal, today)
-  const months = monthsUntil(today, goal.dueDate)
-  const value = progress(goal)
-  return (
-    <Page>
-      <PageHeader title={goal.name} backTo="/metas" />
-      <SavingsHero
-        label={`Para el ${formatShortDate(goal.dueDate)}`}
-        savedCents={goal.savedCents}
-        targetCents={goal.targetCents}
-        progressValue={value}
-        footer={
-          <span className="flex justify-between font-extrabold">
-            <span>{percentLabel(value)} juntado</span>
-            <span>Faltan {formatArs(Math.max(0, goal.targetCents - goal.savedCents))}</span>
-          </span>
-        }
-      />
-      <MoniCalcCard tone="light" title={`${formatArs(monthly)} por mes`}>
-        durante {months} {months === 1 ? 'mes' : 'meses'} y llegás
-      </MoniCalcCard>
-      <Button onClick={() => setContributing(true)}>Aportar</Button>
-      <Panel>
-        <h2 className="text-[20px] font-extrabold">Aportes</h2>
-        {goal.contributions.length === 0 ? (
-          <p className="mt-2 text-[15px] text-text-muted">Todavía no hay aportes.</p>
-        ) : (
-          <ul className="mt-1 divide-y divide-sand">
-            {goal.contributions.map((c) => (
-              <li key={c.id} className="flex items-center gap-3 py-3">
-                <span className="flex size-12 items-center justify-center rounded-full bg-lime/35">
-                  <MoniGlyph />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[17px] font-extrabold">{c.label}</span>
-                  <span className="block text-[15px] text-text-muted">
-                    {formatDayMonth(c.date)} · {c.source}
-                  </span>
-                </span>
-                <span className="text-[17px] font-extrabold text-income">
-                  {formatArs(c.cents, { signed: true })}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-      {contributing && (
-        <ContributeSheet
-          goal={goal}
-          suggestedCents={monthly}
-          onClose={() => setContributing(false)}
-        />
-      )}
-    </Page>
-  )
 }
 
 function SharedGoalDetail({

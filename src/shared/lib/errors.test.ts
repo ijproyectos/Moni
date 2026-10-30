@@ -34,6 +34,12 @@ describe('toUserMessage', () => {
     expect(toUserMessage({ code: '23514', message: 'category_archived' })).toMatch(/archivada/)
   })
 
+  it('says a screen is not enabled yet when its database function is missing (PGRST202)', () => {
+    expect(
+      toUserMessage({ code: 'PGRST202', message: 'Could not find the function public.x' }),
+    ).toMatch(/falta aplicar su migración/)
+  })
+
   it('falls back for unknown errors', () => {
     expect(toUserMessage(new Error('boom'))).toMatch(/Algo salió mal/)
     expect(toUserMessage(undefined)).toMatch(/Algo salió mal/)

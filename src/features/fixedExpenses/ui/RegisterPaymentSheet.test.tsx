@@ -12,9 +12,17 @@ const register = vi.hoisted(() => vi.fn().mockResolvedValue('payment-id'))
 const link = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const candidates = vi.hoisted(() => ({ current: [] as unknown[] }))
 const accountsData = vi.hoisted(() => ({ current: [] as Account[] }))
+const savingsData = vi.hoisted(() => ({
+  current: null as null | {
+    accounts: { id: string; name: string; balanceCents: number; reservedCents: number }[]
+  },
+}))
 
 vi.mock('@/features/accounts/api/useAccounts', () => ({
   useAccounts: () => ({ data: accountsData.current }),
+}))
+vi.mock('@/features/goals/api/useSavings', () => ({
+  useFreshSavings: () => () => Promise.resolve(savingsData.current),
 }))
 vi.mock('../api/useFixedExpenses', () => ({
   useRegisterPayment: () => ({ mutateAsync: register, isPending: false }),
@@ -55,6 +63,7 @@ describe('RegisterPaymentSheet', () => {
     register.mockClear()
     link.mockClear()
     candidates.current = []
+    savingsData.current = null
     accountsData.current = [
       makeAccount({ id: 'galicia', name: 'Galicia', kind: 'bank', balanceCents: 500_000_00 }),
       makeAccount({ id: 'efectivo', name: 'Efectivo', kind: 'cash', balanceCents: 10_000_00 }),
@@ -209,5 +218,21 @@ describe('RegisterPaymentSheet', () => {
   it('an overdue bill asks with its date and a moved one shows both dates', () => {
     setup({ due: addDays(today, -6), moved: addDays(today, 2) })
     expect(screen.getByText(/movido al/)).toBeInTheDocument()
+  })
+
+  it('warns before paying a bill with money reserved for savings goals, and never blocks', async () => {
+    savingsData.current = {
+      accounts: [
+        { id: 'galicia', name: 'Galicia', balanceCents: 500_000_00, reservedCents: 480_000_00 },
+      ],
+    }
+    const { user } = setup()
+    await user.click(screen.getByRole('button', { name: 'Registrar pago' }))
+    const dialog = await screen.findByRole('alertdialog')
+    expect(dialog).toHaveTextContent('Ojo con tus ahorros')
+    expect(dialog).toHaveTextContent('$480.000 reservados para tus metas en Galicia')
+    expect(register).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Continuar igual' }))
+    await waitFor(() => expect(register).toHaveBeenCalledTimes(1))
   })
 })

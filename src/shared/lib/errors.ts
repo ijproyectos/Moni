@@ -56,6 +56,17 @@ const MESSAGES: Record<string, string> = {
   invalid_statement:
     'Ese resumen no es válido para esta tarjeta. Elegí uno cercano a la fecha de compra.',
   invalid_date: 'La fecha no es válida.',
+  not_enough_free_money:
+    'No alcanza el dinero libre de esa cuenta. Bajá el importe o liberá parte de otra reserva.',
+  withdraw_exceeds_reserve: 'La meta no tiene tanto dinero reservado.',
+  goal_not_found: 'No encontramos esa meta.',
+  goal_archived: 'La meta está archivada. Reactivala para usarla.',
+  goal_not_active: 'La meta tiene que estar activa para sumarle dinero.',
+  release_required: 'Para archivar la meta hay que liberar el dinero reservado.',
+  reserve_would_be_negative: 'Ese aporte ya se retiró en parte: no se puede anular.',
+  invalid_savings_account: 'Las metas se guardan en efectivo, bancos o billeteras, no en tarjetas.',
+  invalid_frequency: 'Elegí cada cuánto querés ahorrar.',
+  movement_not_found: 'No encontramos ese movimiento.',
   fixed_expense_not_found: 'No encontramos ese gasto fijo.',
   fixed_expense_removed: 'Reactivá el seguimiento para poder editarlo.',
   occurrence_not_found: 'No encontramos ese vencimiento.',
@@ -100,5 +111,9 @@ export function toUserMessage(error: unknown): string {
   }
   if (code === '23505') return 'Ya existe un elemento con ese nombre.'
   if (code === '42501') return 'No tenés permiso para hacer eso.'
+  // PostgREST: the function the screen calls is not in the database yet (its migration has not been applied).
+  if (code === 'PGRST202') {
+    return 'Esta sección todavía no está habilitada en la base de datos: falta aplicar su migración.'
+  }
   return FALLBACK
 }
