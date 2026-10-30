@@ -24,6 +24,8 @@ interface HomeHeaderProps {
   noticeCount?: number
   /** Google account photo (or null to show the initial). */
   photoUrl?: string | null
+  /** Moni Plus is running right now (real subscription status): the avatar wears the PLUS badge. */
+  isPlus?: boolean
 }
 
 export function HomeHeader({
@@ -37,6 +39,7 @@ export function HomeHeader({
   reminderCount = 0,
   noticeCount = 0,
   photoUrl = null,
+  isPlus = false,
 }: HomeHeaderProps) {
   const { hidden, toggle } = useHiddenAmounts()
   const { unread: unreadNotices } = useNotifications()
@@ -67,9 +70,18 @@ export function HomeHeader({
           )}
           <Link
             to="/perfil"
-            aria-label="Perfil"
-            className="flex size-12 items-center justify-center rounded-full"
+            aria-label={isPlus ? 'Perfil, Moni Plus activo' : 'Perfil'}
+            className="relative flex size-12 items-center justify-center rounded-full"
           >
+            {isPlus && (
+              <span
+                data-plus-badge
+                aria-hidden="true"
+                className="pointer-events-none absolute -top-2.5 right-0 z-10 whitespace-nowrap rounded-full bg-gold px-1.5 text-[10px] font-extrabold leading-4 tracking-[0.08em] text-forest shadow-sm ring-2 ring-forest"
+              >
+                ✦ PLUS
+              </span>
+            )}
             <PhotoOrInitial
               url={photoUrl}
               initial={initial}

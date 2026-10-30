@@ -19,7 +19,7 @@ const summary: MonthSummary = {
   recent: [],
 }
 
-function renderHome(goals?: { reservedCents: number; targetCents: number }) {
+function renderHome(goals?: { reservedCents: number; targetCents: number; count?: number }) {
   render(
     <MemoryRouter>
       <HomeScreen
@@ -37,27 +37,27 @@ function renderHome(goals?: { reservedCents: number; targetCents: number }) {
 
 describe('HomeScreen: the Metas card shows REAL goals', () => {
   it('shows the progress of what is reserved over what the active goals aim for', () => {
-    renderHome({ reservedCents: 200_000_00, targetCents: 1_000_000_00 })
+    renderHome({ reservedCents: 200_000_00, targetCents: 1_000_000_00, count: 1 })
     const card = screen.getByRole('link', { name: /Metas/ })
     expect(card).toHaveAttribute('href', '/metas')
     expect(card).toHaveTextContent('20% juntado')
   })
 
   it('over 100 % the bar is full and the card keeps its layout', () => {
-    renderHome({ reservedCents: 1_300_000_00, targetCents: 1_000_000_00 })
+    renderHome({ reservedCents: 1_300_000_00, targetCents: 1_000_000_00, count: 1 })
     expect(screen.getByRole('progressbar', { name: 'Avance de tus metas' })).toHaveAttribute(
       'aria-valuenow',
       '100',
     )
   })
 
-  it('without goals it shows 0 % (no simulated data) and the link stays', () => {
+  it('without an active goal the card is not there (no 0 % filler)', () => {
     renderHome()
-    expect(screen.getByRole('link', { name: /Metas/ })).toHaveTextContent('0% juntado')
+    expect(screen.queryByRole('link', { name: /Metas/ })).toBeNull()
   })
 
   it('Dinero disponible does not change with the goals: it is the real balance', () => {
-    renderHome({ reservedCents: 500_000_00, targetCents: 1_000_000_00 })
+    renderHome({ reservedCents: 500_000_00, targetCents: 1_000_000_00, count: 1 })
     expect(screen.getByRole('link', { name: 'Ver tus medios de pago' })).toHaveTextContent(
       '568.000',
     )

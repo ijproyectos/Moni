@@ -128,4 +128,25 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
     renderHeader({ noticeCount: 0 })
     expect(screen.queryByRole('link', { name: /Avisos/ })).toBeNull()
   })
+
+  describe('Moni Plus badge on the avatar', () => {
+    it('shows "✦ PLUS" over the avatar when Plus is active, and the avatar still opens the profile', () => {
+      renderHeader({ isPlus: true })
+      const profile = screen.getByRole('link', { name: 'Perfil, Moni Plus activo' })
+      expect(profile).toHaveAttribute('href', '/perfil')
+      const badge = profile.querySelector('[data-plus-badge]')
+      expect(badge).toHaveTextContent('✦ PLUS')
+      expect(badge).toHaveClass('bg-gold', 'text-forest', 'pointer-events-none')
+      // The photo or initial is still there, not replaced by the badge.
+      expect(profile).toHaveTextContent('I')
+    })
+
+    it('shows the normal avatar without Plus', () => {
+      renderHeader()
+      const profile = screen.getByRole('link', { name: 'Perfil' })
+      expect(profile).toHaveAttribute('href', '/perfil')
+      expect(profile.querySelector('[data-plus-badge]')).toBeNull()
+      expect(screen.queryByText(/PLUS/)).toBeNull()
+    })
+  })
 })

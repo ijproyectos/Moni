@@ -9,6 +9,7 @@ import { useSavings, useSavingsNoticeCount } from '@/features/goals/api/useSavin
 import { activeTotals } from '@/features/goals/domain/savings'
 import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
 import { useUnreadNoticeCount } from '@/features/debts/api/useDebts'
+import { usePlus } from '@/features/plus/api/usePlus'
 import { PlusBadge } from '@/features/plus/ui/PlusBadge'
 import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
 import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
@@ -45,6 +46,7 @@ export function HomePage() {
   const savings = useSavings()
   const savingsNotices = useSavingsNoticeCount()
   const noticeCount = useUnreadNoticeCount()
+  const plus = usePlus()
   const goalTotals = activeTotals(savings.data?.goals ?? [])
 
   if (summary.isLoading) return <HomeSkeleton />
@@ -67,9 +69,10 @@ export function HomePage() {
       latestMonth={latestMonth}
       onMonthChange={setMonth}
       initial={initialOf(profile?.display_name, user?.email ?? '')}
+      isPlus={plus.isPlus}
       photoUrl={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
       onAddMovement={() => openNew()}
-      shortcuts={{ savings: features.has('savings'), ants: features.has('ants') }}
+      shortcuts={{ ants: features.has('ants') }}
       reminders={
         <>
           <PlusBadge />
@@ -79,7 +82,11 @@ export function HomePage() {
       }
       reminderCount={reminders.length + savingsNotices}
       noticeCount={noticeCount}
-      goals={{ reservedCents: goalTotals.reservedCents, targetCents: goalTotals.targetCents }}
+      goals={{
+        reservedCents: goalTotals.reservedCents,
+        targetCents: goalTotals.targetCents,
+        count: goalTotals.count,
+      }}
     />
   )
 }

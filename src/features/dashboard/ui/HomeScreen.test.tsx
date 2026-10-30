@@ -48,7 +48,7 @@ const withData: MonthSummary = {
   ],
 }
 
-function renderHome(summary: MonthSummary) {
+function renderHome(summary: MonthSummary, isPlus?: boolean) {
   render(
     <MemoryRouter>
       <HomeScreen
@@ -58,6 +58,7 @@ function renderHome(summary: MonthSummary) {
         onMonthChange={vi.fn()}
         initial="J"
         onAddMovement={vi.fn()}
+        isPlus={isPlus}
       />
     </MemoryRouter>,
   )
@@ -82,7 +83,6 @@ describe('HomeScreen', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Gastos por categoría' })).toBeInTheDocument()
     expect(screen.getByText('32%')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Metas/ })).toHaveAttribute('href', '/metas')
   })
 
   it('renders virtual template categories from shared expenses without links', () => {
@@ -113,6 +113,16 @@ describe('HomeScreen', () => {
     expect(
       screen.queryByRole('link', { name: /Restaurante|Gastos compartidos/ }),
     ).not.toBeInTheDocument()
+  })
+
+  it('the PLUS badge on the avatar follows the Plus status it is given', () => {
+    renderHome(withData, true)
+    expect(screen.getByText('✦ PLUS')).toBeInTheDocument()
+  })
+
+  it('there is no PLUS badge on Free', () => {
+    renderHome(withData)
+    expect(screen.queryByText('✦ PLUS')).not.toBeInTheDocument()
   })
 
   it('shows the real ants total of the month in the shortcut', () => {

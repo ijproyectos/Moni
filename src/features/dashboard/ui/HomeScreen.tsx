@@ -30,17 +30,19 @@ interface HomeScreenProps {
   onMonthChange: (month: IsoDate) => void
   initial: string
   photoUrl?: string | null
+  /** Moni Plus is running right now: shows the PLUS badge on the avatar. */
+  isPlus?: boolean
   onAddMovement: () => void
-  /** Shortcut cards chosen by the person's goals (all shown by default). */
-  shortcuts?: { savings: boolean; ants: boolean }
+  /** Whether the person has Hormigas turned on (it still needs real expenses to show its card). */
+  shortcuts?: { ants: boolean }
   /** In-app reminders shown above the insight (e.g. tomorrow's subscription charges). */
   reminders?: ReactNode
   /** Reminders counted next to the unread notices on the bell. */
   reminderCount?: number
   /** Unread notices of groups (debt reminders, payments to confirm). */
   noticeCount?: number
-  /** What the active savings goals reserve and aim for (real data, passed from the page). */
-  goals?: { reservedCents: number; targetCents: number }
+  /** What the active savings goals reserve and aim for, and how many there are (real data, from the page). */
+  goals?: { reservedCents: number; targetCents: number; count?: number }
 }
 
 export function HomeScreen({
@@ -50,12 +52,13 @@ export function HomeScreen({
   onMonthChange,
   initial,
   photoUrl,
+  isPlus,
   onAddMovement,
-  shortcuts = { savings: true, ants: true },
+  shortcuts = { ants: true },
   reminders,
   reminderCount = 0,
   noticeCount = 0,
-  goals = { reservedCents: 0, targetCents: 0 },
+  goals = { reservedCents: 0, targetCents: 0, count: 0 },
 }: HomeScreenProps) {
   const today = todayIso()
   const hasData =
@@ -70,6 +73,7 @@ export function HomeScreen({
         onMonthChange={onMonthChange}
         initial={initial}
         photoUrl={photoUrl}
+        isPlus={isPlus}
         availableCents={summary.availableBalanceCents}
         incomeCents={summary.incomeCents}
         expenseCents={summary.expenseCents}
@@ -125,11 +129,7 @@ export function HomeScreen({
 
             <BudgetAlertsCard month={month} />
 
-            <HomeShortcuts
-              showSavings={shortcuts.savings}
-              showAnts={shortcuts.ants}
-              goals={goals}
-            />
+            <HomeShortcuts ants={shortcuts.ants} goals={goals} />
 
             {summary.recent.length > 0 && (
               <section aria-labelledby="recent-title">
@@ -185,17 +185,22 @@ export function HomeScreen({
   )
 }
 
-/** Metas and Hormigas (real data) shortcut cards, shown according to the person's goals. */
+/**
+ * Metas and Hormigas shortcut cards. Neither is there by default: Metas needs at least one active goal, Hormigas needs
+ * the feature on and real ant expenses this month. Without them the card is not rendered at all (no empty space and no
+ * $0 filler: the screens stay one tap away from Más), and the cards below move up.
+ */
 function HomeShortcuts({
-  showSavings,
-  showAnts,
+  ants: antsOn,
   goals,
 }: {
-  showSavings: boolean
-  showAnts: boolean
-  goals: { reservedCents: number; targetCents: number }
+  ants: boolean
+  goals: { reservedCents: number; targetCents: number; count?: number }
 }) {
   const ants = useAnts(todayIso())
+  const showSavings = (goals.count ?? 0) > 0
+  const antsTotal = ants.data?.monthTotalCents ?? 0
+  const showAnts = antsOn && antsTotal > 0
   // Real goals: what is reserved over what the active goals aim for (the bar never goes past full).
   const value = goals.targetCents > 0 ? Math.min(1, goals.reservedCents / goals.targetCents) : 0
   if (!showSavings && !showAnts) return null
@@ -218,7 +223,7 @@ function HomeShortcuts({
             <AntIcon aria-hidden="true" className="size-5" strokeWidth={2.25} /> Hormigas
           </span>
           <span className="mt-2 block font-display text-[22px] font-extrabold leading-7">
-            {ants.data ? formatArs(ants.data.monthTotalCents) : '—'}
+            {formatArs(antsTotal)}
           </span>
           <span className="block text-[15px] text-text-muted">este mes</span>
         </Link>
