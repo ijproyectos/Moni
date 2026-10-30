@@ -35,7 +35,7 @@ export function PersonalTripPage() {
   if (trips.isLoading) {
     return (
       <Page>
-        <PageHeader title="Viaje" backTo="/viajes" />
+        <PageHeader title="Viaje" fallbackTo="/viajes" />
         <div role="status" aria-label="Cargando el viaje" className="flex flex-col gap-3">
           <Skeleton className="h-52" />
           <Skeleton className="h-32" />
@@ -47,7 +47,7 @@ export function PersonalTripPage() {
   if (trips.isError || !trip) {
     return (
       <Page>
-        <PageHeader title="Viaje" backTo="/viajes" />
+        <PageHeader title="Viaje" fallbackTo="/viajes" />
         <EmptyState
           mascotUrl={mascotUrl}
           title={
@@ -75,7 +75,7 @@ export function PersonalTripPage() {
     <Page className="pb-28">
       <PageHeader
         title={trip.name}
-        backTo="/viajes"
+        fallbackTo="/viajes"
         action={
           <button
             type="button"

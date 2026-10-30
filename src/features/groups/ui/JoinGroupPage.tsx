@@ -58,7 +58,7 @@ export function JoinWithCodePage() {
 
   return (
     <Page className="pb-28">
-      <PageHeader title="Entrar con un código" backTo="/grupos" />
+      <PageHeader title="Entrar con un código" fallbackTo="/grupos" />
       <MascotTile />
       <h2 className="text-center font-display text-[26px] font-extrabold leading-8">
         Pegá el código que te mandaron
@@ -149,7 +149,7 @@ export function JoinGroupPage() {
   if (!validCode) {
     return (
       <Page>
-        <PageHeader title="Entrar al grupo" backTo="/grupos" />
+        <PageHeader title="Entrar al grupo" fallbackTo="/grupos" />
         <p role="alert" className="text-[16px] text-expense">
           Ese link no es válido. El código tiene 8 letras o números: pedí uno nuevo.
         </p>
@@ -199,7 +199,7 @@ export function JoinGroupPage() {
   if (preview.data?.status === 'invalid') {
     return (
       <Page>
-        <PageHeader title="Entrar al grupo" backTo="/grupos/unirse" />
+        <PageHeader title="Entrar al grupo" fallbackTo="/grupos/unirse" />
         <p role="alert" className="flex gap-2 text-[16px] leading-6 text-expense">
           <Bell aria-hidden="true" className="mt-1 size-4 shrink-0" />
           Ese código no existe o ya venció. Revisá que esté completo o pedile uno nuevo a quien te
@@ -242,7 +242,7 @@ export function JoinGroupPage() {
 
   return (
     <Page className="pb-28">
-      <PageHeader title="Entrar al grupo" backTo="/grupos/unirse" />
+      <PageHeader title="Entrar al grupo" fallbackTo="/grupos/unirse" />
       <section className="flex flex-col items-center rounded-[28px] bg-forest px-4 py-6 text-center text-cream">
         <span className="flex size-16 items-center justify-center rounded-full bg-lime text-forest">
           <UsersRound aria-hidden="true" className="size-7" />

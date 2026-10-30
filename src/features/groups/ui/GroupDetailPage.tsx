@@ -24,6 +24,7 @@ import { FEATURES } from '@/shared/config/features'
 import { formatMonthName } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
 import { formatArs } from '@/shared/lib/money'
+import { useGoBack } from '@/shared/lib/useGoBack'
 import { monthStart, todayIso } from '@/shared/lib/month'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
@@ -81,6 +82,8 @@ const RECURRING_ICONS = { house: House, plug: Plug, refresh: RefreshCw }
 export function GroupDetailPage() {
   const { id: groupId } = useParams()
   const navigate = useNavigate()
+  // Back to where the group was opened from (Grupos, Viajes…); Grupos only if there was nothing before.
+  const goBack = useGoBack('/grupos')
   const toast = useToast()
   const data = useGroupLedger(groupId)
   useNewMemberNotice(groupId)
@@ -200,13 +203,14 @@ export function GroupDetailPage() {
   return (
     <section className="flex flex-col gap-4 px-4 pb-6 pt-14">
       <div className="flex items-center gap-3">
-        <Link
-          to="/grupos"
-          aria-label="Volver a Grupos"
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label="Volver"
           className="flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-card"
         >
           <ChevronLeft aria-hidden="true" className="size-6" />
-        </Link>
+        </button>
         <h1 className="min-w-0 truncate font-display text-[28px] font-extrabold leading-8">
           {name}
         </h1>

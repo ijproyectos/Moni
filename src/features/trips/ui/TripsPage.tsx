@@ -1,5 +1,4 @@
 import { ChevronRight, Send } from 'lucide-react'
-import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import mascotUrl from '@/assets/mascot/personaje_carga-de-dinero.svg'
 import { useAuth } from '@/features/auth/api/authContext'
@@ -33,32 +32,50 @@ const TABS = [
 export function TripsPage() {
   const [params, setParams] = useSearchParams()
   const creating = params.get('nuevo')
-  const [tab, setTab] = useState<Tab>(creating === 'grupo' ? 'group' : 'personal')
+  // The tab lives in the URL (replacing the entry, never adding one), so coming back from a trip or a group lands on
+  // the same tab it was opened from.
+  const tab: Tab = params.get('tab') === 'grupo' ? 'group' : 'personal'
+
+  function update(next: { tab?: Tab; nuevo?: string | null }) {
+    const search = new URLSearchParams(params)
+    const nextTab = next.tab ?? tab
+    if (nextTab === 'group') search.set('tab', 'grupo')
+    else search.delete('tab')
+    if (next.nuevo !== undefined) {
+      if (next.nuevo === null) search.delete('nuevo')
+      else search.set('nuevo', next.nuevo)
+    }
+    setParams(search, { replace: true })
+  }
 
   return (
     <Page>
       <PageHeader
         title="Viajes"
-        action={
-          <HeaderAddButton label="Nuevo viaje" onClick={() => setParams({ nuevo: 'elegir' })} />
-        }
+        fallbackTo="/"
+        action={<HeaderAddButton label="Nuevo viaje" onClick={() => update({ nuevo: 'elegir' })} />}
       />
       <p className="-mt-2 text-[16px] text-text-muted">
         Organizá tus viajes y llevá tus gastos al día
       </p>
-      <SegmentedControl label="Tipo de viajes" value={tab} onChange={setTab} options={TABS} />
+      <SegmentedControl
+        label="Tipo de viajes"
+        value={tab}
+        onChange={(t) => update({ tab: t })}
+        options={TABS}
+      />
       {tab === 'personal' ? (
-        <PersonalTrips onNew={() => setParams({ nuevo: 'personal' })} />
+        <PersonalTrips onNew={() => update({ nuevo: 'personal' })} />
       ) : (
-        <GroupTrips onNew={() => setParams({ nuevo: 'grupo' })} />
+        <GroupTrips onNew={() => update({ nuevo: 'grupo' })} />
       )}
       {creating && (
         <NewTripSheet
           start={
             (creating === 'personal' || creating === 'grupo' ? creating : 'elegir') as NewTripStart
           }
-          onClose={() => setParams({}, { replace: true })}
-          onKindChosen={(kind) => setTab(kind === 'grupo' ? 'group' : 'personal')}
+          onClose={() => update({ nuevo: null })}
+          onKindChosen={(kind) => update({ tab: kind === 'grupo' ? 'group' : 'personal' })}
         />
       )}
     </Page>

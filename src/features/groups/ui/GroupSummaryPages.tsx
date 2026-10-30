@@ -64,7 +64,7 @@ export function GroupSummaryPage() {
   const when = last ? formatLongDay(last) : ''
   return (
     <Page className="pb-28">
-      <PageHeader title="Resumen" backTo={`/grupos/${groupId}`} />
+      <PageHeader title="Resumen" fallbackTo={`/grupos/${groupId}`} />
       <article className="rounded-[24px] border border-sand bg-card p-4 shadow-sm">
         <header className="flex items-center gap-3">
           <img src={mascotUrl} alt="" className="size-12 rounded-[12px] bg-lime p-1" />
@@ -217,7 +217,7 @@ export function ShareSummaryPage() {
 
   return (
     <Page className="pb-28">
-      <PageHeader title="Compartir resumen" backTo={`/grupos/${groupId}/resumen`} />
+      <PageHeader title="Compartir resumen" fallbackTo={`/grupos/${groupId}/resumen`} />
       <SegmentedControl
         label="Cómo compartir"
         value={tab}

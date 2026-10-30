@@ -52,6 +52,8 @@ export function NewTripSheet({
         onClose={onClose}
         onSaved={(trip) => {
           toast.show('Viaje creado')
+          // The Viajes entry that had the sheet open (?nuevo=…) becomes plain Viajes, so back from the trip lands there.
+          navigate('/viajes', { replace: true })
           navigate(`/viajes/${trip.id}`)
         }}
       />
@@ -157,6 +159,7 @@ function GroupTripForm({ onClose }: { onClose: () => void }) {
           : (groupId as string)
       await setGroupTrip.mutateAsync({ groupId: targetId, values: result.data })
       toast.show('Viaje creado')
+      navigate('/viajes?tab=grupo', { replace: true })
       navigate(`/grupos/${targetId}`)
     } catch (e) {
       setError(toUserMessage(e))

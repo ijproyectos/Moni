@@ -56,7 +56,7 @@ export function PeoplePage() {
   const remaining = ledger.people.length - 1
   return (
     <Page className="pb-28">
-      <PageHeader title="Personas" backTo={`/grupos/${groupId}`} />
+      <PageHeader title="Personas" fallbackTo={`/grupos/${groupId}`} />
       <p className="-mt-2 text-[16px] text-text-muted">
         {name} · {ledger.people.length} {ledger.people.length === 1 ? 'persona' : 'personas'}
       </p>

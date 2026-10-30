@@ -144,10 +144,11 @@ describe('PersonalTripPage', () => {
     expect(screen.queryByRole('heading', { name: 'En qué gastaste' })).toBeNull()
   })
 
-  it('an unknown trip says it was not found and goes back to Viajes', () => {
-    renderPage('nope')
+  it('an unknown trip says it was not found and its back button goes to Viajes (nothing before it)', async () => {
+    const { user } = renderPage('nope')
     expect(screen.getByText('No encontramos este viaje')).toBeVisible()
-    expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/viajes')
+    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    expect(screen.getByText('lista de viajes')).toBeVisible()
   })
 
   it('Editar opens the trip with its destination, dates and budget, and saves the changes', async () => {

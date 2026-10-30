@@ -65,7 +65,7 @@ export function GroupNoticesPage() {
 
   return (
     <Page>
-      <PageHeader title="Avisos de grupos" backTo="/grupos" />
+      <PageHeader title="Avisos de grupos" fallbackTo="/grupos" />
       {notices.isLoading ? (
         <div role="status" aria-label="Cargando avisos" className="flex flex-col gap-3">
           <Skeleton className="h-28" />
