@@ -13,7 +13,7 @@ export class AiError extends Error {
 }
 
 /** Turns a failed function call into the error the UI understands: HTTP 402 / `plus_required` is the free-plan gate. */
-async function toAiError(error: unknown): Promise<AiError | PlusRequiredError> {
+export async function toAiError(error: unknown): Promise<AiError | PlusRequiredError> {
   if (!(error instanceof FunctionsHttpError)) return new AiError('ai_unavailable')
   const status = (error.context as Response | undefined)?.status
   const code = await codeFromHttpError(error)

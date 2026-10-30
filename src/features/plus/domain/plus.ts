@@ -1,7 +1,7 @@
 // Free vs Moni Plus. The database is the source of truth (plus_entitlements); this file only holds the pure rules the
 // UI needs: is the entitlement still running, how to print its end date, and the honest copy of the upsell.
 
-export type PlusGateReason = 'voice' | 'receipt' | 'group' | 'generic'
+export type PlusGateReason = 'voice' | 'receipt' | 'group' | 'assistant' | 'generic'
 
 export const FREE_BADGE = 'Versión Free · sin suscripción'
 
@@ -12,6 +12,7 @@ export const PLUS_PERKS = [
   'Cargá gastos hablando',
   'Escaneá tickets con la cámara',
   'Creá todos los grupos que quieras',
+  'Preguntale a Moni por tus números',
 ] as const
 
 export const PLUS_REASON_COPY: Record<PlusGateReason, { title: string; text: string }> = {
@@ -26,6 +27,10 @@ export const PLUS_REASON_COPY: Record<PlusGateReason, { title: string; text: str
   group: {
     title: 'Tu plan Free tiene un grupo',
     text: 'En la versión Free podés crear un grupo. Con Moni Plus creás todos los que quieras. Seguís pudiendo sumarte a los de tus amigos.',
+  },
+  assistant: {
+    title: 'El asistente es de Moni Plus',
+    text: 'Con Moni Plus le preguntás a Moni por tus gastos, vencimientos, cuotas y grupos, y te responde con lo que encuentra en tus datos. Lo manual sigue siendo gratis.',
   },
   generic: {
     title: 'Pasar a Moni Plus',

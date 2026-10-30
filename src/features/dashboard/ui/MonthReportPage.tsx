@@ -1,6 +1,7 @@
 import { Banknote, ChevronLeft, CreditCard, WalletCards } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { AssistantEntryLink } from '@/features/assistant/ui/AssistantEntryLink'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { availableBalance } from '@/features/accounts/domain/account'
 import { formatArs } from '@/shared/lib/money'
@@ -70,6 +71,7 @@ export function MonthReportPage() {
       </header>
 
       <div className="flex flex-col gap-4 px-4 pt-4">
+        <AssistantEntryLink />
         <Panel>
           <div className="flex items-baseline justify-between">
             <h2 className="text-[22px] font-extrabold">Por categoría</h2>

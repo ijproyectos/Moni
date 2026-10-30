@@ -15,6 +15,7 @@ import { HomePage } from '@/features/dashboard/ui/HomePage'
 import { MonthReportPage } from '@/features/dashboard/ui/MonthReportPage'
 import { IncomeByMonthPage } from '@/features/dashboard/ui/IncomeByMonthPage'
 import { YearReportPage } from '@/features/dashboard/ui/YearReportPage'
+import { AssistantPage } from '@/features/assistant/ui/AssistantPage'
 import { AntsPage } from '@/features/insights/ui/AntsPage'
 import { WeeklyDigestPage } from '@/features/insights/ui/WeeklyDigestPage'
 import { NotificationsPage } from '@/features/notifications/ui/NotificationsPage'
@@ -105,6 +106,7 @@ export const appRoutes = [
   { path: 'este-mes', element: <MonthReportPage /> },
   { path: 'tu-anio', element: <YearReportPage /> },
   { path: 'ingresos', element: <IncomeByMonthPage /> },
+  { path: 'informes/asistente', element: <AssistantPage /> },
   ...simulatedRoutes,
 ]
 

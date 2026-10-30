@@ -36,3 +36,8 @@ entrypoint = "./functions/parse-movements/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/parse-receipt/index.ts"
+
+[functions.insights-chat]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/insights-chat/index.ts"
