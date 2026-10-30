@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { accountKeys } from '@/features/accounts/api/queryKeys'
 import { useAuth } from '@/features/auth/api/authContext'
 import { dashboardKeys } from '@/features/dashboard/api/queryKeys'
+import { tripKeys } from '@/features/trips/api/queryKeys'
 import type { TransactionFormValues, TransferFormValues } from '../domain/transaction'
 import { transactionKeys, type TransactionQueryFilters } from './queryKeys'
 import {
@@ -9,6 +10,7 @@ import {
   createTransfer,
   listTransactions,
   listTransfers,
+  type NewTransaction,
   updateTransaction,
   voidTransaction,
   voidTransfer,
@@ -44,13 +46,15 @@ function useInvalidateMoney() {
       queryClient.invalidateQueries({ queryKey: transactionKeys.all(user?.id) }),
       queryClient.invalidateQueries({ queryKey: accountKeys.all(user?.id) }),
       queryClient.invalidateQueries({ queryKey: dashboardKeys.all(user?.id) }),
+      // Trip totals are sums of movements: any change to a movement refreshes them.
+      queryClient.invalidateQueries({ queryKey: tripKeys.all(user?.id) }),
     ])
 }
 
 export function useCreateTransaction() {
   const invalidate = useInvalidateMoney()
   return useMutation({
-    mutationFn: (values: TransactionFormValues) => createTransaction(values),
+    mutationFn: (values: NewTransaction) => createTransaction(values),
     onSuccess: invalidate,
   })
 }
@@ -85,8 +89,15 @@ export function useCreateTransactions() {
 export function useUpdateTransaction() {
   const invalidate = useInvalidateMoney()
   return useMutation({
-    mutationFn: ({ id, values }: { id: string; values: Omit<TransactionFormValues, 'kind'> }) =>
-      updateTransaction(id, values),
+    mutationFn: ({
+      id,
+      values,
+      tripId,
+    }: {
+      id: string
+      values: Omit<TransactionFormValues, 'kind'>
+      tripId?: string | null
+    }) => updateTransaction(id, values, tripId),
     onSuccess: invalidate,
   })
 }

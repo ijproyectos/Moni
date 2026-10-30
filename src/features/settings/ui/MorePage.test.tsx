@@ -63,6 +63,15 @@ describe('MorePage navigation', () => {
     }
   })
 
+  it('"Gastos hormiga" shows the ant icon and the new subtitle', () => {
+    renderPage()
+    const tile = screen.getByRole('link', { name: /Gastos hormiga/ })
+    expect(tile).toHaveAttribute('href', '/hormigas')
+    expect(tile).toHaveTextContent('Esos gustitos que suman')
+    expect(tile).not.toHaveTextContent('Lo chico que se repite')
+    expect(tile.querySelector('svg.lucide-ant')).not.toBeNull()
+  })
+
   it('keeps Medios de pago next to it', () => {
     renderPage()
     expect(screen.getByRole('link', { name: /^Medios de pago/ })).toHaveAttribute(

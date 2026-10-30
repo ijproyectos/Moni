@@ -8,7 +8,6 @@ describe('FEATURES', () => {
         'notifications',
         'debts',
         'aguinaldo',
-        'soloTrips',
         'pro',
         'referral',
         'sharedGoals',

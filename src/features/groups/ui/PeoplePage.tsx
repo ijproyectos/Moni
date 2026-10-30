@@ -15,6 +15,7 @@ import { ShareLinkSheet } from '@/shared/ui/ShareLinkSheet'
 import { useToast } from '@/shared/ui/toastContext'
 import { useReferralLink } from '@/features/pro/ui/useReferralLink'
 import { useGroupLedger } from '../api/useGroupLedger'
+import { useNewMemberNotice } from '../api/useNewMemberNotice'
 import { useCreateInvite, useGroupInvites } from '../api/useGroups'
 import { isInviteActive } from '../domain/group'
 import { inviteLink } from '../domain/groupView'
@@ -36,6 +37,7 @@ export function PeoplePage() {
   const { id: groupId = '' } = useParams()
   const toast = useToast()
   const { ledger, name, meId } = useGroupLedger(groupId)
+  useNewMemberNotice(groupId)
   const invites = useGroupInvites(groupId)
   const createInvite = useCreateInvite()
   const [sheet, setSheet] = useState<Sheet>(null)

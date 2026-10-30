@@ -1,5 +1,5 @@
 import { onlineManager } from '@tanstack/react-query'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
@@ -13,6 +13,16 @@ const CARD = '55555555-5555-4555-8555-555555555555'
 const FOOD = '22222222-2222-4222-8222-222222222222'
 const SALARY = '33333333-3333-4333-8333-333333333333'
 
+const tripsData = vi.hoisted(() => ({
+  current: [] as {
+    id: string
+    name: string
+    startsOn: string
+    endsOn: string
+    budgetCents: number
+    archivedAt: string | null
+  }[],
+}))
 const createTx = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const updateTx = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const createTr = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
@@ -67,6 +77,9 @@ vi.mock('@/features/categories/api/useCategories', () => ({
     ],
   }),
 }))
+vi.mock('@/features/trips/api/useTrips', () => ({
+  useTrips: () => ({ data: tripsData.current, isLoading: false }),
+}))
 vi.mock('@/features/goals/api/useSavings', () => ({
   useFreshSavings: () => () => Promise.resolve(savingsData.current),
 }))
@@ -99,6 +112,7 @@ describe('MovementSheet overdraft warning', () => {
     createTr.mockClear()
     accountsData.current = [account(CASH, 'Efectivo', 10_000_00), account(BANK, 'Banco', 50_000_00)]
     savingsData.current = null
+    tripsData.current = []
   })
 
   it('saves straight away when the account covers the expense', async () => {
@@ -144,6 +158,24 @@ describe('MovementSheet overdraft warning', () => {
     })
   })
 
+  it('an expense opened from a trip is saved with that trip (and it is still an ordinary movement)', async () => {
+    const { user } = renderSheet({ tripId: 'trip-1' })
+    await fillExpense(user, '4000')
+    await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
+    expect(createTx.mock.calls[0]?.[0]).toMatchObject({
+      kind: 'expense',
+      categoryId: FOOD,
+      tripId: 'trip-1',
+    })
+  })
+
+  it('without a trip nothing about trips is sent', async () => {
+    const { user } = renderSheet()
+    await fillExpense(user, '4000')
+    await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
+    expect(createTx.mock.calls[0]?.[0]).not.toHaveProperty('tripId')
+  })
+
   it('never warns for incomes', async () => {
     accountsData.current = [account(CASH, 'Efectivo', 0)]
     const { user } = renderSheet({ initialMode: 'income' })
@@ -170,6 +202,102 @@ describe('MovementSheet overdraft warning', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(updateTx).toHaveBeenCalledTimes(1))
     expect(screen.queryByRole('alertdialog')).toBeNull()
+  })
+
+  describe('linking an existing expense to a trip', () => {
+    const SALTA = {
+      id: 'trip-salta',
+      name: 'Salta',
+      startsOn: '2026-12-10',
+      endsOn: '2026-12-17',
+      budgetCents: 1,
+      archivedAt: null,
+    }
+    const MAR = {
+      id: 'trip-mar',
+      name: 'Mar del Plata',
+      startsOn: '2026-01-02',
+      endsOn: '2026-01-09',
+      budgetCents: 1,
+      archivedAt: null,
+    }
+    const expense = (tripId: string | null = null) =>
+      makeTransaction({
+        id: 'e1',
+        accountId: CASH,
+        categoryId: FOOD,
+        amountCents: 1_000_00,
+        tripId,
+      })
+
+    beforeEach(() => {
+      tripsData.current = [MAR, SALTA]
+    })
+
+    it('offers the person\'s trips (newest first) plus "Sin viaje"', () => {
+      renderSheet({ transaction: expense() })
+      const select = screen.getByLabelText('Viaje')
+      expect(select).toHaveDisplayValue('Sin viaje')
+      expect(
+        within(select)
+          .getAllByRole('option')
+          .map((o) => o.textContent),
+      ).toEqual(['Sin viaje', 'Salta · 10 al 17 de dic', 'Mar del Plata · 2 al 9 de ene'])
+    })
+
+    it('linking saves the SAME movement with the trip (an update, never a new charge)', async () => {
+      const { user } = renderSheet({ transaction: expense() })
+      await user.selectOptions(screen.getByLabelText('Viaje'), 'Salta · 10 al 17 de dic')
+      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+      await waitFor(() => expect(updateTx).toHaveBeenCalledTimes(1))
+      expect(createTx).not.toHaveBeenCalled()
+      expect(updateTx.mock.calls[0]?.[0]).toMatchObject({ id: 'e1', tripId: 'trip-salta' })
+    })
+
+    it('unlinking sends null', async () => {
+      const { user } = renderSheet({ transaction: expense('trip-salta') })
+      expect(screen.getByLabelText('Viaje')).toHaveDisplayValue('Salta · 10 al 17 de dic')
+      await user.selectOptions(screen.getByLabelText('Viaje'), 'Sin viaje')
+      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+      await waitFor(() => expect(updateTx).toHaveBeenCalledTimes(1))
+      expect(updateTx.mock.calls[0]?.[0]).toMatchObject({ id: 'e1', tripId: null })
+    })
+
+    it('editing something else leaves the trip alone (nothing about trips is sent)', async () => {
+      const { user } = renderSheet({ transaction: expense('trip-salta') })
+      await user.type(screen.getByLabelText('Nota'), ' extra')
+      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+      await waitFor(() => expect(updateTx).toHaveBeenCalledTimes(1))
+      expect(updateTx.mock.calls[0]?.[0]).not.toHaveProperty('tripId')
+    })
+
+    it('without trips there is no field, and an income never has one', () => {
+      tripsData.current = []
+      const { unmount } = render(
+        <MemoryRouter>
+          <MovementSheet initialMode="expense" transaction={expense()} onClose={() => undefined} />
+        </MemoryRouter>,
+      )
+      expect(screen.queryByLabelText('Viaje')).toBeNull()
+      unmount()
+      tripsData.current = [SALTA]
+      renderSheet({
+        transaction: makeTransaction({
+          id: 'i1',
+          kind: 'income',
+          accountId: CASH,
+          categoryId: SALARY,
+        }),
+      })
+      expect(screen.queryByLabelText('Viaje')).toBeNull()
+    })
+
+    it('a trip that was archived still shows if the expense already belongs to it', () => {
+      tripsData.current = [{ ...SALTA, archivedAt: '2026-12-31T00:00:00Z' }, MAR]
+      renderSheet({ transaction: expense('trip-salta') })
+      expect(screen.getByLabelText('Viaje')).toHaveDisplayValue('Salta · 10 al 17 de dic')
+      expect(screen.getByRole('option', { name: /Mar del Plata/ })).toBeInTheDocument()
+    })
   })
 
   it('warns on a transfer larger than the origin balance', async () => {

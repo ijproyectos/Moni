@@ -30,6 +30,7 @@ export function toTransaction(row: TransactionRow): Transaction {
     installmentPlanId: row.installment_plan_id ?? null,
     installmentNumber: row.installment_number ?? null,
     installmentsTotal: row.installments_total ?? null,
+    tripId: row.trip_id ?? null,
     createdAt: row.created_at,
   }
 }
@@ -71,7 +72,10 @@ export async function listTransactions(
   return data.map(toTransaction)
 }
 
-export async function createTransaction(values: TransactionFormValues): Promise<void> {
+/** A new movement; an expense may also belong to one of the person's trips (`tripId`). */
+export type NewTransaction = TransactionFormValues & { tripId?: string | null }
+
+export async function createTransaction(values: NewTransaction): Promise<void> {
   const { error } = await getSupabase()
     .from('transactions')
     .insert({
@@ -81,6 +85,8 @@ export async function createTransaction(values: TransactionFormValues): Promise<
       amount: toNumeric(values.amount),
       occurred_on: values.occurredOn,
       note: values.note,
+      // Only sent when set, so everything else keeps working on a database without trips.
+      ...(values.tripId ? { trip_id: values.tripId } : {}),
     })
   if (error) throw error
 }
@@ -89,6 +95,8 @@ export async function createTransaction(values: TransactionFormValues): Promise<
 export async function updateTransaction(
   id: string,
   values: Omit<TransactionFormValues, 'kind'>,
+  /** Trip the expense belongs to: a trip id links it, null unlinks it, undefined leaves it as it is. */
+  tripId?: string | null,
 ): Promise<void> {
   const { error } = await getSupabase()
     .from('transactions')
@@ -98,6 +106,8 @@ export async function updateTransaction(
       amount: toNumeric(values.amount),
       occurred_on: values.occurredOn,
       note: values.note,
+      // Only sent when it changes: linking is an UPDATE of the same movement (no copy, no new charge).
+      ...(tripId !== undefined ? { trip_id: tripId } : {}),
     })
     .eq('id', id)
   if (error) throw error

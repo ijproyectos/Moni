@@ -146,6 +146,8 @@ export interface Database {
           installment_plan_id?: string | null
           installment_number?: number | null
           installments_total?: number | null
+          /** Personal trip this expense belongs to (migration 20261109000000). */
+          trip_id?: string | null
           created_at: string
           updated_at: string
         }
@@ -156,6 +158,7 @@ export interface Database {
           amount: number
           occurred_on?: string
           note?: string | null
+          trip_id?: string | null
         }
         Update: {
           account_id?: string
@@ -164,7 +167,44 @@ export interface Database {
           occurred_on?: string
           note?: string | null
           status?: RowStatus
+          trip_id?: string | null
         }
+        Relationships: []
+      }
+      trips: {
+        Row: {
+          id: string
+          owner_id: string
+          name: string
+          starts_on: string
+          ends_on: string
+          budget: number
+          archived_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: { name: string; starts_on: string; ends_on: string; budget: number }
+        Update: {
+          name?: string
+          starts_on?: string
+          ends_on?: string
+          budget?: number
+          archived_at?: string | null
+        }
+        Relationships: []
+      }
+      group_trips: {
+        Row: {
+          group_id: string
+          starts_on: string
+          ends_on: string
+          budget: number
+          updated_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: never
+        Update: never
         Relationships: []
       }
       installment_plans: {
@@ -653,6 +693,14 @@ export interface Database {
         Args: { p_code: string }
         Returns: string | null
       }
+      set_group_trip: {
+        Args: { p_group: string; p_starts_on: string; p_ends_on: string; p_budget: number }
+        Returns: undefined
+      }
+      preview_group_invite: {
+        Args: { p_code: string }
+        Returns: string | null
+      }
       leave_group: {
         Args: { p_group: string }
         Returns: undefined
@@ -737,6 +785,8 @@ export type CategoryTemplate = Database['public']['Tables']['category_templates'
 export type Category = Database['public']['Tables']['categories']['Row']
 export type Account = Database['public']['Tables']['accounts']['Row']
 export type Transaction = Database['public']['Tables']['transactions']['Row']
+export type TripRow = Database['public']['Tables']['trips']['Row']
+export type GroupTripRow = Database['public']['Tables']['group_trips']['Row']
 export type Budget = Database['public']['Tables']['budgets']['Row']
 export type Transfer = Database['public']['Tables']['transfers']['Row']
 export type Group = Database['public']['Tables']['groups']['Row']

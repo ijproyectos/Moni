@@ -30,6 +30,9 @@ import {
 } from './groupsRepository'
 import { groupKeys } from './queryKeys'
 
+/** How often an open group looks for new members. */
+export const MEMBERS_REFRESH_MS = 15_000
+
 export function useMyGroups() {
   const { user } = useAuth()
   return useQuery({
@@ -54,6 +57,9 @@ export function useGroupMembers(groupId: string | undefined) {
     queryKey: groupKeys.members(user?.id, groupId),
     enabled: Boolean(user && groupId),
     queryFn: () => listGroupMembers(groupId as string),
+    // Someone may join with the code while this group is open: look again every so often (only while the app is
+    // visible; coming back to the tab refetches too) so the new person shows up without logging out.
+    refetchInterval: MEMBERS_REFRESH_MS,
   })
 }
 

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { isCreditCard, type Account } from '@/features/accounts/domain/account'
 import type { Category } from '@/features/categories/domain/category'
@@ -41,6 +41,8 @@ interface TransactionFormProps {
   submitError: string | null
   onSubmit: (values: TransactionFormValues) => void
   onCreateCategory: () => void
+  /** Extra field rendered just above the save button (e.g. the trip an expense belongs to). */
+  extra?: ReactNode
 }
 
 const fieldClass =
@@ -58,6 +60,7 @@ export function TransactionForm({
   submitError,
   onSubmit,
   onCreateCategory,
+  extra,
 }: TransactionFormProps) {
   const online = useOnlineStatus()
   const {
@@ -180,6 +183,7 @@ export function TransactionForm({
         </label>
       </div>
 
+      {extra}
       {submitError && (
         <p role="alert" className="text-center text-sm text-expense">
           {submitError}

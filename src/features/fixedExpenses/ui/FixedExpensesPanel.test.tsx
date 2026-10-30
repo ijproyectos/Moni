@@ -183,34 +183,36 @@ describe('FixedExpensesPanel', () => {
     expect(within(history).getAllByText('Estimado $30.000').length).toBeGreaterThan(0)
   })
 
-  it('the pending bill of a PAUSED expense is kept but apart: a notice in Activos, the bill itself under Pausados', async () => {
-    const { user } = setup()
-    // Activos: only the pending bills of active expenses, plus a notice about the paused one.
-    expect(screen.getAllByRole('button', { name: /^Registrar pago de/ })).toHaveLength(2)
-    expect(screen.queryByRole('button', { name: 'Registrar pago de Gas' })).toBeNull()
+  it('the filter has only Activos and Eliminados, in two equal columns (Pausados is gone from the screen)', () => {
+    setup()
+    const group = screen.getByRole('group', { name: 'Ver' })
     expect(
-      screen.getByRole('button', { name: /Ten.s 1\s+vencimiento pendiente de\s+gastos pausados/ }),
-    ).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /Verlos/ }))
-    // Pausados: that bill is there and can still be paid, moved or skipped.
-    expect(screen.getByText('Vencimientos pendientes de gastos pausados')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Registrar pago de Gas' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cambiar fecha de Gas' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Omitir Gas' })).toBeInTheDocument()
-    // ...and it is not mixed with the upcoming payments.
-    expect(screen.queryByText('Próximos vencimientos')).toBeNull()
+      within(group)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Activos', 'Eliminados'])
+    expect(group).toHaveClass('grid-cols-2')
+    expect(screen.queryByRole('button', { name: 'Pausados' })).toBeNull()
   })
 
-  it('paused and removed expenses live behind filters, not in the main lists', async () => {
+  it('Activos shows only active expenses and their pending bills; paused ones are not listed', () => {
+    setup()
+    // The pending bill of the paused expense is not shown, and there is no notice leading nowhere.
+    expect(screen.getAllByRole('button', { name: /^Registrar pago de/ })).toHaveLength(2)
+    expect(screen.queryByRole('button', { name: 'Registrar pago de Gas' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /gastos pausados/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Gas, (pausado|vence)/ })).toBeNull()
+  })
+
+  it('removed expenses live behind their own filter, not in the main lists', async () => {
     const { user } = setup()
-    expect(screen.queryByRole('button', { name: /^Gas, pausado/ })).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Pausados' }))
-    expect(screen.getByRole('button', { name: /^Gas, pausado/ })).toBeInTheDocument()
-    expect(screen.queryByText('Pendientes de confirmar')).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Patente, / })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Eliminados' }))
     expect(
       screen.getByRole('button', { name: /^Patente, seguimiento eliminado/ }),
     ).toBeInTheDocument()
+    expect(screen.queryByText('Pendientes de confirmar')).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Gas, (pausado|vence)/ })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Activos' }))
     expect(screen.getByText('Pendientes de confirmar')).toBeInTheDocument()
   })
