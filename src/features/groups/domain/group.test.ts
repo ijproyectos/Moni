@@ -138,3 +138,11 @@ describe('extractInviteCode', () => {
     expect(extractInviteCode('abc-1')).toBe('ABC1')
   })
 })
+
+describe('group kinds offered', () => {
+  it('does not offer "viaje" when creating, but still labels legacy groups neutrally', async () => {
+    const { GROUP_KINDS, GROUP_KIND_LABELS } = await import('./group')
+    expect(GROUP_KINDS).not.toContain('viaje')
+    expect(GROUP_KIND_LABELS.viaje).toBe('Grupo')
+  })
+})

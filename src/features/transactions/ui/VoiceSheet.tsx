@@ -323,7 +323,7 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
               ? SPEECH_MESSAGES[speech.error]
               : notHeard
                 ? SPEECH_MESSAGES.no_speech
-                : '¡Hola! 🐱 Contame qué gastaste o cobraste'}
+                : '¡Hola! Contame qué gastaste o cobraste'}
           </SpeechBubble>
         )}
         <MoniFortuneCat

@@ -21,6 +21,8 @@ import { Link } from 'react-router'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { signOut } from '@/features/auth/api/authActions'
 import { useAuth } from '@/features/auth/api/authContext'
+import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
+import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { useUpdateProfile } from '@/features/auth/api/useUpdateProfile'
 import { displayNameSchema, firstName, initialOf } from '@/features/auth/domain/profile'
@@ -86,21 +88,13 @@ function ProfilePhoto({
   const box = size === 'lg' ? 'size-[110px] text-[48px]' : 'size-[100px] text-[44px]'
   return (
     <div className="relative mx-auto w-fit">
-      {url ? (
-        <img
-          src={url}
-          alt=""
-          referrerPolicy="no-referrer"
-          className={`${box} rounded-full object-cover`}
-        />
-      ) : (
-        <span
-          aria-hidden="true"
-          className={`${box} flex items-center justify-center rounded-full bg-lime font-display font-extrabold text-forest`}
-        >
-          {initial}
-        </span>
-      )}
+      <PhotoOrInitial
+        url={url}
+        initial={initial}
+        alt="Tu foto de perfil"
+        className={box}
+        fallbackClassName="bg-lime font-display font-extrabold text-forest"
+      />
       <button
         type="button"
         onClick={onCamera}
@@ -129,7 +123,14 @@ export function ProfilePage() {
   const saved = profile?.display_name ?? ''
   const shortName = firstName(saved) || user?.email?.split('@')[0] || 'Vos'
   const initial = initialOf(saved, user?.email ?? '')
-  const photo = extras.photoRemoved ? null : (extras.localPhotoUrl ?? profile?.avatar_url ?? null)
+  // A photo picked on this device wins; otherwise the Google account photo, then the stored profile one.
+  const photo = extras.photoRemoved
+    ? null
+    : resolveAvatarUrl({
+        uploadedUrl: extras.localPhotoUrl,
+        user,
+        profileUrl: profile?.avatar_url,
+      })
   const createdAt = (profile as { created_at?: string } | undefined)?.created_at
   const since = createdAt
     ? `Desde ${MONTHS[Number(createdAt.slice(5, 7)) - 1]} ${createdAt.slice(0, 4)}`

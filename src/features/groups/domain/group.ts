@@ -4,11 +4,13 @@ import type { GroupKind, GroupRole, RowStatus, SplitMethod } from '@/shared/lib/
 import type { Cents } from '@/shared/lib/money'
 import { isIsoDate, type IsoDate } from '@/shared/lib/month'
 
-export const GROUP_KINDS: readonly GroupKind[] = ['casa', 'viaje', 'pareja', 'amigos']
+/** Kinds offered when creating a group. 'viaje' still exists in the database, so old groups keep displaying. */
+export const GROUP_KINDS: readonly GroupKind[] = ['casa', 'pareja', 'amigos']
 
 export const GROUP_KIND_LABELS: Record<GroupKind, string> = {
   casa: 'Casa',
-  viaje: 'Viaje',
+  // Legacy kind: no longer offered, shown with a neutral label.
+  viaje: 'Grupo',
   pareja: 'Pareja',
   amigos: 'Amigos',
 }

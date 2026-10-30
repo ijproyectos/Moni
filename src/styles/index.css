@@ -101,7 +101,7 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
 
 /*
  * Density: the whole UI is laid out in fixed px, so one global lever scales everything. CSS `zoom` on <html>
- * renders at ZOOM of the design size (0.89 = 11% smaller). Without `zoom` support the factor stays 1.
+ * renders at ZOOM of the design size (0.85 = 15% smaller). Without `zoom` support the factor stays 1.
  * Viewport-based sizes and the 430px column are divided by the factor so they still fill the screen, and
  * tap targets are raised so they stay >= 44px after scaling.
  */
@@ -111,7 +111,7 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
 }
 @supports (zoom: 1) {
   :root {
-    --ui-zoom: 0.89;
+    --ui-zoom: 0.85;
     --tap: calc(44px / var(--ui-zoom));
   }
   html {
@@ -134,6 +134,10 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
   max-width: calc(390px / var(--ui-zoom));
 }
 /* Legibility floors: small text is scaled less so it stays >= 14px (body), 13px, 12.5px or 12px on screen. */
+.text-\[16px\],
+.text-base {
+  font-size: max(16px, calc(14px / var(--ui-zoom)));
+}
 .text-\[15px\] {
   font-size: max(15px, calc(14px / var(--ui-zoom)));
 }

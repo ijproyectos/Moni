@@ -16,6 +16,8 @@ import {
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
+import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
+import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
@@ -143,21 +145,13 @@ export function MorePage() {
         aria-label="Ver mi perfil"
         className="flex items-center gap-4 rounded-[28px] bg-forest p-4 text-cream"
       >
-        {profile?.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="size-[72px] rounded-full object-cover"
-          />
-        ) : (
-          <span
-            aria-hidden="true"
-            className="flex size-[72px] items-center justify-center rounded-full bg-lime font-display text-3xl font-extrabold text-forest"
-          >
-            {initial}
-          </span>
-        )}
+        <PhotoOrInitial
+          url={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
+          initial={initial}
+          alt="Tu foto de perfil"
+          className="size-[72px] shrink-0"
+          fallbackClassName="bg-lime font-display text-3xl font-extrabold text-forest"
+        />
         <div className="min-w-0 flex-1">
           {isLoading ? (
             <p className="text-text-muted-on-dark">Cargando perfil…</p>

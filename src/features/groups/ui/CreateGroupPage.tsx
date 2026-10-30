@@ -6,7 +6,6 @@ import {
   Plug,
   Plus,
   RefreshCw,
-  Send,
   UserPlus,
   UsersRound,
   X,
@@ -35,7 +34,6 @@ const OPTIONS: {
   title: string
   text: string
   icon: LucideIcon
-  badge?: string
 }[] = [
   {
     kind: 'pareja',
@@ -54,13 +52,6 @@ const OPTIONS: {
     title: 'Casa',
     text: 'Con quienes vivís: alquiler, expensas, luz e internet. Se repite todos los meses.',
     icon: House,
-  },
-  {
-    kind: 'viaje',
-    title: 'Viaje',
-    text: 'Con fechas y presupuesto. Alquiler y comidas en grupo.',
-    icon: Send,
-    badge: 'También en Viajes',
   },
 ]
 
@@ -88,9 +79,7 @@ export function CreateGroupPage() {
           <li key={o.kind}>
             <button
               type="button"
-              onClick={() =>
-                o.kind === 'viaje' ? navigate('/viajes?nuevo=grupo') : setKind(o.kind)
-              }
+              onClick={() => setKind(o.kind)}
               className="flex w-full items-center gap-4 rounded-[24px] border border-sand bg-card p-4 text-left"
             >
               <span className="flex size-[60px] shrink-0 items-center justify-center rounded-[18px] bg-lime/40">
@@ -99,11 +88,6 @@ export function CreateGroupPage() {
               <span className="flex-1">
                 <span className="flex items-center gap-2 text-[22px] font-extrabold">
                   {o.title}
-                  {o.badge && (
-                    <span className="rounded-full bg-lime/40 px-2.5 py-0.5 text-[13px]">
-                      {o.badge}
-                    </span>
-                  )}
                 </span>
                 <span className="block text-[15px] leading-5 text-text-muted">{o.text}</span>
               </span>

@@ -172,7 +172,7 @@ describe('VoiceSheet', () => {
 
   it('starts with the cat and no text form, only a prompt and a button to speak', () => {
     renderSheet()
-    expect(screen.getByText(/Contame qué gastaste o cobraste/)).toBeInTheDocument()
+    expect(screen.getByText('¡Hola! Contame qué gastaste o cobraste')).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Activar micrófono' })).toBeInTheDocument()
     expect(screen.queryByText('Terminé')).not.toBeInTheDocument()
@@ -263,7 +263,7 @@ describe('VoiceSheet', () => {
     expect(screen.getByText(/“dos”/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Eliminar' }))
-    expect(screen.getByText(/Contame qué gastaste o cobraste/)).toBeInTheDocument()
+    expect(screen.getByText('¡Hola! Contame qué gastaste o cobraste')).toBeInTheDocument()
     expect(screen.queryByText(/“dos”/)).not.toBeInTheDocument()
     expect(mocks.invoke).not.toHaveBeenCalled()
   })

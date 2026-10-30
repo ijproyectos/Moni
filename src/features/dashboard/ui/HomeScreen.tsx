@@ -28,6 +28,7 @@ interface HomeScreenProps {
   latestMonth: IsoDate
   onMonthChange: (month: IsoDate) => void
   initial: string
+  photoUrl?: string | null
   onAddMovement: () => void
   /** Shortcut cards chosen by the person's goals (all shown by default). */
   shortcuts?: { savings: boolean; ants: boolean }
@@ -45,6 +46,7 @@ export function HomeScreen({
   latestMonth,
   onMonthChange,
   initial,
+  photoUrl,
   onAddMovement,
   shortcuts = { savings: true, ants: true },
   reminders,
@@ -63,6 +65,7 @@ export function HomeScreen({
         latestMonth={latestMonth}
         onMonthChange={onMonthChange}
         initial={initial}
+        photoUrl={photoUrl}
         availableCents={summary.availableBalanceCents}
         balanceCents={summary.balanceCents}
         incomeCents={summary.incomeCents}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
+import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
 import { useSavings, useSavingsNoticeCount } from '@/features/goals/api/useSavings'
@@ -64,6 +65,7 @@ export function HomePage() {
       latestMonth={latestMonth}
       onMonthChange={setMonth}
       initial={initialOf(profile?.display_name, user?.email ?? '')}
+      photoUrl={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
       onAddMovement={() => openNew()}
       shortcuts={{ savings: features.has('savings'), ants: features.has('ants') }}
       reminders={

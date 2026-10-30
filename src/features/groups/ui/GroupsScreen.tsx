@@ -1,9 +1,8 @@
-import { ChevronRight, KeyRound, Send } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { KeyRound } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
-import { FEATURES } from '@/shared/config/features'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
@@ -11,21 +10,8 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import { HeaderAddButton } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { GROUP_KIND_LABELS, type MyGroup } from '../domain/group'
+import { DebtsSummarySheet, type DebtsSide } from './DebtsSummarySheet'
 import { GroupKindTile } from './GroupKindIcon'
-
-const DEBTS_SUMMARY_CLASS = 'flex items-center rounded-[24px] bg-forest px-4 py-3 text-cream'
-
-/** Debtor/creditor totals; only a link while the Deudas screen exists (FEATURES.debts). */
-function DebtsSummaryShell({ children }: { children: ReactNode }) {
-  return FEATURES.debts ? (
-    <Link to="/deudas" aria-label="Ver deudas" className={DEBTS_SUMMARY_CLASS}>
-      {children}
-      <ChevronRight aria-hidden="true" className="size-6" />
-    </Link>
-  ) : (
-    <div className={DEBTS_SUMMARY_CLASS}>{children}</div>
-  )
-}
 
 /** A group as listed: real data plus the overlay (name, guests, simulated balance). */
 export interface ListedGroup extends MyGroup {
@@ -64,6 +50,7 @@ export function GroupsScreen({
 }: GroupsScreenProps) {
   const owe = (groups ?? []).reduce((s, g) => s + Math.max(0, -g.myNetCents), 0)
   const owed = (groups ?? []).reduce((s, g) => s + Math.max(0, g.myNetCents), 0)
+  const [side, setSide] = useState<DebtsSide | null>(null)
 
   return (
     <section className="flex flex-col gap-3 px-4 pt-14">
@@ -91,7 +78,7 @@ export function GroupsScreen({
             <EmptyState
               mascotUrl={mascotGroup}
               title="Todavía no tenés grupos"
-              description="Armá uno para dividir los gastos de la casa, un viaje o lo que sea. Solo tu parte cuenta como gasto tuyo."
+              description="Armá uno para dividir los gastos de la casa, una salida o lo que sea. Solo tu parte cuenta como gasto tuyo."
               action={<Button onClick={onNewGroup}>Nuevo grupo</Button>}
               className="pb-6 [&_h2]:text-[24px] [&_h2]:font-extrabold [&_img]:size-44"
             />
@@ -106,23 +93,33 @@ export function GroupsScreen({
         </>
       ) : (
         <>
-          <DebtsSummaryShell>
-            <span className="flex-1">
+          <div className="flex items-stretch rounded-[24px] bg-forest px-2 py-1 text-cream">
+            <button
+              type="button"
+              onClick={() => setSide('owe')}
+              aria-label="Ver el detalle de lo que debés"
+              className="min-h-11 flex-1 rounded-[20px] px-2 py-2 text-left"
+            >
               <span className="block text-[15px] text-text-muted-on-dark">Debés</span>
               <AmountDisplay
                 cents={owe}
                 className="block font-display text-[24px] font-extrabold text-blush"
               />
-            </span>
-            <span aria-hidden="true" className="mx-3 h-10 w-px bg-white/15" />
-            <span className="flex-1">
+            </button>
+            <span aria-hidden="true" className="my-2 w-px bg-white/15" />
+            <button
+              type="button"
+              onClick={() => setSide('owed')}
+              aria-label="Ver el detalle de lo que te deben"
+              className="min-h-11 flex-1 rounded-[20px] px-2 py-2 text-left"
+            >
               <span className="block text-[15px] text-text-muted-on-dark">Te deben</span>
               <AmountDisplay
                 cents={owed}
                 className="block font-display text-[24px] font-extrabold text-lime"
               />
-            </span>
-          </DebtsSummaryShell>
+            </button>
+          </div>
           <ul className="flex flex-col gap-3">
             {groups.map((group) => {
               const net = netLabel(group)
@@ -162,21 +159,20 @@ export function GroupsScreen({
               )
             })}
           </ul>
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              to="/viajes"
-              className="flex h-14 items-center justify-center gap-2 rounded-full border border-sand bg-card text-[17px] font-extrabold"
-            >
-              <Send aria-hidden="true" className="size-5" /> Mis viajes
-            </Link>
-            <Link
-              to="/grupos/unirse"
-              className="flex h-14 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-sand bg-card text-[16px] font-extrabold"
-            >
-              <KeyRound aria-hidden="true" className="size-5 shrink-0 -scale-x-100" /> Entrar con un
-              código
-            </Link>
-          </div>
+          <Link
+            to="/grupos/unirse"
+            className="flex h-14 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-sand bg-card text-[16px] font-extrabold"
+          >
+            <KeyRound aria-hidden="true" className="size-5 shrink-0 -scale-x-100" /> Entrar con un
+            código
+          </Link>
+          {side && (
+            <DebtsSummarySheet
+              side={side}
+              groups={groups.map((g) => ({ id: g.id, name: g.name }))}
+              onClose={() => setSide(null)}
+            />
+          )}
         </>
       )}
     </section>
