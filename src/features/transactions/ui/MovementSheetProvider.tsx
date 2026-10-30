@@ -8,6 +8,7 @@ type SheetState = {
   transaction?: Transaction
   toAccountId?: string
   amountCents?: number
+  tripId?: string
 } | null
 
 /** Owns the "Nuevo movimiento" sheet so the FAB, Actividad and Cuentas can open it from anywhere. */
@@ -20,10 +21,15 @@ export function MovementSheetProvider({ children }: { children: ReactNode }) {
     () => ({
       openNew: (
         mode: SheetMode = 'expense',
-        options?: { toAccountId?: string; amountCents?: number },
+        options?: { toAccountId?: string; amountCents?: number; tripId?: string },
       ) => {
         setOpenCount((n) => n + 1)
-        setState({ mode, toAccountId: options?.toAccountId, amountCents: options?.amountCents })
+        setState({
+          mode,
+          toAccountId: options?.toAccountId,
+          amountCents: options?.amountCents,
+          tripId: options?.tripId,
+        })
       },
       openEdit: (transaction: Transaction) => {
         setOpenCount((n) => n + 1)
@@ -43,6 +49,7 @@ export function MovementSheetProvider({ children }: { children: ReactNode }) {
           transaction={state.transaction}
           transferTo={state.toAccountId}
           transferAmountCents={state.amountCents}
+          tripId={state.tripId}
           onClose={() => setState(null)}
         />
       )}

@@ -10,8 +10,6 @@ export interface FeatureFlags {
   debts: boolean
   /** Aguinaldo planner. */
   aguinaldo: boolean
-  /** "Solo yo" trips (group trips are real groups). */
-  soloTrips: boolean
   /** Pro paywall, integrations and trial. */
   pro: boolean
   /** Referral program ("Recomendá Moni"). */
@@ -32,7 +30,6 @@ export const FEATURES: FeatureFlags = {
   notifications: false,
   debts: false,
   aguinaldo: false,
-  soloTrips: false,
   pro: false,
   referral: false,
   sharedGoals: false,

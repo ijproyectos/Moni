@@ -14,7 +14,6 @@ const FLAGGED: [path: string, flag: FeatureFlag][] = [
   ['/aguinaldo', 'aguinaldo'],
   ['/aguinaldo/reparto', 'aguinaldo'],
   ['/aguinaldo/listo', 'aguinaldo'],
-  ['/viajes/abc', 'soloTrips'],
   ['/hormigas/aviso-semanal', 'weeklyDigest'],
 ]
 

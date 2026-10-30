@@ -1,4 +1,4 @@
-import { Bell, Check, ChevronRight, Copy, Gift, ShoppingBag } from 'lucide-react'
+import { Bell, Check, ChevronRight, Copy, Gift } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { formatArs } from '@/shared/lib/money'
@@ -16,6 +16,7 @@ import {
 import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
 import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
 import { RemindSheet } from './RemindSheet'
+import { AntIcon } from '@/shared/ui/AntIcon'
 
 // Screens 021 / 022 / 128 — Avisos.
 export function NotificationsPage() {
@@ -147,7 +148,7 @@ export function NotificationsPage() {
             className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4"
           >
             <span className="flex size-12 items-center justify-center rounded-full bg-gold/40">
-              <ShoppingBag aria-hidden="true" className="size-6" />
+              <AntIcon aria-hidden="true" className="size-6" />
             </span>
             <span className="flex-1">
               <span className="block text-[18px] font-extrabold">

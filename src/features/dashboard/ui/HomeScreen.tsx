@@ -10,7 +10,7 @@ import { Card } from '@/shared/ui/Card'
 import { CategoryIconCircle, IconCircle } from '@/shared/ui/IconCircle'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { MovementRow } from '@/shared/ui/MovementRow'
-import { Scale, ShoppingBag, Target } from 'lucide-react'
+import { Scale, Target } from 'lucide-react'
 import { percentLabel } from '@/features/goals/domain/goals'
 import { BudgetAlertsCard } from '@/features/budgets/ui/BudgetAlertsCard'
 import { useAnts } from '@/features/insights/api/useAnts'
@@ -21,6 +21,7 @@ import { addsToBalance, isAdjustment, isOpening } from '@/features/transactions/
 import { buildInsight } from '../domain/insight'
 import { CategoryDonut } from './CategoryDonut'
 import { HomeHeader } from './HomeHeader'
+import { AntIcon } from '@/shared/ui/AntIcon'
 
 interface HomeScreenProps {
   summary: MonthSummary
@@ -208,7 +209,7 @@ function HomeShortcuts({
       {showAnts && (
         <Link to="/hormigas" className="rounded-[24px] border border-cream bg-white p-4">
           <span className="flex items-center gap-2 text-[18px] font-extrabold">
-            <ShoppingBag aria-hidden="true" className="size-5" strokeWidth={2.25} /> Hormigas
+            <AntIcon aria-hidden="true" className="size-5" strokeWidth={2.25} /> Hormigas
           </span>
           <span className="mt-2 block font-display text-[22px] font-extrabold leading-7">
             {ants.data ? formatArs(ants.data.monthTotalCents) : '—'}

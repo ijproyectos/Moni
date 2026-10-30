@@ -8,7 +8,6 @@ import {
   RefreshCw,
   Send,
   Shapes,
-  ShoppingBag,
   ShoppingBasket,
   Target,
   type LucideIcon,
@@ -24,6 +23,7 @@ import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
 import type { AppFeature } from '@/features/onboarding/domain/goals'
 import { FEATURES, type FeatureFlag } from '@/shared/config/features'
 import { cn } from '@/shared/ui/cn'
+import { AntIcon } from '@/shared/ui/AntIcon'
 
 interface Tile {
   to: string
@@ -111,10 +111,10 @@ const TILES: Tile[] = [
     to: '/hormigas',
     feature: 'ants',
     title: 'Gastos hormiga',
-    subtitle: 'Lo chico que se repite',
-    icon: ShoppingBag,
+    subtitle: 'Esos gustitos que suman',
+    icon: AntIcon,
     bg: '#fdeab8',
-    color: '#8a5a00',
+    color: '#064735',
   },
   {
     to: '/este-mes',

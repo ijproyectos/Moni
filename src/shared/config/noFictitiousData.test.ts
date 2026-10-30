@@ -10,7 +10,6 @@ import { DEFAULT_RECURRING, emptyOverlay } from '@/features/groups/mock/overlayS
 import { useWeeklyDigestSettings } from '@/features/insights/mock/digestSettings'
 import { useNotifications } from '@/features/notifications/mock/notificationsStore'
 import { useProfileExtras } from '@/features/settings/mock/profileExtrasStore'
-import { useTrips } from '@/features/trips/mock/tripsStore'
 
 // Owner order: nothing the person did not enter may reach the screen.
 describe('simulated stores start empty', () => {
@@ -30,11 +29,6 @@ describe('simulated stores start empty', () => {
     const { result } = renderHook(() => useAguinaldo())
     expect(result.current.amountCents).toBe(0)
     expect(result.current.destinations).toEqual([])
-  })
-
-  it('solo trips: none', () => {
-    const { result } = renderHook(() => useTrips())
-    expect(result.current).toEqual({ solo: [], past: [] })
   })
 
   it('profile extras: no monthly income nor photo', () => {

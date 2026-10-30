@@ -1,3 +1,4 @@
+import { TripLinkSelect } from '@/features/trips/ui/TripLinkSelect'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
@@ -45,6 +46,8 @@ interface MovementSheetProps {
   transferTo?: string
   /** Transfer tab: amount prefilled (e.g. the billed debt of the card). */
   transferAmountCents?: number
+  /** New expense that belongs to this personal trip (opened from Viajes). */
+  tripId?: string
   onClose: () => void
 }
 
@@ -81,6 +84,7 @@ export function MovementSheet({
   transaction,
   transferTo,
   transferAmountCents,
+  tripId,
   onClose,
 }: MovementSheetProps) {
   const isEdit = Boolean(transaction)
@@ -88,6 +92,8 @@ export function MovementSheet({
     transaction ? (transaction.kind as EntryKind) : initialMode,
   )
   const [submitError, setSubmitError] = useState<string | null>(null)
+  // Edit mode of an expense: the trip it belongs to ('' = none). Saved together with the other fields.
+  const [tripChoice, setTripChoice] = useState(transaction?.tripId ?? '')
   // "Compartido": the expense goes to one of the person's groups instead of a plain movement.
   const [shared, setShared] = useState(false)
   const [draft, setDraft] = useState<TransactionDraft | undefined>(undefined)
@@ -208,10 +214,19 @@ export function MovementSheet({
       if (transaction) {
         const { kind: _kind, ...rest } = values
         void _kind
-        await updateTransaction.mutateAsync({ id: transaction.id, values: rest })
+        // Only when the person changed it: link / unlink the SAME movement (no copy, no new charge).
+        const tripChanged = (tripChoice || null) !== (transaction.tripId ?? null)
+        await updateTransaction.mutateAsync({
+          id: transaction.id,
+          values: rest,
+          ...(tripChanged ? { tripId: tripChoice || null } : {}),
+        })
         toast.show('Movimiento actualizado', { mascotUrl: mascotHappy })
       } else {
-        await createTransaction.mutateAsync(values)
+        // An expense opened from a trip belongs to it; it is saved like any other movement.
+        await createTransaction.mutateAsync(
+          tripId && values.kind === 'expense' ? { ...values, tripId } : values,
+        )
         toast.show(values.kind === 'income' ? 'Ingreso guardado' : 'Gasto guardado', {
           mascotUrl: values.kind === 'income' ? mascotMoney : mascotHappy,
         })
@@ -352,6 +367,11 @@ export function MovementSheet({
               onClose()
               navigate('/categorias')
             }}
+            extra={
+              transaction?.kind === 'expense' && mode === 'expense' ? (
+                <TripLinkSelect value={tripChoice} onChange={setTripChoice} />
+              ) : undefined
+            }
           />
         )}
       </div>

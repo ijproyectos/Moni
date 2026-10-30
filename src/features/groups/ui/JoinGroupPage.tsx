@@ -10,7 +10,9 @@ import { FEATURES } from '@/shared/config/features'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { Avatar, MoniSays, Page, SectionLabel } from '@/shared/ui/kit'
+import { useToast } from '@/shared/ui/toastContext'
 import { PageHeader } from '@/shared/ui/PageHeader'
+import { useInvitePreview } from '../api/useInvitePreview'
 import { useJoinGroup } from '../api/useGroups'
 import {
   cleanCodeInput,
@@ -91,8 +93,8 @@ export function JoinWithCodePage() {
         <>
           <p role="alert" className="flex gap-2 text-[15px] leading-5 text-expense">
             <Bell aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-            No encontramos ese código. Revisá que esté completo o pedile uno nuevo a quien te
-            invitó.
+            No encontramos ese código o ya venció. Revisá que esté completo o pedile uno nuevo a
+            quien te invitó.
           </p>
           <button
             type="button"
@@ -136,12 +138,15 @@ export function JoinGroupPage() {
   const code = normalizeInviteCode(rawCode)
   const navigate = useNavigate()
   const join = useJoinGroup()
+  const validCode = INVITE_CODE_PATTERN.test(code)
+  const preview = useInvitePreview(code, validCode)
+  const toast = useToast()
   const { data: profile } = useProfile()
   const [error, setError] = useState<string | null>(null)
   const [joined, setJoined] = useState<{ id: string; alreadyMember: boolean } | null>(null)
   const me = firstName(profile?.display_name) || 'Vos'
 
-  if (!INVITE_CODE_PATTERN.test(code)) {
+  if (!validCode) {
     return (
       <Page>
         <PageHeader title="Entrar al grupo" backTo="/grupos" />
@@ -190,12 +195,39 @@ export function JoinGroupPage() {
     )
   }
 
+  // The server says this code is not valid right now (unknown, expired, revoked or used up): say it before asking anything.
+  if (preview.data?.status === 'invalid') {
+    return (
+      <Page>
+        <PageHeader title="Entrar al grupo" backTo="/grupos/unirse" />
+        <p role="alert" className="flex gap-2 text-[16px] leading-6 text-expense">
+          <Bell aria-hidden="true" className="mt-1 size-4 shrink-0" />
+          Ese código no existe o ya venció. Revisá que esté completo o pedile uno nuevo a quien te
+          invitó.
+        </p>
+        <Link
+          to="/grupos/unirse"
+          state={{ code, notFound: true }}
+          className="text-[17px] font-extrabold underline"
+        >
+          Probar con otro código
+        </Link>
+      </Page>
+    )
+  }
+
+  const groupName = preview.data?.status === 'found' ? preview.data.groupName : null
+
   async function confirm() {
     setError(null)
     try {
       const result = await join.mutateAsync(code)
       restoreGroupOverlay(result.groupId)
       setJoined({ id: result.groupId, alreadyMember: result.alreadyMember })
+      if (!result.alreadyMember) {
+        const own = firstName(profile?.display_name)
+        toast.show(own ? `¡${own} se unió al grupo!` : '¡Te sumaste al grupo!')
+      }
     } catch (e) {
       const message = toUserMessage(e)
       // An unknown, expired, revoked or used-up code goes back to the code screen (123); other
@@ -211,16 +243,14 @@ export function JoinGroupPage() {
   return (
     <Page className="pb-28">
       <PageHeader title="Entrar al grupo" backTo="/grupos/unirse" />
-      <section className="rounded-[28px] bg-forest p-4 text-cream">
-        <div className="flex items-center gap-3">
-          <span className="flex size-16 items-center justify-center rounded-full bg-lime text-forest">
-            <UsersRound aria-hidden="true" className="size-7" />
-          </span>
-          <div>
-            <p className="text-[22px] font-extrabold leading-7">Te invitaron a un grupo</p>
-            <p className="text-[15px] text-text-muted-on-dark">Código {prettyCode(code)}</p>
-          </div>
-        </div>
+      <section className="flex flex-col items-center rounded-[28px] bg-forest px-4 py-6 text-center text-cream">
+        <span className="flex size-16 items-center justify-center rounded-full bg-lime text-forest">
+          <UsersRound aria-hidden="true" className="size-7" />
+        </span>
+        <p className="mt-3 text-[16px] text-text-muted-on-dark">Te invitaron a:</p>
+        <p className="mt-1 max-w-full break-words font-display text-[30px] font-extrabold leading-9">
+          {groupName ?? (preview.isLoading ? 'Buscando el grupo…' : 'un grupo')}
+        </p>
       </section>
       <SectionLabel>Vas a entrar como</SectionLabel>
       <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3">
@@ -248,8 +278,8 @@ export function JoinGroupPage() {
         </p>
       )}
       <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
-        <Button onClick={() => void confirm()} disabled={join.isPending}>
-          {join.isPending ? 'Entrando…' : 'Entrar al grupo'}
+        <Button onClick={() => void confirm()} disabled={join.isPending || preview.isLoading}>
+          {join.isPending ? 'Sumándome…' : 'Sumarme al grupo'}
         </Button>
       </div>
     </Page>

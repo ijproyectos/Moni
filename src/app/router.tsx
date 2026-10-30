@@ -46,7 +46,8 @@ import {
   JoinWithCodePage,
 } from '@/features/groups/ui/JoinGroupPage'
 import { PeoplePage } from '@/features/groups/ui/PeoplePage'
-import { SoloTripPage, TripsPage } from '@/features/trips/ui/TripsPages'
+import { PersonalTripPage } from '@/features/trips/ui/PersonalTripPage'
+import { TripsPage } from '@/features/trips/ui/TripsPage'
 import { OnboardingPage } from '@/features/onboarding/ui/OnboardingPage'
 import { WelcomePage } from '@/features/onboarding/ui/WelcomePage'
 import { MorePage } from '@/features/settings/ui/MorePage'
@@ -93,7 +94,7 @@ export const appRoutes = [
   { path: 'grupos/:id/compartir', element: <ShareSummaryPage /> },
   { path: 'grupos/:id/avisados', element: <NoticesSentPage /> },
   { path: 'viajes', element: <TripsPage /> },
-  { path: 'viajes/:id', element: gated('soloTrips', <SoloTripPage />) },
+  { path: 'viajes/:id', element: <PersonalTripPage /> },
   { path: 'unirse/:code', element: <JoinGroupPage /> },
   { path: 'mas', element: <MorePage /> },
   { path: 'cuentas', element: <AccountsPage /> },

@@ -35,6 +35,8 @@ import { Avatar, MoniGlyph, ProgressBar } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { useGroupLedger } from '../api/useGroupLedger'
+import { useNewMemberNotice } from '../api/useNewMemberNotice'
+import { useGroupTrips } from '@/features/trips/api/useTrips'
 import {
   useLeaveGroup,
   useSettlements,
@@ -81,6 +83,9 @@ export function GroupDetailPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const data = useGroupLedger(groupId)
+  useNewMemberNotice(groupId)
+  // Real dates and budget of the group trip (Viajes), if the group has them.
+  const groupTrip = (useGroupTrips().data ?? []).find((t) => t.groupId === groupId)
   const settlements = useSettlements(groupId)
   const templates = useCategoryTemplates()
   const voidExpense = useVoidSharedExpense()
@@ -284,16 +289,16 @@ export function GroupDetailPage() {
               tu parte {formatArs(ledger.myShareCents)}
             </span>
           </p>
-          {kind === 'viaje' && overlay.trip && (
+          {groupTrip && (
             <>
               <ProgressBar
-                value={ledger.totalCents / overlay.trip.budgetCents}
+                value={ledger.totalCents / groupTrip.budgetCents}
                 tone="dark"
                 className="mt-2"
               />
               <p className="mt-1 text-[14px] text-text-muted-on-dark">
-                Presupuesto del grupo {formatArs(overlay.trip.budgetCents)} · gastaron el{' '}
-                {Math.round((ledger.totalCents / overlay.trip.budgetCents) * 100)}%
+                Presupuesto del grupo {formatArs(groupTrip.budgetCents)} · gastaron el{' '}
+                {Math.round((ledger.totalCents / groupTrip.budgetCents) * 100)}%
               </p>
             </>
           )}

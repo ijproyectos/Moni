@@ -44,6 +44,15 @@ describe('MorePage navigation', () => {
     expect(screen.queryByText('Fijos y cuotas')).toBeNull()
   })
 
+  it('"Gastos hormiga" shows the ant icon and the new subtitle', () => {
+    renderPage()
+    const tile = screen.getByRole('link', { name: /Gastos hormiga/ })
+    expect(tile).toHaveAttribute('href', '/hormigas')
+    expect(tile).toHaveTextContent('Esos gustitos que suman')
+    expect(tile).not.toHaveTextContent('Lo chico que se repite')
+    expect(tile.querySelector('svg.lucide-ant')).not.toBeNull()
+  })
+
   it('with a credit card, "Tarjetas de crédito" leads to /tarjetas', () => {
     accountsData.current = [makeAccount({ id: 'v', name: 'Visa', kind: 'credit_card' })]
     renderPage()

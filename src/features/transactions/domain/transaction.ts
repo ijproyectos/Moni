@@ -24,6 +24,8 @@ export interface Transaction {
   installmentPlanId: string | null
   installmentNumber: number | null
   installmentsTotal: number | null
+  /** Personal trip this expense belongs to (null for anything else). */
+  tripId?: string | null
   createdAt: string
 }
 

@@ -19,7 +19,6 @@ import {
   splitPendingBills,
   upcomingExpenses,
   type FixedExpense,
-  type FixedStatus,
   type PendingBill,
 } from '../domain/fixedExpense'
 import { dueText } from '../domain/labels'
@@ -34,7 +33,6 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 const HISTORY_SHOWN = 10
 const FILTERS = [
   { value: 'active', label: 'Activos' },
-  { value: 'paused', label: 'Pausados' },
   { value: 'removed', label: 'Eliminados' },
 ] as const
 
@@ -43,7 +41,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
   const toast = useToast()
   const query = useFixedExpenses()
   const skip = useSkipOccurrence()
-  const [filter, setFilter] = useState<FixedStatus>('active')
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]['value']>('active')
   const [openId, setOpenId] = useState<string | null>(null)
   const [editing, setEditing] = useState<FixedExpense | null>(null)
   const [paying, setPaying] = useState<PendingBill | null>(null)
@@ -75,7 +73,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
   const { expenses, payments, today } = overview
   const monthName = formatMonthName(today).toLowerCase()
   const active = expenses.filter((e) => e.status === 'active')
-  const { active: bills, paused: pausedBills } = splitPendingBills(pendingBills(overview))
+  const { active: bills } = splitPendingBills(pendingBills(overview))
   const upcoming = upcomingExpenses(expenses)
   const history = historyItems(overview)
   const shown = showAll ? history : history.slice(0, HISTORY_SHOWN)
@@ -134,13 +132,13 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
       )}
 
       {expenses.length > 0 && (
-        <div role="group" aria-label="Ver" className="flex flex-wrap gap-2">
+        <div role="group" aria-label="Ver" className="grid grid-cols-2 gap-2">
           {FILTERS.map((f) => (
             <ChoiceChip
               key={f.value}
               selected={filter === f.value}
               onClick={() => setFilter(f.value)}
-              className="min-h-11 px-3 text-[15px]"
+              className="min-h-11 w-full px-3 text-[15px]"
             >
               {f.label}
             </ChoiceChip>
@@ -150,27 +148,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
 
       {filter !== 'active' && expenses.length > 0 && (
         <>
-          {filter === 'paused' && pausedBills.length > 0 && (
-            <>
-              <SectionLabel>Vencimientos pendientes de gastos pausados</SectionLabel>
-              <p className="-mt-2 text-[14px] leading-5 text-text-muted">
-                Ya habían vencido antes de pausar. Podés registrar el pago, cambiar la fecha u
-                omitirlos.
-              </p>
-              <ul className="flex flex-col gap-3">
-                {pausedBills.map((bill) => (
-                  <PendingBillCard
-                    key={bill.occurrence.id}
-                    bill={bill}
-                    onPay={setPaying}
-                    onMove={setMoving}
-                    onSkip={setSkipping}
-                  />
-                ))}
-              </ul>
-            </>
-          )}
-          <SectionLabel>{filter === 'paused' ? 'Pausados' : 'Seguimiento eliminado'}</SectionLabel>
+          <SectionLabel>Seguimiento eliminado</SectionLabel>
           {others.length === 0 ? (
             <p className="text-[15px] text-text-muted">No hay gastos fijos en esta lista.</p>
           ) : (
@@ -200,18 +178,6 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
                 />
               ))}
             </ul>
-          )}
-
-          {pausedBills.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setFilter('paused')}
-              className="rounded-[18px] border border-dashed border-[#d9c9a6] px-4 py-3 text-left text-[15px] leading-5"
-            >
-              Tenés <strong>{pausedBills.length}</strong>{' '}
-              {pausedBills.length === 1 ? 'vencimiento pendiente' : 'vencimientos pendientes'} de
-              gastos pausados. <span className="font-extrabold underline">Verlos</span>
-            </button>
           )}
 
           <SectionLabel>Próximos vencimientos</SectionLabel>

@@ -219,6 +219,25 @@ export async function joinGroup(code: string): Promise<string> {
   return data
 }
 
+/** What a code says about its group before the person confirms: the real name, none (not valid) or not available yet. */
+export type InvitePreview =
+  { status: 'found'; groupName: string } | { status: 'invalid' } | { status: 'unavailable' }
+
+/**
+ * The name of the group an invite code belongs to (from Supabase, never made up). The server answers NULL for any code
+ * it would not accept right now: unknown, expired, revoked, used up. If the database does not have the function yet
+ * (PGRST202 / 42883) nothing can be said about the group, and the page keeps its generic title.
+ */
+export async function previewGroupInvite(code: string): Promise<InvitePreview> {
+  const { data, error } = await getSupabase().rpc('preview_group_invite', { p_code: code })
+  if (error) {
+    if (error.code === 'PGRST202' || error.code === '42883') return { status: 'unavailable' }
+    throw error
+  }
+  const name = data?.trim()
+  return name ? { status: 'found', groupName: name } : { status: 'invalid' }
+}
+
 export async function leaveGroup(groupId: string): Promise<void> {
   const { error } = await getSupabase().rpc('leave_group', { p_group: groupId })
   if (error) throw error
