@@ -18,6 +18,10 @@
   "include": [
     "vite.config.ts",
     "supabase/functions/parse-movements/lib.ts",
-    "supabase/functions/parse-movements/lib.test.ts"
+    "supabase/functions/parse-movements/lib.test.ts",
+    "supabase/functions/_shared/http.ts",
+    "supabase/functions/_shared/http.test.ts",
+    "supabase/functions/parse-receipt/lib.ts",
+    "supabase/functions/parse-receipt/lib.test.ts"
   ]
 }
