@@ -33,6 +33,7 @@ const MESSAGES: Record<string, string> = {
   plus_required: 'Esto es parte de Moni Plus. Con un código de acceso lo activás en un toque.',
   already_subscribed: 'Ya tenés una suscripción activa a Moni Plus.',
   too_many_requests: 'Esperá un minuto antes de intentar de nuevo.',
+  action_throttled: 'Esperá unos segundos antes de hacer otro cambio en tu suscripción.',
   payment_provider_unavailable:
     'Mercado Pago no responde en este momento. Probá de nuevo en un ratito.',
   payment_provider_error: 'No pudimos iniciar el pago con Mercado Pago. Probá de nuevo en un rato.',

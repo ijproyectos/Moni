@@ -10,8 +10,10 @@
 --   * public.plus_payments: one row per approved Mercado Pago payment already credited. Its primary key is the
 --     webhook idempotency key: the same payment arriving twice (Mercado Pago retries) is credited once.
 --   * public.start_plus_subscription(): creates the pending row under a per-user lock, refusing a user that already
---     has an authorized subscription ('already_subscribed') or created one in the last 60 seconds
+--     has an authorized OR paused subscription ('already_subscribed') or created one in the last 60 seconds
 --     ('create_throttled'). Abuse guard + duplicate guard without a race.
+--   * public.claim_plus_mp_call(): atomic rate limit for the actions that call Mercado Pago ('sync' per
+--     subscription, 'write' per user).
 --   * public.grant_plus_from_payment(): credits ONE month of Plus for ONE approved payment. Idempotent.
 --     expires_at = greatest(now(), current expires_at) + 1 month, so paying early never loses time and a lapsed
 --     user starts from now. Returns the new expiry, or NULL when the payment was already credited.
@@ -27,7 +29,8 @@
 -- Rollback:
 --   drop function public.set_plus_subscription_status(uuid, text, text),
 --     public.grant_plus_from_payment(uuid, text, uuid, numeric),
---     public.start_plus_subscription(uuid, text);
+--     public.start_plus_subscription(uuid, text),
+--     public.claim_plus_mp_call(uuid, uuid, text, int);
 --   drop table public.plus_payments, public.plus_subscriptions;
 -- (entitlements already granted from payments stay in plus_entitlements until they expire.)
 
@@ -44,7 +47,11 @@ create table public.plus_subscriptions (
   preapproval_id text unique check (preapproval_id is null or char_length(preapproval_id) between 1 and 100),
   status text not null default 'pending' check (status in ('pending', 'authorized', 'paused', 'cancelled')),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- Last time the 'get' action asked Mercado Pago about this subscription (rate limit, see claim_plus_mp_call).
+  last_synced_at timestamptz,
+  -- Last time a user action (pause / reactivate / cancel) wrote to Mercado Pago for this row (rate limit).
+  last_mp_write_at timestamptz
 );
 
 create index plus_subscriptions_user_idx on public.plus_subscriptions (user_id, created_at desc);
@@ -96,8 +103,11 @@ begin
 
   perform pg_advisory_xact_lock(hashtextextended('plus_sub:' || p_user::text, 0));
 
+  -- A paused subscription can be reactivated at any time, so it counts as "already subscribed" too: otherwise a
+  -- second preapproval could be created and both end up authorized (double billing).
   if exists (
-    select 1 from public.plus_subscriptions s where s.user_id = p_user and s.status = 'authorized'
+    select 1 from public.plus_subscriptions s
+    where s.user_id = p_user and s.status in ('authorized', 'paused')
   ) then
     raise exception 'already_subscribed' using errcode = '54000';
   end if;
@@ -203,6 +213,58 @@ begin
 end;
 $$;
 
+-- Rate limit ----------------------------------------------------------------------------------------------
+
+-- Atomically claims the right to call Mercado Pago. Returns true when the caller may proceed (and records it),
+-- false when the last claim of that kind is younger than p_min_seconds.
+--   'sync'  : per subscription (last_synced_at); used by the 'get' action.
+--   'write' : per USER (last_mp_write_at across all their rows); used by pause / reactivate / cancel.
+-- p_subscription must belong to p_user, otherwise false. Raises 22023 for an unknown kind or interval.
+create or replace function public.claim_plus_mp_call(
+  p_user uuid,
+  p_subscription uuid,
+  p_kind text,
+  p_min_seconds int
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_rows int;
+begin
+  if p_user is null or p_subscription is null or p_kind not in ('sync', 'write')
+     or p_min_seconds is null or p_min_seconds < 0 or p_min_seconds > 3600 then
+    raise exception 'invalid_claim' using errcode = '22023';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('plus_sub:' || p_user::text, 0));
+
+  if p_kind = 'sync' then
+    update public.plus_subscriptions s
+    set last_synced_at = now()
+    where s.id = p_subscription and s.user_id = p_user
+      and (s.last_synced_at is null or s.last_synced_at <= now() - make_interval(secs => p_min_seconds));
+    get diagnostics v_rows = row_count;
+    return v_rows > 0;
+  end if;
+
+  if not exists (select 1 from public.plus_subscriptions s where s.id = p_subscription and s.user_id = p_user) then
+    return false;
+  end if;
+  if exists (
+    select 1 from public.plus_subscriptions s
+    where s.user_id = p_user and s.last_mp_write_at > now() - make_interval(secs => p_min_seconds)
+  ) then
+    return false;
+  end if;
+  update public.plus_subscriptions s set last_mp_write_at = now() where s.id = p_subscription;
+  return true;
+end;
+$$;
+
 -- Grants ---------------------------------------------------------------------------------------------
 
 -- Money-touching functions: service_role ONLY. Revoking from PUBLIC matters because functions are executable by
@@ -210,12 +272,14 @@ $$;
 revoke execute on function
   public.start_plus_subscription(uuid, text),
   public.grant_plus_from_payment(uuid, text, uuid, numeric),
-  public.set_plus_subscription_status(uuid, text, text)
+  public.set_plus_subscription_status(uuid, text, text),
+  public.claim_plus_mp_call(uuid, uuid, text, int)
 from public, anon, authenticated;
 grant execute on function
   public.start_plus_subscription(uuid, text),
   public.grant_plus_from_payment(uuid, text, uuid, numeric),
-  public.set_plus_subscription_status(uuid, text, text)
+  public.set_plus_subscription_status(uuid, text, text),
+  public.claim_plus_mp_call(uuid, uuid, text, int)
 to service_role;
 
 commit;

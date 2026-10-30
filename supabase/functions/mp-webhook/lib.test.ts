@@ -13,6 +13,8 @@ import {
   parsePreapprovalResource,
   parseSignatureHeader,
   supportedTopic,
+  planDuplicates,
+  TIMESTAMP_FUTURE_SKEW_MS,
   TIMESTAMP_TOLERANCE_MS,
   timingSafeEqualStrings,
   verifyWebhookSignature,
@@ -117,18 +119,40 @@ describe('verifyWebhookSignature', () => {
       reason: 'stale',
     })
   })
+
+  it('accepts a retry that reuses a 23 hour old signature', async () => {
+    const later = Number(TS) + 23 * 60 * 60 * 1000
+    expect(await verifyWebhookSignature({ ...base, nowMs: later })).toEqual({
+      ok: true,
+      dataId: '123456',
+    })
+  })
+
+  it('rejects a future-dated timestamp beyond the skew', async () => {
+    const early = Number(TS) - TIMESTAMP_FUTURE_SKEW_MS - 1
+    expect(await verifyWebhookSignature({ ...base, nowMs: early })).toEqual({
+      ok: false,
+      reason: 'stale',
+    })
+  })
 })
 
 describe('isFreshTimestamp', () => {
-  it('accepts within the tolerance, in both directions', () => {
-    expect(isFreshTimestamp(TS, Number(TS))).toBe(true)
-    expect(isFreshTimestamp(TS, Number(TS) + TIMESTAMP_TOLERANCE_MS)).toBe(true)
-    expect(isFreshTimestamp(TS, Number(TS) - TIMESTAMP_TOLERANCE_MS)).toBe(true)
+  it('uses a 24 hour age window and a 5 minute future skew', () => {
+    expect(TIMESTAMP_TOLERANCE_MS).toBe(24 * 60 * 60 * 1000)
+    expect(TIMESTAMP_FUTURE_SKEW_MS).toBe(5 * 60 * 1000)
   })
 
-  it('rejects outside the tolerance and nonsense', () => {
+  it('accepts a retry up to 24 hours old and a small future skew', () => {
+    expect(isFreshTimestamp(TS, Number(TS))).toBe(true)
+    expect(isFreshTimestamp(TS, Number(TS) + TIMESTAMP_TOLERANCE_MS)).toBe(true)
+    expect(isFreshTimestamp(TS, Number(TS) - TIMESTAMP_FUTURE_SKEW_MS)).toBe(true)
+  })
+
+  it('rejects older than 24 hours, future-dated beyond the skew, and nonsense', () => {
     expect(isFreshTimestamp(TS, Number(TS) + TIMESTAMP_TOLERANCE_MS + 1)).toBe(false)
-    expect(isFreshTimestamp(TS, Number(TS) - TIMESTAMP_TOLERANCE_MS - 1)).toBe(false)
+    expect(isFreshTimestamp(TS, Number(TS) - TIMESTAMP_FUTURE_SKEW_MS - 1)).toBe(false)
+    expect(isFreshTimestamp(TS, Number(TS) - 60 * 60 * 1000)).toBe(false)
     expect(isFreshTimestamp('0', NOW)).toBe(false)
     expect(isFreshTimestamp('abc', NOW)).toBe(false)
   })
@@ -267,6 +291,37 @@ describe('resources', () => {
       })
     }
     expect(parseAuthorizedPayment('nope')).toBeNull()
+  })
+})
+
+describe('planDuplicates (double billing defense)', () => {
+  const at = (id: string, created_at: string, preapproval_id: string | null = `pre-${id}`) => ({
+    id,
+    created_at,
+    preapproval_id,
+  })
+  const older = at('A', '2026-11-01T10:00:00Z')
+  const newer = at('B', '2026-11-02T10:00:00Z')
+
+  it('does nothing when the subject is the only authorized subscription', () => {
+    expect(planDuplicates(older, [])).toEqual({ cancelSubject: false, cancelOthers: [] })
+    expect(planDuplicates(older, [older])).toEqual({ cancelSubject: false, cancelOthers: [] })
+  })
+
+  it('flags the subject as the duplicate when an older one is already authorized', () => {
+    expect(planDuplicates(newer, [older])).toEqual({ cancelSubject: true, cancelOthers: [] })
+    expect(planDuplicates(newer, [older, newer])).toEqual({ cancelSubject: true, cancelOthers: [] })
+  })
+
+  it('keeps the subject and cancels the newer authorized ones', () => {
+    expect(planDuplicates(older, [newer])).toEqual({ cancelSubject: false, cancelOthers: [newer] })
+  })
+
+  it('breaks a created_at tie by id so exactly one side wins', () => {
+    const x = at('X', '2026-11-01T10:00:00Z')
+    const y = at('Y', '2026-11-01T10:00:00Z')
+    expect(planDuplicates(x, [y]).cancelSubject).toBe(false)
+    expect(planDuplicates(y, [x]).cancelSubject).toBe(true)
   })
 })
 

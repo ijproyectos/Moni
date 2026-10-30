@@ -62,6 +62,7 @@ describe('billing repository', () => {
 
   it.each([
     ['too_many_requests', /Esperá un minuto/],
+    ['action_throttled', /Esperá unos segundos/],
     ['payment_provider_unavailable', /Mercado Pago no responde/],
     ['payment_provider_error', /No pudimos iniciar el pago/],
     ['server_misconfigured', /no está disponible/],

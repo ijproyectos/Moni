@@ -16,30 +16,10 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
 import { corsHeaders, jsonResponse, readBodyCapped } from '../_shared/http.ts'
 import { isAuthenticatedUserJwt, pickAllowedOrigin } from '../parse-movements/lib.ts'
-import {
-  buildBackUrl,
-  buildPreapprovalBody,
-  canTransition,
-  classifyMpFailure,
-  classifyRpcError,
-  isLifecycleAction,
-  isMercadoPagoInitPoint,
-  LIFECYCLE,
-  MAX_BODY_BYTES,
-  parsePreapproval,
-  parseRequest,
-  pickCurrentSubscription,
-  preapprovalUrl,
-  publicState,
-  type SubscriptionRow,
-} from './lib.ts'
+import { type ActionDeps, type ActionResult, createSubscription, runUserAction } from './actions.ts'
+import { buildBackUrl, MAX_BODY_BYTES, parseRequest, type SubscriptionRow } from './lib.ts'
 
 const MP_TIMEOUT_MS = 10_000
-
-interface MpResult {
-  status: number // 0 = network error or timeout
-  json: unknown | null
-}
 
 /** Calls Mercado Pago. Logs only the HTTP status (or the error class), never headers, bodies or the token. */
 async function mpFetch(
@@ -47,7 +27,7 @@ async function mpFetch(
   url: string,
   token: string,
   body?: unknown,
-): Promise<MpResult> {
+): Promise<{ status: number; json: unknown | null }> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), MP_TIMEOUT_MS)
   try {
@@ -124,108 +104,58 @@ async function handle(req: Request, origin: string | null): Promise<Response> {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
+  const deps: ActionDeps = {
+    mp: (method, url, payload) => mpFetch(method, url, mpToken, payload),
+    startSubscription: async (userId, externalReference) => {
+      const { data, error } = await admin.rpc('start_plus_subscription', {
+        p_user: userId,
+        p_external_reference: externalReference,
+      })
+      return { data: (data as string | null) ?? null, error }
+    },
+    setStatus: async (subscriptionId, status, preapprovalId) => {
+      const { error } = await admin.rpc('set_plus_subscription_status', {
+        p_subscription: subscriptionId,
+        p_status: status,
+        ...(preapprovalId ? { p_preapproval_id: preapprovalId } : {}),
+      })
+      return { error }
+    },
+    claim: async (userId, subscriptionId, kind, minSeconds) => {
+      const { data, error } = await admin.rpc('claim_plus_mp_call', {
+        p_user: userId,
+        p_subscription: subscriptionId,
+        p_kind: kind,
+        p_min_seconds: minSeconds,
+      })
+      return { data: (data as boolean | null) ?? null, error }
+    },
+    // Only the caller's own rows, always filtered by the authenticated user id.
+    listRows: async (userId) => {
+      const { data, error } = await admin
+        .from('plus_subscriptions')
+        .select('id, preapproval_id, status, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      return { data: (data ?? null) as SubscriptionRow[] | null, error }
+    },
+    newReference: () => crypto.randomUUID(),
+    log: (message, detail) =>
+      detail === undefined
+        ? console.error(`plus-subscription: ${message}`)
+        : console.error(`plus-subscription: ${message}`, detail),
+  }
+
+  let result: ActionResult
   if (action === 'create') {
     // The payer e-mail comes from the authenticated user, never from the body.
     if (!user.email) return jsonResponse(400, { error: 'email_required' }, origin)
-
-    const externalReference = crypto.randomUUID()
-    const started = await admin.rpc('start_plus_subscription', {
-      p_user: user.id,
-      p_external_reference: externalReference,
-    })
-    if (started.error) {
-      const failure = classifyRpcError(started.error)
-      if (failure.http === 500) console.error('plus-subscription: start failed', started.error.code)
-      return jsonResponse(failure.http, { error: failure.code }, origin)
-    }
-    const subscriptionId = started.data as string
-
-    // The one place a preapproval is created: POST https://api.mercadopago.com/preapproval
-    const created = await mpFetch(
-      'POST',
-      'https://api.mercadopago.com/preapproval',
-      mpToken,
-      buildPreapprovalBody({ externalReference, payerEmail: user.email, backUrl }),
-    )
-    if (created.status < 200 || created.status >= 300) {
-      const failure = classifyMpFailure(created.status)
-      return jsonResponse(failure.http, { error: failure.code }, origin)
-    }
-    const preapproval = parsePreapproval(created.json)
-    if (!preapproval || !isMercadoPagoInitPoint(preapproval.initPoint)) {
-      console.error('plus-subscription: unusable preapproval response')
-      return jsonResponse(502, { error: 'payment_provider_error' }, origin)
-    }
-
-    const stored = await admin.rpc('set_plus_subscription_status', {
-      p_subscription: subscriptionId,
-      p_status: preapproval.status ?? 'pending',
-      p_preapproval_id: preapproval.id,
-    })
-    if (stored.error) {
-      console.error('plus-subscription: could not store preapproval', stored.error.code)
-      return jsonResponse(500, { error: 'server_error' }, origin)
-    }
-    return jsonResponse(200, { init_point: preapproval.initPoint, status: 'pending' }, origin)
+    result = await createSubscription(deps, { userId: user.id, payerEmail: user.email, backUrl })
+  } else {
+    result = await runUserAction(deps, { userId: user.id, action })
   }
-
-  // get / pause / reactivate / cancel: only the caller's own rows.
-  const rowsResult = await admin
-    .from('plus_subscriptions')
-    .select('id, preapproval_id, status, created_at')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(20)
-  if (rowsResult.error) {
-    console.error('plus-subscription: could not load subscriptions', rowsResult.error.code)
-    return jsonResponse(500, { error: 'server_error' }, origin)
-  }
-  const current = pickCurrentSubscription((rowsResult.data ?? []) as SubscriptionRow[])
-
-  if (action === 'get') {
-    // Best-effort reconciliation with Mercado Pago, in case a notification is late. Failures fall back to the
-    // stored status. This never grants Plus.
-    if (current && current.preapproval_id && current.status !== 'cancelled') {
-      const live = await mpFetch('GET', preapprovalUrl(current.preapproval_id), mpToken)
-      const resource = live.status === 200 ? parsePreapproval(live.json) : null
-      if (resource?.status && resource.status !== current.status) {
-        const synced = await admin.rpc('set_plus_subscription_status', {
-          p_subscription: current.id,
-          p_status: resource.status,
-        })
-        if (!synced.error) current.status = resource.status
-      }
-    }
-    return jsonResponse(200, publicState(current), origin)
-  }
-
-  if (!isLifecycleAction(action)) return jsonResponse(400, { error: 'invalid_request' }, origin)
-  if (!current || !current.preapproval_id) {
-    return jsonResponse(404, { error: 'subscription_not_found' }, origin)
-  }
-  if (!canTransition(action, current.status)) {
-    return jsonResponse(409, { error: 'invalid_transition' }, origin)
-  }
-
-  const rule = LIFECYCLE[action]
-  const updated = await mpFetch('PUT', preapprovalUrl(current.preapproval_id), mpToken, {
-    status: rule.mpStatus,
-  })
-  if (updated.status < 200 || updated.status >= 300) {
-    const failure = classifyMpFailure(updated.status)
-    return jsonResponse(failure.http, { error: failure.code }, origin)
-  }
-  const resource = parsePreapproval(updated.json)
-  const nextStatus = resource?.status ?? rule.to
-  const synced = await admin.rpc('set_plus_subscription_status', {
-    p_subscription: current.id,
-    p_status: nextStatus,
-  })
-  if (synced.error) {
-    // Mercado Pago already changed; the webhook will bring the row in line. Report success of the action.
-    console.error('plus-subscription: could not sync status', synced.error.code)
-  }
-  return jsonResponse(200, { status: nextStatus }, origin)
+  return jsonResponse(result.http, result.body, origin)
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {

@@ -6,6 +6,7 @@ import {
   SUBSCRIPTION_OFFERS,
 } from '../_shared/plusOffer.ts'
 import {
+  ACTION_THROTTLED,
   buildBackUrl,
   buildPreapprovalBody,
   canTransition,
@@ -20,8 +21,12 @@ import {
   pickCurrentSubscription,
   preapprovalUrl,
   publicState,
+  selectCancelTargets,
+  selectStalePending,
   statusFromMp,
+  SYNC_MIN_SECONDS,
   type SubscriptionRow,
+  WRITE_MIN_SECONDS,
 } from './lib.ts'
 
 describe('offer (server-side constant)', () => {
@@ -214,6 +219,43 @@ describe('pickCurrentSubscription', () => {
   it('exposes only the status to the browser', () => {
     expect(publicState(row({ status: 'authorized' }))).toEqual({ status: 'authorized' })
     expect(publicState(null)).toEqual({ status: 'none' })
+  })
+})
+
+describe('duplicate-billing helpers', () => {
+  const r = (id: string, status: SubscriptionRow['status'], pre: string | null = `p-${id}`) => ({
+    id,
+    status,
+    preapproval_id: pre,
+    created_at: '2026-11-01T10:00:00Z',
+  })
+
+  it('selects only OTHER pending rows that have a preapproval id as stale', () => {
+    const rows = [
+      r('new', 'pending'),
+      r('a', 'pending'),
+      r('b', 'pending', null),
+      r('c', 'cancelled'),
+      r('d', 'authorized'),
+      r('e', 'paused'),
+    ]
+    expect(selectStalePending(rows, 'new').map((x) => x.id)).toEqual(['a'])
+  })
+
+  it('selects every non-cancelled row as a cancel target, including rows without a preapproval id', () => {
+    const rows = [
+      r('a', 'authorized'),
+      r('b', 'pending', null),
+      r('c', 'cancelled'),
+      r('d', 'paused'),
+    ]
+    expect(selectCancelTargets(rows).map((x) => x.id)).toEqual(['a', 'b', 'd'])
+  })
+
+  it('declares the rate limits and the stable throttle error', () => {
+    expect(SYNC_MIN_SECONDS).toBe(15)
+    expect(WRITE_MIN_SECONDS).toBe(5)
+    expect(ACTION_THROTTLED).toEqual({ http: 429, code: 'action_throttled' })
   })
 })
 

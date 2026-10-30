@@ -13,8 +13,10 @@
 //   * Logs carry topic, ids' presence and outcome labels only: never the secret, the token, the signature or payloads.
 
 import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
+import { type CancelAttempt, cancelWithFallback } from '../_shared/mpCancel.ts'
 import {
   authorizedPaymentResourceUrl,
+  type AuthorizedRowRef,
   classifyMpFetch,
   decidePayment,
   httpStatusFor,
@@ -23,6 +25,7 @@ import {
   parseAuthorizedPayment,
   parseNotification,
   parsePreapprovalResource,
+  planDuplicates,
   preapprovalResourceUrl,
   supportedTopic,
   TOPIC_AUTHORIZED_PAYMENT,
@@ -37,6 +40,7 @@ type AdminClient = ReturnType<typeof createClient>
 interface SubscriptionRef {
   id: string
   user_id: string
+  created_at: string
 }
 
 function reply(status: number, body: Record<string, unknown> = {}): Response {
@@ -116,7 +120,7 @@ async function findByColumn(
 ): Promise<{ row: SubscriptionRef | null; failed: boolean }> {
   const { data, error } = await admin
     .from('plus_subscriptions')
-    .select('id, user_id')
+    .select('id, user_id, created_at')
     .eq(column, value)
     .maybeSingle()
   if (error) {
@@ -124,6 +128,78 @@ async function findByColumn(
     return { row: null, failed: true }
   }
   return { row: (data as SubscriptionRef | null) ?? null, failed: false }
+}
+
+/** PUT against the Mercado Pago API (cancel only). Only the HTTP status (or error class) is logged. */
+async function mpPut(url: string, token: string, body: unknown): Promise<CancelAttempt> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), MP_TIMEOUT_MS)
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+    if (!response.ok) {
+      console.error('mp-webhook: duplicate cancel failed', response.status)
+      return { status: response.status, json: null }
+    }
+    return { status: response.status, json: null }
+  } catch (error) {
+    console.error(
+      'mp-webhook: duplicate cancel failed',
+      error instanceof Error ? error.name : 'unknown',
+    )
+    return { status: 0, json: null }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/** Authorized rows of a user, as the database sees them. Returns null when the read fails. */
+async function loadAuthorizedRows(
+  admin: AdminClient,
+  userId: string,
+): Promise<AuthorizedRowRef[] | null> {
+  const { data, error } = await admin
+    .from('plus_subscriptions')
+    .select('id, preapproval_id, created_at')
+    .eq('user_id', userId)
+    .eq('status', 'authorized')
+  if (error) {
+    console.error('mp-webhook: authorized rows lookup failed', error.code)
+    return null
+  }
+  return (data ?? []) as AuthorizedRowRef[]
+}
+
+/**
+ * Cancels a duplicate subscription on Mercado Pago, then marks it cancelled in the database. A row without a
+ * preapproval id is only marked in the database. Returns false when Mercado Pago or the database refused, so the
+ * caller answers 503 and Mercado Pago retries the notification.
+ */
+async function cancelDuplicate(
+  admin: AdminClient,
+  token: string,
+  subscriptionId: string,
+  preapprovalId: string | null,
+): Promise<boolean> {
+  if (preapprovalId) {
+    const result = await cancelWithFallback((mpStatus) =>
+      mpPut(preapprovalResourceUrl(preapprovalId), token, { status: mpStatus }),
+    )
+    if (result.status < 200 || result.status >= 300) return false
+  }
+  const { error } = await admin.rpc('set_plus_subscription_status', {
+    p_subscription: subscriptionId,
+    p_status: 'cancelled',
+  })
+  if (error) {
+    console.error('mp-webhook: duplicate status sync failed', error.code)
+    return false
+  }
+  return true
 }
 
 async function handlePreapproval(admin: AdminClient, token: string, id: string): Promise<Response> {
@@ -148,6 +224,22 @@ async function handlePreapproval(admin: AdminClient, token: string, id: string):
   }
   if (!found.row) return reply(httpStatusFor('ignored'), { ignored: 'unknown_subscription' })
 
+  // Double-billing defense: a subscription becoming authorized for a user who already has an OLDER authorized one
+  // is the duplicate. It is cancelled on Mercado Pago (and stored as cancelled) instead of being authorized.
+  let newerDuplicates: AuthorizedRowRef[] = []
+  if (info.status === 'authorized') {
+    const authorizedRows = await loadAuthorizedRows(admin, found.row.user_id)
+    if (!authorizedRows) return reply(httpStatusFor('transient'), { error: 'try_again' })
+    const plan = planDuplicates(found.row, authorizedRows)
+    if (plan.cancelSubject) {
+      console.error('mp-webhook: duplicate authorized subscription, cancelling the newer one')
+      const cancelled = await cancelDuplicate(admin, token, found.row.id, info.id)
+      if (!cancelled) return reply(httpStatusFor('transient'), { error: 'try_again' })
+      return reply(httpStatusFor('handled'), { handled: 'duplicate_cancelled' })
+    }
+    newerDuplicates = plan.cancelOthers
+  }
+
   const { error } = await admin.rpc('set_plus_subscription_status', {
     p_subscription: found.row.id,
     p_status: info.status,
@@ -156,6 +248,12 @@ async function handlePreapproval(admin: AdminClient, token: string, id: string):
   if (error) {
     console.error('mp-webhook: status sync failed', error.code)
     return reply(httpStatusFor('transient'), { error: 'try_again' })
+  }
+  for (const duplicate of newerDuplicates) {
+    console.error('mp-webhook: duplicate authorized subscription, cancelling the newer one')
+    if (!(await cancelDuplicate(admin, token, duplicate.id, duplicate.preapproval_id))) {
+      return reply(httpStatusFor('transient'), { error: 'try_again' })
+    }
   }
   return reply(httpStatusFor('handled'), { handled: 'subscription_status' })
 }
@@ -196,6 +294,19 @@ async function handleAuthorizedPayment(
     if (found.failed) return reply(httpStatusFor('transient'), { error: 'try_again' })
   }
   if (!found.row) return reply(httpStatusFor('ignored'), { ignored: 'unknown_subscription' })
+
+  // Double-billing defense: a charge of a subscription that is newer than another authorized subscription of the
+  // same user is a duplicate. It earns no second month; the duplicate is cancelled (the charge itself must be
+  // refunded by hand, see docs/MERCADOPAGO.md).
+  const authorizedRows = await loadAuthorizedRows(admin, found.row.user_id)
+  if (!authorizedRows) return reply(httpStatusFor('transient'), { error: 'try_again' })
+  if (planDuplicates(found.row, authorizedRows).cancelSubject) {
+    console.error('mp-webhook: payment of a duplicate subscription not credited')
+    // Best effort: the credit is skipped either way, and a failed cancel must not make Mercado Pago retry for 24 h
+    // (the duplicate may already be cancelled there). The preapproval notification path retries cancels.
+    await cancelDuplicate(admin, token, found.row.id, decision.preapprovalId)
+    return reply(httpStatusFor('handled'), { handled: 'duplicate_not_credited' })
+  }
 
   const granted = await admin.rpc('grant_plus_from_payment', {
     p_user: found.row.user_id,

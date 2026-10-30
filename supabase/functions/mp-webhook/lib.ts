@@ -60,13 +60,16 @@ export function parseNotification(body: unknown): Notification {
 // Signature
 
 /**
- * Maximum age (and clock skew into the future) accepted for the signed `ts`: 10 minutes. Replays inside the window
- * are harmless because processing is idempotent and always re-fetches from Mercado Pago. The window is wide enough
- * for the clock drift of an Edge runtime; it is NOT verified whether Mercado Pago re-signs its retries with a new
- * ts. If it does not, a retry later than this window is rejected (401) and the resource is only reconciled by the
- * `get` action or the next notification.
+ * Maximum AGE accepted for the signed `ts`: 24 hours. Mercado Pago retries failed deliveries with exponential
+ * backoff for up to about 24 hours (mp-webhooks skill) and it is NOT verified whether a retry is re-signed with a
+ * fresh `ts`; a narrower window could reject the retry of a paid subscription and leave the user without Plus.
+ * A replay inside the window is harmless: processing is idempotent (plus_payments.payment_id) and the resource is
+ * always re-fetched from the Mercado Pago API with our own token, so the body is never trusted.
  */
-export const TIMESTAMP_TOLERANCE_MS = 10 * 60 * 1000
+export const TIMESTAMP_TOLERANCE_MS = 24 * 60 * 60 * 1000
+
+/** A `ts` in the future is only forgiven up to this much clock skew (5 minutes). */
+export const TIMESTAMP_FUTURE_SKEW_MS = 5 * 60 * 1000
 
 export interface ParsedSignature {
   ts: string
@@ -118,11 +121,48 @@ export function isFreshTimestamp(
   ts: string,
   nowMs: number,
   toleranceMs: number = TIMESTAMP_TOLERANCE_MS,
+  futureSkewMs: number = TIMESTAMP_FUTURE_SKEW_MS,
 ): boolean {
   const raw = Number(ts)
   if (!Number.isFinite(raw) || raw <= 0) return false
   const ms = raw < 1e12 ? raw * 1000 : raw
-  return Math.abs(nowMs - ms) <= toleranceMs
+  const age = nowMs - ms
+  return age <= toleranceMs && age >= -futureSkewMs
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Duplicate subscriptions (defense in depth against double billing)
+
+export interface AuthorizedRowRef {
+  id: string
+  preapproval_id: string | null
+  created_at: string
+}
+
+export interface DuplicatePlan {
+  /** The subject is newer than another authorized subscription of the same user: it is the duplicate. */
+  cancelSubject: boolean
+  /** Authorized rows of the same user that are newer than the subject (only when the subject is not a duplicate). */
+  cancelOthers: AuthorizedRowRef[]
+}
+
+function isOlder(a: { id: string; created_at: string }, b: { id: string; created_at: string }) {
+  const delta = Date.parse(a.created_at) - Date.parse(b.created_at)
+  return delta !== 0 ? delta < 0 : a.id < b.id
+}
+
+/**
+ * Keeps the OLDEST authorized subscription of a user (the one that was authorized first by checkout order) and
+ * marks every newer one as a duplicate. `authorizedRows` are the user's rows currently `authorized` in the database;
+ * the subject (the subscription the notification is about) may or may not be among them.
+ */
+export function planDuplicates(
+  subject: { id: string; created_at: string },
+  authorizedRows: readonly AuthorizedRowRef[],
+): DuplicatePlan {
+  const others = authorizedRows.filter((r) => r.id !== subject.id)
+  if (others.some((r) => isOlder(r, subject))) return { cancelSubject: true, cancelOthers: [] }
+  return { cancelSubject: false, cancelOthers: others.filter((r) => isOlder(subject, r)) }
 }
 
 export type SignatureResult =

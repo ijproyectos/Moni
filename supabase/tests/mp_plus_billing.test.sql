@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(47);
+select plan(60);
 
 -- Fixtures as superuser ----------------------------------------------------------------------------
 -- A: gets a subscription and two payments. B: subscription gets cancelled. C: lapsed entitlement, pays again.
@@ -11,7 +11,8 @@ insert into auth.users (id, email)
 values
   ('11111111-1111-1111-1111-111111111111', 'a@example.com'),
   ('22222222-2222-2222-2222-222222222222', 'b@example.com'),
-  ('33333333-3333-3333-3333-333333333333', 'c@example.com');
+  ('33333333-3333-3333-3333-333333333333', 'c@example.com'),
+  ('44444444-4444-4444-4444-444444444444', 'd@example.com');
 
 insert into public.plus_entitlements (user_id, source, granted_at, expires_at) values
   ('33333333-3333-3333-3333-333333333333', 'promo', now() - interval '40 days', now() - interval '10 days');
@@ -53,14 +54,19 @@ select is(has_function_privilege('authenticated', 'public.start_plus_subscriptio
   'authenticated cannot execute start_plus_subscription');
 select is(has_function_privilege('service_role', 'public.start_plus_subscription(uuid, text)', 'EXECUTE'), true,
   'service_role can execute start_plus_subscription');
+select is(has_function_privilege('authenticated', 'public.claim_plus_mp_call(uuid, uuid, text, int)', 'EXECUTE'), false,
+  'authenticated cannot execute claim_plus_mp_call');
+select is(has_function_privilege('service_role', 'public.claim_plus_mp_call(uuid, uuid, text, int)', 'EXECUTE'), true,
+  'service_role can execute claim_plus_mp_call');
 select is(
   (select count(*)::int from pg_proc
    where oid in (
      'public.grant_plus_from_payment(uuid, text, uuid, numeric)'::regprocedure,
      'public.set_plus_subscription_status(uuid, text, text)'::regprocedure,
-     'public.start_plus_subscription(uuid, text)'::regprocedure)
+     'public.start_plus_subscription(uuid, text)'::regprocedure,
+     'public.claim_plus_mp_call(uuid, uuid, text, int)'::regprocedure)
    and prosecdef and 'search_path=""' = any (proconfig)),
-  3, 'all three functions are SECURITY DEFINER with search_path set to empty');
+  4, 'all four functions are SECURITY DEFINER with search_path set to empty');
 
 -- Service role: subscription lifecycle ---------------------------------------------------------------
 set local role service_role;
@@ -99,6 +105,49 @@ select is(
   true, 'a stale notification tries to reopen it');
 select is((select status from public.plus_subscriptions where external_reference = 'ref-bbbbbbbbbbbbbbbbbbbb'),
   'cancelled', 'cancelled is terminal');
+
+-- Service role: paused subscriptions also block a new checkout (user D) ---------------------------------
+select isnt(public.start_plus_subscription('44444444-4444-4444-4444-444444444444', 'ref-dddddddddddddddddddd'), null::uuid,
+  'user D starts a subscription');
+select is(
+  public.set_plus_subscription_status(
+    (select id from public.plus_subscriptions where external_reference = 'ref-dddddddddddddddddddd'),
+    'paused', 'pre-d'),
+  true, 'D pauses');
+select throws_ok($$select public.start_plus_subscription('44444444-4444-4444-4444-444444444444', 'ref-dddddddddddddddddddc')$$,
+  '54000', 'already_subscribed', 'a user with a paused subscription cannot start another');
+select is(
+  public.set_plus_subscription_status(
+    (select id from public.plus_subscriptions where external_reference = 'ref-dddddddddddddddddddd'),
+    'cancelled'),
+  true, 'D cancels the paused subscription');
+select isnt(public.start_plus_subscription('44444444-4444-4444-4444-444444444444', 'ref-dddddddddddddddddddf'), null::uuid,
+  'once cancelled, D can start a new checkout');
+
+-- Service role: rate limit of Mercado Pago calls ----------------------------------------------------------
+select is(
+  public.claim_plus_mp_call('11111111-1111-1111-1111-111111111111',
+    (select id from public.plus_subscriptions where external_reference = 'ref-aaaaaaaaaaaaaaaaaaaa'), 'sync', 15),
+  true, 'the first sync claim is granted');
+select is(
+  public.claim_plus_mp_call('11111111-1111-1111-1111-111111111111',
+    (select id from public.plus_subscriptions where external_reference = 'ref-aaaaaaaaaaaaaaaaaaaa'), 'sync', 15),
+  false, 'a second sync claim inside 15 seconds is refused');
+select is(
+  public.claim_plus_mp_call('11111111-1111-1111-1111-111111111111',
+    (select id from public.plus_subscriptions where external_reference = 'ref-aaaaaaaaaaaaaaaaaaaa'), 'write', 5),
+  true, 'the first write claim is granted');
+select is(
+  public.claim_plus_mp_call('11111111-1111-1111-1111-111111111111',
+    (select id from public.plus_subscriptions where external_reference = 'ref-aaaaaaaaaaaaaaaaaaaa'), 'write', 5),
+  false, 'a second write claim inside 5 seconds is refused');
+select is(
+  public.claim_plus_mp_call('22222222-2222-2222-2222-222222222222',
+    (select id from public.plus_subscriptions where external_reference = 'ref-aaaaaaaaaaaaaaaaaaaa'), 'write', 5),
+  false, 'a subscription of another user cannot be claimed');
+select throws_ok($$select public.claim_plus_mp_call('11111111-1111-1111-1111-111111111111',
+    (select id from public.plus_subscriptions where external_reference = 'ref-aaaaaaaaaaaaaaaaaaaa'), 'nope', 5)$$,
+  '22023', 'invalid_claim', 'an unknown claim kind is rejected');
 
 -- Service role: crediting payments ---------------------------------------------------------------------
 select is(

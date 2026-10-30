@@ -87,7 +87,7 @@ Events to enable:
 
 `payments` is optional: the function ignores it (it answers 200 for unknown topics). Copy the signature secret into
 `MP_WEBHOOK_SECRET`. Signature: `x-signature: ts=...,v1=...`, HMAC-SHA256 over
-`id:<data.id>;request-id:<x-request-id>;ts:<ts>;`. A `ts` more than 10 minutes away from the server clock is rejected.
+`id:<data.id>;request-id:<x-request-id>;ts:<ts>;`. A `ts` older than 24 hours, or more than 5 minutes in the future, is rejected (24 h because Mercado Pago retries failed deliveries for about 24 h and it is not verified that retries are re-signed; replays are harmless: processing is idempotent and always re-fetches).
 
 Responses: `401` bad/missing/stale signature (nothing else runs), `200` handled or ignorable, `503` transient (re-fetch
 failed, database error, unexpected resource shape) so Mercado Pago retries, `500` our access token is rejected.
@@ -127,19 +127,41 @@ failed, database error, unexpected resource shape) so Mercado Pago retries, `500
   charge grants nothing, so Plus simply lapses; there is no grace period.
 - Pausing/cancelling on Mercado Pago's own side is picked up through `subscription_preapproval` notifications and the
   `get` action. A stale notification can never reopen a `cancelled` subscription (terminal in the database).
-- Each `create` leaves a `pending` row; abandoned checkouts are not cleaned up. A user can start a new checkout at most
-  once per 60 seconds, and not while a subscription is `authorized`.
+- **Double-billing guards.** `create` is refused (`already_subscribed`) while the user has an `authorized` or `paused`
+  row, and at most once per 60 seconds. Before creating, older `pending` checkouts that have a `preapproval_id` are
+  cancelled on Mercado Pago (best effort; a failure is logged and creation continues) and stored as `cancelled`.
+  `cancel` cancels ALL non-cancelled rows of the user. Backstop in `mp-webhook`: when a subscription becomes authorized
+  (or a charge arrives) for a user who already has an OLDER authorized one, the newer duplicate is cancelled on Mercado
+  Pago and earns no second month; the older one keeps granting (idempotent by payment id). If the duplicate was already
+  charged, that charge is NOT refunded automatically: refund it by hand. If the duplicate was authorized first and
+  credited before the older one is seen as authorized, the user keeps those credited months.
+- **Rate limits** (`claim_plus_mp_call`): `get` talks to Mercado Pago at most once per 15 s per subscription (otherwise it
+  returns the stored state); `pause` / `reactivate` / `cancel` answer `429 action_throttled` if the same user wrote to
+  Mercado Pago in the last 5 s.
+- **Create is compensated:** if Mercado Pago fails after the pending row exists, the row is stored as `cancelled`; if the
+  `preapproval_id` cannot be stored (retried once), the preapproval is cancelled on Mercado Pago and the row cancelled.
+- **Refunds and chargebacks do not revoke Plus time** (accepted for the MVP).
+- **No reconciliation job.** If every retry of a notification fails, the paid user stays without Plus until the next
+  notification or support intervenes. `GET /authorized_payments/search` and `GET /preapproval/search` appear in the
+  plugin's endpoint list, but their parameters and response shape could NOT be confirmed from official pages that could
+  be read, so nothing was implemented. Explicit follow-up: once confirmed, add a scheduled job that searches the
+  user's recent authorized payments and feeds them through the same `decidePayment` + `grant_plus_from_payment` path.
 - Only ARS 2999.00 monthly is accepted. A price change needs a new offer in `plusOffer.ts`; existing subscribers keep the
   old amount at Mercado Pago and would be IGNORED by the webhook (amount mismatch) until the offer accepts it.
 - One subscription per user is assumed by the UI (it shows the authorized one, else paused, else newest).
 
 ## Not verified against official docs (check before go-live)
 
-- The spelling of the cancel status. The Subscriptions guide shipped with the Mercado Pago plugin says `canceled`
-  (one L) and `MP_CANCEL_STATUS` uses it; reads accept both spellings. If the API rejects it, flip the constant.
+- The spelling of the cancel status. Only the Mercado Pago plugin guides/scripts were readable: they say `canceled`
+  (one L); the official reference pages could not be fetched (404). The code tries `canceled`, on HTTP 400 retries once
+  with `cancelled`, and remembers the one that worked per function instance (`_shared/mpCancel.ts`). In the first real
+  test, note which spelling succeeded and make it the first one (`MP_CANCEL_STATUS`).
+- Retry signing: whether a retried notification keeps the original `ts`/signature (now tolerated up to 24 h).
+- Webhook event names (`subscription_preapproval`, `subscription_authorized_payment`) as delivered for this application.
+- Whether cancelling an already-cancelled preapproval returns an error (the duplicate cancel in `mp-webhook` is retried
+  through 503 on failure).
 - The response schema of `GET /authorized_payments/{id}` (`preapproval_id`, `transaction_amount`, `currency_id`,
   `payment.id`, `payment.status`) was not in the sources available; an approved payment that does not fit is reported as
   `unexpected_shape` (503, retried, logged) rather than dropped.
-- Whether Mercado Pago re-signs retries with a fresh `ts` (the 10 minute window would reject old retries otherwise),
-  and whether `data.id` for signatures must come from the query string (the function tries body and query).
+- Whether `data.id` for signatures must come from the query string (the function tries body and query).
 - Real `init_point` host (`mercadopago.com.ar` expected; other country domains are rejected).

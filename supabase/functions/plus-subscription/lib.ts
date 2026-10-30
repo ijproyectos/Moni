@@ -1,6 +1,7 @@
 // Pure logic of the plus-subscription Edge Function (no Deno / npm imports, so Vitest runs it from Node).
 // The HTTP, Supabase and Mercado Pago calls live in index.ts.
 
+import { MP_CANCEL_STATUS } from '../_shared/mpCancel.ts'
 import { buildAutoRecurring, PLUS_OFFER } from '../_shared/plusOffer.ts'
 
 // ---------------------------------------------------------------------------------------------------------
@@ -29,11 +30,11 @@ export function parseRequest(body: unknown): ParsedRequest {
 export type SubscriptionStatus = 'pending' | 'authorized' | 'paused' | 'cancelled'
 
 /**
- * Value sent to Mercado Pago to cancel. The Subscriptions guide shipped with the Mercado Pago plugin spells it
- * `canceled` (one L). NOT verified against the live API reference: if Mercado Pago rejects it, this is the single
- * constant to flip to `cancelled`. Reads accept both spellings (see statusFromMp).
+ * Value first sent to Mercado Pago to cancel (`canceled`, as in the Subscriptions guide shipped with the Mercado
+ * Pago plugin). NOT verified against the live API reference: on a 400 the call is retried once with `cancelled`
+ * and the working spelling is remembered (see _shared/mpCancel.ts). Reads accept both spellings (statusFromMp).
  */
-export const MP_CANCEL_STATUS = 'canceled'
+export { MP_CANCEL_STATUS }
 
 /** Maps a Mercado Pago preapproval status to ours. Unknown values return null (never guess). */
 export function statusFromMp(value: unknown): SubscriptionStatus | null {
@@ -80,6 +81,31 @@ export interface SubscriptionRow {
   status: SubscriptionStatus
   created_at: string
 }
+
+/**
+ * Older checkouts of the same user that must be cancelled on Mercado Pago before a new preapproval is created:
+ * `pending` rows (other than the new one) that already have a preapproval id. Without this, an abandoned checkout
+ * could still be completed later and bill the user twice.
+ */
+export function selectStalePending(
+  rows: readonly SubscriptionRow[],
+  newId: string,
+): SubscriptionRow[] {
+  return rows.filter((r) => r.id !== newId && r.status === 'pending' && r.preapproval_id !== null)
+}
+
+/** Every non-cancelled row of the user: the `cancel` action cancels all of them, not just the current one. */
+export function selectCancelTargets(rows: readonly SubscriptionRow[]): SubscriptionRow[] {
+  return rows.filter((r) => r.status !== 'cancelled')
+}
+
+/** Minimum seconds between two Mercado Pago reads of the same subscription (`get` action). */
+export const SYNC_MIN_SECONDS = 15
+/** Minimum seconds between two Mercado Pago writes (pause / reactivate / cancel) of the same user. */
+export const WRITE_MIN_SECONDS = 5
+
+/** Stable error for a pause / reactivate / cancel sent right after another write of the same user. */
+export const ACTION_THROTTLED: ApiFailure = { http: 429, code: 'action_throttled' }
 
 const PRIORITY: Record<SubscriptionStatus, number> = {
   authorized: 3,
