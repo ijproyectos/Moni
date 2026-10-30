@@ -65,8 +65,8 @@ select throws_ok(
   '23514', 'invite_limit_reached', 'a sixth active invite is rejected');
 select is(
   (select count(*)::int from public.group_invites
-   where group_id = (select id from public.groups where name = 'Casa Test') and code ~ '^[A-HJ-NP-Z2-9]{12}$'),
-  5, 'invite codes are 12 chars from the unambiguous alphabet');
+   where group_id = (select id from public.groups where name = 'Casa Test') and code ~ '^[A-HJ-NP-Z2-9]{8}$'),
+  5, 'new invite codes are 8 chars from the unambiguous alphabet');
 select lives_ok(
   $$select public.revoke_group_invite((select id from public.group_invites
       where group_id = (select id from public.groups where name = 'Casa Test') order by created_at, id limit 1))$$,
