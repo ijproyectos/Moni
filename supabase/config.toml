@@ -31,3 +31,8 @@ skip_nonce_check = false
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/parse-movements/index.ts"
+
+[functions.parse-receipt]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/parse-receipt/index.ts"
