@@ -3,15 +3,12 @@ import { createMockStore, mockId, useMockStore } from '@/shared/lib/mockStore'
 import type { Cents } from '@/shared/lib/money'
 import type { Contribution, Goal, SharedGoalInfo } from '../domain/goals'
 
-/** Estimated aguinaldo for the installments comparison. */
-export const MOCK_AGUINALDO_ESTIMATE: Cents = 485_000_00
-/** Partner used by shared goals (the "Nosotros" couple group). */
-export const MOCK_PARTNER = 'Caro'
-export const MOCK_SPACES = [
-  { name: 'Nosotros', kind: 'couple' as const },
-  { name: 'Depto Palermo', kind: 'home' as const },
-]
-export const MOCK_SOURCES = ['Cuenta sueldo', 'Billetera', 'Efectivo'] as const
+/** No estimate until the person types one (nothing here is real data). */
+export const MOCK_AGUINALDO_ESTIMATE: Cents = 0
+/** Shared goals have no backend yet (see FEATURES.sharedGoals): no partner, spaces or sources. */
+export const MOCK_PARTNER = ''
+export const MOCK_SPACES: readonly { name: string; kind: 'couple' | 'home' }[] = []
+export const MOCK_SOURCES: readonly string[] = []
 
 /** Personal goals are real now (Supabase). Only the shared goals, still simulated, live in this memory. */
 const INITIAL: Goal[] = []

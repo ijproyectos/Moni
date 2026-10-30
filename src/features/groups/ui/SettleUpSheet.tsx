@@ -15,6 +15,7 @@ import { useCreateSettlement } from '../api/useGroups'
 import { settlementFormSchema } from '../domain/group'
 import { personName, type Person } from '../domain/ledger'
 import type { Transfer } from '../domain/split'
+import { FEATURES } from '@/shared/config/features'
 import { addSimSettlement } from '../mock/overlayStore'
 
 const METHODS = [
@@ -62,6 +63,8 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
     : transfer.toUserId === meId
       ? `${from} te pasa`
       : `${from} le pasa a ${to}`
+  // Only the payer can register a real settlement; recording one for someone else is a simulation.
+  const canRecord = (iPay && toIsReal) || FEATURES.groupGuestsAndSimulatedSplits
   const message = `${iPay ? `Te pasé ${formatArs(transfer.amountCents)}` : `Pasame ${formatArs(transfer.amountCents)}`} por Moni 🙌`
 
   async function markSettled() {
@@ -145,17 +148,26 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
             {error}
           </p>
         )}
-        <Button onClick={() => void markSettled()} disabled={create.isPending}>
-          {create.isPending ? 'Guardando…' : 'Marcar como saldado'}
-        </Button>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => toast.show(`Le avisamos a ${other}`)}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
-          >
-            <Bell aria-hidden="true" className="size-5" /> Avisarle a {other}
-          </button>
+        {canRecord ? (
+          <Button onClick={() => void markSettled()} disabled={create.isPending}>
+            {create.isPending ? 'Guardando…' : 'Marcar como saldado'}
+          </Button>
+        ) : (
+          <p className="text-center text-[15px] leading-5 text-text-muted">
+            El pago lo registra quien paga. Cuando {other} te pase la plata, lo marca desde su Moni
+            y tu saldo se actualiza.
+          </p>
+        )}
+        <div className={FEATURES.notifications ? 'grid grid-cols-2 gap-2' : 'grid gap-2'}>
+          {FEATURES.notifications && (
+            <button
+              type="button"
+              onClick={() => toast.show(`Le avisamos a ${other}`)}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-white text-[16px] font-extrabold"
+            >
+              <Bell aria-hidden="true" className="size-5" /> Avisarle a {other}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => void copyText(message, toast, 'Mensaje copiado')}

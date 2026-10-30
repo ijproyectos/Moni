@@ -1,5 +1,6 @@
 import { fromCents, toCents, type Cents } from '@/shared/lib/money'
 import type { IsoDate } from '@/shared/lib/month'
+import { assertOnline } from '@/shared/lib/offline'
 import { getSupabase } from '@/shared/lib/supabase'
 import {
   parseFixedExpenseOverview,
@@ -37,6 +38,7 @@ export async function getFixedExpenseOverview(): Promise<FixedExpenseOverview> {
 
 /** Turns the due dates that have arrived into pending bills. It never moves money. */
 export async function processMyFixedExpenses(): Promise<number> {
+  assertOnline() // a write: never attempted offline
   const { data, error } = await getSupabase().rpc('process_my_fixed_expenses')
   if (error) throw error
   return data ?? 0

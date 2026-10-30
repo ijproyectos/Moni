@@ -15,7 +15,9 @@ import {
   type AccountFormInput,
   type AccountFormValues,
 } from '../domain/account'
+import { BANK_CATALOG, normalizeBrandName, type BankBrand } from '../domain/bankCatalog'
 import { defaultOpeningOrigin, originProblem, type OpeningOrigin } from '../domain/openingOrigin'
+import { BrandLogo } from './BrandLogo'
 import { OpeningOriginFields } from './OpeningOriginFields'
 
 interface AccountFormProps {
@@ -66,12 +68,19 @@ export function AccountForm({
     },
   })
   const kind = watch('kind')
+  const typedName = watch('name') ?? ''
   const openingText = watch('openingBalance') ?? ''
   const openingCents = parseAmountInput(String(openingText)) ?? 0
   // A new ordinary account asks where its starting money comes from; a card's debt keeps its own logic.
   const asksOrigin = !initial && kind !== 'credit_card' && openingCents > 0
   // Editing: a balance that is already a movement is changed with "Ajustar saldo", not here.
   const showOpening = kind === 'credit_card' || !initial || initial.openingBalanceCents > 0
+
+  // Prefills name and type; both stay editable. A card brand switches the form to credit-card mode.
+  function pickBrand(brand: BankBrand) {
+    setValue('name', brand.name, { shouldValidate: true })
+    setValue('kind', brand.kind)
+  }
 
   function submit(values: AccountFormValues) {
     const problem = asksOrigin ? originProblem(origin) : null
@@ -101,6 +110,29 @@ export function AccountForm({
           </span>
         )}
       </label>
+
+      {!initial && (
+        <div className="flex flex-col gap-2">
+          <span className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
+            Agregar rápido
+          </span>
+          <ul className="flex flex-wrap gap-2">
+            {BANK_CATALOG.map((brand) => (
+              <li key={brand.id}>
+                <button
+                  type="button"
+                  onClick={() => pickBrand(brand)}
+                  aria-pressed={normalizeBrandName(typedName) === normalizeBrandName(brand.name)}
+                  className="flex min-h-11 items-center gap-2 rounded-full border-2 border-sand bg-white py-1 pl-1.5 pr-4 text-[16px] font-extrabold text-forest aria-pressed:border-forest"
+                >
+                  <BrandLogo brand={brand} size="sm" />
+                  {brand.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <SegmentedControl
         label="Tipo de cuenta"

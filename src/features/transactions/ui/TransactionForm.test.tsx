@@ -21,6 +21,7 @@ const categories: Category[] = [
 
 function setup() {
   const onSubmit = vi.fn()
+  const onCreateCategory = vi.fn()
   render(
     <TransactionForm
       kind="expense"
@@ -29,10 +30,10 @@ function setup() {
       isSubmitting={false}
       submitError={null}
       onSubmit={onSubmit}
-      onCreateCategory={vi.fn()}
+      onCreateCategory={onCreateCategory}
     />,
   )
-  return { onSubmit, user: userEvent.setup() }
+  return { onSubmit, onCreateCategory, user: userEvent.setup() }
 }
 
 describe('TransactionForm', () => {
@@ -48,7 +49,7 @@ describe('TransactionForm', () => {
     const { onSubmit, user } = setup()
     await user.type(screen.getByLabelText('Monto'), '12.500,50')
     await user.type(screen.getByLabelText('Nota'), 'Almuerzo con el equipo')
-    await user.click(screen.getByRole('button', { name: 'Comida' }))
+    await user.selectOptions(screen.getByLabelText('Categoría'), 'Comida')
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
@@ -59,5 +60,21 @@ describe('TransactionForm', () => {
       amount: 1_250_050,
       note: 'Almuerzo con el equipo',
     })
+  })
+
+  it('shows the picked category icon in its color and offers a compact list', async () => {
+    const { user } = setup()
+    const select = screen.getByLabelText('Categoría')
+    expect(select.tagName).toBe('SELECT')
+    expect(screen.queryByRole('button', { name: 'Comida' })).toBeNull()
+    await user.selectOptions(select, 'Comida')
+    expect(screen.getByTestId('category-select-icon')).toHaveStyle({ backgroundColor: '#E5533D' })
+  })
+
+  it('"Nueva categoría" opens the creation flow without selecting anything', async () => {
+    const { user, onCreateCategory } = setup()
+    await user.selectOptions(screen.getByLabelText('Categoría'), '+ Nueva categoría')
+    expect(onCreateCategory).toHaveBeenCalledTimes(1)
+    expect(screen.getByLabelText('Categoría')).toHaveValue('')
   })
 })

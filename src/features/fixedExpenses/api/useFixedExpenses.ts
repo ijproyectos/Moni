@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { accountKeys } from '@/features/accounts/api/queryKeys'
 import { useAuth } from '@/features/auth/api/authContext'
 import { dashboardKeys } from '@/features/dashboard/api/queryKeys'
+import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { transactionKeys } from '@/features/transactions/api/queryKeys'
 import { fixedReminders } from '../domain/fixedExpense'
 import { fixedKeys } from './queryKeys'
@@ -57,9 +58,11 @@ function useInvalidateEverything() {
 export function useSyncFixedExpenses() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const online = useOnlineStatus()
   const ran = useRef<string | null>(null)
   useEffect(() => {
-    if (!user || ran.current === user.id) return
+    // Offline: skip quietly and run once the connection is back.
+    if (!user || !online || ran.current === user.id) return
     ran.current = user.id
     processMyFixedExpenses()
       .then((created) =>
@@ -68,7 +71,7 @@ export function useSyncFixedExpenses() {
           : undefined,
       )
       .catch(() => undefined)
-  }, [user, queryClient])
+  }, [user, online, queryClient])
 }
 
 /** Candidates for "Ya lo cargué", looked up for the amount, date and account being typed. */

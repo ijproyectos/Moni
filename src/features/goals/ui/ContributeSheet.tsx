@@ -26,7 +26,7 @@ export function ContributeSheet({
 }) {
   const toast = useToast()
   const [text, setText] = useState(formatAmountInput(suggestedCents))
-  const [source, setSource] = useState<string>(MOCK_SOURCES[0])
+  const [source, setSource] = useState<string>(MOCK_SOURCES[0] ?? '')
   const amount = parseAmountInput(text) ?? 0
   const after = goal.savedCents + amount
   const today = todayIso()
@@ -48,19 +48,23 @@ export function ContributeSheet({
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
-        <SectionLabel className="mt-1">¿De dónde sale?</SectionLabel>
-        <div className="flex flex-wrap gap-2">
-          {MOCK_SOURCES.map((s, i) => (
-            <ChoiceChip
-              key={s}
-              icon={SOURCE_ICONS[i]}
-              selected={source === s}
-              onClick={() => setSource(s)}
-            >
-              {s}
-            </ChoiceChip>
-          ))}
-        </div>
+        {MOCK_SOURCES.length > 0 && (
+          <>
+            <SectionLabel className="mt-1">¿De dónde sale?</SectionLabel>
+            <div className="flex flex-wrap gap-2">
+              {MOCK_SOURCES.map((s, i) => (
+                <ChoiceChip
+                  key={s}
+                  icon={SOURCE_ICONS[i]}
+                  selected={source === s}
+                  onClick={() => setSource(s)}
+                >
+                  {s}
+                </ChoiceChip>
+              ))}
+            </div>
+          </>
+        )}
         {amount > 0 && (
           <MoniSays>
             con este aporte llegás a {formatArs(after)} (

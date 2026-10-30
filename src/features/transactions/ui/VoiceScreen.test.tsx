@@ -1,10 +1,10 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Account } from '@/features/accounts/domain/account'
 import type { Category } from '@/features/categories/domain/category'
-import { VoiceSheet } from './VoiceSheet'
+import { VoiceScreen } from './VoiceScreen'
 
 const ACCOUNT_ID = '11111111-1111-4111-8111-111111111111'
 const FOOD_ID = '22222222-2222-4222-8222-222222222222'
@@ -102,19 +102,18 @@ class FakeRecognition {
 
 type SpeechWindow = { webkitSpeechRecognition?: unknown; SpeechRecognition?: unknown }
 
-function renderSheet(props: { startWith?: 'promo' | 'text' } = {}) {
+function renderSheet() {
   const onClose = vi.fn()
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={client}>
-      <VoiceSheet onClose={onClose} {...props} />
+      <VoiceScreen onClose={onClose} />
     </QueryClientProvider>,
   )
   return { onClose, user: userEvent.setup() }
 }
 
 async function reachConfirmation(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Probar ahora' }))
   act(() => FakeRecognition.instances[0]?.say('gasté 5 lucas en el bondi y 18 en el almuerzo'))
   await user.click(screen.getByRole('button', { name: 'Listo' }))
   await screen.findByText('Revisá y guardá')
@@ -134,17 +133,16 @@ afterEach(() => {
   delete (window as unknown as SpeechWindow).SpeechRecognition
 })
 
-describe('VoiceSheet', () => {
+describe('VoiceScreen', () => {
   it('falls back to a text box when speech recognition is unsupported', async () => {
     delete (window as unknown as SpeechWindow).webkitSpeechRecognition
     const { user } = renderSheet()
-    await user.click(screen.getByRole('button', { name: 'Probar ahora' }))
     expect(screen.getByRole('textbox', { name: 'Escribilo como te salga' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Hablar' })).not.toBeInTheDocument()
-  })
+    expect(
+      screen.queryByRole('button', { name: /Escribir en vez de hablar|Hablar en vez de escribir/ }),
+    ).not.toBeInTheDocument()
 
-  it('opens straight into the text box with startWith="text" and parses typed text', async () => {
-    const { user } = renderSheet({ startWith: 'text' })
     await user.type(screen.getByRole('textbox'), 'ayer 5 lucas de bondi')
     await user.click(screen.getByRole('button', { name: 'Listo' }))
     await screen.findByText('Revisá y guardá')
@@ -153,9 +151,26 @@ describe('VoiceSheet', () => {
     })
   })
 
+  it('"Escribir en vez de hablar" stops the microphone and lets the person type', async () => {
+    const { user } = renderSheet()
+    const recognition = FakeRecognition.instances[0]
+    await user.click(screen.getByRole('button', { name: 'Escribir en vez de hablar' }))
+    expect(recognition?.stop).toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Dejar de escuchar' })).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Escribilo como te salga' })).toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox'), '5 lucas bondi')
+    await user.click(screen.getByRole('button', { name: 'Listo' }))
+    await screen.findByText('Revisá y guardá')
+
+    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByRole('button', { name: 'Hablar en vez de escribir' }))
+    expect(FakeRecognition.instances).toHaveLength(2)
+    expect(screen.getByRole('button', { name: 'Dejar de escuchar' })).toBeInTheDocument()
+  })
+
   it('listens, shows the live transcript, parses it and renders the confirmation list', async () => {
     const { user } = renderSheet()
-    await user.click(screen.getByRole('button', { name: 'Probar ahora' }))
 
     const recognition = FakeRecognition.instances[0]
     expect(recognition?.start).toHaveBeenCalled()
@@ -165,6 +180,8 @@ describe('VoiceSheet', () => {
       'true',
     )
     expect(screen.getByText(/Escuchando/)).toBeInTheDocument()
+    expect(screen.getByTestId('listening-pulse')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Por voz' })).toHaveAttribute('aria-modal', 'true')
 
     act(() => recognition?.say('gasté 5 lucas en el bondi'))
     expect(screen.getByRole('textbox')).toHaveValue('gasté 5 lucas en el bondi')
@@ -257,7 +274,8 @@ describe('VoiceSheet', () => {
         new Response(JSON.stringify({ error: 'ai_quota_exceeded' }), { status: 429 }),
       ),
     })
-    const { user } = renderSheet({ startWith: 'text' })
+    delete (window as unknown as SpeechWindow).webkitSpeechRecognition
+    const { user } = renderSheet()
     await user.type(screen.getByRole('textbox'), '5 lucas bondi')
     await user.click(screen.getByRole('button', { name: 'Listo' }))
     expect(
@@ -270,7 +288,8 @@ describe('VoiceSheet', () => {
 
   it('says so when nothing was understood', async () => {
     mocks.invoke.mockResolvedValue({ data: { movements: [], warnings: [] }, error: null })
-    const { user } = renderSheet({ startWith: 'text' })
+    delete (window as unknown as SpeechWindow).webkitSpeechRecognition
+    const { user } = renderSheet()
     await user.type(screen.getByRole('textbox'), 'hola qué tal')
     await user.click(screen.getByRole('button', { name: 'Listo' }))
     expect(await screen.findByText(/No encontré gastos ni ingresos/)).toBeInTheDocument()
@@ -284,20 +303,36 @@ describe('VoiceSheet', () => {
     expect(mocks.createTransaction).not.toHaveBeenCalled()
   })
 
-  it('cancelling while dictating stops the microphone and saves nothing', async () => {
-    const { user } = renderSheet()
-    await user.click(screen.getByRole('button', { name: 'Probar ahora' }))
-    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
-    expect(FakeRecognition.instances[0]?.stop).toHaveBeenCalled()
+  it('closing while dictating releases the microphone and saves nothing', async () => {
+    const { user, onClose } = renderSheet()
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }))
+    expect(onClose).toHaveBeenCalled()
+    cleanup()
+    expect(FakeRecognition.instances[0]?.abort).toHaveBeenCalled()
     expect(mocks.invoke).not.toHaveBeenCalled()
     expect(mocks.createTransaction).not.toHaveBeenCalled()
   })
 
   it('tells the person when the microphone is denied and keeps the text box', async () => {
-    const { user } = renderSheet()
-    await user.click(screen.getByRole('button', { name: 'Probar ahora' }))
+    renderSheet()
     act(() => FakeRecognition.instances[0]?.onerror?.({ error: 'not-allowed' }))
     expect(await screen.findByText(/No pudimos usar el micrófono/)).toBeInTheDocument()
-    expect(screen.getByRole('textbox')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Escribilo como te salga' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Hablar' })).not.toBeInTheDocument()
+  })
+
+  it('closes with Escape', async () => {
+    const { user, onClose } = renderSheet()
+    await user.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('blocks sending while offline and shows the notice', () => {
+    act(() => onlineManager.setOnline(false))
+    renderSheet()
+    act(() => FakeRecognition.instances[0]?.say('5 lucas bondi'))
+    expect(screen.getByRole('button', { name: 'Listo' })).toBeDisabled()
+    expect(screen.getByText('Sin conexión. Conectate para guardar cambios.')).toBeInTheDocument()
+    act(() => onlineManager.setOnline(true))
   })
 })

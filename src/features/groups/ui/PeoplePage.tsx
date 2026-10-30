@@ -1,6 +1,7 @@
 import { ChevronRight, Copy, Gift, Trash2, Upload, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router'
+import { FEATURES } from '@/shared/config/features'
 import { toUserMessage } from '@/shared/lib/errors'
 import { formatArs } from '@/shared/lib/money'
 import { copyText } from '@/shared/lib/share'
@@ -101,10 +102,12 @@ export function PeoplePage() {
           )
         })}
       </ul>
-      <p className="text-[15px] leading-5 text-text-muted">
-        Tocá a una persona para editarla o sacarla del grupo. Los que no tienen Moni se cuentan
-        igual, pero no reciben avisos.
-      </p>
+      {FEATURES.groupGuestsAndSimulatedSplits && (
+        <p className="text-[15px] leading-5 text-text-muted">
+          Tocá a una persona para editarla o sacarla del grupo. Los que no tienen Moni se cuentan
+          igual, pero no reciben avisos.
+        </p>
+      )}
       <div className="flex items-center justify-between gap-3 rounded-[24px] border border-sand bg-white p-4">
         <div>
           <SectionLabel>Código del grupo</SectionLabel>
@@ -353,13 +356,15 @@ function InviteToMoniSheet({
       >
         Ver cómo lo recibe <ChevronRight aria-hidden="true" className="size-4" />
       </button>
-      <MoniSays
-        className="mt-2"
-        lead="2 meses de Pro para los dos:"
-        icon={<Gift aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
-      >
-        si se registra con tu link, los dos ganan.
-      </MoniSays>
+      {FEATURES.referral && (
+        <MoniSays
+          className="mt-2"
+          lead="2 meses de Pro para los dos:"
+          icon={<Gift aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
+        >
+          si se registra con tu link, los dos ganan.
+        </MoniSays>
+      )}
       {code && (
         <p className="mt-2 text-center text-[13px] text-text-muted">
           {inviteLink(window.location.origin, code)}

@@ -1,5 +1,7 @@
 // Maps database and network failures to short rioplatense messages that are safe to show in the UI.
 
+import { OfflineError, OFFLINE_MESSAGE } from './offline'
+
 const MESSAGES: Record<string, string> = {
   account_not_found: 'La cuenta elegida no existe.',
   category_not_found: 'La categoría elegida no existe.',
@@ -88,6 +90,12 @@ const MESSAGES: Record<string, string> = {
     'Llegaste al límite de cargas con Moni por hoy. Probá mañana o cargalo a mano.',
   ai_unavailable: 'Moni no pudo entender eso ahora. Probá de nuevo en un ratito o cargalo a mano.',
   invalid_request: 'No pudimos entender ese texto. Probá con algo más corto (hasta 500 letras).',
+  unsupported_currency: 'Por ahora Moni solo lee facturas en pesos argentinos. Cargalo a mano.',
+  receipt_unreadable:
+    'No pudimos leer el total de la factura. Probá con otra foto, de cerca y con buena luz, o cargalo a mano.',
+  invalid_image: 'Esa imagen no se puede usar. Probá con una foto en JPG, PNG o WEBP.',
+  image_too_large: 'La foto es demasiado pesada. Probá con otra.',
+  image_not_readable: 'No pudimos abrir esa foto. Probá con otra.',
 }
 
 const CONSTRAINT_MESSAGES: Record<string, string> = {
@@ -99,6 +107,7 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
 const FALLBACK = 'Algo salió mal. Probá de nuevo en un rato.'
 
 export function toUserMessage(error: unknown): string {
+  if (error instanceof OfflineError) return OFFLINE_MESSAGE
   if (typeof error !== 'object' || error === null) return FALLBACK
   const { message, code } = error as { message?: unknown; code?: unknown }
   if (typeof message === 'string') {

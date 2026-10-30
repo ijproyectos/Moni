@@ -131,7 +131,7 @@ async function saveIncome(
   await user.selectOptions(screen.getByLabelText('Cuenta'), accountName)
   await user.type(screen.getByLabelText('Monto'), amount)
   await user.type(screen.getByLabelText('Nota'), note)
-  await user.click(screen.getByRole('button', { name: 'Sueldo' }))
+  await user.selectOptions(screen.getByLabelText('Categoría'), 'Sueldo')
   await user.click(screen.getByRole('button', { name: 'Guardar' }))
   await waitFor(() => expect(onClose).toHaveBeenCalled())
   unmount()

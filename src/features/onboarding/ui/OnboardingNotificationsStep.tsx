@@ -29,10 +29,13 @@ async function requestNotifications(): Promise<boolean> {
 // Screen 012 — Notificaciones.
 export function OnboardingNotificationsStep({
   onContinue,
+  onSkip,
   isBusy = false,
 }: {
   /** Receives the answer: true = activar, false = más tarde. */
   onContinue: (optIn: boolean) => void
+  /** Finishes the whole onboarding with defaults (notifications unanswered). */
+  onSkip: () => void
   isBusy?: boolean
 }) {
   return (
@@ -75,6 +78,14 @@ export function OnboardingNotificationsStep({
           className="text-text-muted-on-dark"
         >
           Más tarde
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={isBusy}
+          onClick={onSkip}
+          className="text-text-muted-on-dark"
+        >
+          Omitir
         </Button>
       </div>
     </>

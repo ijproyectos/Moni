@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronRight, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 import mascotUrl from '@/assets/mascot/personaje_informe-del-mes.svg'
 import { formatMonthName, formatMonthShortYear } from '@/shared/lib/dates'
@@ -54,6 +54,22 @@ export function YearReportPage() {
         </div>
         <img src={mascotUrl} alt="" className="size-24" />
       </section>
+
+      <Link
+        to="/ingresos"
+        className="flex min-h-14 items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3"
+      >
+        <span className="flex size-11 items-center justify-center rounded-full bg-lime/40">
+          <Wallet aria-hidden="true" className="size-5" />
+        </span>
+        <span className="flex-1">
+          <span className="block text-[18px] font-extrabold">Ingresos por mes</span>
+          <span className="block text-[14px] text-text-muted">
+            Cuánto te entró cada mes y en el año
+          </span>
+        </span>
+        <ChevronRight aria-hidden="true" className="size-5 text-text-muted" />
+      </Link>
 
       <section className="rounded-[28px] bg-forest p-5 text-cream">
         <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
@@ -124,7 +140,7 @@ export function YearReportPage() {
             <MoniGlyph className="size-9" />
           </span>
           <p className="text-[16px] leading-6">
-            <strong className="font-extrabold">Moni dice:</strong> {name(top.month).toLowerCase()}{' '}
+            <strong className="font-extrabold">Sugerido:</strong> {name(top.month).toLowerCase()}{' '}
             fue tu mes más gastador, un {vsAverage(top.cents)}% más que tu promedio. El más liviano
             fue {name(lightest.month).toLowerCase()}, con {formatArs(lightest.cents)}.
           </p>

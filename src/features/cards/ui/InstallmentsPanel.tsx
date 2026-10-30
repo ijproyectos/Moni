@@ -115,7 +115,7 @@ export function InstallmentsPanel() {
             <MoniGlyph className="size-9" />
           </span>
           <p className="text-[16px] leading-6">
-            <strong className="font-extrabold">Moni dice:</strong> en {monthNameOf(first.endsOn)}{' '}
+            <strong className="font-extrabold">Sugerido:</strong> en {monthNameOf(first.endsOn)}{' '}
             dejás de pagar {first.description.toLowerCase()} y liberás{' '}
             {formatArs(first.installmentCents)} por mes. En {monthNameOf(second.endsOn)},{' '}
             {formatArs(second.installmentCents)} más.

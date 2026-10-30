@@ -1,6 +1,8 @@
 import {
   cleanCodeInput,
+  extractInviteCode,
   groupFormSchema,
+  INVITE_CODE_PATTERN,
   joinGroupSchema,
   normalizeInviteCode,
   parsePercentInput,
@@ -28,12 +30,22 @@ describe('invite codes', () => {
     expect(normalizeInviteCode(' abcd 2345 wxyz ')).toBe('ABCD2345WXYZ')
   })
 
+  it('strips dashes too, so a pretty-formatted code or link param is the same code', () => {
+    expect(normalizeInviteCode('abcd-2345-wxyz')).toBe('ABCD2345WXYZ')
+    expect(normalizeInviteCode('ABCD-2345')).toBe('ABCD2345')
+    expect(normalizeInviteCode('ABCD\u20132345')).toBe('ABCD2345')
+    expect(INVITE_CODE_PATTERN.test(normalizeInviteCode('ABCD-2345-EFGH'))).toBe(true)
+  })
+
   it('rejects ambiguous characters and wrong lengths', () => {
     expect(joinGroupSchema.safeParse({ code: 'abcd2345wxyz' }).success).toBe(true)
     expect(joinGroupSchema.safeParse({ code: 'ABCDEFGHJKL0' }).success).toBe(false)
     expect(joinGroupSchema.safeParse({ code: 'ABCDEFGHJKLI' }).success).toBe(false)
     expect(joinGroupSchema.safeParse({ code: 'ABC' }).success).toBe(false)
-    expect(joinGroupSchema.safeParse({ code: 'ABCD2345' }).success).toBe(false)
+    expect(joinGroupSchema.safeParse({ code: 'ABCD2345' }).success).toBe(true)
+    expect(joinGroupSchema.safeParse({ code: 'ABCD234' }).success).toBe(false)
+    expect(joinGroupSchema.safeParse({ code: 'ABCD2345W' }).success).toBe(false)
+    expect(joinGroupSchema.safeParse({ code: 'ABCD-2345-WXYZ' }).success).toBe(true)
   })
 })
 
@@ -105,5 +117,24 @@ describe('cleanCodeInput', () => {
   it('uppercases and strips spaces and dashes, capped at 12 characters', () => {
     expect(cleanCodeInput('abcd-2345-wxyz')).toBe('ABCD2345WXYZ')
     expect(cleanCodeInput(' ab cd 23 45 wx yz 67')).toBe('ABCD2345WXYZ')
+  })
+})
+
+describe('extractInviteCode', () => {
+  it.each([
+    ['ABCD-2345', 'ABCD2345'],
+    ['abcd 2345 wxyz', 'ABCD2345WXYZ'],
+    ['https://moni.app/unirse/ABCD-2345-WXYZ', 'ABCD2345WXYZ'],
+    ['https://moni.app/unirse/ABCD2345?x=1', 'ABCD2345'],
+    [
+      '¡Hola! Te invito a mi grupo “Casa” en Moni. Entrá con este link: https://moni.app/unirse/WXYZ2345 o ingresá el código WXYZ-2345.',
+      'WXYZ2345',
+    ],
+  ])('finds the code in %s', (text, expected) => {
+    expect(extractInviteCode(text)).toBe(expected)
+  })
+
+  it('falls back to the cleaned text when no valid code is found', () => {
+    expect(extractInviteCode('abc-1')).toBe('ABC1')
   })
 })

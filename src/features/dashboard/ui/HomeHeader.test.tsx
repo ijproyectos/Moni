@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
+import { FEATURES } from '@/shared/config/features'
 import {
   HIDDEN_AMOUNTS_STORAGE_KEY,
   HiddenAmountsProvider,
@@ -88,5 +89,25 @@ describe('HomeHeader: only two financial indicators', () => {
     const amounts = (header.textContent ?? '').match(/\d{1,3}(?:\.\d{3})+/g) ?? []
     expect(amounts.sort()).toEqual(['100.000', '112.500', '12.500', '568.000'])
     expect(screen.getAllByRole('region')).toHaveLength(1)
+  })
+
+  it('has no bell nor "Avisos" badge while notifications have no backend, even with reminders', () => {
+    renderHeader({ reminderCount: 4 })
+    expect(screen.queryByRole('link', { name: /Avisos/ })).toBeNull()
+    expect(screen.queryByText('3')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Perfil' })).toBeInTheDocument()
+  })
+
+  it('shows the bell with the real reminder count (no simulated unread) when the flag is on', () => {
+    FEATURES.notifications = true
+    try {
+      renderHeader({ reminderCount: 2 })
+      expect(screen.getByRole('link', { name: 'Avisos, 2 sin leer' })).toHaveAttribute(
+        'href',
+        '/avisos',
+      )
+    } finally {
+      FEATURES.notifications = false
+    }
   })
 })

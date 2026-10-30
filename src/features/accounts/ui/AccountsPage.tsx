@@ -6,6 +6,7 @@ import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
+import { FEATURES } from '@/shared/config/features'
 import { toUserMessage } from '@/shared/lib/errors'
 import type { AccountKind } from '@/shared/lib/database.types'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
@@ -33,9 +34,11 @@ import {
   type AccountFormValues,
 } from '../domain/account'
 import type { OpeningOrigin } from '../domain/openingOrigin'
+import { brandForAccountName } from '../domain/bankCatalog'
 import { setAccountAlias, useAccountAliases, type AccountAlias } from '../mock/aliasStore'
 import { CardSummarySection } from '@/features/cards/ui/CardSummarySection'
 import { AccountForm } from './AccountForm'
+import { BrandLogo } from './BrandLogo'
 import { AdjustBalanceSection } from './AdjustBalanceSection'
 import { ClassifyOpeningSection } from './ClassifyOpeningSection'
 
@@ -95,7 +98,8 @@ export function AccountsPage() {
           values,
           previousKind: editing.account.kind,
         })
-        setAccountAlias(editing.account.id, { ...aliasDraft, alias: aliasDraft.alias.trim() })
+        if (FEATURES.accountAlias)
+          setAccountAlias(editing.account.id, { ...aliasDraft, alias: aliasDraft.alias.trim() })
       } else await create.mutateAsync({ values, origin })
       toast.show(editing?.account ? 'Medio actualizado' : 'Medio creado', {
         mascotUrl: mascotHappy,
@@ -127,7 +131,9 @@ export function AccountsPage() {
         action={<HeaderAddButton label="Nuevo medio de pago" onClick={() => startEditing()} />}
       />
       <p className="-mt-1 text-[16px] text-text-muted">
-        Tocá una tarjeta para cargar o cambiar su alias.
+        {FEATURES.accountAlias
+          ? 'Tocá una tarjeta para cargar o cambiar su alias.'
+          : 'Tocá un medio para editarlo.'}
       </p>
 
       {accounts.isLoading ? (
@@ -156,6 +162,7 @@ export function AccountsPage() {
               {list.map((account, i) => {
                 const featured = account.id === featuredId
                 const alias = aliases[account.id]
+                const brand = brandForAccountName(account.name)
                 const tone = featured ? CARD_TONES[3] : CARD_TONES[i % 3]
                 return (
                   <li
@@ -175,30 +182,36 @@ export function AccountsPage() {
                         aria-label={`Editar ${account.name}`}
                         className="flex w-full items-start justify-between gap-3 px-5 pb-8 pt-4 text-left"
                       >
-                        <span>
-                          <span className="block text-[20px] font-extrabold leading-6">
-                            {account.name}
+                        <span className="flex items-start gap-3">
+                          {brand && <BrandLogo brand={brand} className="mt-0.5" />}
+                          <span>
+                            <span className="block text-[20px] font-extrabold leading-6">
+                              {account.name}
+                            </span>
+                            <span className="block text-[15px] opacity-80">
+                              {KIND_SUBTITLES[account.kind] ?? ACCOUNT_KIND_LABELS[account.kind]}
+                              {account.closingDay && account.dueDay
+                                ? ` · cierra el ${account.closingDay}`
+                                : ''}
+                              {FEATURES.accountAlias && !featured && alias?.alias
+                                ? ` · ${alias.alias}`
+                                : ''}
+                            </span>
+                            {!isCreditCard(account) &&
+                              (reserve.get(account.id)?.reservedCents ?? 0) > 0 && (
+                                <span className="mt-0.5 block text-[14px] font-extrabold">
+                                  Reservado para metas{' '}
+                                  <AmountDisplay
+                                    cents={reserve.get(account.id)?.reservedCents ?? 0}
+                                  />{' '}
+                                  · {(reserve.get(account.id)?.freeCents ?? 0) < 0 ? '⚠ ' : ''}libre{' '}
+                                  <AmountDisplay cents={reserve.get(account.id)?.freeCents ?? 0} />
+                                </span>
+                              )}
                           </span>
-                          <span className="block text-[15px] opacity-80">
-                            {KIND_SUBTITLES[account.kind] ?? ACCOUNT_KIND_LABELS[account.kind]}
-                            {account.closingDay && account.dueDay
-                              ? ` · cierra el ${account.closingDay}`
-                              : ''}
-                            {!featured && alias?.alias ? ` · ${alias.alias}` : ''}
-                          </span>
-                          {!isCreditCard(account) &&
-                            (reserve.get(account.id)?.reservedCents ?? 0) > 0 && (
-                              <span className="mt-0.5 block text-[14px] font-extrabold">
-                                Reservado para metas{' '}
-                                <AmountDisplay
-                                  cents={reserve.get(account.id)?.reservedCents ?? 0}
-                                />{' '}
-                                · {(reserve.get(account.id)?.freeCents ?? 0) < 0 ? '⚠ ' : ''}libre{' '}
-                                <AmountDisplay cents={reserve.get(account.id)?.freeCents ?? 0} />
-                              </span>
-                            )}
                         </span>
                         {featured ? (
+                          FEATURES.accountAlias &&
                           alias?.forCollecting && (
                             <span className="rounded-full bg-forest px-3 py-1 text-[13px] font-extrabold text-lime">
                               Para cobrar
@@ -261,22 +274,30 @@ export function AccountsPage() {
                             </p>
                           )}
                           <div className="mt-3 flex items-center justify-between">
-                            {alias?.alias ? (
-                              <button
-                                type="button"
-                                onClick={() => void copyText(alias.alias, toast, 'Alias copiado')}
-                                className="relative flex min-h-11 items-center gap-2 rounded-full bg-white/60 px-4 text-[17px] font-extrabold"
-                              >
-                                <Copy aria-hidden="true" className="size-4" /> {alias.alias}
-                              </button>
+                            {FEATURES.accountAlias ? (
+                              <>
+                                {alias?.alias ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void copyText(alias.alias, toast, 'Alias copiado')
+                                    }
+                                    className="relative flex min-h-11 items-center gap-2 rounded-full bg-white/60 px-4 text-[17px] font-extrabold"
+                                  >
+                                    <Copy aria-hidden="true" className="size-4" /> {alias.alias}
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => startEditing(account)}
+                                    className="relative flex min-h-11 items-center gap-2 rounded-full bg-white/60 px-4 text-[16px] font-extrabold"
+                                  >
+                                    <Plus aria-hidden="true" className="size-4" /> Cargar alias
+                                  </button>
+                                )}
+                              </>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => startEditing(account)}
-                                className="relative flex min-h-11 items-center gap-2 rounded-full bg-white/60 px-4 text-[16px] font-extrabold"
-                              >
-                                <Plus aria-hidden="true" className="size-4" /> Cargar alias
-                              </button>
+                              <span />
                             )}
                             <CreditCard aria-hidden="true" className="relative size-7" />
                           </div>
@@ -358,7 +379,9 @@ export function AccountsPage() {
                     Pagar otro monto
                   </Button>
                 )}
-                <AliasFields value={aliasDraft} onChange={setAliasDraft} />
+                {FEATURES.accountAlias && (
+                  <AliasFields value={aliasDraft} onChange={setAliasDraft} />
+                )}
               </>
             )}
           </AccountForm>

@@ -225,8 +225,8 @@ export function AguinaldoSplitPage() {
           <MoniGlyph className="size-9" />
         </span>
         <p className="text-[16px] leading-6">
-          <strong className="font-extrabold">Moni dice:</strong> lo ordené por lo que vence antes:
-          tu parte del viaje de marzo y la tarjeta. Cambiá cualquier monto.
+          <strong className="font-extrabold">Sugerido:</strong> ordenado por lo que vence antes: tu
+          parte del viaje de marzo y la tarjeta. Cambiá cualquier monto.
         </p>
       </Panel>
       <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">

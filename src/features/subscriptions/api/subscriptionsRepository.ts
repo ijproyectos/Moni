@@ -1,5 +1,6 @@
 import { fromCents, type Cents } from '@/shared/lib/money'
 import type { IsoDate } from '@/shared/lib/month'
+import { assertOnline } from '@/shared/lib/offline'
 import { getSupabase } from '@/shared/lib/supabase'
 import {
   parseSubscriptionOverview,
@@ -31,6 +32,7 @@ export async function getSubscriptionOverview(): Promise<SubscriptionOverview> {
 
 /** Registers the charges that are due today or earlier (the server job does the same; this is a safety net). */
 export async function processMyDueSubscriptions(): Promise<number> {
+  assertOnline() // a write: never attempted offline
   const { data, error } = await getSupabase().rpc('process_my_due_subscriptions')
   if (error) throw error
   return data ?? 0

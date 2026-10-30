@@ -1,4 +1,3 @@
-import { Mic, PenLine } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
@@ -16,9 +15,11 @@ import {
 import { SavingsCommittedSheet } from '@/features/goals/ui/SavingsCommittedSheet'
 import { CreditLimitSheet } from '@/features/cards/ui/CreditLimitSheet'
 import { useCategories } from '@/features/categories/api/useCategories'
+import { SharedMovementForm } from '@/features/groups/ui/SharedMovementForm'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Skeleton } from '@/shared/ui/Skeleton'
+import { Toggle } from '@/shared/ui/kit'
 import { SegmentedControl, type SegmentOption } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
 import {
@@ -33,9 +34,8 @@ import type {
   TransferFormValues,
 } from '../domain/transaction'
 import type { SheetMode } from './movementSheetContext'
-import { TransactionForm } from './TransactionForm'
+import { TransactionForm, type TransactionDraft } from './TransactionForm'
 import { TransferForm } from './TransferForm'
-import { VoiceSheet } from './VoiceSheet'
 
 interface MovementSheetProps {
   initialMode: SheetMode
@@ -88,6 +88,9 @@ export function MovementSheet({
     transaction ? (transaction.kind as EntryKind) : initialMode,
   )
   const [submitError, setSubmitError] = useState<string | null>(null)
+  // "Compartido": the expense goes to one of the person's groups instead of a plain movement.
+  const [shared, setShared] = useState(false)
+  const [draft, setDraft] = useState<TransactionDraft | undefined>(undefined)
   const navigate = useNavigate()
   const toast = useToast()
 
@@ -260,7 +263,6 @@ export function MovementSheet({
     }
   }
 
-  const [voice, setVoice] = useState<'voice' | 'text' | null>(null)
   const title = isEdit
     ? 'Editar movimiento'
     : mode === 'transfer'
@@ -269,12 +271,6 @@ export function MovementSheet({
   const segments = isEdit
     ? MODE_OPTIONS.filter((o) => o.value === mode).map((o) => ({ ...o, disabled: true }))
     : MODE_OPTIONS
-
-  if (voice) {
-    return (
-      <VoiceSheet startWith={voice === 'text' ? 'text' : 'promo'} onClose={() => setVoice(null)} />
-    )
-  }
 
   return (
     <BottomSheet title={title} onClose={() => (pendingRef.current ? setPending(null) : onClose())}>
@@ -289,6 +285,16 @@ export function MovementSheet({
               setMode(value)
             }}
           />
+        )}
+
+        {mode === 'expense' && !isEdit && !isLoading && !loadFailed && (
+          <div className="flex items-center justify-between gap-3 rounded-[18px] border border-sand bg-white px-4 py-2">
+            <span>
+              <span className="block text-[17px] font-extrabold">Compartido</span>
+              <span className="block text-[14px] text-text-muted">Dividirlo con un grupo</span>
+            </span>
+            <Toggle label="Compartido" checked={shared} onChange={setShared} />
+          </div>
         )}
 
         {isLoading ? (
@@ -319,9 +325,23 @@ export function MovementSheet({
               onSubmit={(values) => void saveTransfer(values)}
             />
           )
+        ) : shared && mode === 'expense' && !isEdit ? (
+          <SharedMovementForm
+            draft={{
+              amount: draft?.amount ?? '',
+              note: draft?.note ?? '',
+              occurredOn: draft?.occurredOn ?? '',
+              accountId: draft?.accountId ?? '',
+              categoryName: categories.find((c) => c.id === draft?.categoryId)?.name ?? '',
+            }}
+            onSaved={onClose}
+            onLeave={onClose}
+          />
         ) : (
           <TransactionForm
             kind={mode}
+            draft={draft}
+            onDraftChange={setDraft}
             accounts={accounts}
             categories={categories}
             initial={transaction}
@@ -333,24 +353,6 @@ export function MovementSheet({
               navigate('/categorias')
             }}
           />
-        )}
-        {!isEdit && mode !== 'transfer' && (
-          <div className="-mt-1 flex flex-col items-center">
-            <button
-              type="button"
-              onClick={() => setVoice('voice')}
-              className="flex min-h-11 items-center justify-center gap-2 text-[17px] font-extrabold underline"
-            >
-              <Mic aria-hidden="true" className="size-5" /> Mejor lo digo con la voz
-            </button>
-            <button
-              type="button"
-              onClick={() => setVoice('text')}
-              className="flex min-h-11 items-center justify-center gap-2 text-[15px] font-bold text-text-muted underline"
-            >
-              <PenLine aria-hidden="true" className="size-4" /> Escribilo como te salga
-            </button>
-          </div>
         )}
       </div>
       {pending?.type === 'limit' && (

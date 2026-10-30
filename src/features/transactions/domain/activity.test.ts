@@ -1,5 +1,5 @@
 import type { Category } from '@/features/categories/domain/category'
-import { buildActivity, countEntries, type ActivityFilters } from './activity'
+import { buildActivity, countEntries, groupByCategory, type ActivityFilters } from './activity'
 import { makeTransaction } from './testing'
 import type { Transfer } from './transaction'
 
@@ -84,5 +84,94 @@ describe('buildActivity', () => {
 
   it('filters by selected day', () => {
     expect(countEntries(run({ day: '2026-10-25' }))).toBe(1)
+  })
+})
+
+describe('groupByCategory', () => {
+  const OTHER = '44444444-4444-4444-8444-444444444444'
+  const withOther = new Map(categories).set(OTHER, {
+    id: OTHER,
+    kind: 'expense',
+    name: 'Súper',
+    icon: 'ShoppingCart',
+    color: '#064735',
+    archivedAt: null,
+  })
+  const mixed = [
+    makeTransaction({ id: 'f1', categoryId: FOOD, amountCents: 1000, occurredOn: '2026-10-20' }),
+    makeTransaction({ id: 'f2', categoryId: FOOD, amountCents: 2000, occurredOn: '2026-10-05' }),
+    makeTransaction({ id: 's1', categoryId: OTHER, amountCents: 9000, occurredOn: '2026-10-06' }),
+    makeTransaction({
+      id: 'i1',
+      kind: 'income',
+      categoryId: SALARY,
+      amountCents: 50000,
+      occurredOn: '2026-10-01',
+    }),
+    makeTransaction({ id: 'n1', categoryId: null, amountCents: 400, occurredOn: '2026-10-02' }),
+    makeTransaction({
+      id: 'o1',
+      kind: 'opening_in',
+      categoryId: null,
+      amountCents: 70000,
+      occurredOn: '2026-10-01',
+    }),
+    makeTransaction({
+      id: 'a1',
+      kind: 'adjustment_out',
+      categoryId: null,
+      amountCents: 300,
+      occurredOn: '2026-10-03',
+    }),
+  ]
+  const groups = (filters: Partial<ActivityFilters> = {}) =>
+    groupByCategory(
+      buildActivity({
+        transactions: mixed,
+        transfers: [transfer],
+        filters: { ...base, ...filters },
+        categoriesById: withOther,
+        accountNamesById: new Map(),
+      }),
+      withOther,
+    )
+
+  it('groups by category and routes category-less kinds to dedicated buckets', () => {
+    const result = groups()
+    expect(result.map((g) => [g.label, g.count])).toEqual([
+      ['Saldo inicial', 1],
+      ['Sueldo', 1],
+      ['Súper', 1],
+      ['Transferencias', 1],
+      ['Comida', 2],
+      ['Sin categoría', 1],
+      ['Ajustes de saldo', 1],
+    ])
+  })
+
+  it('sorts by total descending and reports magnitude with direction', () => {
+    const result = groups()
+    const totals = result.map((g) => g.totalCents)
+    expect(totals).toEqual([...totals].sort((a, b) => b - a))
+    const food = result.find((g) => g.label === 'Comida')
+    expect(food).toMatchObject({ totalCents: 3000, direction: 'out', type: 'category' })
+    expect(result.find((g) => g.label === 'Sueldo')?.direction).toBe('in')
+    expect(result.find((g) => g.label === 'Transferencias')?.direction).toBe('neutral')
+    expect(result.find((g) => g.label === 'Ajustes de saldo')?.direction).toBe('out')
+  })
+
+  it('keeps entries newest first inside a group', () => {
+    const food = groups().find((g) => g.label === 'Comida')
+    expect(food?.entries.map((e) => e.id)).toEqual(['f1', 'f2'])
+  })
+
+  it('respects the existing filters', () => {
+    expect(groups({ kind: 'income' }).map((g) => g.label)).toEqual(['Sueldo'])
+    expect(groups({ categoryId: FOOD }).map((g) => g.label)).toEqual(['Comida'])
+    expect(groups({ search: 'zzz' })).toEqual([])
+  })
+
+  it('returns no groups for an empty month', () => {
+    expect(groupByCategory([], categories)).toEqual([])
   })
 })

@@ -16,7 +16,8 @@ import {
   useVoidTransaction,
   useVoidTransfer,
 } from '../api/useTransactions'
-import { buildActivity, type ActivityEntry } from '../domain/activity'
+import { buildActivity, groupByCategory, type ActivityEntry } from '../domain/activity'
+import { loadActivityView, saveActivityView, type ActivityView } from '../domain/activityView'
 import type { EntryKind } from '../domain/transaction'
 import { calendarDayTotals, totalsOf } from '../domain/transactionQueries'
 import { ActivityScreen } from './ActivityScreen'
@@ -30,6 +31,7 @@ export function ActivityPage() {
   const [kind, setKind] = useState<'all' | EntryKind>('all')
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [selectedDay, setSelectedDay] = useState<IsoDate | null>(null)
+  const [view, setView] = useState<ActivityView>(loadActivityView)
 
   const range = monthRange(month)
   const transactions = useTransactions(range)
@@ -52,7 +54,8 @@ export function ActivityPage() {
       buildActivity({
         transactions: transactions.data ?? [],
         transfers: transfers.data ?? [],
-        filters: { search, kind, categoryId, day: selectedDay },
+        // The day filter belongs to the calendar; it is kept (not applied) while in list view.
+        filters: { search, kind, categoryId, day: view === 'calendar' ? selectedDay : null },
         categoriesById,
         accountNamesById,
       }),
@@ -63,15 +66,22 @@ export function ActivityPage() {
       kind,
       categoryId,
       selectedDay,
+      view,
       categoriesById,
       accountNamesById,
     ],
   )
+  const groups = useMemo(() => groupByCategory(days, categoriesById), [days, categoriesById])
   const calendarDays = useMemo(
     () => calendarDayTotals(transactions.data ?? [], month),
     [transactions.data, month],
   )
   const totals = useMemo(() => totalsOf(transactions.data ?? []), [transactions.data])
+
+  function changeView(next: ActivityView) {
+    setView(next)
+    saveActivityView(next)
+  }
 
   function changeMonth(delta: number) {
     setMonth((m) => shiftMonth(m, delta))
@@ -149,6 +159,9 @@ export function ActivityPage() {
       calendarDays={calendarDays}
       totals={totals}
       days={days}
+      groups={groups}
+      view={view}
+      onViewChange={changeView}
       monthIsEmpty={(transactions.data ?? []).length === 0 && (transfers.data ?? []).length === 0}
       onEdit={openEdit}
       onVoid={handleVoid}

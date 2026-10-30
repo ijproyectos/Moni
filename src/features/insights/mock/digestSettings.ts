@@ -11,7 +11,7 @@ export interface WeeklyDigestSettings {
 }
 
 const settings = createMockStore<WeeklyDigestSettings>({
-  enabled: true,
+  enabled: false,
   day: 'Domingo',
   time: '20:00',
   smallLimitCents: 5_000_00,

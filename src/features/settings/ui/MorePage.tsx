@@ -22,6 +22,7 @@ import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
 import type { AppFeature } from '@/features/onboarding/domain/goals'
+import { FEATURES, type FeatureFlag } from '@/shared/config/features'
 import { cn } from '@/shared/ui/cn'
 
 interface Tile {
@@ -33,12 +34,15 @@ interface Tile {
   color?: string
   /** Shown up front only when the person's goals include it; otherwise under "Más herramientas". */
   feature?: AppFeature
+  /** Hidden while this flag is off (screen without a real backend). */
+  flag?: FeatureFlag
 }
 
 // Screen 018 — Más.
 const TILES: Tile[] = [
   {
     to: '/pro',
+    flag: 'pro',
     title: 'Integraciones',
     subtitle: 'Billeteras y bancos',
     icon: Plug,
@@ -86,6 +90,7 @@ const TILES: Tile[] = [
   },
   {
     to: '/deudas',
+    flag: 'debts',
     feature: 'debts',
     title: 'Deudas',
     subtitle: 'Lo que debés y te deben',
@@ -95,6 +100,7 @@ const TILES: Tile[] = [
   },
   {
     to: '/aguinaldo',
+    flag: 'aguinaldo',
     feature: 'aguinaldo',
     title: 'Aguinaldo',
     subtitle: 'Repartilo',
@@ -144,7 +150,9 @@ export function MorePage() {
   const { has } = useEnabledFeatures()
   const [showMore, setShowMore] = useState(false)
   const cardsTile = hasCards ? CARDS_TILE : ADD_CARD_TILE
-  const tiles = TILES.flatMap((t) => (t.to === '/cuentas' ? [t, cardsTile] : [t]))
+  const tiles = TILES.filter((t) => !t.flag || FEATURES[t.flag]).flatMap((t) =>
+    t.to === '/cuentas' ? [t, cardsTile] : [t],
+  )
   const featured = tiles.filter((t) => !t.feature || has(t.feature))
   const others = tiles.filter((t) => t.feature && !has(t.feature))
 
@@ -188,25 +196,29 @@ export function MorePage() {
         <ChevronRight aria-hidden="true" className="size-6 shrink-0" strokeWidth={2} />
       </Link>
 
-      <Link to="/pro" className="flex items-center gap-4 rounded-[22px] bg-gold px-4 py-3">
-        <ShoppingBasket aria-hidden="true" className="size-7" strokeWidth={2} />
-        <span className="flex-1">
-          <span className="block text-[20px] font-extrabold leading-6">Probá Moni Pro</span>
-          <span className="block text-[15px]">Voz, tickets, bancos y más</span>
-        </span>
-        <ChevronRight aria-hidden="true" className="size-6" />
-      </Link>
-      <Link
-        to="/recomendar"
-        className="flex items-center gap-4 rounded-[22px] border border-lime bg-lime/30 px-4 py-3"
-      >
-        <Gift aria-hidden="true" className="size-7" strokeWidth={2} />
-        <span className="flex-1">
-          <span className="block text-[20px] font-extrabold leading-6">Recomendá Moni</span>
-          <span className="block text-[15px]">Los dos ganan 2 meses de Pro</span>
-        </span>
-        <ChevronRight aria-hidden="true" className="size-6" />
-      </Link>
+      {FEATURES.pro && (
+        <Link to="/pro" className="flex items-center gap-4 rounded-[22px] bg-gold px-4 py-3">
+          <ShoppingBasket aria-hidden="true" className="size-7" strokeWidth={2} />
+          <span className="flex-1">
+            <span className="block text-[20px] font-extrabold leading-6">Probá Moni Pro</span>
+            <span className="block text-[15px]">Voz, tickets, bancos y más</span>
+          </span>
+          <ChevronRight aria-hidden="true" className="size-6" />
+        </Link>
+      )}
+      {FEATURES.referral && (
+        <Link
+          to="/recomendar"
+          className="flex items-center gap-4 rounded-[22px] border border-lime bg-lime/30 px-4 py-3"
+        >
+          <Gift aria-hidden="true" className="size-7" strokeWidth={2} />
+          <span className="flex-1">
+            <span className="block text-[20px] font-extrabold leading-6">Recomendá Moni</span>
+            <span className="block text-[15px]">Los dos ganan 2 meses de Pro</span>
+          </span>
+          <ChevronRight aria-hidden="true" className="size-6" />
+        </Link>
+      )}
 
       <TileGrid tiles={featured} />
 

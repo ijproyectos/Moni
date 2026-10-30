@@ -145,7 +145,7 @@ function AntsContent({
           <MoniGlyph className="size-9" />
         </span>
         <p className="text-[16px] leading-6">
-          <strong className="font-extrabold">Moni dice:</strong> {buildAntsTip(data.groups)}
+          <strong className="font-extrabold">Sugerido:</strong> {buildAntsTip(data.groups)}
         </p>
       </Panel>
       <div>

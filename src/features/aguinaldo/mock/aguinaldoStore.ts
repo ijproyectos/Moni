@@ -1,7 +1,7 @@
 // Simulated aguinaldo plan (amount, pay date and where each part goes). In-memory only.
 import { createMockStore, mockId, useMockStore } from '@/shared/lib/mockStore'
 import type { Cents } from '@/shared/lib/money'
-import type { IsoDate } from '@/shared/lib/month'
+import { todayIso, type IsoDate } from '@/shared/lib/month'
 
 export type DestinationKind = 'goal' | 'trip' | 'card' | 'account' | 'installments'
 
@@ -37,55 +37,13 @@ export function destinationColor(index: number): string {
   return DESTINATION_COLORS[index % DESTINATION_COLORS.length] ?? '#064735'
 }
 
+// Empty on purpose: the person enters the amount and the split themselves.
 const store = createMockStore<AguinaldoPlan>({
-  amountCents: 485_000_00,
-  payDate: '2026-12-18',
-  remind: true,
+  amountCents: 0,
+  payDate: todayIso(),
+  remind: false,
   confirmed: false,
-  destinations: [
-    {
-      id: 'd1',
-      kind: 'goal',
-      goalId: 'notebook',
-      name: 'Notebook nueva',
-      detail: 'Meta',
-      cents: 200_000_00,
-      color: destinationColor(0),
-    },
-    {
-      id: 'd2',
-      kind: 'goal',
-      goalId: 'emergencia',
-      name: 'Fondo de emergencia',
-      detail: 'Meta',
-      cents: 85_000_00,
-      color: destinationColor(1),
-    },
-    {
-      id: 'd3',
-      kind: 'trip',
-      name: 'Mendoza',
-      detail: 'Viaje · cubre tu parte de $153.000',
-      cents: 100_000_00,
-      color: destinationColor(2),
-    },
-    {
-      id: 'd4',
-      kind: 'card',
-      name: 'Tarjeta Visa',
-      detail: 'Tarjeta · pagar el cierre del 28',
-      cents: 60_000_00,
-      color: destinationColor(3),
-    },
-    {
-      id: 'd5',
-      kind: 'account',
-      name: 'Billetera virtual',
-      detail: 'Cuenta · guardado para vos',
-      cents: 40_000_00,
-      color: destinationColor(4),
-    },
-  ],
+  destinations: [],
 })
 
 export function useAguinaldo(): AguinaldoPlan {

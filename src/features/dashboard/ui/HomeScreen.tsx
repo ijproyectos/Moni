@@ -78,8 +78,7 @@ export function HomeScreen({
             <MoniGlyph className="size-9" />
           </span>
           <p className="text-[17px] leading-6 text-forest">
-            <strong className="font-extrabold">Moni dice:</strong>{' '}
-            {buildInsight(summary.byCategory)}
+            <strong className="font-extrabold">Sugerido:</strong> {buildInsight(summary.byCategory)}
           </p>
         </Card>
 

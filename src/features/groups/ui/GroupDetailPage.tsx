@@ -11,6 +11,7 @@ import {
   Sparkles,
   Trash2,
   Upload,
+  UserPlus,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
@@ -19,10 +20,12 @@ import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { useCategoryTemplates } from '@/features/categories/api/useCategories'
 import { percentLabel, progress } from '@/features/goals/domain/goals'
 import { useGoals } from '@/features/goals/mock/goalsStore'
+import { FEATURES } from '@/shared/config/features'
 import { formatMonthName } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
 import { formatArs } from '@/shared/lib/money'
 import { monthStart, todayIso } from '@/shared/lib/month'
+import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
@@ -48,6 +51,7 @@ import {
   type SimExpense,
 } from '../mock/overlayStore'
 import { EditGroupSheet } from './EditGroupSheet'
+import { InvitePanel } from './InvitePanel'
 import { ExpenseDetailSheet } from './ExpenseDetailSheet'
 import { expenseIcon } from './expenseIcon'
 import { AvatarStack } from './groupVisuals'
@@ -63,6 +67,7 @@ type Sheet =
   | { type: 'settle' }
   | { type: 'group' }
   | { type: 'leave' }
+  | { type: 'invite' }
   | { type: 'remove-group' }
   | { type: 'void-settlement'; settlement: Settlement }
   | { type: 'receipt'; id: string }
@@ -203,9 +208,17 @@ export function GroupDetailPage() {
         {kind === 'pareja' && <AvatarStack people={ledger.people} size="md" />}
         <button
           type="button"
+          aria-label="Invitar"
+          onClick={() => setSheet({ type: 'invite' })}
+          className="ml-auto flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-white"
+        >
+          <UserPlus aria-hidden="true" className="size-6" />
+        </button>
+        <button
+          type="button"
           aria-label="Opciones del grupo"
           onClick={() => setSheet({ type: 'group' })}
-          className="ml-auto flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-white"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-white"
         >
           <Ellipsis aria-hidden="true" className="size-6" />
         </button>
@@ -315,7 +328,7 @@ export function GroupDetailPage() {
         </section>
       )}
 
-      {kind === 'pareja' && sharedGoal && (
+      {FEATURES.sharedGoals && kind === 'pareja' && sharedGoal && (
         <Link
           to={`/metas/${sharedGoal.id}`}
           className="flex items-center gap-3 rounded-[22px] border border-sand bg-white px-4 py-3"
@@ -332,7 +345,7 @@ export function GroupDetailPage() {
         </Link>
       )}
 
-      {kind === 'viaje' && myNet < 0 && (
+      {FEATURES.aguinaldo && kind === 'viaje' && myNet < 0 && (
         <div className="flex items-center gap-3 rounded-[22px] bg-lime/30 px-4 py-3">
           <MoniGlyph />
           <p className="flex-1 text-[16px] leading-5">
@@ -613,6 +626,11 @@ export function GroupDetailPage() {
         >
           Se saca de las cuentas del grupo y Moni recalcula quién le debe a quién.
         </DecisionSheet>
+      )}
+      {sheet?.type === 'invite' && (
+        <BottomSheet title="Invitar al grupo" onClose={() => setSheet(null)}>
+          <InvitePanel groupId={groupId} groupName={name} />
+        </BottomSheet>
       )}
       {sheet?.type === 'settle' && (
         <SettleUpSheet

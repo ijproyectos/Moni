@@ -3,6 +3,7 @@ import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { isCreditCard } from '@/features/accounts/domain/account'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
+import { formatArs } from '@/shared/lib/money'
 import { toUserMessage } from '@/shared/lib/errors'
 import { argentinaTodayIso, isIsoDate } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
@@ -13,6 +14,7 @@ import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import { ChoiceChip, SectionLabel, Toggle } from '@/shared/ui/kit'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
+import { useDollarCardRate } from '../api/useDollarCardRate'
 import { useCreateSubscription, useUpdateSubscription } from '../api/useSubscriptions'
 import {
   CATEGORY_HINTS,
@@ -20,6 +22,8 @@ import {
   findService,
   type CatalogService,
 } from '../domain/catalog'
+import { formatRateDate, usdToArsCents } from '../domain/conversion'
+import { hasReferencePrices, referencePrice } from '../domain/referencePrices'
 import type { Subscription, SubscriptionPeriod } from '../domain/subscription'
 import { ServiceLogo } from './ServiceLogo'
 
@@ -32,8 +36,9 @@ type Target =
   | { kind: 'edit'; subscription: Subscription }
 
 /**
- * Screen 075 — Nueva suscripción / Editar. Everything is in pesos (ARS): the person types what the bank
- * really charged; Moni does not convert currencies or add taxes. Edits apply to the next charges.
+ * Screen 075 — Nueva suscripción / Editar. Everything is saved in pesos (ARS). For services with a verified
+ * USD reference price, the amount is prefilled with price × dólar tarjeta (until the person edits it); the
+ * saved amount never follows the dollar afterwards. Edits apply to the next charges.
  */
 export function SubscriptionFormSheet({
   target,
@@ -80,6 +85,15 @@ export function SubscriptionFormSheet({
   const [categoryId, setCategoryId] = useState(editing?.categoryId ?? '')
   const [remind, setRemind] = useState(editing?.remind ?? true)
   const [error, setError] = useState<string | null>(null)
+  // Once the person types an amount (or edits an existing subscription) it is never auto-updated again.
+  const [amountTouched, setAmountTouched] = useState(editing !== null)
+
+  const rateQuery = useDollarCardRate(!editing && hasReferencePrices(serviceId))
+  const rate = rateQuery.data
+  const hint = editing ? undefined : referencePrice(serviceId, plan, period)
+  const suggestedCents = hint && rate ? usdToArsCents(hint.usd, rate.sell) : null
+  const showSuggestion = !amountTouched && suggestedCents !== null
+  const amountText = showSuggestion ? formatAmountInput(suggestedCents) : text
 
   // Defaults once the lists arrive: the first account, and a category that suits the kind of service.
   const effectiveAccountId = accountId || accountList[0]?.id || ''
@@ -89,7 +103,7 @@ export function SubscriptionFormSheet({
   }, [service, expenseCategories])
   const effectiveCategoryId = categoryId || hintedCategory || ''
 
-  const amountCents = parseAmountInput(text) ?? 0
+  const amountCents = parseAmountInput(amountText) ?? 0
   const valid =
     name.trim().length > 0 &&
     amountCents > 0 &&
@@ -171,7 +185,9 @@ export function SubscriptionFormSheet({
           />
           {service?.plans && service.plans.length > 0 && (
             <p className="text-[14px] leading-5 text-text-muted">
-              Son los planes habituales; no incluyen precios.
+              {hasReferencePrices(serviceId)
+                ? 'Son los planes habituales; algunos traen un precio de referencia en dólares.'
+                : 'Son los planes habituales; no incluyen precios.'}
             </p>
           )}
         </div>
@@ -182,18 +198,33 @@ export function SubscriptionFormSheet({
             <AmountInput
               aria-label="Monto en pesos"
               prefix="$"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
+              value={amountText}
+              onChange={(e) => {
+                setAmountTouched(true)
+                setText(e.target.value)
+              }}
               className="min-w-0 flex-1"
             />
             <span className="pb-3 text-[15px] text-text-muted">
               {period === 'monthly' ? 'por mes' : 'por año'}
             </span>
           </div>
-          <p className="mt-1 text-[14px] leading-5 text-text-muted">
-            Poné lo que te cobra el banco en pesos, con impuestos incluidos. Moni no convierte
-            dólares ni calcula impuestos.
-          </p>
+          {showSuggestion && hint && rate ? (
+            <p className="mt-1 text-[14px] leading-5 text-text-muted">
+              Precio de referencia, puede variar: USD {hint.usd} ×{' '}
+              {formatArs(Math.round(rate.sell * 100))} (dólar tarjeta,{' '}
+              {formatRateDate(rate.updatedAt)}).
+              {(rateQuery.isError || rateQuery.fetchStatus === 'paused') &&
+                ` Cotización del ${formatRateDate(rate.updatedAt)} (no pudimos actualizarla).`}{' '}
+              Sin impuestos: ajustalo a lo que te cobra tu banco. El monto queda fijo en pesos y no
+              sigue al dólar.
+            </p>
+          ) : (
+            <p className="mt-1 text-[14px] leading-5 text-text-muted">
+              Poné lo que te cobra el banco en pesos, con impuestos incluidos. Moni no calcula
+              impuestos.
+            </p>
+          )}
         </div>
 
         <SegmentedControl

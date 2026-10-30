@@ -7,6 +7,7 @@ import { peekReturnTo } from '@/features/auth/domain/returnTo'
 import { useCategoryTemplates } from '@/features/categories/api/useCategories'
 import { CategoryForm } from '@/features/categories/ui/CategoryForm'
 import { ProPaywall } from '@/features/pro/ui/ProPaywall'
+import { FEATURES } from '@/shared/config/features'
 import type { CategoryKind } from '@/shared/lib/database.types'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
@@ -25,6 +26,7 @@ import {
   PRO_STEP,
   toggleSlug,
   type CustomCategory,
+  type OnboardingInput,
 } from '../domain/onboarding'
 import { OnboardingBenefitsStep } from './OnboardingBenefitsStep'
 import { OnboardingCategoriesStep } from './OnboardingCategoriesStep'
@@ -67,7 +69,8 @@ export function OnboardingPage() {
   const selected = slugs ?? []
   const hasCategories = selected.length + custom.length > 0
   // Deep links or reloads can't skip past the categories step without a valid choice.
-  const step = requested > 4 && slugs !== null && !hasCategories ? 4 : requested
+  const lastStep = FEATURES.pro ? PRO_STEP : ONBOARDING_STEPS
+  const step = Math.min(requested > 4 && slugs !== null && !hasCategories ? 4 : requested, lastStep)
 
   useEffect(() => {
     saveDraft(userId, { goals, slugs, custom, usesDollars, notificationsOptIn })
@@ -85,22 +88,42 @@ export function OnboardingPage() {
     else goTo(step - 1)
   }
 
-  async function finish(optIn: boolean | null = notificationsOptIn) {
+  async function submit(input: OnboardingInput) {
     if (complete.isPending) return
     setError(null)
     try {
-      await complete.mutateAsync({
-        goals: goalsToPersist(goals),
-        templateSlugs: selected,
-        customCategories: custom,
-        secondaryCurrency: usesDollars ? 'USD' : null,
-        notificationsOptIn: optIn,
-      })
+      await complete.mutateAsync(input)
       clearDraft(userId)
       navigate(peekReturnTo() ?? '/', { replace: true })
     } catch (e) {
       setError(toUserMessage(e))
     }
+  }
+
+  function finish(optIn: boolean | null = notificationsOptIn) {
+    return submit({
+      goals: goalsToPersist(goals),
+      templateSlugs: selected,
+      customCategories: custom,
+      secondaryCurrency: usesDollars ? 'USD' : null,
+      notificationsOptIn: optIn,
+    })
+  }
+
+  // "Omitir" at any step: finish right away with the defaults, ignoring answers given so far.
+  function skipAll() {
+    const defaults = defaultTemplateSlugs(templates)
+    if (defaults.length === 0) {
+      setError('Todavía no pudimos cargar las categorías. Probá de nuevo en un momento.')
+      return
+    }
+    return submit({
+      goals: [],
+      templateSlugs: defaults,
+      customCategories: [],
+      secondaryCurrency: null,
+      notificationsOptIn: null,
+    })
   }
 
   if (step === PRO_STEP) {
@@ -138,6 +161,8 @@ export function OnboardingPage() {
           <OnboardingBenefitsStep
             name={firstName(profile?.display_name)}
             onContinue={() => goTo(3)}
+            onSkip={() => void skipAll()}
+            isBusy={complete.isPending}
           />
         )}
         {step === 3 && (
@@ -145,6 +170,8 @@ export function OnboardingPage() {
             usesDollars={usesDollars}
             onUsesDollarsChange={setUsesDollars}
             onContinue={() => goTo(4)}
+            onSkip={() => void skipAll()}
+            isBusy={complete.isPending}
           />
         )}
         {step === 4 &&
@@ -182,6 +209,8 @@ export function OnboardingPage() {
                 setCustom((list) => list.filter((x) => !(x.kind === c.kind && x.name === c.name)))
               }
               onContinue={() => goTo(5)}
+              onSkip={() => void skipAll()}
+              isBusy={complete.isPending}
             />
           ))}
         {step === 5 && (
@@ -189,9 +218,17 @@ export function OnboardingPage() {
             isBusy={complete.isPending}
             onContinue={(optIn) => {
               setNotificationsOptIn(optIn)
-              goTo(PRO_STEP)
+              // Without the Pro paywall (no real billing yet) the flow ends right here.
+              if (FEATURES.pro) goTo(PRO_STEP)
+              else void finish(optIn)
             }}
+            onSkip={() => void skipAll()}
           />
+        )}
+        {error && (
+          <p role="alert" className="mt-3 text-center text-sm text-blush">
+            {error}
+          </p>
         )}
       </div>
 

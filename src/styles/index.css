@@ -63,6 +63,18 @@
   }
 }
 
+/* Speed-dial items rise from the "+" button; the delay is set per item. */
+@keyframes dial-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;

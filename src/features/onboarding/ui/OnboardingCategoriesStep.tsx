@@ -25,6 +25,9 @@ interface OnboardingCategoriesStepProps {
   onCreate: () => void
   onRemoveCustom: (category: CustomCategoryChip) => void
   onContinue: () => void
+  /** Finishes the whole onboarding with defaults. */
+  onSkip: () => void
+  isBusy?: boolean
 }
 
 // Screen 011 — Categorías.
@@ -37,6 +40,8 @@ export function OnboardingCategoriesStep({
   onCreate,
   onRemoveCustom,
   onContinue,
+  onSkip,
+  isBusy = false,
 }: OnboardingCategoriesStepProps) {
   const allSelected = templates.length > 0 && selected.length === templates.length
   const count = selected.length + custom.length
@@ -113,14 +118,22 @@ export function OnboardingCategoriesStep({
         </button>
       </div>
 
-      <div className="mt-auto pt-6">
+      <div className="mt-auto flex flex-col items-center gap-1 pt-6">
         {count === 0 && (
-          <p role="alert" className="mb-3 text-center text-sm text-blush">
+          <p role="alert" className="mb-3 w-full text-center text-sm text-blush">
             Elegí al menos una categoría para seguir.
           </p>
         )}
         <Button onClick={onContinue} disabled={count === 0}>
           {`Continuar · ${count} ${count === 1 ? 'elegida' : 'elegidas'}`}
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={isBusy}
+          onClick={onSkip}
+          className="text-text-muted-on-dark"
+        >
+          Omitir
         </Button>
       </div>
     </>

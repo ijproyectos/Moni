@@ -6,14 +6,9 @@ import { useSyncFixedExpenses } from '@/features/fixedExpenses/api/useFixedExpen
 import { useSyncDueSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
 import { MyInitialContext } from '@/shared/ui/myInitialContext'
 import { MovementSheetProvider } from '@/features/transactions/ui/MovementSheetProvider'
-import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
+import { QuickAdd } from '@/features/transactions/ui/QuickAdd'
 import { BottomNav } from '@/shared/ui/BottomNav'
-import { Fab } from '@/shared/ui/Fab'
-
-function ShellFab() {
-  const { openNew } = useMovementSheet()
-  return <Fab aria-label="Nuevo movimiento" onClick={() => openNew()} />
-}
+import { OfflineBanner } from '@/shared/ui/OfflineBanner'
 
 /** The bottom bar only lives on the four main tabs; inner screens are full height (designs/). */
 const TAB_PATHS = ['/', '/actividad', '/grupos', '/mas']
@@ -32,7 +27,7 @@ function ShellBottomBar() {
       }
     >
       {showNav && <BottomNav />}
-      {showFab && <ShellFab />}
+      {showFab && <QuickAdd />}
     </div>
   )
 }
@@ -49,6 +44,7 @@ export function AppShell() {
     <MyInitialContext.Provider value={initial}>
       <MovementSheetProvider>
         <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-canvas">
+          <OfflineBanner />
           <main className="pb-32">
             <Outlet />
           </main>

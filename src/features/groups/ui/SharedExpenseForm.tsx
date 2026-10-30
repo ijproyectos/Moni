@@ -7,6 +7,8 @@ import type { CategoryTemplate } from '@/features/categories/domain/category'
 import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
 import type { GroupKind } from '@/shared/lib/database.types'
 import { formatArs } from '@/shared/lib/money'
+import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
+import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { todayIso } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { Button } from '@/shared/ui/Button'
@@ -24,6 +26,7 @@ import {
 } from '../domain/group'
 import { equalPercentTexts, formatPercentTotal, previewSplit } from '../domain/expensePreview'
 import { splitByWeights, type LedgerExpense } from '../domain/ledger'
+import { FEATURES } from '@/shared/config/features'
 import type { Guest, SimAmount, SimExpense } from '../mock/overlayStore'
 import { fieldClass, labelClass } from './styles'
 
@@ -52,6 +55,14 @@ interface SharedExpenseFormProps {
   onSubmitSimulated?: (expense: SimulatedExpenseInput) => void
   /** Prefill when editing. */
   initial?: LedgerExpense
+  /** Prefill for a new expense started elsewhere (e.g. the new-movement sheet). */
+  defaults?: Partial<{
+    amount: string
+    description: string
+    occurredOn: string
+    templateSlug: string | null
+    payerAccountId: string | null
+  }>
   submitLabel?: string
   onDelete?: () => void
 }
@@ -59,15 +70,17 @@ interface SharedExpenseFormProps {
 const NO_PERCENTS: Readonly<Record<string, string>> = {}
 
 function methodOptions(kind: GroupKind | undefined): readonly SegmentOption<UiMethod>[] {
+  // "Por monto" and "Según ingresos" only exist in the simulated overlay (no backend yet).
+  const simulatedSplits = FEATURES.groupGuestsAndSimulatedSplits
   return kind === 'pareja'
     ? [
         { value: 'equal', label: '50/50' },
-        { value: 'income', label: 'Según ingresos' },
+        ...(simulatedSplits ? [{ value: 'income' as const, label: 'Según ingresos' }] : []),
         { value: 'solo', label: 'Solo uno' },
       ]
     : [
         { value: 'equal', label: 'Partes iguales' },
-        { value: 'amount', label: 'Por monto' },
+        ...(simulatedSplits ? [{ value: 'amount' as const, label: 'Por monto' }] : []),
         { value: 'percent', label: 'Por %' },
       ]
 }
@@ -99,9 +112,11 @@ export function SharedExpenseForm({
   incomeShare = 0.6,
   onSubmitSimulated,
   initial,
+  defaults,
   submitLabel = 'Guardar gasto',
   onDelete,
 }: SharedExpenseFormProps) {
+  const online = useOnlineStatus()
   const memberIds = useMemo(() => members.map((m) => m.userId), [members])
   const people = useMemo(
     () => [
@@ -127,16 +142,16 @@ export function SharedExpenseForm({
   } = useForm<SharedExpenseFormInput, unknown, SharedExpenseFormValues>({
     resolver: zodResolver(sharedExpenseFormSchema),
     defaultValues: {
-      amount: initial ? formatAmountInput(initial.amountCents) : '',
-      description: initial?.description ?? '',
-      templateSlug: initial?.templateSlug ?? null,
-      occurredOn: initial?.occurredOn ?? todayIso(),
+      amount: initial ? formatAmountInput(initial.amountCents) : (defaults?.amount ?? ''),
+      description: initial?.description ?? defaults?.description ?? '',
+      templateSlug: initial?.templateSlug ?? defaults?.templateSlug ?? null,
+      occurredOn: initial?.occurredOn ?? defaults?.occurredOn ?? todayIso(),
       paidBy:
         initial?.payers[0]?.personId ?? (memberIds.includes(meId) ? meId : (memberIds[0] ?? '')),
       splitMethod: 'equal',
       participants: memberIds,
       percents: {},
-      payerAccountId: null,
+      payerAccountId: defaults?.payerAccountId ?? null,
     },
   })
 
@@ -613,6 +628,11 @@ export function SharedExpenseForm({
           {submitError}
         </p>
       )}
+      {!online && (
+        <p role="status" className="text-center text-sm font-semibold text-text-muted">
+          {OFFLINE_MESSAGE}
+        </p>
+      )}
       <div className="flex gap-2">
         {onDelete && (
           <button
@@ -624,7 +644,7 @@ export function SharedExpenseForm({
             <Trash2 aria-hidden="true" className="size-5" />
           </button>
         )}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || !online}>
           {isSubmitting ? 'Guardando…' : submitLabel}
         </Button>
       </div>

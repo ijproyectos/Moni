@@ -1,6 +1,6 @@
 import type { CategorySlice } from './monthSummary'
 
-/** "Moni dice" line computed from the month's category totals; a friendly nudge when there is none. */
+/** "Sugerido" line computed from the month's category totals; a friendly nudge when there is none. */
 export function buildInsight(byCategory: readonly CategorySlice[]): string {
   const top = [...byCategory].sort((a, b) => b.amountCents - a.amountCents)[0]
   if (!top || top.amountCents <= 0) {

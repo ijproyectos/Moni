@@ -68,11 +68,8 @@ export interface GroupOverlay {
   collectAlias?: string
 }
 
-export const DEFAULT_RECURRING: Recurring[] = [
-  { id: 'rent', name: 'Alquiler', day: 5, icon: 'house', enabled: true },
-  { id: 'power', name: 'Luz y gas', day: 12, icon: 'plug', enabled: true },
-  { id: 'internet', name: 'Internet', day: 20, icon: 'refresh', enabled: true },
-]
+/** No invented house expenses: the list starts empty (nothing here was entered by the person). */
+export const DEFAULT_RECURRING: Recurring[] = []
 
 export function emptyOverlay(): GroupOverlay {
   return {
@@ -106,6 +103,15 @@ export function patchOverlay(
     const current = all[groupId] ?? emptyOverlay()
     const next = typeof patch === 'function' ? patch(current) : patch
     return { ...all, [groupId]: { ...current, ...next } }
+  })
+}
+
+/** Joining again a group the person "deleted" locally must show it again. */
+export function restoreGroupOverlay(groupId: string) {
+  store.set((all) => {
+    const current = all[groupId]
+    if (!current?.deleted) return all
+    return { ...all, [groupId]: { ...current, deleted: false } }
   })
 }
 

@@ -24,7 +24,9 @@ import { useToast } from '@/shared/ui/toastContext'
 import type { GroupKind } from '@/shared/lib/database.types'
 import { useCreateGroup } from '../api/useGroups'
 import { addGuest, DEFAULT_RECURRING, patchOverlay, type Recurring } from '../mock/overlayStore'
+import { FEATURES } from '@/shared/config/features'
 import { AddPersonSheet } from './AddPersonSheet'
+import { InvitePanel } from './InvitePanel'
 import { fieldClass } from './styles'
 
 const OPTIONS: {
@@ -150,6 +152,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
   const [split, setSplit] = useState<'half' | 'income'>('half')
   const [recurring, setRecurring] = useState<Recurring[]>(DEFAULT_RECURRING)
   const [error, setError] = useState<string | null>(null)
+  const [created, setCreated] = useState<{ id: string; name: string } | null>(null)
   const couple = kind === 'pareja'
   const partner = guests[0]
 
@@ -164,11 +167,23 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
         recurring: kind === 'casa' ? recurring : [],
       })
       toast.show('Grupo creado', { mascotUrl: mascotGroup })
-      onClose()
-      navigate(`/grupos/${groupId}?nuevo=1`)
+      // Next step: show the invite code before landing on the group.
+      setCreated({ id: groupId, name: name.trim() })
     } catch (e) {
       setError(toUserMessage(e))
     }
+  }
+
+  if (created) {
+    const finish = () => {
+      onClose()
+      navigate(`/grupos/${created.id}`)
+    }
+    return (
+      <BottomSheet title="Invitá a la gente" onClose={finish}>
+        <InvitePanel groupId={created.id} groupName={created.name} onDone={finish} />
+      </BottomSheet>
+    )
   }
 
   if (adding) {
@@ -232,36 +247,47 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                   </span>
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => setAdding(true)}
-                className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-sand text-[16px] font-extrabold"
-              >
-                {partner ? 'Cambiar' : 'Invitarla o sumarla sin Moni'}{' '}
-                <ChevronRight aria-hidden="true" className="size-4" />
-              </button>
+              {FEATURES.groupGuestsAndSimulatedSplits && (
+                <button
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-sand text-[16px] font-extrabold"
+                >
+                  {partner ? 'Cambiar' : 'Invitarla o sumarla sin Moni'}{' '}
+                  <ChevronRight aria-hidden="true" className="size-4" />
+                </button>
+              )}
             </div>
-            <SectionLabel className="mt-1">¿Cómo dividen?</SectionLabel>
-            <SegmentedControl
-              label="Cómo dividen"
-              value={split}
-              onChange={setSplit}
-              options={[
-                { value: 'half', label: '50/50' },
-                { value: 'income', label: 'Según ingresos' },
-              ]}
-            />
-            {split === 'income' ? (
-              <div className="rounded-[20px] border border-sand bg-white p-4">
-                <div className="flex justify-between text-[17px] font-extrabold">
-                  <span>Vos 60 %</span>
-                  <span>{partner?.name ?? 'Tu pareja'} 40 %</span>
-                </div>
-                <SplitBar share={0.6} rest="blush" className="mt-2" />
-                <p className="mt-2 text-[14px] leading-5 text-text-muted">
-                  Se calcula con los ingresos que cargó cada uno. Cada uno ve solo el porcentaje.
-                </p>
-              </div>
+            {FEATURES.groupGuestsAndSimulatedSplits ? (
+              <>
+                <SectionLabel className="mt-1">¿Cómo dividen?</SectionLabel>
+                <SegmentedControl
+                  label="Cómo dividen"
+                  value={split}
+                  onChange={setSplit}
+                  options={[
+                    { value: 'half', label: '50/50' },
+                    { value: 'income', label: 'Según ingresos' },
+                  ]}
+                />
+                {split === 'income' ? (
+                  <div className="rounded-[20px] border border-sand bg-white p-4">
+                    <div className="flex justify-between text-[17px] font-extrabold">
+                      <span>Vos 60 %</span>
+                      <span>{partner?.name ?? 'Tu pareja'} 40 %</span>
+                    </div>
+                    <SplitBar share={0.6} rest="blush" className="mt-2" />
+                    <p className="mt-2 text-[14px] leading-5 text-text-muted">
+                      Se calcula con los ingresos que cargó cada uno. Cada uno ve solo el
+                      porcentaje.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[15px] leading-5 text-text-muted">
+                    Cada gasto que carguen se suma al saldo. Cuando quieran, saldan cuentas.
+                  </p>
+                )}
+              </>
             ) : (
               <p className="text-[15px] leading-5 text-text-muted">
                 Cada gasto que carguen se suma al saldo. Cuando quieran, saldan cuentas.
@@ -300,25 +326,27 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                   </li>
                 ))}
               </ul>
-              <button
-                type="button"
-                onClick={() => setAdding(true)}
-                className="my-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-dashed border-[#d9c9a6] text-[17px] font-extrabold"
-              >
-                <Plus aria-hidden="true" className="size-5" /> Agregar persona
-              </button>
+              {FEATURES.groupGuestsAndSimulatedSplits && (
+                <button
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  className="my-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-dashed border-[#d9c9a6] text-[17px] font-extrabold"
+                >
+                  <Plus aria-hidden="true" className="size-5" /> Agregar persona
+                </button>
+              )}
             </div>
-            {kind === 'casa' ? (
+            {kind === 'casa' && recurring.length > 0 && (
               <>
                 <SectionLabel className="mt-1">Gastos que se repiten cada mes</SectionLabel>
                 <RecurringList items={recurring} onChange={setRecurring} />
               </>
-            ) : (
-              <p className="text-[15px] leading-5 text-text-muted">
-                Los que tienen Moni ven el grupo desde su app. A los que no, los sumás con el nombre
-                y se cuentan igual.
-              </p>
             )}
+            <p className="text-[15px] leading-5 text-text-muted">
+              {FEATURES.groupGuestsAndSimulatedSplits
+                ? 'Los que tienen Moni ven el grupo desde su app. A los que no, los sumás con el nombre y se cuentan igual.'
+                : 'Cuando crees el grupo te damos un código para que se sumen los que tienen Moni.'}
+            </p>
           </>
         )}
 

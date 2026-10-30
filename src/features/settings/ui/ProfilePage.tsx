@@ -13,6 +13,7 @@ import {
   Trash2,
   UsersRound,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
@@ -39,6 +40,7 @@ import { toUserMessage } from '@/shared/lib/errors'
 import { formatArs } from '@/shared/lib/money'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
+import { AppVersion } from '@/shared/ui/AppVersion'
 import { Button } from '@/shared/ui/Button'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import {
@@ -54,6 +56,7 @@ import {
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
+import { FEATURES } from '@/shared/config/features'
 import { updateProfileExtras, useProfileExtras } from '../mock/profileExtrasStore'
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -111,6 +114,7 @@ export function ProfilePage() {
   const toast = useToast()
   const [sheet, setSheet] = useState<Sheet>(null)
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const queryClient = useQueryClient()
 
   const saved = profile?.display_name ?? ''
   const shortName = firstName(saved) || user?.email?.split('@')[0] || 'Vos'
@@ -128,7 +132,7 @@ export function ProfilePage() {
   async function handleSignOut() {
     setIsSigningOut(true)
     try {
-      await signOut()
+      await signOut(queryClient)
     } catch (e) {
       toast.show(toUserMessage(e), { tone: 'error' })
       setIsSigningOut(false)
@@ -163,14 +167,16 @@ export function ProfilePage() {
         </div>
       )}
 
-      <Link to="/pro" className="flex items-center gap-4 rounded-[22px] bg-gold px-4 py-4">
-        <ShoppingBasket aria-hidden="true" className="size-7" />
-        <span className="flex-1">
-          <span className="block text-[20px] font-extrabold leading-6">Probá Moni Pro</span>
-          <span className="block text-[15px]">Voz, tickets, bancos y más</span>
-        </span>
-        <ChevronLeft aria-hidden="true" className="size-6 rotate-180" />
-      </Link>
+      {FEATURES.pro && (
+        <Link to="/pro" className="flex items-center gap-4 rounded-[22px] bg-gold px-4 py-4">
+          <ShoppingBasket aria-hidden="true" className="size-7" />
+          <span className="flex-1">
+            <span className="block text-[20px] font-extrabold leading-6">Probá Moni Pro</span>
+            <span className="block text-[15px]">Voz, tickets, bancos y más</span>
+          </span>
+          <ChevronLeft aria-hidden="true" className="size-6 rotate-180" />
+        </Link>
+      )}
 
       <SectionLabel className="mt-1">Mis datos</SectionLabel>
       <ProfileGroup>
@@ -181,21 +187,23 @@ export function ProfilePage() {
           subtitle="Nombre, mail y foto"
           onClick={() => setSheet('edit')}
         />
-        <OptionRow
-          className="rounded-none border-0"
-          icon={
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gold/40">
-              <MoniGlyph className="size-5" />
-            </span>
-          }
-          title="Mis ingresos"
-          subtitle={`${formatArs(extras.monthlyIncomeCents)} por mes · solo los ves vos`}
-          onClick={() => setSheet('income')}
-        />
+        {FEATURES.monthlyIncome && (
+          <OptionRow
+            className="rounded-none border-0"
+            icon={
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gold/40">
+                <MoniGlyph className="size-5" />
+              </span>
+            }
+            title="Mis ingresos"
+            subtitle={`${formatArs(extras.monthlyIncomeCents)} por mes · solo los ves vos`}
+            onClick={() => setSheet('income')}
+          />
+        )}
         <OptionRow
           className="rounded-none border-0"
           icon={<IconTile icon={CreditCard} bg="#e3f2cf" className="size-11" />}
-          title="Medios de pago y alias"
+          title={FEATURES.accountAlias ? 'Medios de pago y alias' : 'Medios de pago'}
           subtitle={`${accountCount} ${accountCount === 1 ? 'medio' : 'medios'}`}
           to="/cuentas"
         />
@@ -228,20 +236,22 @@ export function ProfilePage() {
           subtitle={usesUsd ? 'Peso argentino (ARS) · también dólares' : 'Peso argentino (ARS)'}
           chevron={false}
         />
-        <OptionRow
-          className="rounded-none border-0"
-          icon={<IconTile icon={Bell} bg="#d9ebe4" className="size-11" />}
-          title="Resumen semanal"
-          subtitle={`Los ${weekly.day.toLowerCase()}s, con tus gastos hormiga`}
-          chevron={false}
-          trailing={
-            <Toggle
-              label="Resumen semanal"
-              checked={weekly.enabled}
-              onChange={(enabled) => updateWeeklyDigest({ enabled })}
-            />
-          }
-        />
+        {FEATURES.weeklyDigest && (
+          <OptionRow
+            className="rounded-none border-0"
+            icon={<IconTile icon={Bell} bg="#d9ebe4" className="size-11" />}
+            title="Resumen semanal"
+            subtitle={`Los ${weekly.day.toLowerCase()}s, con tus gastos hormiga`}
+            chevron={false}
+            trailing={
+              <Toggle
+                label="Resumen semanal"
+                checked={weekly.enabled}
+                onChange={(enabled) => updateWeeklyDigest({ enabled })}
+              />
+            }
+          />
+        )}
       </ProfileGroup>
 
       <SectionLabel className="mt-1">Cuenta</SectionLabel>
@@ -260,6 +270,8 @@ export function ProfilePage() {
         />
       </ProfileGroup>
 
+      <AppVersion />
+
       {sheet === 'edit' && (
         <EditProfileSheet
           name={saved}
@@ -269,7 +281,7 @@ export function ProfilePage() {
           onClose={() => setSheet(null)}
         />
       )}
-      {sheet === 'income' && (
+      {FEATURES.monthlyIncome && sheet === 'income' && (
         <IncomeSheet value={extras.monthlyIncomeCents} onClose={() => setSheet(null)} />
       )}
       {sheet === 'goals' && (

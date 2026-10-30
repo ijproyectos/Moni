@@ -1,4 +1,4 @@
-import { needsReview, toDrafts, validateDraft, type DraftMovement } from './draft'
+import { needsReview, toDrafts, validateDraft, warningsNotice, type DraftMovement } from './draft'
 
 const ACCOUNT = '11111111-1111-4111-8111-111111111111'
 const CATEGORY = '22222222-2222-4222-8222-222222222222'
@@ -79,5 +79,23 @@ describe('draft domain', () => {
     expect(validateDraft(draft({ categoryId: '' })).ok).toBe(false)
     expect(validateDraft(draft({ accountId: '' })).ok).toBe(false)
     expect(validateDraft(draft({ occurredOn: '2026-02-30' })).ok).toBe(false)
+  })
+})
+
+describe('warningsNotice', () => {
+  it('is null without relevant warnings', () => {
+    expect(warningsNotice([])).toBeNull()
+    expect(warningsNotice([{ code: 'category_unmatched' }])).toBeNull()
+  })
+
+  it('joins the notes for truncated, adjusted and dropped items', () => {
+    const notice = warningsNotice([
+      { code: 'items_truncated' },
+      { code: 'date_adjusted', index: 0 },
+      { code: 'item_dropped', index: 1 },
+    ])
+    expect(notice).toBe(
+      'Tomamos solo los primeros 10 movimientos. Ajustamos alguna fecha: revisala. Dejamos afuera algo que no se entendió.',
+    )
   })
 })

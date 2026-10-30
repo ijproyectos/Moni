@@ -1,18 +1,25 @@
 import { Bell, ClipboardPaste, Gift, Lock, Search, Sparkles, UsersRound } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
 import iconUrl from '@/assets/brand/icono_app_redondeado.svg'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { firstName } from '@/features/auth/domain/profile'
 import { toUserMessage } from '@/shared/lib/errors'
+import { FEATURES } from '@/shared/config/features'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { Avatar, MoniSays, Page, SectionLabel } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { useJoinGroup } from '../api/useGroups'
-import { cleanCodeInput, INVITE_CODE_PATTERN, normalizeInviteCode } from '../domain/group'
+import {
+  cleanCodeInput,
+  extractInviteCode,
+  INVITE_CODE_PATTERN,
+  normalizeInviteCode,
+} from '../domain/group'
 import { prettyCode } from '../domain/inviteCode'
+import { restoreGroupOverlay } from '../mock/overlayStore'
 
 function MascotTile({ size = 'md' }: { size?: 'md' | 'lg' }) {
   return (
@@ -31,15 +38,16 @@ function MascotTile({ size = 'md' }: { size?: 'md' | 'lg' }) {
 export function JoinWithCodePage() {
   const navigate = useNavigate()
   const back = (useLocation().state ?? {}) as { code?: string; notFound?: boolean }
-  const [code, setCode] = useState(back.code ?? '')
+  // Links like /grupos/unirse?codigo=ABCD-EFGH prefill the code.
+  const [params] = useSearchParams()
+  const [code, setCode] = useState(back.code ?? cleanCodeInput(params.get('codigo') ?? ''))
   const [notFound, setNotFound] = useState(Boolean(back.notFound))
   const valid = INVITE_CODE_PATTERN.test(code)
 
   async function paste() {
     try {
       const text = await navigator.clipboard.readText()
-      const match = /[A-Za-z0-9-\s]{12,}/.exec(text.split('/').pop() ?? text)
-      setCode(cleanCodeInput(match?.[0] ?? text))
+      setCode(extractInviteCode(text))
       setNotFound(false)
     } catch {
       // Clipboard blocked: the person types it.
@@ -59,13 +67,18 @@ export function JoinWithCodePage() {
       <input
         type="text"
         aria-label="Código del grupo"
-        placeholder="XXXX-XXXX-XXXX"
+        placeholder="XXXX-XXXX"
         autoComplete="off"
         autoCapitalize="characters"
         spellCheck={false}
         value={prettyCode(code)}
         onChange={(e) => {
-          setCode(cleanCodeInput(e.target.value))
+          // A pasted link or message is searched for its code; typing is just cleaned (max 12).
+          setCode(
+            /[/:]/.test(e.target.value)
+              ? extractInviteCode(e.target.value)
+              : cleanCodeInput(e.target.value),
+          )
           setNotFound(false)
         }}
         aria-invalid={notFound || undefined}
@@ -125,7 +138,7 @@ export function JoinGroupPage() {
   const join = useJoinGroup()
   const { data: profile } = useProfile()
   const [error, setError] = useState<string | null>(null)
-  const [joinedId, setJoinedId] = useState<string | null>(null)
+  const [joined, setJoined] = useState<{ id: string; alreadyMember: boolean } | null>(null)
   const me = firstName(profile?.display_name) || 'Vos'
 
   if (!INVITE_CODE_PATTERN.test(code)) {
@@ -133,7 +146,7 @@ export function JoinGroupPage() {
       <Page>
         <PageHeader title="Entrar al grupo" backTo="/grupos" />
         <p role="alert" className="text-[16px] text-expense">
-          Ese link no es válido. El código tiene 12 letras o números: pedí uno nuevo.
+          Ese link no es válido. El código tiene 8 letras o números: pedí uno nuevo.
         </p>
         <Link to="/grupos/unirse" className="text-[17px] font-extrabold underline">
           Escribir el código
@@ -142,30 +155,34 @@ export function JoinGroupPage() {
     )
   }
 
-  if (joinedId) {
+  if (joined) {
     return (
       <Page className="pb-28 pt-24">
         <MascotTile size="lg" />
         <h1 className="text-center font-display text-[30px] font-extrabold">
-          Ya estás en el grupo
+          {joined.alreadyMember ? 'Ya sos parte de este grupo' : 'Ya estás en el grupo'}
         </h1>
         <p className="text-center text-[16px] leading-6 text-text-muted">
-          Ven tus gastos y vos los de ellos. Todos pueden editar y Moni te avisa cada cambio.
+          {joined.alreadyMember
+            ? 'No hizo falta usar el código otra vez: tu lugar ya estaba. Abrí el grupo para seguir.'
+            : 'Ven tus gastos y vos los de ellos. Todos pueden editar y Moni te avisa cada cambio.'}
         </p>
-        <Link
-          to="/recomendar"
-          className="flex items-center gap-3 rounded-[22px] bg-lime/30 px-4 py-3"
-        >
-          <span className="flex size-12 items-center justify-center rounded-full bg-white">
-            <Gift aria-hidden="true" className="size-5" />
-          </span>
-          <span className="flex-1">
-            <span className="block text-[17px] font-extrabold">¿Tenés amigos sin Moni?</span>
-            <span className="block text-[15px]">Recomendala y ganen 2 meses de Pro.</span>
-          </span>
-        </Link>
+        {FEATURES.referral && (
+          <Link
+            to="/recomendar"
+            className="flex items-center gap-3 rounded-[22px] bg-lime/30 px-4 py-3"
+          >
+            <span className="flex size-12 items-center justify-center rounded-full bg-white">
+              <Gift aria-hidden="true" className="size-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block text-[17px] font-extrabold">¿Tenés amigos sin Moni?</span>
+              <span className="block text-[15px]">Recomendala y ganen 2 meses de Pro.</span>
+            </span>
+          </Link>
+        )}
         <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
-          <Button onClick={() => navigate(`/grupos/${joinedId}`, { replace: true })}>
+          <Button onClick={() => navigate(`/grupos/${joined.id}`, { replace: true })}>
             <UsersRound aria-hidden="true" className="mr-2 size-5" /> Ver el grupo
           </Button>
         </div>
@@ -176,11 +193,14 @@ export function JoinGroupPage() {
   async function confirm() {
     setError(null)
     try {
-      setJoinedId(await join.mutateAsync(code))
+      const result = await join.mutateAsync(code)
+      restoreGroupOverlay(result.groupId)
+      setJoined({ id: result.groupId, alreadyMember: result.alreadyMember })
     } catch (e) {
       const message = toUserMessage(e)
-      // An unknown or expired code goes back to the code screen (123); other errors stay here.
-      if (/c[oó]digo|invit|venci|no existe|not found/i.test(message)) {
+      // An unknown, expired, revoked or used-up code goes back to the code screen (123); other
+      // errors (offline, session expired, too many attempts) stay here with their own message.
+      if (e instanceof Error && /^invite_(invalid|expired|revoked|exhausted)$/.test(e.message)) {
         navigate('/grupos/unirse', { replace: true, state: { code, notFound: true } })
       } else {
         setError(message)
@@ -213,13 +233,15 @@ export function JoinGroupPage() {
           Tiene Moni
         </span>
       </div>
-      <MoniSays
-        lead={null}
-        icon={<Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
-      >
-        Ves los gastos del grupo y todos pueden editarlos. Moni te avisa cada cambio. Solo tu parte
-        cuenta como gasto tuyo.
-      </MoniSays>
+      {FEATURES.referral && (
+        <MoniSays
+          lead={null}
+          icon={<Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
+        >
+          Ves los gastos del grupo y todos pueden editarlos. Moni te avisa cada cambio. Solo tu
+          parte cuenta como gasto tuyo.
+        </MoniSays>
+      )}
       {error && (
         <p role="alert" className="text-center text-[15px] text-expense">
           {error}

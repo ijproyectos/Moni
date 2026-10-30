@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Scale, Search } from 'lucide-react'
+import { ArrowLeftRight, CalendarDays, List, Scale, Search } from 'lucide-react'
 import { useState } from 'react'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
 import type { Category } from '@/features/categories/domain/category'
@@ -7,6 +7,7 @@ import type { Cents } from '@/shared/lib/money'
 import { formatArs } from '@/shared/lib/money'
 import { todayIso, type IsoDate } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
+import { cn } from '@/shared/ui/cn'
 import { CategoryChip } from '@/shared/ui/CategoryChip'
 import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
@@ -15,7 +16,13 @@ import { CategoryIconCircle, IconCircle } from '@/shared/ui/IconCircle'
 import { MovementRow } from '@/shared/ui/MovementRow'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Card } from '@/shared/ui/Card'
-import { countEntries, type ActivityDay, type ActivityEntry } from '../domain/activity'
+import {
+  countEntries,
+  type ActivityDay,
+  type ActivityEntry,
+  type CategoryGroup,
+} from '../domain/activity'
+import type { ActivityView } from '../domain/activityView'
 import {
   addsToBalance,
   isAdjustment,
@@ -48,6 +55,10 @@ interface ActivityScreenProps {
   calendarDays: readonly CalendarDayTotal[]
   totals: { expenseCents: Cents; incomeCents: Cents }
   days: readonly ActivityDay[]
+  /** Same movements as `days`, grouped by category (list view). */
+  groups: readonly CategoryGroup[]
+  view: ActivityView
+  onViewChange: (view: ActivityView) => void
   /** True when the month has no movements at all (distinct from "filters match nothing"). */
   monthIsEmpty: boolean
   onEdit: (transaction: Transaction) => void
@@ -59,6 +70,11 @@ const KIND_OPTIONS = [
   { value: 'all', label: 'Todos' },
   { value: 'expense', label: 'Gastos' },
   { value: 'income', label: 'Ingresos' },
+] as const
+
+const VIEW_OPTIONS = [
+  { value: 'list', label: 'Ver por categoría', icon: List },
+  { value: 'calendar', label: 'Ver calendario', icon: CalendarDays },
 ] as const
 
 function countLabel(kind: KindFilter, count: number): string {
@@ -91,6 +107,35 @@ export function ActivityScreen(props: ActivityScreenProps) {
     }
   }
 
+  function renderEntry(entry: ActivityEntry) {
+    return (
+      <li key={`${entry.type}-${entry.id}`}>
+        {entry.type === 'transaction' ? (
+          <TransactionRow
+            transaction={entry.transaction}
+            category={
+              entry.transaction.categoryId
+                ? categoriesById.get(entry.transaction.categoryId)
+                : undefined
+            }
+            today={today}
+            onEdit={() => props.onEdit(entry.transaction)}
+            onDelete={() => setPendingVoid(entry)}
+          />
+        ) : (
+          <MovementRow
+            leading={<IconCircle icon={ArrowLeftRight} color="#064735" />}
+            title={entry.transfer.note?.trim() || 'Transferencia'}
+            subtitle={`${formatRelativeDay(entry.occurredOn, today)} · ${accountNamesById.get(entry.transfer.fromAccountId) ?? 'Cuenta'} → ${accountNamesById.get(entry.transfer.toAccountId) ?? 'Cuenta'}`}
+            trailing={<AmountDisplay cents={entry.transfer.amountCents} className="text-forest" />}
+            onDelete={() => setPendingVoid(entry)}
+            deleteLabel="Anular transferencia"
+          />
+        )}
+      </li>
+    )
+  }
+
   return (
     <section className="flex flex-col gap-4 px-4 pt-14">
       <div className="flex items-baseline justify-between px-1">
@@ -98,21 +143,47 @@ export function ActivityScreen(props: ActivityScreenProps) {
         <p className="text-[16px] text-text-muted">{`${count} ${countLabel(kind, count)}`}</p>
       </div>
 
-      <label className="relative block">
-        <span className="sr-only">Buscar por nota o categoría</span>
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-text-muted"
-          strokeWidth={2}
-        />
-        <input
-          type="search"
-          value={props.search}
-          onChange={(e) => props.onSearchChange(e.target.value)}
-          placeholder="Buscar por nota o categoría…"
-          className="h-14 w-full rounded-full border border-sand bg-white pl-12 pr-4 text-[17px] text-forest placeholder:text-text-muted"
-        />
-      </label>
+      <div className="flex items-center gap-2">
+        <label className="relative block min-w-0 flex-1">
+          <span className="sr-only">Buscar por nota o categoría</span>
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-text-muted"
+            strokeWidth={2}
+          />
+          <input
+            type="search"
+            value={props.search}
+            onChange={(e) => props.onSearchChange(e.target.value)}
+            placeholder="Buscar por nota o categoría…"
+            className="h-14 w-full rounded-full border border-sand bg-white pl-12 pr-4 text-[17px] text-forest placeholder:text-text-muted"
+          />
+        </label>
+        <div
+          role="group"
+          aria-label="Vista de actividad"
+          className="flex h-14 shrink-0 items-center gap-1 rounded-full border border-sand bg-white p-1"
+        >
+          {VIEW_OPTIONS.map(({ value, label, icon: Icon }) => {
+            const active = props.view === value
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={active}
+                aria-label={label}
+                onClick={() => props.onViewChange(value)}
+                className={cn(
+                  'flex size-11 items-center justify-center rounded-full',
+                  active ? 'bg-forest text-lime' : 'text-text-muted',
+                )}
+              >
+                <Icon aria-hidden="true" className="size-5" strokeWidth={2} />
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
       <SegmentedControl
         label="Tipo de movimiento"
@@ -158,6 +229,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
         onPrev={props.onPrevMonth}
         onNext={props.onNextMonth}
         onSelectDay={props.onSelectDay}
+        showDays={props.view === 'calendar'}
         kind={kind}
         incomeCount={days.reduce(
           (n, d) =>
@@ -178,6 +250,31 @@ export function ActivityScreen(props: ActivityScreenProps) {
               : 'Probá con otra búsqueda o sacá algún filtro.'
           }
         />
+      ) : props.view === 'list' ? (
+        props.groups.map((group) => (
+          <section key={group.key} aria-label={group.label}>
+            <div className="mb-2 flex items-center gap-3 px-1">
+              <GroupIcon group={group} />
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate font-display text-[17px] font-extrabold">{group.label}</h2>
+                <p className="text-[14px] text-text-muted">
+                  {`${group.count} ${group.count === 1 ? 'movimiento' : 'movimientos'}`}
+                </p>
+              </div>
+              <AmountDisplay
+                cents={group.direction === 'out' ? -group.totalCents : group.totalCents}
+                signed={group.direction !== 'neutral'}
+                className={cn(
+                  'font-display text-[17px] font-extrabold',
+                  group.direction === 'in' ? 'text-income' : 'text-forest',
+                )}
+              />
+            </div>
+            <Card className="rounded-[24px] border-sand py-1">
+              <ul className="divide-y divide-sand">{group.entries.map(renderEntry)}</ul>
+            </Card>
+          </section>
+        ))
       ) : (
         days.map((day) => (
           <section key={day.date} aria-label={formatLongDay(day.date)}>
@@ -196,39 +293,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
               )}
             </div>
             <Card className="rounded-[24px] border-sand py-1">
-              <ul className="divide-y divide-sand">
-                {day.entries.map((entry) => (
-                  <li key={`${entry.type}-${entry.id}`}>
-                    {entry.type === 'transaction' ? (
-                      <TransactionRow
-                        transaction={entry.transaction}
-                        category={
-                          entry.transaction.categoryId
-                            ? categoriesById.get(entry.transaction.categoryId)
-                            : undefined
-                        }
-                        today={today}
-                        onEdit={() => props.onEdit(entry.transaction)}
-                        onDelete={() => setPendingVoid(entry)}
-                      />
-                    ) : (
-                      <MovementRow
-                        leading={<IconCircle icon={ArrowLeftRight} color="#064735" />}
-                        title={entry.transfer.note?.trim() || 'Transferencia'}
-                        subtitle={`${formatRelativeDay(entry.occurredOn, today)} · ${accountNamesById.get(entry.transfer.fromAccountId) ?? 'Cuenta'} → ${accountNamesById.get(entry.transfer.toAccountId) ?? 'Cuenta'}`}
-                        trailing={
-                          <AmountDisplay
-                            cents={entry.transfer.amountCents}
-                            className="text-forest"
-                          />
-                        }
-                        onDelete={() => setPendingVoid(entry)}
-                        deleteLabel="Anular transferencia"
-                      />
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <ul className="divide-y divide-sand">{day.entries.map(renderEntry)}</ul>
             </Card>
           </section>
         ))
@@ -260,6 +325,14 @@ export function ActivityScreen(props: ActivityScreenProps) {
       )}
     </section>
   )
+}
+
+function GroupIcon({ group }: { group: CategoryGroup }) {
+  if (group.type === 'category')
+    return <CategoryIconCircle iconName={group.category?.icon} color={group.category?.color} />
+  if (group.type === 'transfer') return <IconCircle icon={ArrowLeftRight} color="#064735" />
+  if (group.type === 'uncategorized') return <CategoryIconCircle iconName={null} />
+  return <IconCircle icon={Scale} color="#064735" />
 }
 
 function TransactionRow({

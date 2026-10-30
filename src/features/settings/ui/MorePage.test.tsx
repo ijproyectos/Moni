@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
 import { makeAccount } from '@/features/accounts/domain/testing'
+import { FEATURES } from '@/shared/config/features'
 import { MorePage } from './MorePage'
 
 const accountsData = vi.hoisted(() => ({ current: [] as Account[] }))
@@ -61,6 +62,33 @@ describe('MorePage navigation', () => {
 
   it('keeps Medios de pago next to it', () => {
     renderPage()
-    expect(screen.getByRole('link', { name: /^Medios de pago/ })).toHaveAttribute('href', '/cuentas')
+    expect(screen.getByRole('link', { name: /^Medios de pago/ })).toHaveAttribute(
+      'href',
+      '/cuentas',
+    )
+  })
+
+  it('hides the screens without a backend: Pro, referral, Integraciones, Deudas and Aguinaldo', () => {
+    renderPage()
+    for (const name of [/Moni Pro/, /Recomendá Moni/, /Integraciones/, /Deudas/, /Aguinaldo/]) {
+      expect(screen.queryByRole('link', { name })).toBeNull()
+    }
+    expect(screen.queryByText(/2 meses de Pro/)).toBeNull()
+  })
+
+  it('shows them again when their flags are on', () => {
+    Object.assign(FEATURES, { pro: true, referral: true, debts: true, aguinaldo: true })
+    try {
+      renderPage()
+      expect(screen.getByRole('link', { name: /Probá Moni Pro/ })).toHaveAttribute('href', '/pro')
+      expect(screen.getByRole('link', { name: /Recomendá Moni/ })).toHaveAttribute(
+        'href',
+        '/recomendar',
+      )
+      expect(screen.getByRole('link', { name: /Deudas/ })).toHaveAttribute('href', '/deudas')
+      expect(screen.getByRole('link', { name: /Aguinaldo/ })).toHaveAttribute('href', '/aguinaldo')
+    } finally {
+      Object.assign(FEATURES, { pro: false, referral: false, debts: false, aguinaldo: false })
+    }
   })
 })

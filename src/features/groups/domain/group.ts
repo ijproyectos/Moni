@@ -121,23 +121,45 @@ export const groupFormSchema = z.object({
 export type GroupFormInput = z.input<typeof groupFormSchema>
 export type GroupFormValues = z.output<typeof groupFormSchema>
 
-/** Invite codes are 12 chars without I, O, 0 or 1. Users may type them in any case, with spaces. */
-export const INVITE_CODE_PATTERN = /^[A-HJ-NP-Z2-9]{12}$/
+/**
+ * Invite codes are 8 chars (new ones) or 12 (issued before the change), without I, O, 0 or 1.
+ * Users may type them in any case, with spaces or dashes.
+ */
+export const INVITE_CODE_PATTERN = /^(?:[A-HJ-NP-Z2-9]{8}|[A-HJ-NP-Z2-9]{12})$/
+
+export const INVITE_CODE_MAX_LENGTH = 12
+
+/** Whitespace and every kind of dash: "abcd-2345", "ABCD 2345" and "ABCD–2345" are the same code. */
+const CODE_SEPARATORS = /[\s\-\u2010-\u2015\u2212]+/g
 
 export function normalizeInviteCode(input: string): string {
-  return input.replace(/\s+/g, '').toUpperCase()
+  return input.replace(CODE_SEPARATORS, '').toUpperCase()
 }
 
-/** Strips spaces and dashes while typing: "abcd-2345" -> "ABCD2345" (max 8 characters). */
+/** Strips spaces and dashes while typing: "abcd-2345" -> "ABCD2345" (max 12 characters). */
 export function cleanCodeInput(raw: string): string {
-  return normalizeInviteCode(raw.replaceAll('-', '')).slice(0, 12)
+  return normalizeInviteCode(raw).slice(0, INVITE_CODE_MAX_LENGTH)
+}
+
+/**
+ * Finds the invite code in pasted text: a bare code, a "/unirse/CODE" or "/g/CODE" link, or a
+ * message that contains one. Falls back to the cleaned text so the person can still fix it.
+ */
+export function extractInviteCode(text: string): string {
+  const candidates = text.match(/[A-Za-z0-9]{4}(?:[-\s]?[A-Za-z0-9]{4}){1,2}/g) ?? []
+  for (const candidate of [...candidates].reverse()) {
+    const code = normalizeInviteCode(candidate)
+    if (INVITE_CODE_PATTERN.test(code)) return code
+  }
+  const lastSegment = text.trim().split('/').pop() ?? text
+  return cleanCodeInput(lastSegment.split(/[?#]/)[0] ?? lastSegment)
 }
 
 export const joinGroupSchema = z.object({
   code: z
     .string()
     .transform(normalizeInviteCode)
-    .refine((code) => INVITE_CODE_PATTERN.test(code), 'El código tiene 12 letras o números.'),
+    .refine((code) => INVITE_CODE_PATTERN.test(code), 'El código tiene 8 letras o números.'),
 })
 
 /** "33,34" or "33.34" -> 33.34. Null when not a percentage with up to 2 decimals. */

@@ -22,6 +22,8 @@ interface ActivityCalendarProps {
   /** Which side the summary and day amounts show (screens 015 / 078 / 079). */
   kind?: 'all' | 'expense' | 'income'
   incomeCount?: number
+  /** False in the list view: only the month navigation and summary remain. */
+  showDays?: boolean
 }
 
 export function ActivityCalendar({
@@ -36,6 +38,7 @@ export function ActivityCalendar({
   onSelectDay,
   kind = 'all',
   incomeCount = 0,
+  showDays = true,
 }: ActivityCalendarProps) {
   const { hidden } = useHiddenAmounts()
   const today = todayIso()
@@ -46,7 +49,10 @@ export function ActivityCalendar({
   const value = 'font-display text-[26px] font-extrabold leading-8'
 
   return (
-    <section aria-label="Calendario del mes" className="rounded-[28px] bg-forest p-4 text-cream">
+    <section
+      aria-label={showDays ? 'Calendario del mes' : 'Resumen del mes'}
+      className="rounded-[28px] bg-forest p-4 text-cream"
+    >
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -91,62 +97,64 @@ export function ActivityCalendar({
         </div>
       </dl>
 
-      <div className="mt-4 grid grid-cols-7 gap-1.5">
-        {WEEKDAYS.map((d, i) => (
-          <span
-            key={i}
-            aria-hidden="true"
-            className="text-center font-display text-[15px] font-extrabold text-text-muted-on-dark"
-          >
-            {d}
-          </span>
-        ))}
-        {Array.from({ length: blanks }, (_, i) => (
-          <span key={`blank-${i}`} aria-hidden="true" />
-        ))}
-        {days.map((day) => {
-          const selected = day.date === selectedDay
-          const hasExpense = kind !== 'income' && day.expenseCents > 0
-          const hasIncome = kind !== 'expense' && day.incomeCents > 0
-          const dayNumber = Number(day.date.slice(8, 10))
-          const future = day.date > today
-          return (
-            <button
-              key={day.date}
-              type="button"
-              aria-pressed={selected}
-              aria-label={`Día ${dayNumber}`}
-              onClick={() => onSelectDay(selected ? null : day.date)}
-              className={cn(
-                'flex h-[52px] min-w-0 flex-col items-center justify-center rounded-[14px] font-display text-[18px] font-extrabold leading-tight',
-                selected
-                  ? 'bg-lime text-forest'
-                  : future
-                    ? 'bg-transparent text-text-muted-on-dark/60'
-                    : 'bg-surface text-cream',
-              )}
+      {showDays && (
+        <div className="mt-4 grid grid-cols-7 gap-1.5">
+          {WEEKDAYS.map((d, i) => (
+            <span
+              key={i}
+              aria-hidden="true"
+              className="text-center font-display text-[15px] font-extrabold text-text-muted-on-dark"
             >
-              {dayNumber}
-              {(hasExpense || hasIncome) && (
-                <span
-                  className={cn(
-                    'text-[11px] font-extrabold',
-                    selected ? 'text-forest' : 'text-lime',
-                  )}
-                >
-                  {hidden ? (
-                    '•'
-                  ) : hasExpense ? (
-                    <AmountDisplay cents={day.expenseCents} compact />
-                  ) : (
-                    <AmountDisplay cents={day.incomeCents} compact />
-                  )}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
+              {d}
+            </span>
+          ))}
+          {Array.from({ length: blanks }, (_, i) => (
+            <span key={`blank-${i}`} aria-hidden="true" />
+          ))}
+          {days.map((day) => {
+            const selected = day.date === selectedDay
+            const hasExpense = kind !== 'income' && day.expenseCents > 0
+            const hasIncome = kind !== 'expense' && day.incomeCents > 0
+            const dayNumber = Number(day.date.slice(8, 10))
+            const future = day.date > today
+            return (
+              <button
+                key={day.date}
+                type="button"
+                aria-pressed={selected}
+                aria-label={`Día ${dayNumber}`}
+                onClick={() => onSelectDay(selected ? null : day.date)}
+                className={cn(
+                  'flex h-[52px] min-w-0 flex-col items-center justify-center rounded-[14px] font-display text-[18px] font-extrabold leading-tight',
+                  selected
+                    ? 'bg-lime text-forest'
+                    : future
+                      ? 'bg-transparent text-text-muted-on-dark/60'
+                      : 'bg-surface text-cream',
+                )}
+              >
+                {dayNumber}
+                {(hasExpense || hasIncome) && (
+                  <span
+                    className={cn(
+                      'text-[11px] font-extrabold',
+                      selected ? 'text-forest' : 'text-lime',
+                    )}
+                  >
+                    {hidden ? (
+                      '•'
+                    ) : hasExpense ? (
+                      <AmountDisplay cents={day.expenseCents} compact />
+                    ) : (
+                      <AmountDisplay cents={day.incomeCents} compact />
+                    )}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </section>
   )
 }

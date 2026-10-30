@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { isCreditCard, type Account } from '@/features/accounts/domain/account'
@@ -7,9 +6,10 @@ import type { Category } from '@/features/categories/domain/category'
 import { formatAmountInput } from '@/shared/lib/amountInput'
 import { todayIso } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
+import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
+import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { Button } from '@/shared/ui/Button'
-import { CategoryChip } from '@/shared/ui/CategoryChip'
-import { getCategoryIcon } from '@/shared/ui/categoryIcons'
+import { CategorySelect } from '@/shared/ui/CategorySelect'
 import {
   transactionFormSchema,
   type EntryKind,
@@ -18,6 +18,15 @@ import {
   type TransactionFormValues,
 } from '../domain/transaction'
 
+/** What has been typed so far; lets the sheet keep it when switching to the shared-expense form. */
+export interface TransactionDraft {
+  amount: string
+  note: string
+  categoryId: string
+  accountId: string
+  occurredOn: string
+}
+
 interface TransactionFormProps {
   kind: EntryKind
   accounts: readonly Account[]
@@ -25,6 +34,9 @@ interface TransactionFormProps {
   categories: readonly Category[]
   /** Present in edit mode: the form starts with its values. */
   initial?: Transaction
+  /** Restores typed values (wins over the account/date defaults, not over `initial`). */
+  draft?: TransactionDraft
+  onDraftChange?: (draft: TransactionDraft) => void
   isSubmitting: boolean
   submitError: string | null
   onSubmit: (values: TransactionFormValues) => void
@@ -40,11 +52,14 @@ export function TransactionForm({
   accounts,
   categories,
   initial,
+  draft,
+  onDraftChange,
   isSubmitting,
   submitError,
   onSubmit,
   onCreateCategory,
 }: TransactionFormProps) {
+  const online = useOnlineStatus()
   const {
     register,
     handleSubmit,
@@ -55,11 +70,11 @@ export function TransactionForm({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
       kind,
-      accountId: initial?.accountId ?? accounts[0]?.id ?? '',
-      categoryId: initial?.categoryId ?? '',
-      amount: initial ? formatAmountInput(initial.amountCents) : '',
-      occurredOn: initial?.occurredOn ?? todayIso(),
-      note: initial?.note ?? '',
+      accountId: initial?.accountId ?? draft?.accountId ?? accounts[0]?.id ?? '',
+      categoryId: initial?.categoryId ?? draft?.categoryId ?? '',
+      amount: initial ? formatAmountInput(initial.amountCents) : (draft?.amount ?? ''),
+      occurredOn: initial?.occurredOn ?? draft?.occurredOn ?? todayIso(),
+      note: initial?.note ?? draft?.note ?? '',
     },
   })
 
@@ -71,6 +86,20 @@ export function TransactionForm({
   }, [kind, categories, setValue, watch])
 
   const categoryId = watch('categoryId')
+
+  useEffect(() => {
+    if (!onDraftChange) return
+    const subscription = watch((values) =>
+      onDraftChange({
+        amount: values.amount ?? '',
+        note: values.note ?? '',
+        categoryId: values.categoryId ?? '',
+        accountId: values.accountId ?? '',
+        occurredOn: values.occurredOn ?? '',
+      }),
+    )
+    return () => subscription.unsubscribe()
+  }, [watch, onDraftChange])
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
@@ -105,34 +134,20 @@ export function TransactionForm({
         )}
       </div>
 
-      <fieldset>
-        <legend className="mb-2 text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted">
-          Categoría
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          {categories.map((c) => (
-            <CategoryChip
-              key={c.id}
-              label={c.name}
-              icon={getCategoryIcon(c.icon)}
-              color={c.color}
-              selected={categoryId === c.id}
-              onClick={() => setValue('categoryId', c.id, { shouldValidate: true })}
-            />
-          ))}
-          <CategoryChip
-            label="Nueva categoría"
-            icon={Plus}
-            onClick={onCreateCategory}
-            className="border-dashed"
-          />
-        </div>
+      <div>
+        <CategorySelect
+          categories={categories}
+          value={categoryId}
+          onChange={(id) => setValue('categoryId', id, { shouldValidate: true })}
+          onCreate={onCreateCategory}
+          invalid={Boolean(errors.categoryId)}
+        />
         {errors.categoryId && (
           <p role="alert" className="mt-2 text-sm text-expense">
             {errors.categoryId.message}
           </p>
         )}
-      </fieldset>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
@@ -170,7 +185,12 @@ export function TransactionForm({
           {submitError}
         </p>
       )}
-      <Button type="submit" variant="dark" disabled={isSubmitting}>
+      {!online && (
+        <p role="status" className="text-center text-sm font-semibold text-text-muted">
+          {OFFLINE_MESSAGE}
+        </p>
+      )}
+      <Button type="submit" variant="dark" disabled={isSubmitting || !online}>
         {isSubmitting ? 'Guardando…' : 'Guardar'}
       </Button>
     </form>

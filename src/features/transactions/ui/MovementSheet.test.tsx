@@ -1,4 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { onlineManager } from '@tanstack/react-query'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
@@ -87,7 +88,7 @@ function renderSheet(props: Partial<Parameters<typeof MovementSheet>[0]> = {}) {
 
 async function fillExpense(user: ReturnType<typeof userEvent.setup>, amount: string) {
   await user.type(screen.getByLabelText('Monto'), amount)
-  await user.click(screen.getByRole('button', { name: 'Comida' }))
+  await user.selectOptions(screen.getByLabelText('Categoría'), 'Comida')
   await user.click(screen.getByRole('button', { name: 'Guardar' }))
 }
 
@@ -147,7 +148,7 @@ describe('MovementSheet overdraft warning', () => {
     accountsData.current = [account(CASH, 'Efectivo', 0)]
     const { user } = renderSheet({ initialMode: 'income' })
     await user.type(screen.getByLabelText('Monto'), '500')
-    await user.click(screen.getByRole('button', { name: 'Sueldo' }))
+    await user.selectOptions(screen.getByLabelText('Categoría'), 'Sueldo')
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
     expect(screen.queryByRole('alertdialog')).toBeNull()
@@ -334,5 +335,32 @@ describe('MovementSheet: spending money reserved for savings goals', () => {
     await pickBank(user)
     await fillExpense(user, '140000')
     await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
+  })
+})
+
+describe('MovementSheet offline', () => {
+  afterEach(() => act(() => onlineManager.setOnline(true)))
+
+  it('disables saving and shows the notice', () => {
+    createTx.mockClear()
+    accountsData.current = [account(CASH, 'Efectivo', 100_000)]
+    onlineManager.setOnline(false)
+    renderSheet()
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
+    expect(screen.getByText('Sin conexión. Conectate para guardar cambios.')).toBeInTheDocument()
+    // Voice and text entry moved to the global "+" menu: the sheet is manual only.
+    expect(
+      screen.queryByRole('button', { name: /Mejor lo digo con la voz|Escribilo como te salga/ }),
+    ).not.toBeInTheDocument()
+    expect(createTx).not.toHaveBeenCalled()
+  })
+
+  it('enables saving again when the connection returns', () => {
+    accountsData.current = [account(CASH, 'Efectivo', 100_000)]
+    onlineManager.setOnline(false)
+    renderSheet()
+    act(() => onlineManager.setOnline(true))
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeEnabled()
+    expect(screen.queryByText(/Conectate para guardar/)).not.toBeInTheDocument()
   })
 })

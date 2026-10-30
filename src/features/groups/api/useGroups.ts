@@ -5,6 +5,7 @@ import { dashboardKeys } from '@/features/dashboard/api/queryKeys'
 import { transactionKeys } from '@/features/transactions/api/queryKeys'
 import type {
   GroupFormValues,
+  MyGroup,
   SettlementFormValues,
   SharedExpenseFormValues,
 } from '../domain/group'
@@ -130,11 +131,33 @@ export function useRevokeInvite() {
   })
 }
 
+export interface JoinGroupResult {
+  groupId: string
+  /** The person was already in the group: the server consumed no invite use. */
+  alreadyMember: boolean
+}
+
 export function useJoinGroup() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
   const invalidate = useInvalidateGroupMoney()
   return useMutation({
-    mutationFn: (code: string) => joinGroup(code),
-    onSuccess: invalidate,
+    mutationFn: async (code: string): Promise<JoinGroupResult> => {
+      // The server answers with the group id both for a new member and for one who is already in,
+      // so membership is read first (fresh from the server, cached copy if that fails).
+      const listKey = groupKeys.list(user?.id)
+      const before = await queryClient
+        .fetchQuery({ queryKey: listKey, queryFn: listMyGroups, staleTime: 0 })
+        .catch(() => queryClient.getQueryData<MyGroup[]>(listKey))
+      const groupId = await joinGroup(code)
+      return { groupId, alreadyMember: Boolean(before?.some((g) => g.id === groupId)) }
+    },
+    onSuccess: async () => {
+      await invalidate()
+      // The list may not be mounted (inactive queries are only marked stale): load it now so the
+      // new group is already there when the person lands on Grupos.
+      await queryClient.refetchQueries({ queryKey: groupKeys.list(user?.id), type: 'inactive' })
+    },
   })
 }
 

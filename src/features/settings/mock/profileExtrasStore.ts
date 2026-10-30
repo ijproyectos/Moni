@@ -11,7 +11,7 @@ interface ProfileExtras {
 }
 
 const store = createMockStore<ProfileExtras>({
-  monthlyIncomeCents: 1_000_000_00,
+  monthlyIncomeCents: 0,
   localPhotoUrl: null,
   photoRemoved: false,
 })

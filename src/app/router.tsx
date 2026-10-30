@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AuthCallbackPage } from '@/features/auth/ui/AuthCallbackPage'
 import {
@@ -12,6 +13,7 @@ import { AccountsPage } from '@/features/accounts/ui/AccountsPage'
 import { CategoriesPage } from '@/features/categories/ui/CategoriesPage'
 import { HomePage } from '@/features/dashboard/ui/HomePage'
 import { MonthReportPage } from '@/features/dashboard/ui/MonthReportPage'
+import { IncomeByMonthPage } from '@/features/dashboard/ui/IncomeByMonthPage'
 import { YearReportPage } from '@/features/dashboard/ui/YearReportPage'
 import { AntsPage } from '@/features/insights/ui/AntsPage'
 import { WeeklyDigestPage } from '@/features/insights/ui/WeeklyDigestPage'
@@ -50,29 +52,36 @@ import { WelcomePage } from '@/features/onboarding/ui/WelcomePage'
 import { MorePage } from '@/features/settings/ui/MorePage'
 import { ProfilePage } from '@/features/settings/ui/ProfilePage'
 import { ActivityPage } from '@/features/transactions/ui/ActivityPage'
+import type { FeatureFlag } from '@/shared/config/features'
 import { AppShell } from './AppShell'
+import { FeatureGate } from './FeatureGate'
 
-/** Screens backed by simulated data (no Supabase yet). */
+/** Wraps a screen so it is only reachable while its flag is on (otherwise it redirects home). */
+function gated(flag: FeatureFlag, element: ReactElement) {
+  return <FeatureGate flag={flag}>{element}</FeatureGate>
+}
+
+/** Screens backed by simulated data (no Supabase yet); the flagged ones redirect home while off. */
 const simulatedRoutes = [
   { path: 'metas', element: <GoalsPage /> },
   { path: 'metas/cuotas', element: <InstallmentsPage /> },
   { path: 'metas/:id', element: <GoalDetailPage /> },
   { path: 'hormigas', element: <AntsPage /> },
-  { path: 'hormigas/aviso-semanal', element: <WeeklyDigestPage /> },
-  { path: 'avisos', element: <NotificationsPage /> },
-  { path: 'pro', element: <ProPage /> },
-  { path: 'recomendar', element: <ReferralPage /> },
-  { path: 'deudas', element: <DebtsPage /> },
-  { path: 'aguinaldo', element: <AguinaldoPage /> },
-  { path: 'aguinaldo/reparto', element: <AguinaldoSplitPage /> },
-  { path: 'aguinaldo/listo', element: <AguinaldoDonePage /> },
+  { path: 'hormigas/aviso-semanal', element: gated('weeklyDigest', <WeeklyDigestPage />) },
+  { path: 'avisos', element: gated('notifications', <NotificationsPage />) },
+  { path: 'pro', element: gated('pro', <ProPage />) },
+  { path: 'recomendar', element: gated('referral', <ReferralPage />) },
+  { path: 'deudas', element: gated('debts', <DebtsPage />) },
+  { path: 'aguinaldo', element: gated('aguinaldo', <AguinaldoPage />) },
+  { path: 'aguinaldo/reparto', element: gated('aguinaldo', <AguinaldoSplitPage />) },
+  { path: 'aguinaldo/listo', element: gated('aguinaldo', <AguinaldoDonePage />) },
   { path: 'recurrentes', element: <RecurringPage /> },
   { path: 'fijos', element: <LegacyFijosRedirect /> },
   { path: 'tarjetas', element: <CardsPage /> },
 ]
 
 /** Everything inside the app shell (private routes). */
-const appRoutes = [
+export const appRoutes = [
   { index: true, element: <HomePage /> },
   { path: 'actividad', element: <ActivityPage /> },
   { path: 'grupos', element: <GroupsPage /> },
@@ -84,7 +93,7 @@ const appRoutes = [
   { path: 'grupos/:id/compartir', element: <ShareSummaryPage /> },
   { path: 'grupos/:id/avisados', element: <NoticesSentPage /> },
   { path: 'viajes', element: <TripsPage /> },
-  { path: 'viajes/:id', element: <SoloTripPage /> },
+  { path: 'viajes/:id', element: gated('soloTrips', <SoloTripPage />) },
   { path: 'unirse/:code', element: <JoinGroupPage /> },
   { path: 'mas', element: <MorePage /> },
   { path: 'cuentas', element: <AccountsPage /> },
@@ -92,6 +101,7 @@ const appRoutes = [
   { path: 'perfil', element: <ProfilePage /> },
   { path: 'este-mes', element: <MonthReportPage /> },
   { path: 'tu-anio', element: <YearReportPage /> },
+  { path: 'ingresos', element: <IncomeByMonthPage /> },
   ...simulatedRoutes,
 ]
 

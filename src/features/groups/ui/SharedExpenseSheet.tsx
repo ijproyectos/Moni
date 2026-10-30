@@ -17,6 +17,7 @@ import {
 import type { SharedExpenseFormValues } from '../domain/group'
 import { activeMembers } from '../domain/groupView'
 import type { LedgerExpense } from '../domain/ledger'
+import { FEATURES } from '@/shared/config/features'
 import { addSimExpense, removeSimExpense, useOverlay } from '../mock/overlayStore'
 import { SharedExpenseForm, type SimulatedExpenseInput } from './SharedExpenseForm'
 
@@ -104,13 +105,17 @@ export function SharedExpenseSheet({
           meId={user.id}
           templates={templates}
           accounts={accountsQuery.data ?? []}
-          guests={overlay.guests}
+          guests={FEATURES.groupGuestsAndSimulatedSplits ? overlay.guests : []}
           kind={group.data?.kind}
           incomeShare={overlay.coupleSplit === 'income' ? overlay.incomeShare : 0.5}
           isSubmitting={create.isPending || voidExpense.isPending}
           submitError={submitError}
           onSubmit={(values) => void submit(values)}
-          onSubmitSimulated={(expense) => void submitSimulated(expense)}
+          onSubmitSimulated={
+            FEATURES.groupGuestsAndSimulatedSplits
+              ? (expense) => void submitSimulated(expense)
+              : undefined
+          }
           initial={editing}
           submitLabel={editing ? 'Guardar cambios' : 'Guardar gasto'}
           onDelete={onDelete}

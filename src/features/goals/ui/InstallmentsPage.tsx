@@ -46,22 +46,18 @@ function analyze(
   return validateInstallmentInput(input) ? null : analyzeInstallments(input)
 }
 
-const DEFAULT_OPTIONS: InstallmentOption[] = [
-  { id: 'o6', kind: 'installments', count: 6, installmentCents: 176_000_00 },
-  { id: 'o12', kind: 'installments', count: 12, installmentCents: 98_500_00 },
-  { id: 'o18', kind: 'installments', count: 18, installmentCents: 75_000_00 },
-  { id: 'agui', kind: 'aguinaldo', count: AGUINALDO_MONTHS, installmentCents: 0 },
-]
+// No preset offers: the person types the installment plans they were actually quoted.
+const DEFAULT_OPTIONS: InstallmentOption[] = []
 
 // Screens 030 / 031 — ¿Conviene en cuotas?
 export function InstallmentsPage() {
   const state = (useLocation().state ?? {}) as { name?: string; amountCents?: number }
-  const name = state.name ?? 'Notebook nueva'
-  const [price, setPrice] = useState(state.amountCents ?? 900_000_00)
+  const name = state.name ?? 'Tu compra'
+  const [price, setPrice] = useState(state.amountCents ?? 0)
   const [aguinaldo, setAguinaldo] = useState(MOCK_AGUINALDO_ESTIMATE)
   const [editing, setEditing] = useState<null | 'price' | 'aguinaldo'>(null)
   const [options, setOptions] = useState(DEFAULT_OPTIONS)
-  const [selectedId, setSelectedId] = useState('o12')
+  const [selectedId, setSelectedId] = useState('')
   const [adding, setAdding] = useState(false)
   const [prefill, setPrefill] = useState<NewGoalPrefill | null>(null)
   const [inflationText, setInflationText] = useState(String(DEFAULT_INFLATION_PERCENT))
@@ -70,17 +66,15 @@ export function InstallmentsPage() {
   const discount = discountText.trim() === '' ? 0 : parsePercent(discountText)
 
   const installments = options.filter((o) => o.kind === 'installments')
-  const selected =
-    options.find((o) => o.id === selectedId) ?? DEFAULT_OPTIONS[1] ?? DEFAULT_OPTIONS[0]
-  if (!selected) throw new Error('No installment options')
+  const selected = options.find((o) => o.id === selectedId) ?? options[0] ?? null
   const extra = (o: InstallmentOption) => optionTotal(o, price) - price
   const cheapest = installments.reduce<InstallmentOption | null>(
     (best, o) => (!best || extra(o) < extra(best) ? o : best),
     null,
   )
-  const compareAgainst = selected.kind === 'installments' ? selected : cheapest
+  const compareAgainst = selected?.kind === 'installments' ? selected : cheapest
   const saving = compareAgainst ? extra(compareAgainst) : 0
-  const analysis = analyze(price, selected, inflation, discount)
+  const analysis = selected ? analyze(price, selected, inflation, discount) : null
   const aguinaldoMonthly = roundUpSuggestion(Math.max(0, price - aguinaldo) / AGUINALDO_MONTHS)
 
   return (
@@ -172,7 +166,7 @@ export function InstallmentsPage() {
         className="flex flex-col gap-1 rounded-[24px] border border-sand bg-white p-2"
       >
         {options.map((o) => {
-          const active = o.id === selectedId
+          const active = o.id === selected?.id
           const isAgui = o.kind === 'aguinaldo'
           return (
             <li key={o.id}>
@@ -228,7 +222,7 @@ export function InstallmentsPage() {
               ))}
             </div>
           </>
-        ) : selected.kind === 'aguinaldo' ? (
+        ) : selected?.kind === 'aguinaldo' ? (
           <>
             <p className="mt-2 font-display text-[26px] font-extrabold leading-8 text-lime">
               Con el aguinaldo ahorrás {formatArs(saving)}
@@ -237,6 +231,10 @@ export function InstallmentsPage() {
               Si esperás a diciembre y lo pagás de contado, no pagás interés.
             </p>
           </>
+        ) : !selected ? (
+          <p className="mt-2 text-[16px] leading-6 text-text-muted-on-dark">
+            Cargá el precio de contado y agregá las cuotas que te ofrecen para compararlas.
+          </p>
         ) : (
           <p className="mt-2 text-[16px] leading-6 text-text-muted-on-dark">
             Revisá la inflación y el descuento: tienen que ser porcentajes válidos para comparar.

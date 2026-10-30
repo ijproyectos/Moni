@@ -63,3 +63,17 @@ export function clearDraft(userId: string) {
     // ignore
   }
 }
+
+/** Drops every onboarding draft kept in this tab, whichever account wrote it (used on sign-out). */
+export function clearAllDrafts() {
+  try {
+    const storage = session()
+    if (!storage) return
+    const prefix = draftKey('')
+    for (const key of Object.keys(storage).filter((k) => k.startsWith(prefix))) {
+      storage.removeItem(key)
+    }
+  } catch {
+    // ignore
+  }
+}

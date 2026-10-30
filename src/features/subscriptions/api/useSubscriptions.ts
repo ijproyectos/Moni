@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { accountKeys } from '@/features/accounts/api/queryKeys'
 import { useAuth } from '@/features/auth/api/authContext'
 import { dashboardKeys } from '@/features/dashboard/api/queryKeys'
+import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { transactionKeys } from '@/features/transactions/api/queryKeys'
 import { remindersFor } from '../domain/subscription'
 import { subscriptionKeys } from './queryKeys'
@@ -53,15 +54,17 @@ function useInvalidateEverything() {
 export function useSyncDueSubscriptions() {
   const { user } = useAuth()
   const invalidate = useInvalidateEverything()
+  const online = useOnlineStatus()
   const ran = useRef<string | null>(null)
   useEffect(() => {
-    if (!user || ran.current === user.id) return
+    // Offline: skip quietly and run once the connection is back.
+    if (!user || !online || ran.current === user.id) return
     ran.current = user.id
     processMyDueSubscriptions()
       .then((registered) => (registered > 0 ? invalidate() : undefined))
       .catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per signed-in user
-  }, [user])
+  }, [user, online])
 }
 
 export function useCreateSubscription() {

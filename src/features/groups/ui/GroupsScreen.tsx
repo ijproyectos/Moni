@@ -1,7 +1,9 @@
 import { ChevronRight, KeyRound, Send } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
+import { FEATURES } from '@/shared/config/features'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
@@ -10,6 +12,20 @@ import { HeaderAddButton } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { GROUP_KIND_LABELS, type MyGroup } from '../domain/group'
 import { GroupKindTile } from './GroupKindIcon'
+
+const DEBTS_SUMMARY_CLASS = 'flex items-center rounded-[24px] bg-forest px-4 py-3 text-cream'
+
+/** Debtor/creditor totals; only a link while the Deudas screen exists (FEATURES.debts). */
+function DebtsSummaryShell({ children }: { children: ReactNode }) {
+  return FEATURES.debts ? (
+    <Link to="/deudas" aria-label="Ver deudas" className={DEBTS_SUMMARY_CLASS}>
+      {children}
+      <ChevronRight aria-hidden="true" className="size-6" />
+    </Link>
+  ) : (
+    <div className={DEBTS_SUMMARY_CLASS}>{children}</div>
+  )
+}
 
 /** A group as listed: real data plus the overlay (name, guests, simulated balance). */
 export interface ListedGroup extends MyGroup {
@@ -90,11 +106,7 @@ export function GroupsScreen({
         </>
       ) : (
         <>
-          <Link
-            to="/deudas"
-            aria-label="Ver deudas"
-            className="flex items-center rounded-[24px] bg-forest px-4 py-3 text-cream"
-          >
+          <DebtsSummaryShell>
             <span className="flex-1">
               <span className="block text-[15px] text-text-muted-on-dark">Debés</span>
               <AmountDisplay
@@ -110,8 +122,7 @@ export function GroupsScreen({
                 className="block font-display text-[24px] font-extrabold text-lime"
               />
             </span>
-            <ChevronRight aria-hidden="true" className="size-6" />
-          </Link>
+          </DebtsSummaryShell>
           <ul className="flex flex-col gap-3">
             {groups.map((group) => {
               const net = netLabel(group)

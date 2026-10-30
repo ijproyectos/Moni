@@ -1,5 +1,6 @@
 import { Plus, Sparkles, UserPlus } from 'lucide-react'
 import { useState } from 'react'
+import { FEATURES } from '@/shared/config/features'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { InviteCodeCard } from '@/shared/ui/InviteCodeCard'
@@ -70,22 +71,24 @@ export function AddPersonSheet({
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setGuest(true)}
-          className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4 text-left"
-        >
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gold/45">
-            <Plus aria-hidden="true" className="size-6" />
-          </span>
-          <span className="flex-1">
-            <span className="block text-[19px] font-extrabold">No tiene Moni</span>
-            <span className="block text-[15px] leading-5 text-text-muted">
-              {feminine ? 'La' : 'Lo'} sumás con el nombre. Entra en las cuentas pero no recibe
-              avisos.
+        {FEATURES.groupGuestsAndSimulatedSplits && (
+          <button
+            type="button"
+            onClick={() => setGuest(true)}
+            className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4 text-left"
+          >
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gold/45">
+              <Plus aria-hidden="true" className="size-6" />
             </span>
-          </span>
-        </button>
+            <span className="flex-1">
+              <span className="block text-[19px] font-extrabold">No tiene Moni</span>
+              <span className="block text-[15px] leading-5 text-text-muted">
+                {feminine ? 'La' : 'Lo'} sumás con el nombre. Entra en las cuentas pero no recibe
+                avisos.
+              </span>
+            </span>
+          </button>
+        )}
       </div>
     </BottomSheet>
   )

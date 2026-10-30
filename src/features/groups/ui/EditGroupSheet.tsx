@@ -8,6 +8,7 @@ import { MoniSays, SectionLabel, SplitBar } from '@/shared/ui/kit'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
 import type { Person } from '../domain/ledger'
+import { FEATURES } from '@/shared/config/features'
 import { DEFAULT_RECURRING, patchOverlay, type GroupOverlay } from '../mock/overlayStore'
 import { RecurringList } from './CreateGroupPage'
 import { AvatarStack } from './groupVisuals'
@@ -74,13 +75,13 @@ export function EditGroupSheet({
           className={fieldClass}
         />
 
-        {kind === 'casa' && (
+        {kind === 'casa' && recurring.length > 0 && (
           <>
             <SectionLabel>Gastos que se repiten cada mes</SectionLabel>
             <RecurringList items={recurring} onChange={setRecurring} />
           </>
         )}
-        {kind === 'pareja' && (
+        {kind === 'pareja' && FEATURES.groupGuestsAndSimulatedSplits && (
           <>
             <SectionLabel>¿Cómo dividen?</SectionLabel>
             <SegmentedControl

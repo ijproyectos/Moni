@@ -93,7 +93,7 @@ export function SplitBar({
   )
 }
 
-/** Gold coin-with-hole glyph used next to "Moni dice". */
+/** Gold coin-with-hole glyph used next to "Sugerido". */
 export function MoniGlyph({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={cn('size-6 shrink-0', className)}>
@@ -112,10 +112,10 @@ export function MoniGlyph({ className }: { className?: string }) {
   )
 }
 
-/** Light-lime callout: "Moni dice: …". */
+/** Light-lime callout: "Sugerido: …". */
 export function MoniSays({
   children,
-  lead = 'Moni dice:',
+  lead = 'Sugerido:',
   className,
   icon,
 }: {

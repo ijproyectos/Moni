@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Button } from '@/shared/ui/Button'
 import mascotAssistant from '@/assets/mascot/personaje_metas-de-ahorro.svg'
+import { FEATURES } from '@/shared/config/features'
 import { formatMonthShortYear } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
 import { formatArs } from '@/shared/lib/money'
@@ -46,7 +47,8 @@ export function GoalsPage() {
   const all = savings.data?.goals ?? []
   const active = goalsByStatus(all, 'active')
   const others = goalsByStatus(all, 'paused', 'completed', 'archived')
-  const tab: Tab = params.get('tab') === 'shared' && shared.length > 0 ? 'shared' : 'mine'
+  const tab: Tab =
+    FEATURES.sharedGoals && params.get('tab') === 'shared' && shared.length > 0 ? 'shared' : 'mine'
   const today = todayIso()
 
   return (
@@ -73,28 +75,32 @@ export function GoalsPage() {
         <>
           <SavingsNotices />
           {active.length > 0 && <MineSummary goals={all} />}
-          {shared[0] ? (
-            <SharedTeaser
-              goal={shared[0]}
-              onOpen={() => setParams({ tab: 'shared' }, { replace: true })}
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setCreatingShared(true)}
-              className="flex min-h-[76px] w-full items-center gap-3 rounded-[22px] border-2 border-dashed border-[#d9c9a6] px-4 text-left"
-            >
-              <IconTile icon={UsersRound} bg="#d9ebe4" />
-              <span className="flex-1">
-                <span className="block text-[18px] font-extrabold">Compartidas</span>
-                <span className="block text-[14px] text-text-muted">
-                  Armá una meta con tu pareja o familia
-                </span>
-              </span>
-              <Plus aria-hidden="true" className="size-6" />
-            </button>
+          {FEATURES.sharedGoals && (
+            <>
+              {shared[0] ? (
+                <SharedTeaser
+                  goal={shared[0]}
+                  onOpen={() => setParams({ tab: 'shared' }, { replace: true })}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setCreatingShared(true)}
+                  className="flex min-h-[76px] w-full items-center gap-3 rounded-[22px] border-2 border-dashed border-[#d9c9a6] px-4 text-left"
+                >
+                  <IconTile icon={UsersRound} bg="#d9ebe4" />
+                  <span className="flex-1">
+                    <span className="block text-[18px] font-extrabold">Compartidas</span>
+                    <span className="block text-[14px] text-text-muted">
+                      Armá una meta con tu pareja o familia
+                    </span>
+                  </span>
+                  <Plus aria-hidden="true" className="size-6" />
+                </button>
+              )}
+            </>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className={FEATURES.aguinaldo ? 'grid grid-cols-2 gap-3' : 'grid gap-3'}>
             <Link
               to="/metas/cuotas"
               className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-white px-3 py-3"
@@ -105,16 +111,18 @@ export function GoalsPage() {
                 <span className="block text-[14px] text-text-muted">¿Conviene?</span>
               </span>
             </Link>
-            <Link
-              to="/aguinaldo"
-              className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-white px-3 py-3"
-            >
-              <IconTile icon={Gift} bg="#e3f2cf" className="size-11 shrink-0" />
-              <span className="min-w-0">
-                <span className="block text-[17px] font-extrabold leading-5">Aguinaldo</span>
-                <span className="block text-[14px] text-text-muted">Repartilo</span>
-              </span>
-            </Link>
+            {FEATURES.aguinaldo && (
+              <Link
+                to="/aguinaldo"
+                className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-white px-3 py-3"
+              >
+                <IconTile icon={Gift} bg="#e3f2cf" className="size-11 shrink-0" />
+                <span className="min-w-0">
+                  <span className="block text-[17px] font-extrabold leading-5">Aguinaldo</span>
+                  <span className="block text-[14px] text-text-muted">Repartilo</span>
+                </span>
+              </Link>
+            )}
           </div>
           {savings.isLoading ? (
             <div role="status" aria-label="Cargando metas" className="flex flex-col gap-3">
@@ -199,7 +207,7 @@ export function GoalsPage() {
       )}
 
       {creating && <NewGoalSheet onClose={() => setCreating(false)} />}
-      {creatingShared && (
+      {FEATURES.sharedGoals && creatingShared && (
         <SharedGoalSheet
           onClose={() => setCreatingShared(false)}
           onCreated={() => {

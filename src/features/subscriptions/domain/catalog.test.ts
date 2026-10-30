@@ -1,3 +1,4 @@
+import { BANK_CATALOG } from '@/features/accounts/domain/bankCatalog'
 import { readdirSync } from 'node:fs'
 import { CATALOG, SERVICE_CATEGORIES, findService, groupCatalog, searchCatalog } from './catalog'
 import { logoUrl } from './logos'
@@ -65,7 +66,8 @@ describe('subscription catalog', () => {
   })
 
   it('every logo a service points to exists locally, and no logo file is orphaned', () => {
-    const used = CATALOG.flatMap((s) => (s.logo ? [s.logo] : []))
+    // Bank and wallet logos (Medios de pago) live in the same folder.
+    const used = [...CATALOG, ...BANK_CATALOG].flatMap((s) => (s.logo ? [s.logo] : []))
     for (const logo of used) {
       expect(BRAND_FILES, `missing file for ${logo}`).toContain(logo)
       expect(logoUrl(logo), `no URL for ${logo}`).toBeTruthy()

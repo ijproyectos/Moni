@@ -1,16 +1,12 @@
 import { useRef, useState } from 'react'
 import mascotBudget from '@/assets/mascot/personaje_alerta-de-presupuesto.svg'
-import mascotAnts from '@/assets/mascot/personaje_asistente.svg'
-import mascotTrips from '@/assets/mascot/personaje_carga-de-dinero.svg'
 import mascotVoice from '@/assets/mascot/personaje_carga-por-voz.svg'
-import mascotGroups from '@/assets/mascot/personaje_gastos-en-grupo.svg'
 import mascotReport from '@/assets/mascot/personaje_informe-del-mes.svg'
-import mascotGoals from '@/assets/mascot/personaje_metas-de-ahorro.svg'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { OnboardingTitle } from './OnboardingTitle'
 
-// Screens 003-009 — Así te ayuda Moni.
+// Screens 003-005 — Así te ayuda Moni.
 const SLIDES = [
   {
     tag: 'Informe del mes',
@@ -25,34 +21,10 @@ const SLIDES = [
     image: mascotVoice,
   },
   {
-    tag: 'Gastos hormiga',
-    title: 'Cazá los gastos hormiga',
-    text: 'Cada semana te contamos qué cambió y dónde se repiten los gastitos.',
-    image: mascotAnts,
-  },
-  {
     tag: 'Presupuestos y fijos',
     title: 'Frená antes de pasarte',
     text: 'Límites por categoría y control de suscripciones y gastos fijos.',
     image: mascotBudget,
-  },
-  {
-    tag: 'Metas de ahorro',
-    title: 'Ahorrá para lo que quieras',
-    text: 'Contale tu objetivo y Moni calcula cuánto guardar por mes. Y si conviene pagar en cuotas.',
-    image: mascotGoals,
-  },
-  {
-    tag: 'Grupos',
-    title: 'Dividí sin hacer cuentas',
-    text: 'Quién puso cuánto y quién le debe a quién. Mandás el resumen por WhatsApp y listo.',
-    image: mascotGroups,
-  },
-  {
-    tag: 'Viajes',
-    title: 'Viajá con la plata clara',
-    text: 'Presupuesto por rubro, ahorro para el viaje y gastos en grupo.',
-    image: mascotTrips,
   },
 ] as const
 
@@ -60,9 +32,17 @@ interface OnboardingBenefitsStepProps {
   /** First name from the profile; the heading degrades gracefully without it. */
   name: string
   onContinue: () => void
+  /** Finishes the whole onboarding with defaults. */
+  onSkip: () => void
+  isBusy?: boolean
 }
 
-export function OnboardingBenefitsStep({ name, onContinue }: OnboardingBenefitsStepProps) {
+export function OnboardingBenefitsStep({
+  name,
+  onContinue,
+  onSkip,
+  isBusy = false,
+}: OnboardingBenefitsStepProps) {
   const [index, setIndex] = useState(0)
   const trackRef = useRef<HTMLUListElement>(null)
   const isLast = index === SLIDES.length - 1
@@ -133,11 +113,14 @@ export function OnboardingBenefitsStep({ name, onContinue }: OnboardingBenefitsS
 
       <div className="mt-auto flex flex-col items-center gap-1 pt-5">
         <Button onClick={next}>{isLast ? 'Continuar' : 'Seguir'}</Button>
-        {!isLast && (
-          <Button variant="ghost" onClick={onContinue} className="text-text-muted-on-dark">
-            Saltar
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          disabled={isBusy}
+          onClick={onSkip}
+          className="text-text-muted-on-dark"
+        >
+          Omitir
+        </Button>
       </div>
     </>
   )

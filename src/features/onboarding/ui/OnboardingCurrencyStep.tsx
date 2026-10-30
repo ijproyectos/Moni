@@ -19,10 +19,15 @@ export function OnboardingCurrencyStep({
   usesDollars,
   onUsesDollarsChange,
   onContinue,
+  onSkip,
+  isBusy = false,
 }: {
   usesDollars: boolean
   onUsesDollarsChange: (value: boolean) => void
   onContinue: () => void
+  /** Finishes the whole onboarding with defaults. */
+  onSkip: () => void
+  isBusy?: boolean
 }) {
   return (
     <>
@@ -77,8 +82,16 @@ export function OnboardingCurrencyStep({
         </span>
       </button>
 
-      <div className="mt-auto pt-8">
+      <div className="mt-auto flex flex-col items-center gap-1 pt-8">
         <Button onClick={onContinue}>Continuar</Button>
+        <Button
+          variant="ghost"
+          disabled={isBusy}
+          onClick={onSkip}
+          className="text-text-muted-on-dark"
+        >
+          Omitir
+        </Button>
       </div>
     </>
   )

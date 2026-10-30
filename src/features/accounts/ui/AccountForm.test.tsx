@@ -151,3 +151,97 @@ describe('AccountForm: where does the starting money come from', () => {
     expect(screen.queryByLabelText('Saldo inicial')).toBeNull()
   })
 })
+
+describe('AccountForm: Agregar rápido (banks, wallets and cards)', () => {
+  it('shows a chip for each catalog brand when creating', () => {
+    setup()
+    const chips = screen.getByText('Agregar rápido').parentElement as HTMLElement
+    const names = Array.from(chips.querySelectorAll('li button')).map(
+      (b) => b.lastChild?.textContent,
+    )
+    expect(names).toEqual([
+      'Ualá',
+      'Cuenta DNI',
+      'Brubank',
+      'Lemon',
+      'Naranja X',
+      'BBVA',
+      'Banco Nación',
+      'Macro',
+      'ICBC',
+      'HSBC',
+      'Banco Provincia',
+      'Visa',
+      'Mastercard',
+      'Amex',
+      'Mercado Pago',
+      'Galicia',
+      'Santander',
+    ])
+  })
+
+  it('does not show them when editing an existing account', () => {
+    setup({ initial: makeAccount({ id: 'g', name: 'Galicia', kind: 'bank' }) })
+    expect(screen.queryByText('Agregar rápido')).toBeNull()
+  })
+
+  it('a bank chip prefills the name and the bank type, both still editable', async () => {
+    const { user, onSubmit } = setup()
+    await user.click(screen.getByRole('button', { name: 'Galicia' }))
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Galicia')
+    expect(screen.getByRole('button', { name: 'Banco' })).toHaveAttribute('aria-pressed', 'true')
+    await user.type(screen.getByLabelText('Nombre'), ' sueldo')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ name: 'Galicia sueldo', kind: 'bank' })
+  })
+
+  it('a wallet chip prefills the wallet type', async () => {
+    const { user } = setup()
+    await user.click(screen.getByRole('button', { name: 'Mercado Pago' }))
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Mercado Pago')
+    expect(screen.getByRole('button', { name: 'Billetera' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('a card chip switches the form to credit-card mode (limit, closing and due day)', async () => {
+    const { user, onSubmit } = setup()
+    expect(screen.queryByLabelText('Límite de crédito')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Visa' }))
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Visa')
+    expect(screen.getByLabelText('Límite de crédito')).toBeInTheDocument()
+    expect(screen.getByLabelText('Día de cierre')).toBeInTheDocument()
+    expect(screen.getByLabelText('Día de vencimiento')).toBeInTheDocument()
+    expect(screen.getByLabelText('Deuda inicial')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Día de cierre'), '25')
+    await user.type(screen.getByLabelText('Día de vencimiento'), '5')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
+      name: 'Visa',
+      kind: 'credit_card',
+      closingDay: 25,
+      dueDay: 5,
+    })
+  })
+
+  it('switching from a card chip to a bank chip leaves credit-card mode', async () => {
+    const { user } = setup()
+    await user.click(screen.getByRole('button', { name: 'Mastercard' }))
+    expect(screen.getByLabelText('Límite de crédito')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Santander' }))
+    expect(screen.queryByLabelText('Límite de crédito')).toBeNull()
+    expect(screen.getByLabelText('Nombre')).toHaveValue('Santander')
+  })
+
+  it('shows the official logo when the brand has one and an initials avatar when it is pending', () => {
+    setup()
+    const visa = screen.getByRole('button', { name: 'Visa' })
+    expect(visa.querySelector('img')).not.toBeNull()
+    const galicia = screen.getByRole('button', { name: 'Galicia' })
+    expect(galicia.querySelector('img')).toBeNull()
+    expect(galicia.querySelector('[data-testid="brand-initials"]')).toHaveTextContent('GA')
+  })
+})

@@ -7,6 +7,14 @@ import { findService } from '../domain/catalog'
 import type { Subscription } from '../domain/subscription'
 import { SubscriptionFormSheet } from './SubscriptionFormSheet'
 
+const rateState = vi.hoisted(() => ({
+  value: { data: undefined, isError: false, fetchStatus: 'idle' } as {
+    data: { sell: number; updatedAt: string } | undefined
+    isError: boolean
+    fetchStatus: string
+  },
+}))
+vi.mock('../api/useDollarCardRate', () => ({ useDollarCardRate: () => rateState.value }))
 const create = vi.hoisted(() => vi.fn().mockResolvedValue('new-id'))
 const update = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const CAT_SUBS = '33333333-3333-4333-8333-333333333333'
@@ -61,6 +69,7 @@ describe('SubscriptionFormSheet', () => {
   beforeEach(() => {
     create.mockClear()
     update.mockClear()
+    rateState.value = { data: undefined, isError: false, fetchStatus: 'idle' }
   })
 
   it('adds a catalog subscription in pesos with plan, frequency, date, account and category', async () => {
@@ -92,7 +101,7 @@ describe('SubscriptionFormSheet', () => {
 
   it('says everything is in ARS: no conversions and no taxes', () => {
     renderSheet({ kind: 'custom', name: 'Mi club' })
-    expect(screen.getByText(/Moni no convierte dólares ni calcula impuestos/)).toBeInTheDocument()
+    expect(screen.getByText(/Moni no calcula impuestos/)).toBeInTheDocument()
   })
 
   it('a custom subscription asks for a name and cannot be saved without amount', async () => {
@@ -159,6 +168,64 @@ describe('SubscriptionFormSheet', () => {
     expect(update.mock.calls[0]?.[0]).toMatchObject({
       id: 's1',
       input: { amountCents: 20_000_00, plan: 'Premium', remind: false, accountId: 'galicia' },
+    })
+  })
+
+  describe('USD reference price', () => {
+    const rate = { sell: 2000, updatedAt: '2026-10-29T18:00:00.000Z' }
+    const open = (id: string) => {
+      const service = findService(id)
+      if (!service) throw new Error('catalog')
+      return renderSheet({ kind: 'catalog', service })
+    }
+
+    it('prefills the amount with price x rate and explains it', async () => {
+      rateState.value = { data: rate, isError: false, fetchStatus: 'idle' }
+      const { user } = open('claude')
+      await user.click(screen.getByRole('button', { name: 'Pro' }))
+      expect(screen.getByLabelText('Monto en pesos')).toHaveValue('40.000')
+      expect(
+        screen.getByText(/Precio de referencia, puede variar: USD 20 × \$2\.000/),
+      ).toBeInTheDocument()
+      expect(screen.getByText(/dólar tarjeta, 29\/10/)).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Anual' }))
+      expect(screen.getByLabelText('Monto en pesos')).toHaveValue('400.000')
+    })
+
+    it('stops following the plan once the person edits the amount', async () => {
+      rateState.value = { data: rate, isError: false, fetchStatus: 'idle' }
+      const { user } = open('github-copilot')
+      await user.click(screen.getByRole('button', { name: 'Pro' }))
+      expect(screen.getByLabelText('Monto en pesos')).toHaveValue('20.000')
+      const amount = screen.getByLabelText('Monto en pesos')
+      await user.clear(amount)
+      await user.type(amount, '25000')
+      await user.click(screen.getByRole('button', { name: 'Pro+' }))
+      expect(screen.getByLabelText('Monto en pesos')).toHaveValue('25000')
+    })
+
+    it('labels a stale cached rate', async () => {
+      rateState.value = { data: rate, isError: true, fetchStatus: 'idle' }
+      const { user } = open('claude')
+      await user.click(screen.getByRole('button', { name: 'Pro' }))
+      expect(
+        screen.getByText(/Cotización del 29\/10 \(no pudimos actualizarla\)/),
+      ).toBeInTheDocument()
+    })
+
+    it('suggests nothing without a rate', async () => {
+      const { user } = open('claude')
+      await user.click(screen.getByRole('button', { name: 'Pro' }))
+      expect(screen.getByLabelText('Monto en pesos')).toHaveValue('')
+      expect(screen.queryByText(/Precio de referencia/)).not.toBeInTheDocument()
+    })
+
+    it('leaves peso-billed services and unpriced plans as they were', async () => {
+      rateState.value = { data: rate, isError: false, fetchStatus: 'idle' }
+      const { user } = open('netflix')
+      await user.click(screen.getByRole('button', { name: 'Premium' }))
+      expect(screen.getByLabelText('Monto en pesos')).toHaveValue('')
+      expect(screen.queryByText(/Precio de referencia/)).not.toBeInTheDocument()
     })
   })
 })

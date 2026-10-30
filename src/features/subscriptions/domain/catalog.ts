@@ -24,7 +24,8 @@ export interface CatalogService {
   /** File name (without extension) in src/assets/brands; absent = generic icon. */
   logo?: string
   /**
-   * Usual plan names, WITHOUT prices: the person types what they really pay in pesos. They come from the
+   * Usual plan names. Prices live apart in referencePrices.ts (only verified USD ones); the person can
+   * always type what they really pay in pesos. The names come from the
    * services' public plan names and have not been checked against each provider, so the screen calls them
    * "planes habituales". Leave empty when unsure; the plan can always be typed.
    */

@@ -43,6 +43,14 @@ describe('SharedExpenseForm', () => {
     expect(within(third as HTMLElement).getByText('$33,33')).toBeInTheDocument()
   })
 
+  it('offers only real split methods and a single payer while the simulated splits flag is off', () => {
+    setup()
+    expect(screen.getByRole('button', { name: 'Partes iguales' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Por %' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Por monto' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Pagaron varios/ })).toBeNull()
+  })
+
   it('submits integer cents and the participants', async () => {
     const { user, onSubmit } = setup()
     await user.type(screen.getByLabelText('Monto'), '100')

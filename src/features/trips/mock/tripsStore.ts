@@ -35,29 +35,7 @@ export const DEFAULT_BUDGET_ITEMS: BudgetItem[] = [
   { name: 'Excursiones', icon: 'pin', share: 0.15 },
 ]
 
-const store = createMockStore<{ solo: SoloTrip[]; past: PastTrip[] }>({
-  solo: [
-    {
-      id: 'bariloche',
-      name: 'Bariloche',
-      from: '2026-12-12',
-      to: '2026-12-19',
-      budgetCents: 600_000_00,
-      savedCents: 360_000_00,
-      saving: true,
-      items: DEFAULT_BUDGET_ITEMS,
-      spentCents: 0,
-    },
-  ],
-  past: [
-    {
-      id: 'mdq',
-      name: 'Mar del Plata',
-      label: '10 al 17 de ene · 4 personas',
-      myShareCents: 188_400_00,
-    },
-  ],
-})
+const store = createMockStore<{ solo: SoloTrip[]; past: PastTrip[] }>({ solo: [], past: [] })
 
 export function useTrips() {
   return useMockStore(store)

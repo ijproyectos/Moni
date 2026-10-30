@@ -19,6 +19,7 @@ import { overlayDeltaFor } from '@/features/groups/domain/ledger'
 import { addGuest, patchOverlay, useOverlays } from '@/features/groups/mock/overlayStore'
 import { AddPersonSheet } from '@/features/groups/ui/AddPersonSheet'
 import { AvatarStack } from '@/features/groups/ui/groupVisuals'
+import { FEATURES } from '@/shared/config/features'
 import { parseAmountInput } from '@/shared/lib/amountInput'
 import { formatDayMonth } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
@@ -62,11 +63,16 @@ export function TripsPage() {
       <PageHeader
         title="Viajes"
         action={
-          <HeaderAddButton label="Nuevo viaje" onClick={() => setParams({ nuevo: 'solo' })} />
+          <HeaderAddButton
+            label="Nuevo viaje"
+            onClick={() => setParams({ nuevo: FEATURES.soloTrips ? 'solo' : 'grupo' })}
+          />
         }
       />
       <p className="-mt-2 text-[16px] text-text-muted">
-        Para vos solo, o en grupo con gastos compartidos.
+        {FEATURES.soloTrips
+          ? 'Para vos solo, o en grupo con gastos compartidos.'
+          : 'En grupo, con gastos compartidos.'}
       </p>
       {trips.solo.map((t) => (
         <Link
@@ -193,7 +199,7 @@ function NewTripSheet({
   const toast = useToast()
   const createGroup = useCreateGroup()
   const today = todayIso()
-  const [mode, setMode] = useState(initialMode)
+  const [mode, setMode] = useState<'solo' | 'group'>(FEATURES.soloTrips ? initialMode : 'group')
   const [name, setName] = useState('')
   const [from, setFrom] = useState(addDays(today, 30))
   const [to, setTo] = useState(addDays(today, 34))
@@ -260,15 +266,17 @@ function NewTripSheet({
   return (
     <BottomSheet title="Nuevo viaje" onClose={onClose}>
       <div className="flex flex-col gap-3">
-        <SegmentedControl
-          label="Tipo de viaje"
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: 'solo', label: 'Solo yo' },
-            { value: 'group', label: 'Con grupo' },
-          ]}
-        />
+        {FEATURES.soloTrips && (
+          <SegmentedControl
+            label="Tipo de viaje"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'solo', label: 'Solo yo' },
+              { value: 'group', label: 'Con grupo' },
+            ]}
+          />
+        )}
         <SectionLabel>¿A dónde vas?</SectionLabel>
         <input
           value={name}
@@ -414,7 +422,7 @@ export function SoloTripPage() {
         <div className="mt-4 flex gap-3 rounded-[18px] bg-surface p-4 text-[16px] leading-6">
           <MoniGlyph className="mt-0.5 text-lime" />
           <p>
-            <strong className="font-extrabold">Moni dice:</strong> ahorrá {formatArs(perWeek)} por
+            <strong className="font-extrabold">Sugerido:</strong> ahorrá {formatArs(perWeek)} por
             semana durante {weeks} semanas y llegás.
           </p>
         </div>

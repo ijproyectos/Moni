@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
+import { FEATURES } from '@/shared/config/features'
 import { ToastProvider } from '@/shared/ui/Toast'
 import { makeGoal, makeSavings, makeSavingsAccount } from '../domain/testing'
 import { GoalsPage } from './GoalsPage'
@@ -162,10 +163,23 @@ describe('GoalsPage (real goals)', () => {
     expect(screen.queryByText(/Revisá tu conexión/)).toBeNull()
   })
 
-  it('keeps the shortcuts to the installments calculator and to Aguinaldo, and the shared goals entry', () => {
+  it('keeps the installments calculator shortcut and hides Aguinaldo and shared goals (no backend)', () => {
     setup(overview)
     expect(screen.getByRole('link', { name: /Cuotas/ })).toHaveAttribute('href', '/metas/cuotas')
-    expect(screen.getByRole('link', { name: /Aguinaldo/ })).toHaveAttribute('href', '/aguinaldo')
-    expect(screen.getByRole('button', { name: /Compartidas/ })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Aguinaldo/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Compartidas/ })).toBeNull()
+  })
+
+  it('shows the Aguinaldo and shared goals entries when their flags are on', () => {
+    FEATURES.aguinaldo = true
+    FEATURES.sharedGoals = true
+    try {
+      setup(overview)
+      expect(screen.getByRole('link', { name: /Aguinaldo/ })).toHaveAttribute('href', '/aguinaldo')
+      expect(screen.getByRole('button', { name: /Compartidas/ })).toBeInTheDocument()
+    } finally {
+      FEATURES.aguinaldo = false
+      FEATURES.sharedGoals = false
+    }
   })
 })

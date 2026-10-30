@@ -81,3 +81,13 @@ export function validateDraft(draft: DraftMovement): DraftValidation {
   if (parsed.success) return { ok: true, values: parsed.data }
   return { ok: false, message: parsed.error.issues[0]?.message ?? 'Revisá este movimiento.' }
 }
+
+/** One short line telling the person what was adjusted or dropped, from the function's warnings. */
+export function warningsNotice(warnings: ParseResponse['warnings']): string | null {
+  const codes = new Set(warnings.map((w) => w.code))
+  const notes: string[] = []
+  if (codes.has('items_truncated')) notes.push('Tomamos solo los primeros 10 movimientos.')
+  if (codes.has('date_adjusted')) notes.push('Ajustamos alguna fecha: revisala.')
+  if (codes.has('item_dropped')) notes.push('Dejamos afuera algo que no se entendió.')
+  return notes.length > 0 ? notes.join(' ') : null
+}

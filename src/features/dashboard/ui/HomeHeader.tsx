@@ -1,6 +1,7 @@
 import { Bell, Eye, EyeOff } from 'lucide-react'
 import { Link } from 'react-router'
 import { useNotifications } from '@/features/notifications/mock/notificationsStore'
+import { FEATURES } from '@/shared/config/features'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
 import { MonthPicker } from '@/shared/ui/MonthPicker'
@@ -44,18 +45,20 @@ export function HomeHeader({
       <div className="flex items-center justify-between gap-3">
         <MonthPicker value={month} latest={latestMonth} onChange={onMonthChange} />
         <div className="flex items-center gap-2">
-          <Link
-            to="/avisos"
-            aria-label={unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos'}
-            className="relative flex size-12 items-center justify-center rounded-full bg-surface text-cream"
-          >
-            <Bell aria-hidden="true" className="size-6" strokeWidth={2} />
-            {unread > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-blush text-[12px] font-extrabold text-forest">
-                {unread}
-              </span>
-            )}
-          </Link>
+          {FEATURES.notifications && (
+            <Link
+              to="/avisos"
+              aria-label={unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos'}
+              className="relative flex size-12 items-center justify-center rounded-full bg-surface text-cream"
+            >
+              <Bell aria-hidden="true" className="size-6" strokeWidth={2} />
+              {unread > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-blush text-[12px] font-extrabold text-forest">
+                  {unread}
+                </span>
+              )}
+            </Link>
+          )}
           <Link
             to="/perfil"
             aria-label="Perfil"

@@ -4,6 +4,8 @@ import { isCreditCard, type Account } from '@/features/accounts/domain/account'
 import { formatAmountInput } from '@/shared/lib/amountInput'
 import { todayIso } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
+import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
+import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { Button } from '@/shared/ui/Button'
 import {
   transferFormSchema,
@@ -35,6 +37,7 @@ export function TransferForm({
   submitError,
   onSubmit,
 }: TransferFormProps) {
+  const online = useOnlineStatus()
   const toId = accounts.find((a) => a.id === defaultToAccountId)?.id ?? accounts[1]?.id ?? ''
   // Paying a card comes out of money you have, so prefer a non-card account as the origin.
   const fromId =
@@ -120,7 +123,12 @@ export function TransferForm({
           {submitError}
         </p>
       )}
-      <Button type="submit" variant="dark" disabled={isSubmitting}>
+      {!online && (
+        <p role="status" className="text-center text-sm font-semibold text-text-muted">
+          {OFFLINE_MESSAGE}
+        </p>
+      )}
+      <Button type="submit" variant="dark" disabled={isSubmitting || !online}>
         {isSubmitting ? 'Guardando…' : 'Guardar'}
       </Button>
     </form>
