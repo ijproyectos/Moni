@@ -1,18 +1,15 @@
-import { Copy, CreditCard, Plus } from 'lucide-react'
-import { useState } from 'react'
-import { Link } from 'react-router'
+import { CreditCard, Plus } from 'lucide-react'
+import { useState, type MouseEvent } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
-import { FEATURES } from '@/shared/config/features'
 import { toUserMessage } from '@/shared/lib/errors'
 import type { AccountKind } from '@/shared/lib/database.types'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { cn } from '@/shared/ui/cn'
-import { DashedButton, HeaderAddButton, SectionLabel, Toggle } from '@/shared/ui/kit'
-import { copyText } from '@/shared/lib/share'
+import { DashedButton, HeaderAddButton } from '@/shared/ui/kit'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
@@ -20,12 +17,7 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
-import {
-  useAccounts,
-  useArchiveAccount,
-  useCreateAccount,
-  useUpdateAccount,
-} from '../api/useAccounts'
+import { useAccounts, useArchiveAccount, useCreateAccount } from '../api/useAccounts'
 import {
   ACCOUNT_KIND_LABELS,
   availableCredit,
@@ -35,12 +27,11 @@ import {
 } from '../domain/account'
 import type { OpeningOrigin } from '../domain/openingOrigin'
 import { brandForAccountName } from '../domain/bankCatalog'
-import { setAccountAlias, useAccountAliases, type AccountAlias } from '../mock/aliasStore'
-import { CardSummarySection } from '@/features/cards/ui/CardSummarySection'
+import { skinForAccountName, skinStyle } from '../domain/cardSkins'
+import { AccountDetail } from './AccountDetail'
 import { AccountForm } from './AccountForm'
+import { BrandBadge, BrandCardArt } from './BrandCardArt'
 import { BrandLogo } from './BrandLogo'
-import { AdjustBalanceSection } from './AdjustBalanceSection'
-import { ClassifyOpeningSection } from './ClassifyOpeningSection'
 
 const KIND_SUBTITLES: Record<AccountKind, string> = {
   cash: 'Billetes que tenés encima',
@@ -57,54 +48,44 @@ const CARD_TONES = [
   'bg-lime text-forest',
 ]
 
-type Editing = { account?: Account } | null
+/** The card that was opened (its detail grows from where the card was in the list). */
+type Opened = { id: string; tone: string; origin: { top: number; height: number } } | null
 
-/** Medios de pago (063/064): real accounts with derived balances; the alias is simulated. */
+/** Medios de pago (063/064): real accounts with derived balances. Tapping one opens its detail (name, balance, transfer data). */
 export function AccountsPage() {
   const accounts = useAccounts()
   const create = useCreateAccount()
-  const update = useUpdateAccount()
   const incomeCategories = useCategories('income').data ?? []
   // What the savings goals reserve in each account (virtual: the real balance is the one shown on the right).
   const reserve = new Map((useSavings().data?.accounts ?? []).map((a) => [a.id, a]))
   const archive = useArchiveAccount()
   const toast = useToast()
   const { openNew } = useMovementSheet()
-  const [editing, setEditing] = useState<Editing>(null)
+  const [creating, setCreating] = useState(false)
+  const [opened, setOpened] = useState<Opened>(null)
   const [archiving, setArchiving] = useState<Account | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const aliases = useAccountAliases()
-  const [aliasDraft, setAliasDraft] = useState<AccountAlias>({ alias: '', forCollecting: false })
 
   const list = accounts.data ?? []
-  const featuredId = list.find((a) => aliases[a.id]?.forCollecting)?.id ?? list[list.length - 1]?.id
+  const openedAccount = opened ? list.find((a) => a.id === opened.id) : undefined
+  const featuredId = list[list.length - 1]?.id
 
-  function startEditing(account?: Account) {
+  function startCreating() {
     setSubmitError(null)
-    setAliasDraft(
-      account
-        ? (aliases[account.id] ?? { alias: '', forCollecting: false })
-        : { alias: '', forCollecting: false },
-    )
-    setEditing(account ? { account } : {})
+    setCreating(true)
+  }
+
+  function openDetail(account: Account, tone: string, card: HTMLElement | null) {
+    const rect = card?.getBoundingClientRect()
+    setOpened({ id: account.id, tone, origin: { top: rect?.top ?? 0, height: rect?.height ?? 96 } })
   }
 
   async function save(values: AccountFormValues, origin: OpeningOrigin) {
     setSubmitError(null)
     try {
-      if (editing?.account) {
-        await update.mutateAsync({
-          id: editing.account.id,
-          values,
-          previousKind: editing.account.kind,
-        })
-        if (FEATURES.accountAlias)
-          setAccountAlias(editing.account.id, { ...aliasDraft, alias: aliasDraft.alias.trim() })
-      } else await create.mutateAsync({ values, origin })
-      toast.show(editing?.account ? 'Medio actualizado' : 'Medio creado', {
-        mascotUrl: mascotHappy,
-      })
-      setEditing(null)
+      await create.mutateAsync({ values, origin })
+      toast.show('Medio creado', { mascotUrl: mascotHappy })
+      setCreating(false)
     } catch (e) {
       setSubmitError(toUserMessage(e))
     }
@@ -116,7 +97,7 @@ export function AccountsPage() {
       await archive.mutateAsync({ id: archiving.id })
       toast.show('Medio eliminado')
       setArchiving(null)
-      setEditing(null)
+      setOpened(null)
     } catch (e) {
       toast.show(toUserMessage(e), { tone: 'error' })
       setArchiving(null)
@@ -128,13 +109,9 @@ export function AccountsPage() {
       <PageHeader
         title="Medios de pago"
         backTo="/mas"
-        action={<HeaderAddButton label="Nuevo medio de pago" onClick={() => startEditing()} />}
+        action={<HeaderAddButton label="Nuevo medio de pago" onClick={startCreating} />}
       />
-      <p className="-mt-1 text-[16px] text-text-muted">
-        {FEATURES.accountAlias
-          ? 'Tocá una tarjeta para cargar o cambiar su alias.'
-          : 'Tocá un medio para editarlo.'}
-      </p>
+      <p className="-mt-1 text-[16px] text-text-muted">Tocá un medio para ver su detalle.</p>
 
       {accounts.isLoading ? (
         <div role="status" aria-label="Cargando cuentas" className="flex flex-col gap-3">
@@ -161,9 +138,11 @@ export function AccountsPage() {
             <ul aria-label="Medios de pago" className="flex flex-col">
               {list.map((account, i) => {
                 const featured = account.id === featuredId
-                const alias = aliases[account.id]
                 const brand = brandForAccountName(account.name)
-                const tone = featured ? CARD_TONES[3] : CARD_TONES[i % 3]
+                // Banks and wallets of the catalog wear their own identity; cash and custom media keep Moni's colors.
+                const skin = skinForAccountName(account.name)
+                const tone =
+                  (featured ? CARD_TONES[3] : CARD_TONES[i % 3]) ?? 'bg-forest text-cream'
                 return (
                   <li
                     key={account.id}
@@ -171,19 +150,29 @@ export function AccountsPage() {
                     style={{ zIndex: i }}
                   >
                     <div
+                      data-account-card
                       className={cn(
                         'relative overflow-hidden rounded-[26px] shadow-[0_-6px_16px_rgba(6,71,53,0.12)]',
-                        tone,
+                        !skin && tone,
                       )}
+                      style={skin ? skinStyle(skin) : undefined}
                     >
+                      {skin && <BrandCardArt skin={skin} />}
                       <button
                         type="button"
-                        onClick={() => startEditing(account)}
-                        aria-label={`Editar ${account.name}`}
-                        className="flex w-full items-start justify-between gap-3 px-5 pb-8 pt-4 text-left"
+                        onClick={(e: MouseEvent<HTMLElement>) =>
+                          openDetail(account, tone, e.currentTarget.closest('[data-account-card]'))
+                        }
+                        aria-label={`Abrir ${account.name}`}
+                        className="relative flex w-full items-start justify-between gap-3 px-5 pb-8 pt-4 text-left"
                       >
                         <span className="flex items-start gap-3">
-                          {brand && <BrandLogo brand={brand} className="mt-0.5" />}
+                          {brand &&
+                            (skin ? (
+                              <BrandBadge brand={brand} skin={skin} className="mt-0.5" />
+                            ) : (
+                              <BrandLogo brand={brand} className="mt-0.5" />
+                            ))}
                           <span>
                             <span className="block text-[20px] font-extrabold leading-6">
                               {account.name}
@@ -192,9 +181,6 @@ export function AccountsPage() {
                               {KIND_SUBTITLES[account.kind] ?? ACCOUNT_KIND_LABELS[account.kind]}
                               {account.closingDay && account.dueDay
                                 ? ` · cierra el ${account.closingDay}`
-                                : ''}
-                              {FEATURES.accountAlias && !featured && alias?.alias
-                                ? ` · ${alias.alias}`
                                 : ''}
                             </span>
                             {!isCreditCard(account) &&
@@ -210,14 +196,7 @@ export function AccountsPage() {
                               )}
                           </span>
                         </span>
-                        {featured ? (
-                          FEATURES.accountAlias &&
-                          alias?.forCollecting && (
-                            <span className="rounded-full bg-forest px-3 py-1 text-[13px] font-extrabold text-lime">
-                              Para cobrar
-                            </span>
-                          )
-                        ) : isCreditCard(account) ? (
+                        {featured ? null : isCreditCard(account) ? (
                           <span className="text-right">
                             <span className="block text-[13px] opacity-80">
                               {account.balanceCents > 0 ? 'A favor' : 'Deuda'}
@@ -240,15 +219,19 @@ export function AccountsPage() {
                         )}
                       </button>
                       {featured && (
-                        <div className="px-5 pb-5">
-                          <span
-                            aria-hidden="true"
-                            className="pointer-events-none absolute -right-10 -top-6 size-44 rounded-full bg-white/15"
-                          />
-                          <span
-                            aria-hidden="true"
-                            className="pointer-events-none absolute -bottom-16 right-10 size-44 rounded-full bg-white/15"
-                          />
+                        <div className="relative px-5 pb-5">
+                          {!skin && (
+                            <>
+                              <span
+                                aria-hidden="true"
+                                className="pointer-events-none absolute -right-10 -top-6 size-44 rounded-full bg-white/15"
+                              />
+                              <span
+                                aria-hidden="true"
+                                className="pointer-events-none absolute -bottom-16 right-10 size-44 rounded-full bg-white/15"
+                              />
+                            </>
+                          )}
                           <p className="text-[15px]">
                             {isCreditCard(account)
                               ? account.balanceCents > 0
@@ -274,31 +257,7 @@ export function AccountsPage() {
                             </p>
                           )}
                           <div className="mt-3 flex items-center justify-between">
-                            {FEATURES.accountAlias ? (
-                              <>
-                                {alias?.alias ? (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      void copyText(alias.alias, toast, 'Alias copiado')
-                                    }
-                                    className="relative flex min-h-11 items-center gap-2 rounded-full bg-white/60 px-4 text-[17px] font-extrabold"
-                                  >
-                                    <Copy aria-hidden="true" className="size-4" /> {alias.alias}
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => startEditing(account)}
-                                    className="relative flex min-h-11 items-center gap-2 rounded-full bg-white/60 px-4 text-[16px] font-extrabold"
-                                  >
-                                    <Plus aria-hidden="true" className="size-4" /> Cargar alias
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <span />
-                            )}
+                            <span />
                             <CreditCard aria-hidden="true" className="relative size-7" />
                           </div>
                         </div>
@@ -310,7 +269,7 @@ export function AccountsPage() {
             </ul>
           )}
 
-          <DashedButton onClick={() => startEditing()}>
+          <DashedButton onClick={startCreating}>
             <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} />
             Agregar otro medio
           </DashedButton>
@@ -322,70 +281,32 @@ export function AccountsPage() {
         </>
       )}
 
-      {editing && (
-        <BottomSheet
-          title={editing.account ? editing.account.name : 'Nuevo medio de pago'}
-          onClose={() => setEditing(null)}
-        >
+      {creating && (
+        <BottomSheet title="Nuevo medio de pago" onClose={() => setCreating(false)}>
           <AccountForm
-            initial={editing.account}
-            isSubmitting={create.isPending || update.isPending}
+            isSubmitting={create.isPending}
             submitError={submitError}
             incomeCategories={incomeCategories}
             onSubmit={(values, origin) => void save(values, origin)}
-            onArchive={
-              editing.account && list.length > 1
-                ? () => setArchiving(editing.account ?? null)
-                : undefined
-            }
-          >
-            {editing.account && (
-              <>
-                {!isCreditCard(editing.account) && editing.account.openingBalanceCents > 0 && (
-                  <ClassifyOpeningSection
-                    account={editing.account}
-                    incomeCategories={incomeCategories}
-                    onDone={() => setEditing(null)}
-                  />
-                )}
-                <AdjustBalanceSection account={editing.account} onDone={() => setEditing(null)} />
-                {isCreditCard(editing.account) && (
-                  <Link
-                    to="/tarjetas"
-                    className="self-start text-[15px] font-extrabold text-forest underline"
-                  >
-                    Ver resumen y cuotas en Tarjetas de crédito
-                  </Link>
-                )}
-                {isCreditCard(editing.account) && (
-                  <CardSummarySection
-                    accountId={editing.account.id}
-                    onPay={(amountCents) => {
-                      const card = editing.account
-                      setEditing(null)
-                      if (card) openNew('transfer', { toAccountId: card.id, amountCents })
-                    }}
-                  />
-                )}
-                {isCreditCard(editing.account) && list.length >= 2 && (
-                  <Button
-                    variant="dark"
-                    onClick={() => {
-                      const card = editing.account
-                      setEditing(null)
-                      if (card) openNew('transfer', { toAccountId: card.id })
-                    }}
-                  >
-                    Pagar otro monto
-                  </Button>
-                )}
-                {FEATURES.accountAlias && (
-                  <AliasFields value={aliasDraft} onChange={setAliasDraft} />
-                )}
-              </>
-            )}
-          </AccountForm>
+          />
         </BottomSheet>
+      )}
+      {openedAccount && opened && (
+        <AccountDetail
+          account={openedAccount}
+          tone={opened.tone}
+          origin={opened.origin}
+          reserve={isCreditCard(openedAccount) ? undefined : reserve.get(openedAccount.id)}
+          incomeCategories={incomeCategories}
+          canDelete={list.length > 1}
+          canPayCard={list.length >= 2}
+          onClose={() => setOpened(null)}
+          onDelete={() => setArchiving(openedAccount)}
+          onPayCard={() => {
+            setOpened(null)
+            openNew('transfer', { toAccountId: openedAccount.id })
+          }}
+        />
       )}
       {archiving && (
         <ConfirmDialog
@@ -398,54 +319,5 @@ export function AccountsPage() {
         />
       )}
     </section>
-  )
-}
-
-function AliasFields({
-  value,
-  onChange,
-}: {
-  value: AccountAlias
-  onChange: (v: AccountAlias) => void
-}) {
-  const toast = useToast()
-  return (
-    <div className="flex flex-col gap-2">
-      <SectionLabel>Alias</SectionLabel>
-      <div className="flex h-16 items-center rounded-[18px] border-2 border-forest bg-white pl-4 pr-2">
-        <input
-          value={value.alias}
-          onChange={(e) => onChange({ ...value, alias: e.target.value })}
-          placeholder="tunombre.mp"
-          aria-label="Alias"
-          maxLength={40}
-          className="min-w-0 flex-1 bg-transparent text-[20px] font-extrabold outline-none placeholder:font-normal placeholder:text-text-muted"
-        />
-        {value.alias && (
-          <button
-            type="button"
-            aria-label="Copiar alias"
-            onClick={() => void copyText(value.alias, toast, 'Alias copiado')}
-            className="flex size-11 items-center justify-center"
-          >
-            <Copy aria-hidden="true" className="size-5" />
-          </button>
-        )}
-      </div>
-      <p className="text-[14px] text-text-muted">
-        Es lo que les va a aparecer a los demás para pasarte la plata.
-      </p>
-      <div className="flex items-center gap-3 rounded-[18px] border border-sand bg-white px-4 py-3">
-        <span className="flex-1">
-          <span className="block text-[17px] font-extrabold">Usar para que me paguen</span>
-          <span className="block text-[14px] text-text-muted">Aparece en tus resúmenes</span>
-        </span>
-        <Toggle
-          label="Usar para que me paguen"
-          checked={value.forCollecting}
-          onChange={(forCollecting) => onChange({ ...value, forCollecting })}
-        />
-      </div>
-    </div>
   )
 }

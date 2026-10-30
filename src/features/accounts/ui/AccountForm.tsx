@@ -15,7 +15,7 @@ import {
   type AccountFormInput,
   type AccountFormValues,
 } from '../domain/account'
-import { BANK_CATALOG, normalizeBrandName, type BankBrand } from '../domain/bankCatalog'
+import { normalizeBrandName, QUICK_ADD_BRANDS, type BankBrand } from '../domain/bankCatalog'
 import { defaultOpeningOrigin, originProblem, type OpeningOrigin } from '../domain/openingOrigin'
 import { BrandLogo } from './BrandLogo'
 import { OpeningOriginFields } from './OpeningOriginFields'
@@ -117,7 +117,7 @@ export function AccountForm({
             Agregar rápido
           </span>
           <ul className="flex flex-wrap gap-2">
-            {BANK_CATALOG.map((brand) => (
+            {QUICK_ADD_BRANDS.map((brand) => (
               <li key={brand.id}>
                 <button
                   type="button"
@@ -136,7 +136,10 @@ export function AccountForm({
 
       <SegmentedControl
         label="Tipo de cuenta"
-        options={KIND_OPTIONS}
+        // Credit cards are no longer created from here (only Efectivo, Banco and Billetera); a card that already exists keeps its type.
+        options={KIND_OPTIONS.filter(
+          (o) => o.value !== 'credit_card' || initial?.kind === 'credit_card',
+        )}
         value={kind}
         onChange={(value) => setValue('kind', value)}
       />

@@ -117,7 +117,7 @@ describe('CardsPage (Tarjetas de crédito)', () => {
     accountsData.current = [makeAccount({ id: 'cash', name: 'Efectivo' })]
     renderPage()
     expect(screen.getByText('Todavía no tenés tarjetas')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Agregar una tarjeta' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Ir a Medios de pago' })).toHaveAttribute(
       'href',
       '/cuentas',
     )

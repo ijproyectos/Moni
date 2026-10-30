@@ -38,3 +38,17 @@ Santander.
 Para sumar uno: copiar el SVG o PNG a `src/assets/brands/<nombre>.svg` (o `.png`), poner `<nombre>` en el campo
 `logo` de su entrada en `bankCatalog.ts` y listar acá la fuente, versión y licencia. `logos.ts` toma todos los
 archivos de la carpeta automáticamente. Un test falla si queda un archivo sin usar.
+
+### Diseño de las tarjetas de Medios de pago
+
+El color, el dibujo de fondo y el emblema de cada banco y billetera (`src/features/accounts/domain/cardSkins.ts` y
+`src/features/accounts/ui/BrandCardArt.tsx`) son ilustraciones propias de Moni, inspiradas en la paleta de cada
+entidad: no copian su logo ni una tarjeta física, y nunca muestran números, vencimientos ni datos bancarios. Los
+colores son aproximados (no salen de una guía de marca oficial) y cada combinación de texto y fondo cumple un
+contraste mínimo de 4,5:1. Cuando el dueño aporte el logo oficial de una entidad, se suma en esta carpeta y se
+referencia en `bankCatalog.ts`: la tarjeta lo muestra solo en lugar del emblema.
+
+### Ícono de «Hormigas»
+
+`src/shared/ui/AntIcon.tsx` usa la silueta «Ant» de Fluent Emoji High Contrast (Microsoft, licencia MIT,
+https://github.com/microsoft/fluentui-emoji), reflejada para mirar hacia la derecha.

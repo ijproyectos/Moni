@@ -18,6 +18,11 @@ export interface BankBrand {
    * initials avatar. To add one, drop the file in src/assets/brands/ and set its name here (see ATTRIBUTION.md).
    */
   logo?: string
+  /**
+   * Offered in "Agregar rápido". Credit cards (Visa, Mastercard, Amex) are not offered any more, but stay in the catalog so
+   * the cards a person already has keep their logo and their look.
+   */
+  quickAdd: boolean
 }
 
 const b = (
@@ -27,7 +32,7 @@ const b = (
   brandColor: string,
   initials: string,
   logo?: string,
-): BankBrand => ({ id, name, kind, brandColor, initials, logo })
+): BankBrand => ({ id, name, kind, brandColor, initials, logo, quickAdd: kind !== 'credit_card' })
 
 /** Order of the chips in "Agregar rápido". Static: nothing here comes from the person or the database. */
 export const BANK_CATALOG: readonly BankBrand[] = [
@@ -49,6 +54,9 @@ export const BANK_CATALOG: readonly BankBrand[] = [
   b('galicia', 'Galicia', 'bank', '#F36F21', 'GA'),
   b('santander', 'Santander', 'bank', '#EC0000', 'SA'),
 ]
+
+/** The brands offered in "Agregar rápido": banks and wallets (no credit cards), in the owner order. */
+export const QUICK_ADD_BRANDS: readonly BankBrand[] = BANK_CATALOG.filter((brand) => brand.quickAdd)
 
 /** Lowercase, accent-free, single-spaced: "  Ualá " and "uala" compare equal. */
 export function normalizeBrandName(name: string): string {

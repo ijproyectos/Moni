@@ -105,6 +105,9 @@ export interface Database {
           credit_limit?: number | null
           closing_day?: number | null
           due_day?: number | null
+          /** Alias and CBU / CVU to receive transfers (migration 20261108000000); absent until it is applied. */
+          transfer_alias?: string | null
+          transfer_cbu?: string | null
           created_at: string
           updated_at: string
         }
@@ -124,6 +127,8 @@ export interface Database {
           credit_limit?: number | null
           closing_day?: number | null
           due_day?: number | null
+          transfer_alias?: string | null
+          transfer_cbu?: string | null
         }
         Relationships: []
       }
@@ -191,6 +196,43 @@ export interface Database {
           budget?: number
           archived_at?: string | null
         }
+        Relationships: []
+      }
+      payment_reports: {
+        Row: {
+          id: string
+          group_id: string
+          from_user: string
+          to_user: string
+          amount: number
+          status: 'reported' | 'confirmed' | 'rejected' | 'cancelled'
+          settlement_id: string | null
+          reported_at: string
+          resolved_at: string | null
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          kind: 'debt_reminder' | 'payment_reported' | 'payment_confirmed' | 'payment_rejected'
+          group_id: string
+          group_name: string
+          actor_id: string
+          actor_name: string
+          amount: number
+          report_id: string | null
+          transfer_label: string | null
+          transfer_alias: string | null
+          transfer_cbu: string | null
+          created_at: string
+          read_at: string | null
+        }
+        Insert: never
+        Update: { read_at?: string | null }
         Relationships: []
       }
       group_trips: {
@@ -667,6 +709,33 @@ export interface Database {
         Args: { p_code: string }
         Returns: string | null
       }
+      remind_debt: {
+        Args: {
+          p_group: string
+          p_debtor: string
+          p_amount: number
+          p_transfer_label?: string | null
+          p_transfer_alias?: string | null
+          p_transfer_cbu?: string | null
+        }
+        Returns: string
+      }
+      report_payment: {
+        Args: { p_group: string; p_creditor: string; p_amount: number }
+        Returns: string
+      }
+      confirm_payment_report: {
+        Args: { p_report: string }
+        Returns: string | null
+      }
+      reject_payment_report: {
+        Args: { p_report: string }
+        Returns: undefined
+      }
+      cancel_payment_report: {
+        Args: { p_report: string }
+        Returns: undefined
+      }
       set_group_trip: {
         Args: { p_group: string; p_starts_on: string; p_ends_on: string; p_budget: number }
         Returns: undefined
@@ -760,6 +829,8 @@ export type Category = Database['public']['Tables']['categories']['Row']
 export type Account = Database['public']['Tables']['accounts']['Row']
 export type Transaction = Database['public']['Tables']['transactions']['Row']
 export type TripRow = Database['public']['Tables']['trips']['Row']
+export type PaymentReportRow = Database['public']['Tables']['payment_reports']['Row']
+export type NotificationRow = Database['public']['Tables']['notifications']['Row']
 export type GroupTripRow = Database['public']['Tables']['group_trips']['Row']
 export type Budget = Database['public']['Tables']['budgets']['Row']
 export type Transfer = Database['public']['Tables']['transfers']['Row']

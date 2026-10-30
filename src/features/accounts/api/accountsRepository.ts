@@ -1,7 +1,7 @@
 import type { Account as AccountRow } from '@/shared/lib/database.types'
 import { getSupabase } from '@/shared/lib/supabase'
 import { fromCents, toCents } from '@/shared/lib/money'
-import type { Account, AccountFormValues } from '../domain/account'
+import type { Account, AccountFormValues, TransferData } from '../domain/account'
 import { toOpeningRequest, type OpeningOrigin } from '../domain/openingOrigin'
 import type { Cents } from '@/shared/lib/money'
 
@@ -17,6 +17,8 @@ function toAccount(row: AccountRow, balance: number): Account {
     creditLimitCents: row.credit_limit == null ? null : toCents(row.credit_limit),
     closingDay: row.closing_day ?? null,
     dueDay: row.due_day ?? null,
+    transferAlias: row.transfer_alias ?? null,
+    transferCbu: row.transfer_cbu ?? null,
   }
 }
 
@@ -117,6 +119,24 @@ export async function updateAccount(
       opening_balance: storedOpening(values),
       ...(touchesCard ? cardSettings(values) : {}),
     })
+    .eq('id', id)
+  if (error) throw error
+}
+
+/** PostgREST / Postgres answer these when the transfer-data columns do not exist yet (migration not applied). */
+export function isTransferDataNotEnabled(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code
+  return code === '42703' || code === 'PGRST204'
+}
+
+/**
+ * Saves the alias and the CBU / CVU of an account (null clears one). Only these two columns are written: the balance
+ * and the movements come from transactions, so they cannot change.
+ */
+export async function updateTransferData(id: string, data: TransferData): Promise<void> {
+  const { error } = await getSupabase()
+    .from('accounts')
+    .update({ transfer_alias: data.alias, transfer_cbu: data.cbu })
     .eq('id', id)
   if (error) throw error
 }

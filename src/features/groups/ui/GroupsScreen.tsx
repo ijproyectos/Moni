@@ -1,9 +1,7 @@
-import { ChevronRight, KeyRound, Send } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { KeyRound } from 'lucide-react'
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
-import { FEATURES } from '@/shared/config/features'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
@@ -14,18 +12,6 @@ import { GROUP_KIND_LABELS, type MyGroup } from '../domain/group'
 import { GroupKindTile } from './GroupKindIcon'
 
 const DEBTS_SUMMARY_CLASS = 'flex items-center rounded-[24px] bg-forest px-4 py-3 text-cream'
-
-/** Debtor/creditor totals; only a link while the Deudas screen exists (FEATURES.debts). */
-function DebtsSummaryShell({ children }: { children: ReactNode }) {
-  return FEATURES.debts ? (
-    <Link to="/deudas" aria-label="Ver deudas" className={DEBTS_SUMMARY_CLASS}>
-      {children}
-      <ChevronRight aria-hidden="true" className="size-6" />
-    </Link>
-  ) : (
-    <div className={DEBTS_SUMMARY_CLASS}>{children}</div>
-  )
-}
 
 /** A group as listed: real data plus the overlay (name, guests, simulated balance). */
 export interface ListedGroup extends MyGroup {
@@ -38,6 +24,8 @@ interface GroupsScreenProps {
   isError: boolean
   onRetry: () => void
   onNewGroup: () => void
+  /** Taps on the green box: opens "Deudas de grupos" on the tab of the amount that was tapped. */
+  onOpenDebts?: (tab: 'owe' | 'owed') => void
 }
 
 function netLabel(group: ListedGroup): { text: string; tone: 'owed' | 'owes' | 'even' } {
@@ -61,6 +49,7 @@ export function GroupsScreen({
   isError,
   onRetry,
   onNewGroup,
+  onOpenDebts,
 }: GroupsScreenProps) {
   const owe = (groups ?? []).reduce((s, g) => s + Math.max(0, -g.myNetCents), 0)
   const owed = (groups ?? []).reduce((s, g) => s + Math.max(0, g.myNetCents), 0)
@@ -106,23 +95,33 @@ export function GroupsScreen({
         </>
       ) : (
         <>
-          <DebtsSummaryShell>
-            <span className="flex-1">
+          <div className={DEBTS_SUMMARY_CLASS}>
+            <button
+              type="button"
+              aria-label="Ver lo que debés"
+              onClick={() => onOpenDebts?.('owe')}
+              className="min-h-11 flex-1 rounded-[16px] text-left"
+            >
               <span className="block text-[15px] text-text-muted-on-dark">Debés</span>
               <AmountDisplay
                 cents={owe}
                 className="block font-display text-[24px] font-extrabold text-blush"
               />
-            </span>
+            </button>
             <span aria-hidden="true" className="mx-3 h-10 w-px bg-white/15" />
-            <span className="flex-1">
+            <button
+              type="button"
+              aria-label="Ver lo que te deben"
+              onClick={() => onOpenDebts?.('owed')}
+              className="min-h-11 flex-1 rounded-[16px] text-left"
+            >
               <span className="block text-[15px] text-text-muted-on-dark">Te deben</span>
               <AmountDisplay
                 cents={owed}
                 className="block font-display text-[24px] font-extrabold text-lime"
               />
-            </span>
-          </DebtsSummaryShell>
+            </button>
+          </div>
           <ul className="flex flex-col gap-3">
             {groups.map((group) => {
               const net = netLabel(group)
@@ -162,21 +161,13 @@ export function GroupsScreen({
               )
             })}
           </ul>
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              to="/viajes"
-              className="flex h-14 items-center justify-center gap-2 rounded-full border border-sand bg-white text-[17px] font-extrabold"
-            >
-              <Send aria-hidden="true" className="size-5" /> Mis viajes
-            </Link>
-            <Link
-              to="/grupos/unirse"
-              className="flex h-14 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-sand bg-white text-[16px] font-extrabold"
-            >
-              <KeyRound aria-hidden="true" className="size-5 shrink-0 -scale-x-100" /> Entrar con un
-              código
-            </Link>
-          </div>
+          <Link
+            to="/grupos/unirse"
+            className="flex h-14 items-center justify-center gap-3 rounded-full border border-sand bg-white text-[17px] font-extrabold"
+          >
+            <KeyRound aria-hidden="true" className="size-5 -scale-x-100" strokeWidth={2} />
+            Entrar con un código
+          </Link>
         </>
       )}
     </section>

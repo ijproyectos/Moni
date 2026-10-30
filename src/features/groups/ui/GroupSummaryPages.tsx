@@ -12,7 +12,11 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import mascotUrl from '@/assets/mascot/expresion_picaro.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
-import { useAccountAliases } from '@/features/accounts/mock/aliasStore'
+import {
+  canHoldTransferData,
+  hasTransferData,
+  transferLines,
+} from '@/features/accounts/domain/account'
 import { formatLongDay } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
 import { copyText } from '@/shared/lib/share'
@@ -31,18 +35,16 @@ import { AvatarStack } from './groupVisuals'
 function useSummaryData() {
   const { id: groupId = '' } = useParams()
   const data = useGroupLedger(groupId)
-  const aliases = useAccountAliases()
   const accounts = useAccounts()
-  const accountAliases = (accounts.data ?? [])
-    .map((a) => ({ account: a.name, alias: aliases[a.id]?.alias ?? '' }))
-    .filter((a) => a.alias)
-  const myAlias =
-    data.overlay.collectAlias ??
-    Object.values(aliases).find((a) => a.forCollecting)?.alias ??
-    accountAliases[0]?.alias ??
-    ''
-  const aliasOf = (p: Person | undefined) => (p?.isMe ? myAlias : (p?.alias ?? ''))
-  return { groupId, ...data, myAlias, accountAliases, aliasOf }
+  // Accounts that have transfer data (alias and / or CBU / CVU). Nothing from them goes into a summary by itself:
+  // only the account the person chose AND confirmed for this group is used.
+  const shareable = (accounts.data ?? []).filter(
+    (a) => canHoldTransferData(a) && hasTransferData(a),
+  )
+  const shared = shareable.find((a) => a.id === data.overlay.collectAccountId) ?? null
+  const myTransfer = shared ? transferLines(shared).join(' · ') : ''
+  const aliasOf = (p: Person | undefined) => (p?.isMe ? myTransfer : (p?.alias ?? ''))
+  return { groupId, ...data, shareable, shared, myTransfer, aliasOf }
 }
 
 function sentence(ledger: Ledger, meId: string, from: string, to: string, cents: number) {
@@ -179,9 +181,11 @@ export function GroupSummaryPage() {
 export function ShareSummaryPage() {
   const navigate = useNavigate()
   const toast = useToast()
-  const { groupId, ledger, name, meId, myAlias, accountAliases, aliasOf } = useSummaryData()
+  const { groupId, ledger, name, meId, shareable, shared, myTransfer, aliasOf } = useSummaryData()
   const [tab, setTab] = useState<'moni' | 'text'>('moni')
-  const [choosingAlias, setChoosingAlias] = useState(false)
+  const [choosingAccount, setChoosingAccount] = useState(false)
+  // The account highlighted in the sheet: it is only used after "Incluir en el resumen".
+  const [pick, setPick] = useState<string | null>(null)
   const involved = ledger.people.filter(
     (p) => !p.isMe && ledger.transfers.some((t) => t.fromUserId === p.id || t.toUserId === p.id),
   )
@@ -280,18 +284,24 @@ export function ShareSummaryPage() {
         <>
           <button
             type="button"
-            onClick={() => setChoosingAlias(true)}
+            onClick={() => {
+              setPick(shared?.id ?? null)
+              setChoosingAccount(true)
+            }}
             className="flex items-center gap-3 rounded-[24px] border border-sand bg-white p-4 text-left"
           >
             <IconTile icon={WalletCards} bg="#e3f2cf" />
             <span className="flex-1">
-              <SectionLabel>Te pasan la plata a</SectionLabel>
+              <SectionLabel>Datos para que te transfieran</SectionLabel>
               <span className="block text-[18px] font-extrabold">
-                {myAlias || 'Elegí un alias'}
+                {shared ? shared.name : 'No incluir mis datos'}
               </span>
+              {shared && (
+                <span className="block break-all text-[15px] text-text-muted">{myTransfer}</span>
+              )}
             </span>
             <span className="flex items-center text-[15px] font-extrabold">
-              Cambiar <ChevronRight aria-hidden="true" className="size-4" />
+              {shared ? 'Cambiar' : 'Elegir'} <ChevronRight aria-hidden="true" className="size-4" />
             </span>
           </button>
           <SectionLabel>Para el grupo</SectionLabel>
@@ -318,7 +328,7 @@ export function ShareSummaryPage() {
                     type="button"
                     onClick={() =>
                       void copyText(
-                        `${name}: ${lineFor(p)}${myAlias ? ` (${myAlias})` : ''}`,
+                        `${name}: ${lineFor(p)}${myTransfer ? ` (${myTransfer})` : ''}`,
                         toast,
                         'Mensaje copiado',
                       )
@@ -337,40 +347,65 @@ export function ShareSummaryPage() {
           </div>
         </>
       )}
-      {choosingAlias && (
-        <BottomSheet title="¿A dónde te pasan la plata?" onClose={() => setChoosingAlias(false)}>
-          <p className="-mt-2 text-[15px] text-text-muted">
-            Este alias aparece en el resumen que mandás.
+      {choosingAccount && (
+        <BottomSheet title="¿A dónde te transfieren?" onClose={() => setChoosingAccount(false)}>
+          <p className="-mt-2 text-[15px] leading-5 text-text-muted">
+            Elegí qué cuenta querés compartir. Sus datos solo aparecen en el resumen si confirmás.
           </p>
           <ul className="mt-3 flex flex-col gap-2">
-            {accountAliases.map((a) => (
-              <li key={a.alias}>
+            {shareable.map((a) => (
+              <li key={a.id}>
                 <button
                   type="button"
-                  onClick={() => patchOverlay(groupId, { collectAlias: a.alias })}
+                  aria-pressed={pick === a.id}
+                  onClick={() => setPick(a.id)}
                   className={cn(
                     'flex w-full items-center gap-3 rounded-[20px] border-2 bg-white px-4 py-3 text-left',
-                    myAlias === a.alias ? 'border-forest' : 'border-sand',
+                    pick === a.id ? 'border-forest' : 'border-sand',
                   )}
                 >
                   <IconTile icon={CreditCard} bg="#e3f2cf" />
-                  <span className="flex-1">
-                    <span className="block text-[18px] font-extrabold">{a.account}</span>
-                    <span className="block text-[15px] text-text-muted">{a.alias}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[18px] font-extrabold">{a.name}</span>
+                    <span className="block break-all text-[15px] text-text-muted">
+                      {transferLines(a).join(' · ')}
+                    </span>
                   </span>
-                  <CheckDot checked={myAlias === a.alias} />
+                  <CheckDot checked={pick === a.id} />
                 </button>
               </li>
             ))}
+            <li>
+              <button
+                type="button"
+                aria-pressed={pick === null}
+                onClick={() => setPick(null)}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-[20px] border-2 bg-white px-4 py-3 text-left',
+                  pick === null ? 'border-forest' : 'border-sand',
+                )}
+              >
+                <span className="flex-1 text-[17px] font-extrabold">No incluir mis datos</span>
+                <CheckDot checked={pick === null} />
+              </button>
+            </li>
           </ul>
-          {accountAliases.length === 0 && (
-            <p className="mt-3 text-[15px]">Todavía no cargaste alias en tus medios de pago.</p>
+          {shareable.length === 0 && (
+            <p className="mt-3 text-[15px]">
+              Todavía no cargaste datos para transferencias en tus medios de pago.
+            </p>
           )}
           <DashedButton className="mt-3" onClick={() => navigate('/cuentas')}>
-            <Plus aria-hidden="true" className="size-5" /> Agregar otro alias
+            <Plus aria-hidden="true" className="size-5" /> Cargar datos en Medios de pago
           </DashedButton>
-          <Button className="mt-3" onClick={() => setChoosingAlias(false)}>
-            Listo
+          <Button
+            className="mt-3"
+            onClick={() => {
+              patchOverlay(groupId, { collectAccountId: pick ?? undefined })
+              setChoosingAccount(false)
+            }}
+          >
+            {pick ? 'Incluir en el resumen' : 'Listo'}
           </Button>
         </BottomSheet>
       )}

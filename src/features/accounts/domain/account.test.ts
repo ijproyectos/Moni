@@ -3,8 +3,12 @@ import {
   adjustmentTarget,
   availableBalance,
   availableCredit,
+  canHoldTransferData,
   cardDebt,
+  hasTransferData,
   parseSignedAmount,
+  transferDataSchema,
+  transferLines,
   type Account,
 } from './account'
 import { makeAccount } from './testing'
@@ -205,5 +209,61 @@ describe('available credit', () => {
       -5_000_00,
     )
     expect(availableCredit({ creditLimitCents: 10_000_00, balanceCents: 3_000_00 })).toBe(10_000_00)
+  })
+})
+
+describe('transfer data', () => {
+  it('only banks and wallets can hold it', () => {
+    expect(canHoldTransferData({ kind: 'bank' })).toBe(true)
+    expect(canHoldTransferData({ kind: 'wallet' })).toBe(true)
+    expect(canHoldTransferData({ kind: 'cash' })).toBe(false)
+    expect(canHoldTransferData({ kind: 'credit_card' })).toBe(false)
+  })
+
+  it('both fields are optional and empty means none', () => {
+    expect(transferDataSchema.parse({ alias: '', cbu: '' })).toEqual({ alias: null, cbu: null })
+    expect(transferDataSchema.parse({})).toEqual({ alias: null, cbu: null })
+    expect(transferDataSchema.parse({ alias: '  mi.alias-1 ' })).toEqual({
+      alias: 'mi.alias-1',
+      cbu: null,
+    })
+  })
+
+  it('takes the CBU pasted with spaces or dashes', () => {
+    expect(transferDataSchema.parse({ cbu: '0070 0000 3000-0012 3456 78' }).cbu).toBe(
+      '0070000030000012345678',
+    )
+  })
+
+  it.each([['corto'], ['con espacio uno'], ['ñandú.alias'], ['a'.repeat(21)]])(
+    'rejects the alias %j',
+    (alias) => {
+      expect(transferDataSchema.safeParse({ alias }).success).toBe(false)
+    },
+  )
+
+  it.each([
+    ['123'],
+    ['007000003000001234567'],
+    ['00700000300000123456789'],
+    ['abcdefghijklmnopqrstuv'],
+  ])('rejects the CBU %j', (cbu) => {
+    expect(transferDataSchema.safeParse({ cbu }).success).toBe(false)
+  })
+
+  it('lists what can be shared: alias and CBU for a bank, alias and CVU for a wallet', () => {
+    expect(
+      transferLines({
+        kind: 'bank',
+        transferAlias: 'galicia.sueldo',
+        transferCbu: '0070000030000012345678',
+      }),
+    ).toEqual(['Alias: galicia.sueldo', 'CBU: 0070000030000012345678'])
+    expect(
+      transferLines({ kind: 'wallet', transferAlias: null, transferCbu: '0000003100012345678901' }),
+    ).toEqual(['CVU: 0000003100012345678901'])
+    expect(transferLines({ kind: 'bank', transferAlias: null, transferCbu: null })).toEqual([])
+    expect(hasTransferData({ transferAlias: null, transferCbu: null })).toBe(false)
+    expect(hasTransferData({ transferAlias: 'x'.repeat(6), transferCbu: null })).toBe(true)
   })
 })

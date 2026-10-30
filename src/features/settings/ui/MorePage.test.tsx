@@ -1,14 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import type { Account } from '@/features/accounts/domain/account'
-import { makeAccount } from '@/features/accounts/domain/testing'
 import { FEATURES } from '@/shared/config/features'
 import { MorePage } from './MorePage'
 
-const accountsData = vi.hoisted(() => ({ current: [] as Account[] }))
-vi.mock('@/features/accounts/api/useAccounts', () => ({
-  useAccounts: () => ({ data: accountsData.current }),
-}))
 vi.mock('@/features/auth/api/authContext', () => ({
   useAuth: () => ({ user: { email: 'a@b.c' } }),
 }))
@@ -32,10 +26,6 @@ function renderPage() {
 }
 
 describe('MorePage navigation', () => {
-  beforeEach(() => {
-    accountsData.current = []
-  })
-
   it('"Fijos y cuotas" became "Pagos recurrentes" (suscripciones y gastos fijos)', () => {
     renderPage()
     const tile = screen.getByRole('link', { name: /Pagos recurrentes/ })
@@ -53,28 +43,18 @@ describe('MorePage navigation', () => {
     expect(tile.querySelector('svg.lucide-ant')).not.toBeNull()
   })
 
-  it('with a credit card, "Tarjetas de crédito" leads to /tarjetas', () => {
-    accountsData.current = [makeAccount({ id: 'v', name: 'Visa', kind: 'credit_card' })]
+  it('"Medios de pago" is the one tile for accounts and cards: new subtitle, it leads to /cuentas', () => {
     renderPage()
-    const tile = screen.getByRole('link', { name: /Tarjetas de crédito/ })
-    expect(tile).toHaveAttribute('href', '/tarjetas')
-    expect(tile).toHaveTextContent('Resúmenes, límite y cuotas')
-  })
-
-  it('without a card the same tile offers to add one from Medios de pago', () => {
-    accountsData.current = [makeAccount({ id: 'c', name: 'Efectivo' })]
-    renderPage()
-    const tile = screen.getByRole('link', { name: /Tarjetas de crédito/ })
+    const tile = screen.getByRole('link', { name: /^Medios de pago/ })
     expect(tile).toHaveAttribute('href', '/cuentas')
-    expect(tile).toHaveTextContent('Agregá una desde Medios de pago')
+    expect(tile).toHaveTextContent('Administrá tus cuentas y tarjetas')
+    expect(tile).not.toHaveTextContent('Tarjetas, alias y efectivo')
   })
 
-  it('keeps Medios de pago next to it', () => {
+  it('there is no separate "Tarjetas de crédito" tile any more (the cards live inside Medios de pago)', () => {
     renderPage()
-    expect(screen.getByRole('link', { name: /^Medios de pago/ })).toHaveAttribute(
-      'href',
-      '/cuentas',
-    )
+    expect(screen.queryByRole('link', { name: /Tarjetas de crédito/ })).toBeNull()
+    expect(screen.getAllByRole('link', { name: /Medios de pago/ })).toHaveLength(1)
   })
 
   it('hides the screens without a backend: Pro, referral, Integraciones, Deudas and Aguinaldo', () => {

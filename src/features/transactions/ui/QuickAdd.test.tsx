@@ -48,6 +48,8 @@ const accounts: Account[] = [
     creditLimitCents: null,
     closingDay: null,
     dueDay: null,
+    transferAlias: null,
+    transferCbu: null,
   },
 ]
 const categories: Category[] = [

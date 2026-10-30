@@ -54,7 +54,7 @@ describe('Medios de pago: what each account reserves for savings goals', () => {
     expect(line).toHaveTextContent('$30.000')
     expect(line).toHaveTextContent('libre $120.000')
     // The balance itself is the real one, untouched by the reserve.
-    expect(screen.getByRole('button', { name: 'Editar Galicia' })).toHaveTextContent('$150.000')
+    expect(screen.getByRole('button', { name: 'Abrir Galicia' })).toHaveTextContent('$150.000')
   })
 
   it('marks an account whose balance no longer covers its reserves', () => {
@@ -83,6 +83,6 @@ describe('Medios de pago: what each account reserves for savings goals', () => {
   it('still works while the goals have not loaded', () => {
     savings.data = undefined
     renderPage()
-    expect(screen.getByRole('button', { name: 'Editar Galicia' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Abrir Galicia' })).toBeInTheDocument()
   })
 })

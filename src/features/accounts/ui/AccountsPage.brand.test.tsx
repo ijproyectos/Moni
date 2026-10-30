@@ -27,7 +27,7 @@ vi.mock('@/features/transactions/ui/movementSheetContext', () => ({
 
 function row(name: string) {
   const list = screen.getByRole('list', { name: 'Medios de pago' })
-  return within(list).getByRole('button', { name: `Editar ${name}` })
+  return within(list).getByRole('button', { name: `Abrir ${name}` })
 }
 
 describe('Medios de pago: brand avatar by catalog match', () => {
@@ -47,9 +47,9 @@ describe('Medios de pago: brand avatar by catalog match', () => {
     )
   })
 
-  it('shows the initials avatar when the logo is pending (match ignores case)', () => {
-    const avatar = within(row('galicia')).getByTestId('brand-initials')
-    expect(avatar).toHaveTextContent('GA')
+  it('shows the brand emblem of the entity when the logo is pending (match ignores case)', () => {
+    const badge = within(row('galicia')).getByTestId('brand-badge')
+    expect(badge).toHaveTextContent('G')
     expect(row('galicia').querySelector('img')).toBeNull()
   })
 

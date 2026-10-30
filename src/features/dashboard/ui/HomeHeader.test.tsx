@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { FEATURES } from '@/shared/config/features'
@@ -18,7 +18,6 @@ function renderHeader(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
           onMonthChange={vi.fn()}
           initial="I"
           availableCents={568_000_00}
-          balanceCents={-12_500_00}
           incomeCents={100_000_00}
           expenseCents={112_500_00}
           {...over}
@@ -29,7 +28,7 @@ function renderHeader(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
   return userEvent.setup()
 }
 
-describe('HomeHeader: only two financial indicators', () => {
+describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
   // The eye button persists its choice; every test starts with the amounts visible.
   beforeEach(() => window.localStorage.removeItem(HIDDEN_AMOUNTS_STORAGE_KEY))
 
@@ -44,30 +43,39 @@ describe('HomeHeader: only two financial indicators', () => {
     expect(link.querySelectorAll('p')).toHaveLength(2)
   })
 
-  it('shows "Balance del mes" with income and expenses underneath, labelled', () => {
+  it('no longer shows "Balance del mes" nor its amount; only Gastos and Ingresos stay', () => {
     renderHeader()
-    const section = screen.getByRole('region', { name: 'Balance del mes' })
-    expect(within(section).getByRole('link', { name: 'Ver el informe del mes' })).toHaveTextContent(
-      '-$12.500',
-    )
-    const group = within(section).getByRole('group', { name: 'Gastos e ingresos del mes' })
+    expect(screen.queryByText('Balance del mes')).toBeNull()
+    expect(screen.queryByText('12.500')).toBeNull()
+    const group = screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
     expect(group).toHaveTextContent('-$112.500')
     expect(group).toHaveTextContent('+$100.000')
-    expect(section).toHaveTextContent('Gastos')
-    expect(section).toHaveTextContent('Ingresos')
+    expect(group).toHaveTextContent('Gastos')
+    expect(group).toHaveTextContent('Ingresos')
   })
 
-  it('a positive balance shows a plus sign', () => {
-    renderHeader({ balanceCents: 30_000_00 })
-    expect(screen.getByRole('link', { name: 'Ver el informe del mes' })).toHaveTextContent(
-      '+$30.000',
+  it('Gastos and Ingresos open the month report (the access the balance used to give)', () => {
+    renderHeader()
+    expect(screen.getByRole('link', { name: 'Gastos del mes, ver el informe' })).toHaveAttribute(
+      'href',
+      '/este-mes',
     )
+    expect(screen.getByRole('link', { name: 'Ingresos del mes, ver el informe' })).toHaveAttribute(
+      'href',
+      '/este-mes',
+    )
+  })
+
+  it('the green card has very round corners all around, not square ones', () => {
+    renderHeader()
+    const header = screen.getByRole('banner')
+    expect(header).toHaveClass('rounded-[48px]', 'bg-forest')
+    expect(header).not.toHaveClass('rounded-b-[40px]')
   })
 
   it('the available money does not depend on the month: it is what you have now', () => {
     renderHeader({
       month: '2026-08-01',
-      balanceCents: 5_000_00,
       incomeCents: 5_000_00,
       expenseCents: 0,
     })
@@ -83,12 +91,11 @@ describe('HomeHeader: only two financial indicators', () => {
     expect(screen.getByRole('button', { name: 'Mostrar montos' })).toBeInTheDocument()
   })
 
-  it('adds no other financial figure to the header: exactly four amounts (available, balance, expenses, income)', () => {
+  it('shows exactly three amounts: available, expenses and income', () => {
     renderHeader()
     const header = screen.getByRole('banner')
     const amounts = (header.textContent ?? '').match(/\d{1,3}(?:\.\d{3})+/g) ?? []
-    expect(amounts.sort()).toEqual(['100.000', '112.500', '12.500', '568.000'])
-    expect(screen.getAllByRole('region')).toHaveLength(1)
+    expect(amounts.sort()).toEqual(['100.000', '112.500', '568.000'])
   })
 
   it('has no bell nor "Avisos" badge while notifications have no backend, even with reminders', () => {
@@ -109,5 +116,16 @@ describe('HomeHeader: only two financial indicators', () => {
     } finally {
       FEATURES.notifications = false
     }
+  })
+
+  it('shows the bell with the unread notices of groups even while the old Avisos screen is off', () => {
+    renderHeader({ noticeCount: 3 })
+    const bell = screen.getByRole('link', { name: 'Avisos, 3 sin leer' })
+    expect(bell).toHaveAttribute('href', '/grupos/avisos')
+  })
+
+  it('has no bell without notices', () => {
+    renderHeader({ noticeCount: 0 })
+    expect(screen.queryByRole('link', { name: /Avisos/ })).toBeNull()
   })
 })

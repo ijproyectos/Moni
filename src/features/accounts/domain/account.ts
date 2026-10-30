@@ -33,6 +33,9 @@ export interface Account {
   creditLimitCents: Cents | null
   closingDay: number | null
   dueDay: number | null
+  /** Where to transfer (banks and wallets only, both optional): the alias and the 22 digits of the CBU / CVU. */
+  transferAlias: string | null
+  transferCbu: string | null
 }
 
 /** An optional whole number of days; empty means "not set". */
@@ -163,4 +166,66 @@ export function parseSignedAmount(input: string): Cents | null {
   const negative = text.startsWith('-')
   const cents = parseAmountInput(negative ? text.slice(1) : text)
   return cents === null ? null : negative ? -cents : cents
+}
+
+/** Banks and wallets can receive transfers; cash and credit cards cannot, so they never hold this data. */
+export function canHoldTransferData(account: Pick<Account, 'kind'>): boolean {
+  return account.kind === 'bank' || account.kind === 'wallet'
+}
+
+/** What the CBU of a bank is called; a wallet has a CVU. */
+export function transferNumberLabel(kind: AccountKind): string {
+  return kind === 'wallet' ? 'CVU' : 'CBU'
+}
+
+const ALIAS_PATTERN = /^[A-Za-z0-9.-]{6,20}$/
+
+/** "Datos para transferencias" form: both fields are optional; empty means "none". */
+export const transferDataSchema = z.object({
+  alias: z
+    .string()
+    .default('')
+    .transform((value, ctx) => {
+      const text = value.trim()
+      if (text === '') return null
+      if (!ALIAS_PATTERN.test(text)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'El alias tiene entre 6 y 20 caracteres: letras, números, puntos o guiones.',
+        })
+        return z.NEVER
+      }
+      return text
+    }),
+  cbu: z
+    .string()
+    .default('')
+    .transform((value, ctx) => {
+      // People paste it with spaces or dashes.
+      const digits = value.replace(/[\s-]/g, '')
+      if (digits === '') return null
+      if (!/^[0-9]{22}$/.test(digits)) {
+        ctx.addIssue({ code: 'custom', message: 'Tiene que tener 22 números.' })
+        return z.NEVER
+      }
+      return digits
+    }),
+})
+
+export type TransferDataInput = z.input<typeof transferDataSchema>
+export type TransferData = z.output<typeof transferDataSchema>
+
+/** The lines of an account's transfer data worth showing or sharing ("Alias: x", "CBU: …"), none when it has none. */
+export function transferLines(
+  account: Pick<Account, 'kind' | 'transferAlias' | 'transferCbu'>,
+): string[] {
+  const lines: string[] = []
+  if (account.transferAlias) lines.push(`Alias: ${account.transferAlias}`)
+  if (account.transferCbu)
+    lines.push(`${transferNumberLabel(account.kind)}: ${account.transferCbu}`)
+  return lines
+}
+
+export function hasTransferData(account: Pick<Account, 'transferAlias' | 'transferCbu'>): boolean {
+  return Boolean(account.transferAlias || account.transferCbu)
 }

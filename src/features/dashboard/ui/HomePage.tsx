@@ -7,6 +7,7 @@ import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
 import { useSavings, useSavingsNoticeCount } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
+import { useUnreadNoticeCount } from '@/features/debts/api/useDebts'
 import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
 import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
@@ -41,6 +42,7 @@ export function HomePage() {
   const reminders = useRecurringReminders()
   const savings = useSavings()
   const savingsNotices = useSavingsNoticeCount()
+  const noticeCount = useUnreadNoticeCount()
   const goalTotals = activeTotals(savings.data?.goals ?? [])
 
   if (summary.isLoading) return <HomeSkeleton />
@@ -72,6 +74,7 @@ export function HomePage() {
         </>
       }
       reminderCount={reminders.length + savingsNotices}
+      noticeCount={noticeCount}
       goals={{ reservedCents: goalTotals.reservedCents, targetCents: goalTotals.targetCents }}
     />
   )

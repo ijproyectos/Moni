@@ -64,10 +64,10 @@ export function CardsPage() {
           <EmptyState
             mascotUrl={mascotAssistant}
             title="Todavía no tenés tarjetas"
-            description="Agregá tu tarjeta de crédito en Medios de pago con su límite y sus días de cierre y vencimiento."
+            description="Las tarjetas de crédito que tengas en Medios de pago aparecen acá, con su resumen y sus cuotas."
             action={
               <Link to="/cuentas">
-                <Button>Agregar una tarjeta</Button>
+                <Button>Ir a Medios de pago</Button>
               </Link>
             }
           />

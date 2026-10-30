@@ -1,20 +1,20 @@
 import { createLucideIcon } from 'lucide-react'
 
 /**
- * Moni's ant, for "Gastos hormiga": a friendly little ant drawn with the same round, 2px line style as the rest of the
- * icons (24×24, `currentColor`), so it takes the size, color and stroke of whatever tile or button it sits in.
- * Round head with antennae, a small thorax, a round abdomen and three legs on each side.
+ * Moni's ant, for "Gastos hormiga": a solid ant seen from the side, walking to the right, with head, thorax and
+ * abdomen clearly apart, thin legs and a curved antenna. The silhouette is "Ant" from Fluent Emoji High Contrast
+ * (Microsoft, MIT license), mirrored to face right and scaled onto the 24×24 grid; see `assets/brands/ATTRIBUTION.md`.
+ * It is filled with `currentColor`, so it takes the size and color of whatever tile or title it sits in.
  */
 export const AntIcon = createLucideIcon('Ant', [
-  ['circle', { cx: '12', cy: '5.2', r: '2.6', key: 'head' }],
-  ['path', { d: 'M10.6 3 8.6 1', key: 'antenna-left' }],
-  ['path', { d: 'M13.4 3 15.4 1', key: 'antenna-right' }],
-  ['ellipse', { cx: '12', cy: '10.9', rx: '2', ry: '1.7', key: 'thorax' }],
-  ['ellipse', { cx: '12', cy: '17.6', rx: '3.9', ry: '4.4', key: 'abdomen' }],
-  ['path', { d: 'M10 9.8 5 7.6', key: 'leg-left-1' }],
-  ['path', { d: 'M10 10.9H3.6', key: 'leg-left-2' }],
-  ['path', { d: 'M10.1 12 5.4 14.4', key: 'leg-left-3' }],
-  ['path', { d: 'M14 9.8 19 7.6', key: 'leg-right-1' }],
-  ['path', { d: 'M14 10.9h6.4', key: 'leg-right-2' }],
-  ['path', { d: 'M13.9 12 18.6 14.4', key: 'leg-right-3' }],
+  [
+    'path',
+    {
+      d: 'M2.51 1.94a.5.5 0 0 0 0 1a5.603 5.603 0 0 1 5.585 5.08A5.497 5.497 0 0 0 3.07 13.5c0 3.04 2.46 3.5 5.5 3.5c1.83 0 3.45-.167 4.45-.963c.004.435.1.849.27 1.222l-3.654 2.61c-.988-.812-2.3-1.202-3.585-1.202c-1.426 0-2.886.481-3.895 1.49a.5.5 0 1 0 .708.706c.781-.781 1.966-1.196 3.187-1.196c1.222 0 2.41.414 3.196 1.197a.5.5 0 0 0 .644.053l3.958-2.829q.09.094.189.183L7.186 29.235a.5.5 0 1 0 .848.53L14.885 18.8q.101.042.205.077V29.5a.5.5 0 0 0 1 0V19.03a3.02 3.02 0 0 0 2.395-1.247c-.371 1.286-.415 2.915-.415 4.687c0 4.16.24 7.53 4.4 7.53S30 26.63 30 22.47s-3.37-7.53-7.53-7.53c-1.767 0-2.826.608-3.461 1.626a3.02 3.02 0 0 0-4.944-2.84q.005-.112.005-.226A5.497 5.497 0 0 0 9.1 8.025A6.603 6.603 0 0 0 2.51 1.94m4.05 8.58c.41 0 .75.33.75.75v.88a.749.749 0 1 1-1.5 0v-.88c.01-.41.34-.75.75-.75',
+      transform: 'matrix(-0.75 0 0 0.75 24 0)',
+      fill: 'currentColor',
+      stroke: 'none',
+      key: 'ant',
+    },
+  ],
 ])

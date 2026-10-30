@@ -42,6 +42,8 @@ const accounts: Account[] = [
     creditLimitCents: null,
     closingDay: null,
     dueDay: null,
+    transferAlias: null,
+    transferCbu: null,
   },
 ]
 const cat = (id: string, name: string, kind: 'expense' | 'income'): Category => ({

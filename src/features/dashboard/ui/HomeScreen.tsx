@@ -36,6 +36,8 @@ interface HomeScreenProps {
   reminders?: ReactNode
   /** Reminders counted next to the unread notices on the bell. */
   reminderCount?: number
+  /** Unread notices of groups (debt reminders, payments to confirm). */
+  noticeCount?: number
   /** What the active savings goals reserve and aim for (real data, passed from the page). */
   goals?: { reservedCents: number; targetCents: number }
 }
@@ -50,6 +52,7 @@ export function HomeScreen({
   shortcuts = { savings: true, ants: true },
   reminders,
   reminderCount = 0,
+  noticeCount = 0,
   goals = { reservedCents: 0, targetCents: 0 },
 }: HomeScreenProps) {
   const today = todayIso()
@@ -65,10 +68,10 @@ export function HomeScreen({
         onMonthChange={onMonthChange}
         initial={initial}
         availableCents={summary.availableBalanceCents}
-        balanceCents={summary.balanceCents}
         incomeCents={summary.incomeCents}
         expenseCents={summary.expenseCents}
         reminderCount={reminderCount}
+        noticeCount={noticeCount}
       />
 
       <div className="flex flex-col gap-4 px-4 pt-4">

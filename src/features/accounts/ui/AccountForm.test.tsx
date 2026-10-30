@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Category } from '@/features/categories/domain/category'
 import { todayIso } from '@/shared/lib/month'
@@ -117,19 +117,29 @@ describe('AccountForm: where does the starting money come from', () => {
     expect(screen.getByRole('button', { name: 'Regalos' })).toBeInTheDocument()
   })
 
-  it('does not ask for a credit card: its starting debt keeps its own logic', async () => {
-    const { user, onSubmit } = setup()
-    await user.click(screen.getByRole('button', { name: 'Tarjeta' }))
-    expect(screen.getByLabelText('Deuda inicial')).toBeInTheDocument()
-    await user.type(screen.getByLabelText('Nombre'), 'Visa')
-    await user.type(screen.getByLabelText('Deuda inicial'), '30000')
-    expect(screen.queryByText(QUESTION)).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
-    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
-      kind: 'credit_card',
-      openingBalance: 30_000_00,
+  it('the type selector of a new medium offers only Efectivo, Banco and Billetera', () => {
+    setup()
+    const group = screen.getByRole('group', { name: 'Tipo de cuenta' })
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Efectivo', 'Banco', 'Billetera'])
+    expect(screen.queryByRole('button', { name: 'Tarjeta' })).toBeNull()
+  })
+
+  it('a credit card that already exists keeps its type and its own debt logic when edited', () => {
+    setup({
+      initial: makeAccount({
+        id: 'v',
+        name: 'Visa',
+        kind: 'credit_card',
+        creditLimitCents: 200_000_00,
+      }),
     })
+    expect(screen.getByRole('button', { name: 'Tarjeta' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Límite de crédito')).toHaveValue('200.000')
+    expect(screen.queryByText(QUESTION)).toBeNull()
   })
 
   it('does not ask when editing an account that already exists', () => {
@@ -152,7 +162,7 @@ describe('AccountForm: where does the starting money come from', () => {
   })
 })
 
-describe('AccountForm: Agregar rápido (banks, wallets and cards)', () => {
+describe('AccountForm: Agregar rápido (banks and wallets)', () => {
   it('shows a chip for each catalog brand when creating', () => {
     setup()
     const chips = screen.getByText('Agregar rápido').parentElement as HTMLElement
@@ -171,9 +181,6 @@ describe('AccountForm: Agregar rápido (banks, wallets and cards)', () => {
       'ICBC',
       'HSBC',
       'Banco Provincia',
-      'Visa',
-      'Mastercard',
-      'Amex',
       'Mercado Pago',
       'Galicia',
       'Santander',
@@ -206,40 +213,26 @@ describe('AccountForm: Agregar rápido (banks, wallets and cards)', () => {
     )
   })
 
-  it('a card chip switches the form to credit-card mode (limit, closing and due day)', async () => {
-    const { user, onSubmit } = setup()
-    expect(screen.queryByLabelText('Límite de crédito')).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Visa' }))
-    expect(screen.getByLabelText('Nombre')).toHaveValue('Visa')
-    expect(screen.getByLabelText('Límite de crédito')).toBeInTheDocument()
-    expect(screen.getByLabelText('Día de cierre')).toBeInTheDocument()
-    expect(screen.getByLabelText('Día de vencimiento')).toBeInTheDocument()
-    expect(screen.getByLabelText('Deuda inicial')).toBeInTheDocument()
-    await user.type(screen.getByLabelText('Día de cierre'), '25')
-    await user.type(screen.getByLabelText('Día de vencimiento'), '5')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
-    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
-      name: 'Visa',
-      kind: 'credit_card',
-      closingDay: 25,
-      dueDay: 5,
-    })
+  it('credit cards (Visa, Mastercard, Amex) are not offered any more', () => {
+    setup()
+    for (const name of ['Visa', 'Mastercard', 'Amex', 'American Express']) {
+      expect(screen.queryByRole('button', { name })).toBeNull()
+    }
   })
 
-  it('switching from a card chip to a bank chip leaves credit-card mode', async () => {
+  it('every chip of Agregar rápido is a bank or a wallet: none switches the form to credit-card mode', async () => {
     const { user } = setup()
-    await user.click(screen.getByRole('button', { name: 'Mastercard' }))
-    expect(screen.getByLabelText('Límite de crédito')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Santander' }))
-    expect(screen.queryByLabelText('Límite de crédito')).toBeNull()
-    expect(screen.getByLabelText('Nombre')).toHaveValue('Santander')
+    for (const name of ['BBVA', 'Santander', 'Mercado Pago', 'Naranja X']) {
+      await user.click(screen.getByRole('button', { name }))
+      expect(screen.getByLabelText('Nombre')).toHaveValue(name)
+      expect(screen.queryByLabelText('Límite de crédito')).toBeNull()
+    }
   })
 
   it('shows the official logo when the brand has one and an initials avatar when it is pending', () => {
     setup()
-    const visa = screen.getByRole('button', { name: 'Visa' })
-    expect(visa.querySelector('img')).not.toBeNull()
+    const mercadoPago = screen.getByRole('button', { name: 'Mercado Pago' })
+    expect(mercadoPago.querySelector('img')).not.toBeNull()
     const galicia = screen.getByRole('button', { name: 'Galicia' })
     expect(galicia.querySelector('img')).toBeNull()
     expect(galicia.querySelector('[data-testid="brand-initials"]')).toHaveTextContent('GA')

@@ -64,8 +64,8 @@ export interface GroupOverlay {
   incomeShare: number
   recurring: Recurring[]
   trip?: TripInfo
-  /** Alias shown in summaries to get paid. */
-  collectAlias?: string
+  /** The account (alias / CBU / CVU) the person chose to share in this group's summaries; none until they confirm one. */
+  collectAccountId?: string
 }
 
 /** No invented house expenses: the list starts empty (nothing here was entered by the person). */

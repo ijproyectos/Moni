@@ -15,11 +15,12 @@ interface HomeHeaderProps {
   initial: string
   /** Money on hand right now: cash, banks and wallets (no cards, archived accounts or savings goals). */
   availableCents: Cents
-  balanceCents: Cents
   incomeCents: Cents
   expenseCents: Cents
   /** Reminders (e.g. tomorrow's charges) that add to the bell's count. */
   reminderCount?: number
+  /** Unread notices of groups (reminders and payments to confirm): they show the bell even while the old Avisos screen is off. */
+  noticeCount?: number
 }
 
 export function HomeHeader({
@@ -28,26 +29,27 @@ export function HomeHeader({
   onMonthChange,
   initial,
   availableCents,
-  balanceCents,
   incomeCents,
   expenseCents,
   reminderCount = 0,
+  noticeCount = 0,
 }: HomeHeaderProps) {
   const { hidden, toggle } = useHiddenAmounts()
   const { unread: unreadNotices } = useNotifications()
-  const unread = unreadNotices + reminderCount
+  const unread = FEATURES.notifications ? unreadNotices + reminderCount + noticeCount : noticeCount
+  const showBell = FEATURES.notifications || noticeCount > 0
   const total = incomeCents + expenseCents
   const expenseShare = total > 0 ? Math.max(expenseCents / total, 0.28) : 0.5
   const incomeShare = total > 0 ? Math.max(incomeCents / total, 0.28) : 0.5
 
   return (
-    <header className="rounded-b-[40px] bg-forest px-5 pb-6 pt-12 text-cream">
+    <header className="mx-2 mt-2 rounded-[48px] bg-forest px-5 pb-6 pt-10 text-cream">
       <div className="flex items-center justify-between gap-3">
         <MonthPicker value={month} latest={latestMonth} onChange={onMonthChange} />
         <div className="flex items-center gap-2">
-          {FEATURES.notifications && (
+          {showBell && (
             <Link
-              to="/avisos"
+              to={FEATURES.notifications ? '/avisos' : '/grupos/avisos'}
               aria-label={unread > 0 ? `Avisos, ${unread} sin leer` : 'Avisos'}
               className="relative flex size-12 items-center justify-center rounded-full bg-surface text-cream"
             >
@@ -100,27 +102,11 @@ export function HomeHeader({
         </button>
       </div>
 
-      <section
-        aria-label="Balance del mes"
-        className="mt-2 rounded-[26px] bg-white/10 p-4 ring-1 ring-white/10"
-      >
-        <Link
-          to="/este-mes"
-          aria-label="Ver el informe del mes"
-          className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5"
-        >
-          <span className="text-[17px] text-text-muted-on-dark">Balance del mes</span>
-          <span className="flex items-baseline gap-1 font-display font-extrabold">
-            <span className="text-[24px] text-lime">{balanceCents < 0 ? '-' : '+'}$</span>
-            <AmountDisplay
-              cents={balanceCents}
-              bare
-              className="text-[clamp(28px,9.5vw,38px)] leading-[1.15] text-cream"
-            />
-          </span>
-        </Link>
-        <div className="mt-3 flex gap-2" role="group" aria-label="Gastos e ingresos del mes">
-          <div
+      <section aria-label="Gastos e ingresos del mes" className="mt-3">
+        <div className="flex gap-2" role="group" aria-label="Gastos e ingresos del mes">
+          <Link
+            to="/este-mes"
+            aria-label="Gastos del mes, ver el informe"
             className="flex min-w-[7.25rem] basis-0 flex-col gap-1.5"
             style={{ flexGrow: expenseShare }}
           >
@@ -128,8 +114,10 @@ export function HomeHeader({
               <AmountDisplay cents={-expenseCents} />
             </span>
             <span className="text-center text-[14px] text-text-muted-on-dark">Gastos</span>
-          </div>
-          <div
+          </Link>
+          <Link
+            to="/este-mes"
+            aria-label="Ingresos del mes, ver el informe"
             className="flex min-w-[7.25rem] basis-0 flex-col gap-1.5"
             style={{ flexGrow: incomeShare }}
           >
@@ -137,7 +125,7 @@ export function HomeHeader({
               <AmountDisplay cents={incomeCents} signed />
             </span>
             <span className="text-center text-[14px] text-text-muted-on-dark">Ingresos</span>
-          </div>
+          </Link>
         </div>
       </section>
     </header>

@@ -12,5 +12,7 @@ export const makeAccount = (overrides: Partial<Account> = {}): Account => ({
   creditLimitCents: null,
   closingDay: null,
   dueDay: null,
+  transferAlias: null,
+  transferCbu: null,
   ...overrides,
 })

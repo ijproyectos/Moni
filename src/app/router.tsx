@@ -9,6 +9,7 @@ import {
   RequireOnboarded,
   WELCOME_PATH,
 } from '@/features/auth/ui/guards'
+import { GroupNoticesPage } from '@/features/debts/ui/GroupNoticesPage'
 import { AccountsPage } from '@/features/accounts/ui/AccountsPage'
 import { CategoriesPage } from '@/features/categories/ui/CategoriesPage'
 import { HomePage } from '@/features/dashboard/ui/HomePage'
@@ -87,6 +88,7 @@ export const appRoutes = [
   { path: 'actividad', element: <ActivityPage /> },
   { path: 'grupos', element: <GroupsPage /> },
   { path: 'grupos/nuevo', element: <CreateGroupPage /> },
+  { path: 'grupos/avisos', element: <GroupNoticesPage /> },
   { path: 'grupos/unirse', element: <JoinWithCodePage /> },
   { path: 'grupos/:id', element: <GroupDetailPage /> },
   { path: 'grupos/:id/personas', element: <PeoplePage /> },

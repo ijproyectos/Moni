@@ -3,7 +3,7 @@ import { useAuth } from '@/features/auth/api/authContext'
 import { dashboardKeys } from '@/features/dashboard/api/queryKeys'
 import { transactionKeys } from '@/features/transactions/api/queryKeys'
 import type { Cents } from '@/shared/lib/money'
-import type { Account, AccountFormValues } from '../domain/account'
+import type { Account, AccountFormValues, TransferData } from '../domain/account'
 import type { OpeningOrigin } from '../domain/openingOrigin'
 import {
   adjustAccountBalance,
@@ -12,6 +12,7 @@ import {
   listAccounts,
   setAccountArchived,
   updateAccount,
+  updateTransferData,
 } from './accountsRepository'
 import { accountKeys } from './queryKeys'
 
@@ -81,6 +82,16 @@ export function useUpdateAccount() {
       previousKind?: Account['kind']
     }) => updateAccount(id, values, previousKind),
     onSuccess: invalidate,
+  })
+}
+
+/** Alias / CBU / CVU of an account. Nothing about money changes, so only the accounts list refreshes. */
+export function useUpdateTransferData() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: TransferData }) => updateTransferData(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: accountKeys.all(user?.id) }),
   })
 }
 
