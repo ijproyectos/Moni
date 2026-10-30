@@ -29,7 +29,7 @@ export function IncomeByMonthPage() {
 
   return (
     <Page>
-      <PageHeader title="Ingresos por mes" backTo="/tu-anio" />
+      <PageHeader title="Ingresos por mes" fallbackTo="/tu-anio" />
 
       <div className="flex items-center justify-between gap-3">
         <button

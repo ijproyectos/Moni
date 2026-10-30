@@ -1,11 +1,12 @@
 import { Banknote, ChevronLeft, CreditCard, WalletCards } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { AssistantEntryLink } from '@/features/assistant/ui/AssistantEntryLink'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { availableBalance } from '@/features/accounts/domain/account'
 import { formatArs } from '@/shared/lib/money'
 import { monthStart, todayIso } from '@/shared/lib/month'
+import { useGoBack } from '@/shared/lib/useGoBack'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { CategoryIconCircle } from '@/shared/ui/IconCircle'
 import { MonthPicker } from '@/shared/ui/MonthPicker'
@@ -23,7 +24,8 @@ const ACCOUNT_ICONS = {
 
 // Screen 034 — Este mes (real data: month summary + accounts).
 export function MonthReportPage() {
-  const navigate = useNavigate()
+  // Back to where the report was opened from (Inicio, Tu año, the assistant…); Inicio if there was nothing before.
+  const goBack = useGoBack('/')
   const latest = monthStart(todayIso())
   const [month, setMonth] = useState(latest)
   const summary = useMonthSummary(month)
@@ -40,7 +42,7 @@ export function MonthReportPage() {
             <button
               type="button"
               aria-label="Volver"
-              onClick={() => navigate(-1)}
+              onClick={goBack}
               className="flex size-12 items-center justify-center rounded-full bg-surface"
             >
               <ChevronLeft aria-hidden="true" className="size-6" />
@@ -49,6 +51,7 @@ export function MonthReportPage() {
           </div>
           <Link
             to="/tu-anio"
+            replace
             className="flex min-h-11 items-center rounded-full bg-surface px-4 text-[16px] font-extrabold"
           >
             Tu año

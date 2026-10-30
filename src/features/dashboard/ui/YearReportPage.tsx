@@ -37,9 +37,11 @@ export function YearReportPage() {
     <Page>
       <PageHeader
         title="Tu año"
+        fallbackTo="/"
         action={
           <Link
             to="/este-mes"
+            replace
             className="flex min-h-11 items-center rounded-full bg-sand px-4 text-[16px] font-extrabold"
           >
             Este mes

@@ -57,7 +57,7 @@ export function AssistantPage() {
 
   return (
     <Page>
-      <PageHeader title="Asistente" backTo="/este-mes" />
+      <PageHeader title="Asistente" fallbackTo="/este-mes" />
       <section className="flex items-center gap-3 rounded-[24px] bg-cream p-4 text-forest">
         <MoniCat className="w-20 shrink-0" />
         <div className="flex-1">
