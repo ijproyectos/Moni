@@ -77,6 +77,7 @@ export default defineConfig({
         // API-like paths are not pages.
         navigateFallbackDenylist: [
           /^\/auth\/callback/,
+          /^\/mp\/callback\.html/,
           /^\/(rest|auth|functions|storage|realtime)\/v1\//,
         ],
         runtimeCaching: [{ urlPattern: isSupabaseRequest, handler: 'NetworkOnly' }],

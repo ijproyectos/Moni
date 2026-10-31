@@ -54,3 +54,31 @@ entrypoint = "./functions/plus-subscription/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/mp-webhook/index.ts"
+
+[functions.mp-oauth]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/mp-oauth/index.ts"
+
+# verify_jwt is OFF on purpose: public/mp/callback.html may reach this function without a usable session. The function
+# requires a session JWT itself (session_required otherwise) and a single-use state bound to that user.
+[functions.mp-oauth-callback]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/mp-oauth-callback/index.ts"
+
+# verify_jwt is OFF on purpose: pg_cron (via pg_net) and mp-oauth `sync` call this function server-to-server with no
+# user JWT. The function compares the `x-moni-cron-secret` header with its Edge secret (constant time) before any
+# database or Mercado Pago work.
+[functions.mp-sync]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/mp-sync/index.ts"
+
+# verify_jwt is OFF on purpose: Mercado Pago calls this URL without a Supabase JWT. The HMAC `x-signature` is checked
+# before any database work, and the function stays inert (200 ignored:disabled) until MP_CONNECT_WEBHOOK_ENABLED is
+# 'true' (only after task 0.3 verified the mp-connect payload and manifest).
+[functions.mp-connect-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/mp-connect-webhook/index.ts"

@@ -30,6 +30,19 @@
     "supabase/functions/plus-subscription/lib.ts",
     "supabase/functions/plus-subscription/lib.test.ts",
     "supabase/functions/mp-webhook/lib.ts",
-    "supabase/functions/mp-webhook/lib.test.ts"
+    "supabase/functions/mp-webhook/lib.test.ts",
+    "supabase/functions/_shared/mpApi.ts",
+    "supabase/functions/_shared/mpApi.test.ts",
+    "supabase/functions/mp-oauth/lib.ts",
+    "supabase/functions/mp-oauth/lib.test.ts",
+    "supabase/functions/mp-sync/lib.ts",
+    "supabase/functions/mp-sync/lib.test.ts",
+    "supabase/functions/mp-sync/mpFields.ts",
+    "supabase/functions/mp-sync/mpFields.test.ts",
+    "supabase/functions/mp-sync/fixtures.ts",
+    "supabase/functions/mp-sync/categorize.ts",
+    "supabase/functions/mp-sync/categorize.test.ts",
+    "supabase/functions/mp-connect-webhook/lib.ts",
+    "supabase/functions/mp-connect-webhook/lib.test.ts"
   ]
 }
