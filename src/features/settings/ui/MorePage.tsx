@@ -20,6 +20,7 @@ import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
+import { usePlus } from '@/features/plus/api/usePlus'
 import type { AppFeature } from '@/features/onboarding/domain/goals'
 import { FEATURES, type FeatureFlag } from '@/shared/config/features'
 import { cn } from '@/shared/ui/cn'
@@ -129,6 +130,7 @@ const TILES: Tile[] = [
 export function MorePage() {
   const { user } = useAuth()
   const { data: profile, isLoading, isError } = useProfile()
+  const plus = usePlus()
   const displayName = profile?.display_name ?? user?.email ?? ''
   const initial = initialOf(profile?.display_name, user?.email ?? '')
   const { has } = useEnabledFeatures()
@@ -162,9 +164,11 @@ export function MorePage() {
               {displayName}
             </p>
           )}
-          <span className="mt-1 inline-block rounded-full bg-surface px-3 py-1 text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
-            Plan gratis
-          </span>
+          {!plus.isLoading && (
+            <span className="mt-1 inline-block rounded-full bg-surface px-3 py-1 text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
+              {plus.isPlus ? 'Moni Plus' : 'Plan gratis'}
+            </span>
+          )}
         </div>
         <ChevronRight aria-hidden="true" className="size-6 shrink-0" strokeWidth={2} />
       </Link>

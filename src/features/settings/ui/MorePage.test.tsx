@@ -22,6 +22,10 @@ vi.mock('@/features/auth/api/useProfile', () => ({
 vi.mock('@/features/onboarding/api/useGoals', () => ({
   useEnabledFeatures: () => ({ has: () => true }),
 }))
+const plusState = vi.hoisted(() => ({ isPlus: false, isLoading: false }))
+vi.mock('@/features/plus/api/usePlus', () => ({
+  usePlus: () => ({ ...plusState, isFree: !plusState.isPlus, expiresAt: null }),
+}))
 
 function renderPage() {
   render(
@@ -30,6 +34,32 @@ function renderPage() {
     </MemoryRouter>,
   )
 }
+
+describe('MorePage plan badge', () => {
+  beforeEach(() => {
+    plusState.isPlus = false
+    plusState.isLoading = false
+  })
+
+  it('shows "Plan gratis" for a free person', () => {
+    renderPage()
+    expect(screen.getByText('Plan gratis')).toBeInTheDocument()
+  })
+
+  it('shows "Moni Plus" instead of "Plan gratis" when Plus is active', () => {
+    plusState.isPlus = true
+    renderPage()
+    expect(screen.getByText('Moni Plus')).toBeInTheDocument()
+    expect(screen.queryByText('Plan gratis')).toBeNull()
+  })
+
+  it('shows no plan badge while the plan is still loading', () => {
+    plusState.isLoading = true
+    renderPage()
+    expect(screen.queryByText('Plan gratis')).toBeNull()
+    expect(screen.queryByText('Moni Plus')).toBeNull()
+  })
+})
 
 describe('MorePage navigation', () => {
   beforeEach(() => {
