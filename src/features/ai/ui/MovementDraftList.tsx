@@ -7,6 +7,7 @@ import { cn } from '@/shared/ui/cn'
 import { CategoryChip } from '@/shared/ui/CategoryChip'
 import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import { needsReview, type DraftMovement } from '../domain/draft'
+import { withAmountFormatting } from '@/shared/ui/amountField'
 
 interface MovementDraftListProps {
   drafts: readonly DraftMovement[]
@@ -101,7 +102,7 @@ export function MovementDraftList({
                   aria-label={`Monto del movimiento ${n}`}
                   value={draft.amount}
                   disabled={disabled}
-                  onChange={(e) => onChange(draft.key, { amount: e.target.value })}
+                  onChange={withAmountFormatting((e) => onChange(draft.key, { amount: e.target.value }))}
                   className={cn(fieldClass, 'font-display font-extrabold')}
                 />
               </label>

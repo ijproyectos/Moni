@@ -140,7 +140,7 @@ describe('MovementSheet overdraft warning', () => {
     await fillExpense(user, '25000')
     await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
     expect(screen.queryByRole('alertdialog')).toBeNull()
-    expect(screen.getByLabelText('Monto')).toHaveValue('25000')
+    expect(screen.getByLabelText('Monto')).toHaveValue('25.000')
     expect(createTx).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
   })

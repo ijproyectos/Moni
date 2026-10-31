@@ -62,6 +62,19 @@ describe('TransactionForm', () => {
     })
   })
 
+  it('shows thousands separators while typing and still submits the right cents', async () => {
+    const { onSubmit, user } = setup()
+    const amount = screen.getByLabelText('Monto') as HTMLInputElement
+    await user.type(amount, '1234567')
+    expect(amount.value).toBe('1.234.567')
+    await user.type(amount, ',5')
+    expect(amount.value).toBe('1.234.567,5')
+    await user.selectOptions(screen.getByLabelText('Categoría'), 'Comida')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ amount: 123_456_750 })
+  })
+
   it('shows the picked category icon in its color and offers a compact list', async () => {
     const { user } = setup()
     const select = screen.getByLabelText('Categoría')

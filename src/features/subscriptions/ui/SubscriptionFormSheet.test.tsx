@@ -201,7 +201,7 @@ describe('SubscriptionFormSheet', () => {
       await user.clear(amount)
       await user.type(amount, '25000')
       await user.click(screen.getByRole('button', { name: 'Pro+' }))
-      expect(screen.getByLabelText('Monto en pesos')).toHaveValue('25000')
+      expect(screen.getByLabelText('Monto en pesos')).toHaveValue('25.000')
     })
 
     it('labels a stale cached rate', async () => {

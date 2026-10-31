@@ -29,6 +29,7 @@ import { splitByWeights, type LedgerExpense } from '../domain/ledger'
 import { FEATURES } from '@/shared/config/features'
 import type { Guest, SimAmount, SimExpense } from '../mock/overlayStore'
 import { fieldClass, labelClass } from './styles'
+import { withAmountFormatting } from '@/shared/ui/amountField'
 
 type UiMethod = 'equal' | 'amount' | 'percent' | 'income' | 'solo'
 
@@ -681,7 +682,7 @@ function AmountField({
         inputMode="decimal"
         aria-label={label}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={withAmountFormatting((e) => onChange(e.target.value))}
         className="w-20 bg-transparent text-right outline-none"
       />
     </span>

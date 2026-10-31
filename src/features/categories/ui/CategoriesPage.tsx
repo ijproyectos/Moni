@@ -41,6 +41,7 @@ import {
   type CategoryFormValues,
 } from '../domain/category'
 import { CategoryForm } from './CategoryForm'
+import { withAmountFormatting } from '@/shared/ui/amountField'
 
 const KIND_OPTIONS = (['expense', 'income'] as const).map((value) => ({
   value,
@@ -245,7 +246,7 @@ export function CategoriesPage() {
                   $
                   <input
                     value={limitText}
-                    onChange={(e) => setLimitText(e.target.value)}
+                    onChange={withAmountFormatting((e) => setLimitText(e.target.value))}
                     inputMode="decimal"
                     placeholder="Sin límite"
                     aria-label="Límite por mes"

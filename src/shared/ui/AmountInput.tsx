@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes } from 'react'
+import { withAmountFormatting } from './amountField'
 import { cn } from './cn'
 
 interface AmountInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'prefix'> {
@@ -15,6 +16,7 @@ export function AmountInput({
   scale = 'lg',
   className,
   placeholder = '0',
+  onChange,
   ...props
 }: AmountInputProps) {
   return (
@@ -45,6 +47,7 @@ export function AmountInput({
           scale === 'lg' ? 'text-[56px] leading-[64px]' : 'text-2xl leading-9',
         )}
         {...props}
+        onChange={withAmountFormatting(onChange)}
       />
     </div>
   )

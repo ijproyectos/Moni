@@ -138,7 +138,7 @@ describe('MovementSheet shared switch', () => {
     await user.selectOptions(screen.getByLabelText('Categoría'), 'Comida')
     await user.click(screen.getByRole('switch', { name: 'Compartido' }))
     await user.selectOptions(screen.getByLabelText('Grupo'), GROUP)
-    expect(screen.getByLabelText('Monto')).toHaveValue('4000')
+    expect(screen.getByLabelText('Monto')).toHaveValue('4.000')
     expect(screen.getByLabelText('Descripción')).toHaveValue('Cena')
     await user.click(screen.getByRole('button', { name: 'Guardar gasto compartido' }))
     await waitFor(() => expect(createShared).toHaveBeenCalledTimes(1))
@@ -161,7 +161,7 @@ describe('MovementSheet shared switch', () => {
     await user.type(screen.getByLabelText('Monto'), '1500')
     await user.click(screen.getByRole('switch', { name: 'Compartido' }))
     await user.click(screen.getByRole('switch', { name: 'Compartido' }))
-    expect(screen.getByLabelText('Monto')).toHaveValue('1500')
+    expect(screen.getByLabelText('Monto')).toHaveValue('1.500')
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
   })
 

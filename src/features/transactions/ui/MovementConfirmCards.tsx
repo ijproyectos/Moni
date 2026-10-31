@@ -7,6 +7,7 @@ import { parseAmountInput } from '@/shared/lib/amountInput'
 import { formatRelativeDay } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
 import { cn } from '@/shared/ui/cn'
+import { formatAmountEvent } from '@/shared/ui/amountField'
 
 interface MovementConfirmCardsProps {
   drafts: readonly DraftMovement[]
@@ -51,7 +52,11 @@ function InlineEdit({
         inputMode={inputMode}
         maxLength={maxLength}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          // Amount fields show es-AR thousands separators while typing.
+          if (inputMode === 'decimal') formatAmountEvent(e)
+          onChange(e.target.value)
+        }}
         onBlur={() => setEditing(false)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {

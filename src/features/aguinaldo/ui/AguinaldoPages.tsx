@@ -46,6 +46,7 @@ import {
   type Destination,
   type DestinationKind,
 } from '../mock/aguinaldoStore'
+import { withAmountFormatting } from '@/shared/ui/amountField'
 
 const DEFAULT_PAY_DATE = '2026-12-18'
 
@@ -210,6 +211,7 @@ export function AguinaldoSplitPage() {
                   aria-label={`Monto para ${d.name}`}
                   inputMode="decimal"
                   defaultValue={formatAmountInput(d.cents)}
+                  onChange={withAmountFormatting()}
                   onBlur={(e) => setDestinationAmount(d.id, parseAmountInput(e.target.value) ?? 0)}
                   className="w-[70px] bg-transparent text-right outline-none"
                 />

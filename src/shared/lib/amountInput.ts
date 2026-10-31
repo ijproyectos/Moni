@@ -26,3 +26,45 @@ export function formatAmountInput(cents: Cents): string {
     ? `${sign}${grouped}`
     : `${sign}${grouped},${String(fraction).padStart(2, '0')}`
 }
+
+const MAX_INTEGER_DIGITS = 12
+
+function groupThousands(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
+/**
+ * Formats what a person is typing into es-AR text ("." thousands, "," decimals) so the size of the amount is
+ * obvious while typing. Dots in the input are always treated as thousands separators here; the "typed dot
+ * means decimal" and paste rules live in the DOM helper (`src/shared/ui/amountField.ts`).
+ * "1234567" -> "1.234.567", "1234567,555" -> "1.234.567,55", "007" -> "7", "," -> "0,".
+ */
+export function formatAmountTyping(raw: string): string {
+  const cleaned = raw.replace(/[^\d.,]/g, '')
+  const commaAt = cleaned.indexOf(',')
+  const integerSource = commaAt === -1 ? cleaned : cleaned.slice(0, commaAt)
+  const integerDigits = integerSource.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+  const integer = groupThousands(integerDigits.slice(0, MAX_INTEGER_DIGITS))
+  if (commaAt === -1) return integer
+  const decimals = cleaned
+    .slice(commaAt + 1)
+    .replace(/\D/g, '')
+    .slice(0, 2)
+  return `${integer === '' ? '0' : integer},${decimals}`
+}
+
+/** Digits and commas in `text` before `position`: the caret anchor that survives regrouping. */
+export function countAmountChars(text: string, position: number): number {
+  return text.slice(0, position).replace(/[^\d,]/g, '').length
+}
+
+/** Caret position in `formatted` that sits after `count` digits/commas. */
+export function caretAfterAmountChars(formatted: string, count: number): number {
+  if (count <= 0) return 0
+  let seen = 0
+  for (let i = 0; i < formatted.length; i++) {
+    if (formatted[i] !== '.') seen++
+    if (seen === count) return i + 1
+  }
+  return formatted.length
+}
