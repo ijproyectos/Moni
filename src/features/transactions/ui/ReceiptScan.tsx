@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import mascotAttentive from '@/assets/mascot/expresion_atento.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import type { useParseReceipt } from '@/features/ai/api/useParseReceipt'
 import { warningsNotice, type ParseResponse } from '@/features/ai/domain/draft'
@@ -10,9 +9,12 @@ import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { prepareDrafts } from '../domain/prepareDrafts'
 import { DraftConfirmation } from './DraftConfirmation'
+import { ReceiptScanPreview } from './ReceiptScanPreview'
 
 interface ReceiptScanProps {
   scan: ReturnType<typeof useParseReceipt>
+  /** The photo being read, shown under the scan sweep while it is analyzed. */
+  file: File | null
   /** Opens the camera / file picker again. */
   onRetry: () => void
   onClose: () => void
@@ -22,7 +24,7 @@ interface ReceiptScanProps {
  * "Sacar foto": analyzing state (with cancel), error state, and the shared confirmation list prefilled from the
  * receipt. Nothing is saved until the person taps "Guardar" in the list.
  */
-export function ReceiptScan({ scan, onRetry, onClose }: ReceiptScanProps) {
+export function ReceiptScan({ scan, file, onRetry, onClose }: ReceiptScanProps) {
   const accountsQuery = useAccounts()
 
   function cancel() {
@@ -59,7 +61,7 @@ export function ReceiptScan({ scan, onRetry, onClose }: ReceiptScanProps) {
   return (
     <BottomSheet title="Analizando tu factura…" onClose={() => cancel()}>
       <div className="flex flex-col items-center gap-3 text-center">
-        <img src={mascotAttentive} alt="" className="size-28 motion-safe:animate-pulse" />
+        <ReceiptScanPreview file={file} />
         <p role="status" className="text-[16px] leading-6 text-text-muted">
           Estoy leyendo el total, la fecha y el comercio. Puede tardar unos segundos.
         </p>

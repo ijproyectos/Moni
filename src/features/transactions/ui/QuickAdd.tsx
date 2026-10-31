@@ -23,6 +23,8 @@ export function QuickAdd() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
   const [receiptOpen, setReceiptOpen] = useState(false)
+  /** The photo being read: the analyzing screen shows it under the scan sweep. */
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
   // Free plan: voice and photo open the Plus upsell instead (the server enforces it too).
   const { isFree } = usePlus()
   const [upsell, setUpsell] = useState<PlusGateReason | null>(null)
@@ -55,6 +57,7 @@ export function QuickAdd() {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
+    setReceiptFile(file)
     setReceiptOpen(true)
     scanReceipt(file)
   }
@@ -140,10 +143,12 @@ export function QuickAdd() {
       {receiptOpen && (
         <ReceiptScan
           scan={scan}
+          file={receiptFile}
           onRetry={openPicker}
           onClose={() => {
             scan.cancel()
             setReceiptOpen(false)
+            setReceiptFile(null)
           }}
         />
       )}

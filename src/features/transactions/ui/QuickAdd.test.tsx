@@ -1,6 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Account } from '@/features/accounts/domain/account'
 import type { Category } from '@/features/categories/domain/category'
@@ -273,6 +273,29 @@ describe('QuickAdd free plan gate', () => {
 })
 
 describe('QuickAdd receipt scan', () => {
+  it('shows the chosen photo with the scan sweep and "Analizando…" while the receipt is read', async () => {
+    const originalCreate = URL.createObjectURL
+    const originalRevoke = URL.revokeObjectURL
+    URL.createObjectURL = vi.fn(() => 'blob:picked-ticket')
+    URL.revokeObjectURL = vi.fn()
+    try {
+      renderQuickAdd()
+      pickPhoto()
+      // Same as the "Analizando tu factura…" test: the mocked call resolves right after, so assert synchronously.
+      expect(screen.getByRole('img', { name: 'Foto de tu factura' })).toHaveAttribute(
+        'src',
+        'blob:picked-ticket',
+      )
+      expect(screen.getByTestId('receipt-scan-sweep')).toBeInTheDocument()
+      expect(screen.getByText('Analizando…')).toBeInTheDocument()
+      expect(await screen.findByText('Revisá y guardá')).toBeInTheDocument()
+    } finally {
+      cleanup()
+      URL.createObjectURL = originalCreate
+      URL.revokeObjectURL = originalRevoke
+    }
+  })
+
   it('analyzes the photo and shows the confirmation list prefilled, saving nothing by itself', async () => {
     renderQuickAdd()
     pickPhoto()

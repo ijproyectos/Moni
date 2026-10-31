@@ -223,6 +223,36 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
   }
 }
 
+/*
+ * Receipt scan (ReceiptScanPreview.tsx): a soft light band sweeps down over the photo while the receipt is read. It is only
+ * decoration, so with reduced motion it does not show at all (instead of freezing at the top of the photo).
+ */
+.receipt-sweep {
+  opacity: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--color-lime) 55%, transparent) 88%,
+    var(--color-lime) 100%
+  );
+  border-bottom: 3px solid var(--color-lime);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--color-lime) 60%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .receipt-sweep {
+    opacity: 1;
+    animation: receipt-sweep 1.8s ease-in-out infinite;
+  }
+}
+@keyframes receipt-sweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(300%);
+  }
+}
+
 .no-scrollbar {
   scrollbar-width: none;
 }
