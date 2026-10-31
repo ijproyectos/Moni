@@ -1,0 +1,11 @@
+change: mp-expense-autoimport
+artifact_store:
+  mode: hybrid
+phases:
+  proposal: done
+  specs: done
+  design: done
+  tasks: done
+  apply: pending
+  verify: pending
+  archive: pending

@@ -1,0 +1,12 @@
+**What**: gentle-ai.sdd-research/v1, revisions 1 and 2 COMBINED, outcome PARTIAL (documentation class, WebFetch only, accessed 2026-10-30); partial evidence accepted by the user. Only validated claims below. Base: https://www.mercadopago.com.ar/developers/es/
+**OAuth** (docs/security/oauth/introduction, creation, renewal, management; reference/authentication/oauth/_oauth_token/post):
+- Auth URL params: client_id, response_type=code, platform_id=mp, state, redirect_uri (static https); PKCE optional; no scope parameter documented.
+- authorization_code valid 10 min, single use. Access token 180 days (expires_in 15552000). Refresh token lasts 6 months and ROTATES on every refresh (store the new one); refresh must send scope offline_access.
+- Scopes named: read, write, offline_access; no narrower scope documented.
+- Errors: invalid_grant is a 400 (invalid/expired/revoked code or refresh token, redirect_uri mismatch, other client); 429 local_rate_limited is the only rate-limit signal; no numeric limits found.
+- Tokens are deleted when the user revokes, on password change, fraud reset, session cleanup, app deletion or expiry. No app-side revoke endpoint documented. Webhooks notify authorize/deauthorize.
+**Webhooks** (docs/your-integrations/notifications/webhooks): topic mp-connect covers OAuth link/unlink; x-signature header ts=...,v1=... (HMAC-based); respond 200/201 within 22 s; retry every 15 min; secret has no expiry.
+**Payments search** (reference/online-payments/checkout-api-payments/search-payments/get): returns payments of the last 12 months; error 9062 range must be under 365 days; error 1001 date format yyyy-MM-dd'T'HH:mm:ss.SSSZ; error 1000 rows exceeded; error 2001 duplicate request within a minute; paging has total, limit, offset; sort/criteria/range documented; begin_date, end_date and payer.id appear only in the cURL example.
+**Terms** (docs/resources/legal/terms-and-conditions): user is data controller, developer is processor (6.1); non-public user info only with express authorization (5.2); no retention longer than necessary (6.7); do not store security credentials (7.2); incidents within 24 h (10).
+**Gaps (NOT claims)**: limit/offset maximum; payer.id as official filter; indexing delay; mp-connect payload and signature manifest; numeric rate limits; narrowing the default scope; public OAuth approval gate; payer-side payment webhooks.
+**Learned**: the docs sample lacks payer_id, collector.id, operation_type and point_of_interaction.type but the 2026-10-30 spike (obs 155) saw them in real responses (empirical).
