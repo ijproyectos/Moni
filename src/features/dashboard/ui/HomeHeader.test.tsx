@@ -43,6 +43,28 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
     expect(link.querySelectorAll('p')).toHaveLength(2)
   })
 
+  it('shows a negative available money with its minus sign and in the warning color', () => {
+    renderHeader({ availableCents: -1_250_00 })
+    const link = screen.getByRole('link', { name: 'Ver tus medios de pago' })
+    expect(link).toHaveTextContent(/-\$\s*1\.250/)
+    expect(link.querySelectorAll('p')[1]).toHaveClass('text-blush')
+  })
+
+  it('does not reveal a negative balance (minus sign or warning color) while amounts are hidden', async () => {
+    const user = renderHeader({ availableCents: -1_250_00 })
+    await user.click(screen.getByRole('button', { name: 'Ocultar montos' }))
+    const link = screen.getByRole('link', { name: 'Ver tus medios de pago' })
+    expect(link).not.toHaveTextContent('-')
+    expect(link.querySelectorAll('p')[1]).not.toHaveClass('text-blush')
+  })
+
+  it('shows a positive available money without a minus sign', () => {
+    renderHeader({ availableCents: 5_000_00 })
+    const link = screen.getByRole('link', { name: 'Ver tus medios de pago' })
+    expect(link).not.toHaveTextContent('-')
+    expect(link.querySelectorAll('p')[1]).not.toHaveClass('text-blush')
+  })
+
   it('no longer shows "Balance del mes" nor its amount; only Gastos and Ingresos stay', () => {
     renderHeader()
     expect(screen.queryByText('Balance del mes')).toBeNull()

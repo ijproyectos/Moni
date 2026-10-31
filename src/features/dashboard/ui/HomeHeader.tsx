@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { useNotifications } from '@/features/notifications/mock/notificationsStore'
 import { FEATURES } from '@/shared/config/features'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
+import { cn } from '@/shared/ui/cn'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
 import { MonthPicker } from '@/shared/ui/MonthPicker'
 import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
@@ -45,6 +46,8 @@ export function HomeHeader({
   const { unread: unreadNotices } = useNotifications()
   const unread = FEATURES.notifications ? unreadNotices + reminderCount + noticeCount : noticeCount
   const showBell = FEATURES.notifications || noticeCount > 0
+  // Hidden amounts must not give away that the balance is in the red.
+  const negative = availableCents < 0 && !hidden
   const total = incomeCents + expenseCents
   const expenseShare = total > 0 ? Math.max(expenseCents / total, 0.28) : 0.5
   const incomeShare = total > 0 ? Math.max(incomeCents / total, 0.28) : 0.5
@@ -100,12 +103,22 @@ export function HomeHeader({
           className="min-w-0 flex-1 rounded-[20px] outline-offset-4"
         >
           <p className="text-[15px] text-text-muted-on-dark">Dinero disponible</p>
-          <p className="flex items-baseline gap-1 font-display font-extrabold">
-            <span className="text-[22px] text-lime">$</span>
+          <p
+            className={cn(
+              'flex items-baseline gap-1 font-display font-extrabold',
+              negative && 'text-blush',
+            )}
+          >
+            {/* `bare` drops the sign: money owed (accounts in the red) must not read as money on hand. */}
+            {negative && <span className="text-[clamp(30px,10vw,40px)] leading-[1.1]">-</span>}
+            <span className={cn('text-[22px]', negative ? 'text-blush' : 'text-lime')}>$</span>
             <AmountDisplay
               cents={availableCents}
               bare
-              className="min-w-0 text-[clamp(30px,10vw,40px)] leading-[1.1] text-cream"
+              className={cn(
+                'min-w-0 text-[clamp(30px,10vw,40px)] leading-[1.1]',
+                negative ? 'text-blush' : 'text-cream',
+              )}
             />
           </p>
         </Link>
