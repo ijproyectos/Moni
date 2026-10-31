@@ -343,7 +343,16 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
       </div>
 
       {listening ? (
-        <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex flex-col items-center gap-2">
+          {/* Ends the dictation now: no need to wait for the pause. What was heard shows up to review. */}
+          <Button
+            variant="dark"
+            className="!h-12 !w-full max-w-[260px]"
+            disabled={text.trim() === ''}
+            onClick={speech.stop}
+          >
+            Listo
+          </Button>
           <button
             type="button"
             className={smallButton}

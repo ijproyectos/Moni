@@ -460,6 +460,34 @@ describe('VoiceSheet', () => {
     expect(mocks.createTransaction).not.toHaveBeenCalled()
   })
 
+  it('"Listo" while dictating stops right away, without waiting for the silence, and shows what was heard', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const { user } = renderSheet()
+      await user.click(screen.getByRole('button', { name: 'Activar micrófono' }))
+      act(() => FakeRecognition.instances[0]?.say('gasté 5 lucas en el bondi'))
+      // Only a moment has passed: the 4.5 s pause has not run out.
+      act(() => vi.advanceTimersByTime(500))
+      expect(FakeRecognition.instances[0]?.stop).not.toHaveBeenCalled()
+
+      await user.click(screen.getByRole('button', { name: 'Listo' }))
+      expect(FakeRecognition.instances[0]?.stop).toHaveBeenCalled()
+      expect(await screen.findByText('Te escuché decir:')).toBeInTheDocument()
+      expect(screen.getByText(/gasté 5 lucas en el bondi/)).toBeInTheDocument()
+      expect(mocks.createTransaction).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('"Listo" is disabled while nothing has been heard yet', async () => {
+    const { user } = renderSheet()
+    await user.click(screen.getByRole('button', { name: 'Activar micrófono' }))
+    expect(screen.getByRole('button', { name: 'Listo' })).toBeDisabled()
+    act(() => FakeRecognition.instances[0]?.say('hola'))
+    expect(screen.getByRole('button', { name: 'Listo' })).toBeEnabled()
+  })
+
   it('tells the person when the microphone is denied and offers to type instead', async () => {
     const { user } = renderSheet()
     await user.click(screen.getByRole('button', { name: 'Activar micrófono' }))
