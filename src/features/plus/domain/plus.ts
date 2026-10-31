@@ -1,7 +1,7 @@
 // Free vs Moni Plus. The database is the source of truth (plus_entitlements); this file only holds the pure rules the
 // UI needs: is the entitlement still running, how to print its end date, and the honest copy of the upsell.
 
-export type PlusGateReason = 'voice' | 'receipt' | 'group' | 'assistant' | 'generic'
+export type PlusGateReason = 'voice' | 'receipt' | 'group' | 'assistant' | 'mp_import' | 'generic'
 
 export const FREE_BADGE = 'Versión Free · sin suscripción'
 
@@ -31,6 +31,10 @@ export const PLUS_REASON_COPY: Record<PlusGateReason, { title: string; text: str
   assistant: {
     title: 'El asistente es de Moni Plus',
     text: 'Con Moni Plus le preguntás a Moni por tus gastos, vencimientos, cuotas y grupos, y te responde con lo que encuentra en tus datos. Lo manual sigue siendo gratis.',
+  },
+  mp_import: {
+    title: 'Importar de Mercado Pago es de Moni Plus',
+    text: 'Con Moni Plus tus pagos de Mercado Pago aparecen solos como gastos, ya categorizados. Lo manual sigue siendo gratis.',
   },
   generic: {
     title: 'Pasar a Moni Plus',

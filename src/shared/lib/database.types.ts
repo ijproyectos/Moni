@@ -437,6 +437,31 @@ export interface Database {
         Update: Record<never, never>
         Relationships: []
       }
+      /** Migration 20261112000000_mp_expense_autoimport: the owner can only read their own rows (writes: RPCs). */
+      mp_imported_payments: {
+        Row: {
+          payment_id: string
+          owner_id: string
+          transaction_id: string | null
+          mp_status: string
+          outcome: 'posted' | 'voided' | 'skipped_subscription' | 'needs_review'
+          amount: number
+          occurred_on: string
+          merchant: string | null
+          suggested_subscription_id: string | null
+          duplicate_dismissed: boolean
+        }
+        Insert: Record<never, never>
+        Update: Record<never, never>
+        Relationships: []
+      }
+      /** Only the columns the Mercado Pago import UI reads (to name the suggested subscription). */
+      subscriptions: {
+        Row: { id: string; name: string }
+        Insert: Record<never, never>
+        Update: Record<never, never>
+        Relationships: []
+      }
     }
     Views: {
       account_balances: {
@@ -706,6 +731,31 @@ export interface Database {
         Args: Record<never, never>
         Returns: string | null
       }
+      /** Migration 20261112000000: the caller's Mercado Pago link (no tokens); zero rows when never linked. */
+      get_my_mp_connection: {
+        Args: Record<never, never>
+        Returns: {
+          status: 'active' | 'needs_reconnect' | 'plus_lapsed' | 'unlinked'
+          mp_user_id: string
+          import_since: string
+          last_sync_at: string | null
+          last_error_class: string | null
+        }[]
+      }
+      /** Migration 20261112000200: imports that look like a manual expense already loaded. */
+      get_mp_import_duplicates: {
+        Args: Record<never, never>
+        Returns: {
+          payment_id: string
+          transaction_id: string
+          duplicate_transaction_id: string
+          occurred_on: string
+          duplicate_occurred_on: string
+          amount: number
+        }[]
+      }
+      /** Migration 20261112000300: hides one possible duplicate. Idempotent. */
+      dismiss_mp_import_duplicate: { Args: { p_payment_id: string }; Returns: undefined }
       is_plus: {
         Args: Record<never, never>
         Returns: boolean

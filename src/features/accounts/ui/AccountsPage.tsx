@@ -7,6 +7,7 @@ import { CardsPanel } from '@/features/cards/ui/CardsPanel'
 import { InstallmentsPanel } from '@/features/cards/ui/InstallmentsPanel'
 import { NewPurchaseSheet } from '@/features/cards/ui/NewPurchaseSheet'
 import { useCategories } from '@/features/categories/api/useCategories'
+import { MpImportSection } from '@/features/mpImport/ui/MpImportSection'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
 import { toUserMessage } from '@/shared/lib/errors'
@@ -330,6 +331,9 @@ export function AccountsPage() {
           )}
         </>
       )}
+
+      {/* Mercado Pago auto-import (Plus). It also consumes the ?mp=ok|error callback params. */}
+      {tab === 'medios' && <MpImportSection />}
 
       {creating && (
         <BottomSheet title="Nuevo medio de pago" onClose={() => setCreating(false)}>

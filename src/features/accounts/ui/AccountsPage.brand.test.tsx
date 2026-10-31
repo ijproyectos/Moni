@@ -21,6 +21,7 @@ vi.mock('../api/useAccounts', () => ({
 }))
 vi.mock('@/features/goals/api/useSavings', () => ({ useSavings: () => ({ data: undefined }) }))
 vi.mock('@/features/categories/api/useCategories', () => ({ useCategories: () => ({ data: [] }) }))
+vi.mock('@/features/mpImport/ui/MpImportSection', () => ({ MpImportSection: () => null }))
 vi.mock('@/features/transactions/ui/movementSheetContext', () => ({
   useMovementSheet: () => ({ openNew: vi.fn(), openEdit: vi.fn() }),
 }))
