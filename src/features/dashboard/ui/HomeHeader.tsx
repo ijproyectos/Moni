@@ -7,7 +7,7 @@ import { cn } from '@/shared/ui/cn'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
 import { MonthPicker } from '@/shared/ui/MonthPicker'
 import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
-import type { Cents } from '@/shared/lib/money'
+import { formatArs, type Cents } from '@/shared/lib/money'
 import type { IsoDate } from '@/shared/lib/month'
 
 interface HomeHeaderProps {
@@ -29,6 +29,17 @@ interface HomeHeaderProps {
   isPlus?: boolean
 }
 
+/**
+ * Text size of the Gastos / Ingresos chips. Both chips share it, so a long amount in one shrinks the pair together
+ * (they read as a set) instead of squeezing or overlapping the text.
+ */
+function chipTextSize(longestAmount: number): string {
+  if (longestAmount <= 12) return 'text-[17px]'
+  if (longestAmount <= 14) return 'text-[15px]'
+  if (longestAmount <= 17) return 'text-[13px]'
+  return 'text-[12px]'
+}
+
 export function HomeHeader({
   month,
   latestMonth,
@@ -48,6 +59,11 @@ export function HomeHeader({
   const showBell = FEATURES.notifications || noticeCount > 0
   // Hidden amounts must not give away that the balance is in the red.
   const negative = availableCents < 0 && !hidden
+  const chipText = chipTextSize(
+    hidden
+      ? 0
+      : Math.max(formatArs(-expenseCents).length, formatArs(incomeCents, { signed: true }).length),
+  )
   const total = incomeCents + expenseCents
   const expenseShare = total > 0 ? Math.max(expenseCents / total, 0.28) : 0.5
   const incomeShare = total > 0 ? Math.max(incomeCents / total, 0.28) : 0.5
@@ -142,10 +158,15 @@ export function HomeHeader({
           <Link
             to="/este-mes"
             aria-label="Gastos del mes, ver el informe"
-            className="flex min-w-[7.25rem] basis-0 flex-col gap-1.5"
+            className="flex min-w-fit basis-auto flex-col gap-1.5"
             style={{ flexGrow: expenseShare }}
           >
-            <span className="flex h-12 items-center justify-center rounded-full bg-blush px-3 font-display text-[17px] font-extrabold text-forest">
+            <span
+              className={cn(
+                'flex h-12 items-center justify-center whitespace-nowrap rounded-full bg-blush px-3 font-display font-extrabold text-forest',
+                chipText,
+              )}
+            >
               <AmountDisplay cents={-expenseCents} />
             </span>
             <span className="text-center text-[14px] text-text-muted-on-dark">Gastos</span>
@@ -153,10 +174,15 @@ export function HomeHeader({
           <Link
             to="/este-mes"
             aria-label="Ingresos del mes, ver el informe"
-            className="flex min-w-[7.25rem] basis-0 flex-col gap-1.5"
+            className="flex min-w-fit basis-auto flex-col gap-1.5"
             style={{ flexGrow: incomeShare }}
           >
-            <span className="flex h-12 items-center justify-center rounded-full bg-lime px-3 font-display text-[17px] font-extrabold text-forest">
+            <span
+              className={cn(
+                'flex h-12 items-center justify-center whitespace-nowrap rounded-full bg-lime px-3 font-display font-extrabold text-forest',
+                chipText,
+              )}
+            >
               <AmountDisplay cents={incomeCents} signed />
             </span>
             <span className="text-center text-[14px] text-text-muted-on-dark">Ingresos</span>

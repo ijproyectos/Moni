@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { FEATURES } from '@/shared/config/features'
@@ -41,6 +41,47 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
     // Only the title and the amount: no explanatory line under it.
     expect(link).not.toHaveTextContent(/efectivo|billeteras|tarjetas|metas/i)
     expect(link.querySelectorAll('p')).toHaveLength(2)
+  })
+
+  describe('Gastos and Ingresos chips adapt to long amounts', () => {
+    const chips = () => ({
+      expense: screen.getByRole('link', { name: /Gastos del mes/ })
+        .firstElementChild as HTMLElement,
+      income: screen.getByRole('link', { name: /Ingresos del mes/ })
+        .firstElementChild as HTMLElement,
+    })
+
+    it('never wraps the amount (the minus sign stays glued to it) and sizes each chip to its text', () => {
+      renderHeader({ expenseCents: 292_087_89, incomeCents: 4_000_000_00 })
+      const { expense, income } = chips()
+      for (const chip of [expense, income]) {
+        expect(chip).toHaveClass('whitespace-nowrap')
+      }
+      for (const link of [
+        screen.getByRole('link', { name: /Gastos del mes/ }),
+        screen.getByRole('link', { name: /Ingresos del mes/ }),
+      ]) {
+        // Content-sized (not `basis-0`): a small amount next to a big one must not get squeezed under its own text.
+        expect(link).toHaveClass('basis-auto', 'min-w-fit')
+        expect(link).not.toHaveClass('basis-0')
+      }
+      expect(expense).toHaveTextContent('-$292.087,89')
+    })
+
+    it('keeps the regular size for short amounts and shrinks BOTH chips together for long ones', () => {
+      renderHeader({ expenseCents: 5_000_00, incomeCents: 10_000_00 })
+      expect(chips().expense).toHaveClass('text-[17px]')
+      expect(chips().income).toHaveClass('text-[17px]')
+      cleanup()
+
+      renderHeader({ expenseCents: 123_456_789_00, incomeCents: 10_000_00 })
+      const long = chips()
+      expect(long.expense).not.toHaveClass('text-[17px]')
+      // Same size on both so they read as a pair, even though only one amount is long.
+      expect(long.income.className.match(/text-\[\d+px\]/)?.[0]).toBe(
+        long.expense.className.match(/text-\[\d+px\]/)?.[0],
+      )
+    })
   })
 
   it('shows a negative available money with its minus sign and in the warning color', () => {
