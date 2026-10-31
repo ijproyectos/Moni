@@ -33,6 +33,7 @@ import {
 } from '@/features/insights/mock/digestSettings'
 import { useSubscriptionState } from '@/features/plus/api/useBilling'
 import { usePlus } from '@/features/plus/api/usePlus'
+import { PlusPill } from '@/features/plus/ui/PlusPill'
 import { isCancellable } from '@/features/plus/domain/billing'
 import { CancelPlusSheet } from '@/features/plus/ui/CancelPlusSheet'
 import { formatPlusExpiry } from '@/features/plus/domain/plus'
@@ -182,9 +183,13 @@ export function ProfilePage() {
           <h2 className="mt-3 font-display text-[30px] font-extrabold leading-9">{shortName}</h2>
           {user?.email && <p className="text-[16px] text-text-muted">{user.email}</p>}
           <div className="mt-1 flex gap-2">
-            <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold">
-              {plus.isPlus ? 'Moni Plus' : 'Plan gratis'}
-            </span>
+            {plus.isPlus ? (
+              <PlusPill />
+            ) : (
+              <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold">
+                Plan gratis
+              </span>
+            )}
             {since && (
               <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold">
                 {since}

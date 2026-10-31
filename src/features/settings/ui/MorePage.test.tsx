@@ -46,10 +46,10 @@ describe('MorePage plan badge', () => {
     expect(screen.getByText('Plan gratis')).toBeInTheDocument()
   })
 
-  it('shows "Moni Plus" instead of "Plan gratis" when Plus is active', () => {
+  it('shows the yellow "✦ PLUS" badge instead of "Plan gratis" when Plus is active', () => {
     plusState.isPlus = true
     renderPage()
-    expect(screen.getByText('Moni Plus')).toBeInTheDocument()
+    expect(screen.getByText('✦ PLUS')).toHaveClass('bg-gold')
     expect(screen.queryByText('Plan gratis')).toBeNull()
   })
 
@@ -57,7 +57,7 @@ describe('MorePage plan badge', () => {
     plusState.isLoading = true
     renderPage()
     expect(screen.queryByText('Plan gratis')).toBeNull()
-    expect(screen.queryByText('Moni Plus')).toBeNull()
+    expect(screen.queryByText('✦ PLUS')).toBeNull()
   })
 })
 
