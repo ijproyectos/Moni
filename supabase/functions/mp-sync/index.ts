@@ -15,6 +15,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
 import { callAnthropic, jsonResponse, readBodyCapped } from '../_shared/http.ts'
 import { createMpClient } from '../_shared/mpApi.ts'
 import { decryptToken, encryptToken, parseKeyring, type Keyring } from '../_shared/tokenCrypto.ts'
+import { runDebugSearch } from './debug.ts'
 import {
   AI_DAILY_LIMIT,
   AI_QUOTA_FEATURE,
@@ -73,9 +74,16 @@ async function handle(req: Request): Promise<Response> {
   const raw = await readBodyCapped(req, MAX_BODY_BYTES)
   if (raw === null) return jsonResponse(413, { error: 'invalid_request' }, null)
   let targetUser: string | null = null
+  let debug = false
   if (raw.trim() !== '') {
     try {
-      const body = JSON.parse(raw) as { user_id?: unknown }
+      const body = JSON.parse(raw) as { user_id?: unknown; debug?: unknown }
+      if (body.debug !== undefined) {
+        if (body.debug !== true || typeof body.user_id !== 'string') {
+          return jsonResponse(400, { error: 'invalid_request' }, null)
+        }
+        debug = true
+      }
       if (body.user_id !== undefined) {
         if (typeof body.user_id !== 'string' || !UUID.test(body.user_id)) {
           return jsonResponse(400, { error: 'invalid_request' }, null)
@@ -109,6 +117,47 @@ async function handle(req: Request): Promise<Response> {
     auth: { persistSession: false, autoRefreshToken: false },
   })
   const mp = createMpClient({ clientId, clientSecret, redirectUri })
+
+  const persistTokensFor =
+    (userId: string): SyncDeps['persistTokens'] =>
+    async (tokens) => {
+      const { error } = await admin
+        .from('mp_connections')
+        .update({
+          access_token_enc: tokens.accessTokenEnc,
+          refresh_token_enc: tokens.refreshTokenEnc,
+          key_version: ring.current,
+          expires_at: tokens.expiresAt,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+      if (error) throw new Error('persist_tokens_failed')
+    }
+
+  // Debug (cron-secret protected above): one active connection, synchronous, read-only except a rotated refresh token.
+  if (debug && targetUser) {
+    const { data, error } = await admin
+      .from('mp_connections')
+      .select('*')
+      .eq('user_id', targetUser)
+      .eq('status', 'active')
+      .not('refresh_token_enc', 'is', null)
+      .maybeSingle()
+    if (error) return jsonResponse(500, { error: 'server_error' }, null)
+    if (!data) return jsonResponse(200, { claimed: 0 }, null)
+    const conn = toConnection(data as ConnectionRow)
+    const report = await runDebugSearch(
+      {
+        mp,
+        now: () => new Date(),
+        decrypt: (column, ciphertext) => decryptToken(ciphertext, { userId: conn.userId, column }, ring),
+        encrypt: (column, plaintext) => encryptToken(plaintext, { userId: conn.userId, column }, ring),
+        persistTokens: persistTokensFor(conn.userId),
+      },
+      conn,
+    )
+    return jsonResponse(200, report, null)
+  }
 
   // Claim: the whole due batch (cron) or one user's lease (sync now).
   let rows: ConnectionRow[]
@@ -146,19 +195,7 @@ async function handle(req: Request): Promise<Response> {
     random: () => Math.random(),
     decrypt: (column, ciphertext) => decryptToken(ciphertext, { userId: conn.userId, column }, ring),
     encrypt: (column, plaintext) => encryptToken(plaintext, { userId: conn.userId, column }, ring),
-    persistTokens: async (tokens) => {
-      const { error } = await admin
-        .from('mp_connections')
-        .update({
-          access_token_enc: tokens.accessTokenEnc,
-          refresh_token_enc: tokens.refreshTokenEnc,
-          key_version: ring.current,
-          expires_at: tokens.expiresAt,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', conn.userId)
-      if (error) throw new Error('persist_tokens_failed')
-    },
+    persistTokens: persistTokensFor(conn.userId),
     findSeenIds: async (ids) => {
       const { data, error } = await admin
         .from('mp_imported_payments')

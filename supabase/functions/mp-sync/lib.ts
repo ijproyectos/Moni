@@ -61,11 +61,44 @@ export interface SyncConnection {
   importSince: string | null
 }
 
+export type DropReason =
+  | 'not_payer'
+  | 'collector_is_me'
+  | 'not_ars'
+  | 'status'
+  | 'operation_type'
+  | 'before_import_since'
+  | 'other'
+
+/** Counts only (privacy-safe, never persisted): explains zero-import runs. */
+export interface SyncStats {
+  fetched: number
+  kept: number
+  dropped: Record<DropReason, number>
+}
+
+export function emptyStats(): SyncStats {
+  return {
+    fetched: 0,
+    kept: 0,
+    dropped: {
+      not_payer: 0,
+      collector_is_me: 0,
+      not_ars: 0,
+      status: 0,
+      operation_type: 0,
+      before_import_since: 0,
+      other: 0,
+    },
+  }
+}
+
 export interface SyncOutcome {
   result: 'ok' | 'partial' | 'error'
   errorClass: SyncErrorClass | null
   /** ISO run end when the run completed (ok), else null so the stored cursor stays put. */
   cursor: string | null
+  stats: SyncStats
 }
 
 export interface ImportSummary {
@@ -118,22 +151,48 @@ export interface SyncDeps {
 
 export function filterPayments(
   payments: readonly MpPayment[],
-  ctx: { mpUserId: string; importSince: Date | null; seenIds: ReadonlySet<string> },
+  ctx: { mpUserId: string; importSince: Date | null; seenIds: ReadonlySet<string>; stats?: SyncStats },
 ): MpPayment[] {
   const out: MpPayment[] = []
   const taken = new Set<string>()
+  const drop = (reason: DropReason) => {
+    if (ctx.stats) ctx.stats.dropped[reason]++
+  }
   for (const p of payments) {
-    if (taken.has(p.paymentId)) continue
-    if (p.payerId !== ctx.mpUserId || p.collectorId === ctx.mpUserId) continue
-    if (p.currency !== HOME_CURRENCY) continue
+    if (taken.has(p.paymentId)) {
+      drop('other')
+      continue
+    }
+    if (p.payerId !== ctx.mpUserId) {
+      drop('not_payer')
+      continue
+    }
+    if (p.collectorId === ctx.mpUserId) {
+      drop('collector_is_me')
+      continue
+    }
+    if (p.currency !== HOME_CURRENCY) {
+      drop('not_ars')
+      continue
+    }
     const kind = classifyOperation(p)
-    if (kind === 'other') continue
-    if (ctx.importSince && p.dateCreated && new Date(p.dateCreated).getTime() < ctx.importSince.getTime()) continue
+    if (kind === 'other') {
+      drop('operation_type')
+      continue
+    }
+    if (ctx.importSince && p.dateCreated && new Date(p.dateCreated).getTime() < ctx.importSince.getTime()) {
+      drop('before_import_since')
+      continue
+    }
     const approved = p.status === STATUS_APPROVED
     const voidsSeen = kind === 'import' && VOID_STATUSES.includes(p.status) && ctx.seenIds.has(p.paymentId)
-    if (!approved && !voidsSeen) continue
+    if (!approved && !voidsSeen) {
+      drop('status')
+      continue
+    }
     taken.add(p.paymentId)
     out.push(p)
+    if (ctx.stats) ctx.stats.kept++
   }
   return out
 }
@@ -159,7 +218,7 @@ class StopRun extends Error {
   readonly outcome: SyncOutcome
   constructor(result: SyncOutcome['result'], errorClass: SyncErrorClass | null) {
     super('stop_run')
-    this.outcome = { result, errorClass, cursor: null }
+    this.outcome = { result, errorClass, cursor: null, stats: emptyStats() }
   }
 }
 
@@ -180,6 +239,7 @@ export async function runUserSync(
   options: { deadlineAt: number },
 ): Promise<SyncOutcome> {
   const startedAt = deps.now()
+  const stats = emptyStats()
   const importSince = conn.importSince ? new Date(conn.importSince) : null
   let accessToken: string | null = null
   let refreshToken: string | null = null
@@ -254,9 +314,11 @@ export async function runUserSync(
   /** Filters, categorizes new payments (names only) and imports one page. Returns true when every row succeeded. */
   async function importPage(results: unknown[]): Promise<boolean> {
     const normalized = results.map(normalizePayment).filter((p): p is MpPayment => p !== null)
+    stats.fetched += results.length
+    stats.dropped.other += results.length - normalized.length
     if (normalized.length === 0) return true
     const seen = await deps.findSeenIds(normalized.map((p) => p.paymentId))
-    const candidates = filterPayments(normalized, { mpUserId: conn.mpUserId, importSince, seenIds: seen })
+    const candidates = filterPayments(normalized, { mpUserId: conn.mpUserId, importSince, seenIds: seen, stats })
     if (candidates.length === 0) return true
     const fresh = candidates.filter(
       (p) =>
@@ -318,7 +380,7 @@ export async function runUserSync(
     for (;;) {
       const state = await fetchWindow(new Date(fromMs).toISOString(), new Date(endMs).toISOString())
       if (state === 'done') {
-        return { result: 'ok', errorClass: null, cursor: new Date(endMs).toISOString() }
+        return { result: 'ok', errorClass: null, cursor: new Date(endMs).toISOString(), stats }
       }
       const half = Math.floor((endMs - fromMs) / 2)
       const nextEnd = fromMs + half
@@ -337,7 +399,7 @@ export async function runUserSync(
   } catch (error) {
     const stop = classify(error)
     console.error('mp-sync: run stopped', stop.outcome.result, stop.outcome.errorClass ?? 'none')
-    return stop.outcome
+    return { ...stop.outcome, stats }
   }
 }
 
@@ -377,7 +439,7 @@ export async function runSyncBatch(
     try {
       outcome = await deps.run(conn)
     } catch {
-      outcome = { result: 'error', errorClass: 'unexpected', cursor: null }
+      outcome = { result: 'error', errorClass: 'unexpected', cursor: null, stats: emptyStats() }
     }
     try {
       await deps.finish(conn.userId, outcome)

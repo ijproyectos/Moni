@@ -9,6 +9,7 @@ import {
 } from '../_shared/mpApi.ts'
 import { rawPayment } from './fixtures.ts'
 import {
+  emptyStats,
   filterPayments,
   runSyncBatch,
   runUserSync,
@@ -74,6 +75,37 @@ function makeDeps(over: Partial<SyncDeps> = {}) {
 
 const run = (deps: SyncDeps, c = conn(), deadlineAt = NOW.getTime() + 100_000) =>
   runUserSync(deps, c, { deadlineAt })
+
+describe('sync stats (counts only)', () => {
+  it('counts fetched, kept and dropped reasons across a run', async () => {
+    const results = [
+      rawPayment(),
+      rawPayment({ id: 2, payer: { id: 999 } }),
+      rawPayment({ id: 3, collector: { id: 111 } }),
+      rawPayment({ id: 4, currency_id: 'USD' }),
+      rawPayment({ id: 5, status: 'pending' }),
+      rawPayment({ id: 6, operation_type: 'account_fund' }),
+      rawPayment({ id: 7, date_created: '2026-10-01T00:00:00.000Z' }),
+      { id: 'bad' },
+    ]
+    const deps = makeDeps({ importPayments: vi.fn(async () => ({ posted: 1, voided: 0, skipped: 0, needsReview: 0, failed: 0 })) })
+    deps.mp.get.mockResolvedValueOnce(page(results, results.length))
+    const outcome = await run(deps)
+    expect(outcome.stats).toEqual({
+      fetched: 8,
+      kept: 1,
+      dropped: {
+        not_payer: 1,
+        collector_is_me: 1,
+        not_ars: 1,
+        status: 1,
+        operation_type: 1,
+        before_import_since: 1,
+        other: 1,
+      },
+    })
+  })
+})
 
 describe('filterPayments (D10, R2.2)', () => {
   const ctx = { mpUserId: '111', importSince: null, seenIds: new Set<string>() }
@@ -472,7 +504,7 @@ function deps0() {
 }
 
 describe('runSyncBatch (D18, R4.1)', () => {
-  const outcome = { result: 'ok', errorClass: null, cursor: NOW.toISOString() } as const
+  const outcome = { result: 'ok', errorClass: null, cursor: NOW.toISOString(), stats: emptyStats() } as const
   it('skips non-active connections, finishes the rest and isolates a crash', async () => {
     const finish = vi.fn(async () => {})
     const runOne = vi.fn(async (c: SyncConnection) => {
@@ -491,7 +523,12 @@ describe('runSyncBatch (D18, R4.1)', () => {
     )
     expect(runOne).toHaveBeenCalledTimes(2)
     expect(finish).toHaveBeenCalledWith('ok', outcome)
-    expect(finish).toHaveBeenCalledWith('boom', { result: 'error', errorClass: 'unexpected', cursor: null })
+    expect(finish).toHaveBeenCalledWith('boom', {
+      result: 'error',
+      errorClass: 'unexpected',
+      cursor: null,
+      stats: emptyStats(),
+    })
     expect(summary).toEqual({ processed: 2, skipped: 2, deferred: 0 })
   })
 
