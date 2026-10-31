@@ -165,3 +165,25 @@ failed, database error, unexpected resource shape) so Mercado Pago retries, `500
   `unexpected_shape` (503, retried, logged) rather than dropped.
 - Whether `data.id` for signatures must come from the query string (the function tries body and query).
 - Real `init_point` host (`mercadopago.com.ar` expected; other country domains are rejected).
+
+## Expense auto-import (Plus): secrets and setup
+
+Edge Function secrets for `mp-oauth`, `mp-oauth-callback`, `mp-sync` and `mp-connect-webhook` (names only; set them
+with `supabase secrets set NAME=...`, never in a `VITE_*` variable, never in the repository):
+
+| Secret | Used by | Notes |
+|---|---|---|
+| `MP_CLIENT_ID`, `MP_CLIENT_SECRET` | `mp-oauth`, `mp-oauth-callback`, `mp-sync` | OAuth application of Mercado Pago (not the billing `MP_ACCESS_TOKEN`). |
+| `MP_OAUTH_REDIRECT_URI` | same | Exactly `https://<moni origin>/mp/callback.html`, also registered in the MP application. |
+| `MP_TOKEN_KEYS` | `mp-oauth-callback`, `mp-sync` | JSON `{"<kid>": "<base64 of 32 random bytes>"}`; keeps old kids until no row uses them. |
+| `MP_TOKEN_KEY_CURRENT` | same | The `kid` used to encrypt new tokens. |
+| `MP_SYNC_CRON_SECRET` | `mp-sync`, `mp-oauth` (sync now) | Same value as the cron's secret (Vault or `private.app_secrets`, see `supabase/ops/mp_sync_cron.sql`). |
+| `MP_CONNECT_WEBHOOK_SECRET` | `mp-connect-webhook` | HMAC key of the deauthorization webhook. |
+| `MP_CONNECT_WEBHOOK_ENABLED` | `mp-connect-webhook` | `true` only after the signature manifest was captured (default off: answers `ignored:disabled`). |
+| `ANTHROPIC_API_KEY` | `mp-sync` | Shared with the assistant; only the merchant text of purchases is sent (never transfers). |
+| `ALLOWED_ORIGINS` | `mp-oauth`, `mp-oauth-callback` | Must include the Moni origin (e.g. `https://moni.example.com`), or the browser calls get 403. |
+
+The static page `public/mp/callback.html` reads the API origin that the app stores in `localStorage` (`moni.mp.apiBase`)
+right before leaving for Mercado Pago, so it works with a local stack or a custom auth domain. If the stored session
+expired meanwhile, it parks `code`/`state` in `sessionStorage` and sends the person to `/cuentas?mp=pending`, where the
+app finishes the exchange with its refreshed session.
