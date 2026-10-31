@@ -76,7 +76,7 @@ function keyNames(value: unknown): string[] {
 
 export function describePayment(raw: unknown, mpUserId: string): PaymentDescriptor {
   const r = obj(raw)
-  const payerId = idText(obj(r.payer).id)
+  const payerId = idText(obj(r.payer).id ?? r.payer_id)
   const collectorId = idText(obj(r.collector).id ?? r.collector_id)
   return {
     operation_type: token(r.operation_type),

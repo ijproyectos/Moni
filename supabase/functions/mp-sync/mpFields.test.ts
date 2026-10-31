@@ -27,6 +27,17 @@ describe('normalizePayment', () => {
       merchant: 'Cafe Martinez',
     })
   })
+  // Captured live (task 0.2): when the linked user is the payer, MP sends `payer_id` as a plain field and the
+  // other side as a `collector` object; when the user is the collector it sends a `payer` object and `collector_id`.
+  it('reads the payer from the flat `payer_id` field when the user is the payer', () => {
+    const flat: Record<string, unknown> = { ...rawPayment(), payer_id: 111, collector: { id: 222, first_name: 'X' } }
+    delete flat.payer
+    delete flat.collector_id
+    expect(normalizePayment(flat)).toMatchObject({ payerId: '111', collectorId: '222' })
+  })
+  it('prefers the payer object when both shapes are present', () => {
+    expect(normalizePayment({ ...rawPayment(), payer_id: 999 })).toMatchObject({ payerId: '111' })
+  })
   it('never carries payer emails or other payer data', () => {
     expect(JSON.stringify(normalizePayment(rawPayment()))).not.toContain('secret@example.com')
   })

@@ -72,7 +72,7 @@ export function normalizePayment(raw: unknown): MpPayment | null {
   const merchant = cleanMerchant(r.description) || cleanMerchant(r.statement_descriptor)
   return {
     paymentId,
-    payerId: str(obj(r.payer).id) ?? '',
+    payerId: str(obj(r.payer).id ?? r.payer_id) ?? '',
     collectorId: str(obj(r.collector).id ?? r.collector_id) ?? '',
     currency: str(r.currency_id) ?? '',
     status: str(r.status) ?? '',
