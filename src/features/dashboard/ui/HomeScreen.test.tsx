@@ -48,11 +48,16 @@ const withData: MonthSummary = {
   ],
 }
 
-function renderHome(summary: MonthSummary, isPlus?: boolean) {
+function renderHome(
+  summary: MonthSummary,
+  isPlus?: boolean,
+  overall?: { incomeCents: number; expenseCents: number },
+) {
   render(
     <MemoryRouter>
       <HomeScreen
         summary={summary}
+        overall={overall}
         month="2026-10-01"
         latestMonth="2026-10-01"
         onMonthChange={vi.fn()}
@@ -67,6 +72,20 @@ function renderHome(summary: MonthSummary, isPlus?: boolean) {
 describe('HomeScreen', () => {
   afterEach(() => {
     budgetStatus.data = []
+  })
+
+  it('shows the whole-history income and expenses in the header even when the picked month is empty', () => {
+    renderHome(empty, false, { incomeCents: 400_000_000, expenseCents: 44_028_789 })
+    const group = screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
+    expect(group).toHaveTextContent('-$440.287,89')
+    expect(group).toHaveTextContent('+$4.000.000')
+  })
+
+  it('falls back to the month totals while the whole-history totals are not loaded', () => {
+    renderHome(withData)
+    const group = screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
+    expect(group).toHaveTextContent('-$119.500')
+    expect(group).toHaveTextContent('+$970.000')
   })
 
   it('shows a friendly insight and an empty state without data', () => {

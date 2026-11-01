@@ -17,6 +17,7 @@ import { useAnts } from '@/features/insights/api/useAnts'
 import { formatArs } from '@/shared/lib/money'
 import { MoniGlyph, ProgressBar } from '@/shared/ui/kit'
 import type { MonthSummary } from '../domain/monthSummary'
+import type { PeriodSummary } from '../domain/periodSummary'
 import { addsToBalance, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
 import { buildInsight } from '../domain/insight'
 import { CategoryDonut } from './CategoryDonut'
@@ -25,6 +26,8 @@ import { AntIcon } from '@/shared/ui/AntIcon'
 
 interface HomeScreenProps {
   summary: MonthSummary
+  /** Income and expenses across the whole history; the header shows them whatever month is picked. */
+  overall?: Pick<PeriodSummary, 'incomeCents' | 'expenseCents'>
   month: IsoDate
   latestMonth: IsoDate
   onMonthChange: (month: IsoDate) => void
@@ -47,6 +50,7 @@ interface HomeScreenProps {
 
 export function HomeScreen({
   summary,
+  overall,
   month,
   latestMonth,
   onMonthChange,
@@ -75,8 +79,8 @@ export function HomeScreen({
         photoUrl={photoUrl}
         isPlus={isPlus}
         availableCents={summary.availableBalanceCents}
-        incomeCents={summary.incomeCents}
-        expenseCents={summary.expenseCents}
+        incomeCents={(overall ?? summary).incomeCents}
+        expenseCents={(overall ?? summary).expenseCents}
         reminderCount={reminderCount}
         noticeCount={noticeCount}
       />

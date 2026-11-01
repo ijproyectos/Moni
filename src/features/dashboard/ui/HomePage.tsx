@@ -14,11 +14,11 @@ import { PlusBadge } from '@/features/plus/ui/PlusBadge'
 import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
 import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
-import { monthStart, todayIso } from '@/shared/lib/month'
+import { addDays, monthStart, todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { Skeleton } from '@/shared/ui/Skeleton'
-import { useMonthSummary } from '../api/useMonthSummary'
+import { useMonthSummary, usePeriodSummary } from '../api/useMonthSummary'
 import { HomeScreen } from './HomeScreen'
 
 function HomeSkeleton() {
@@ -34,12 +34,18 @@ function HomeSkeleton() {
   )
 }
 
+/** The database caps a period summary at 400 days: the widest window the header can total in one call. */
+const OVERALL_DAYS = 400
+
 export function HomePage() {
   const latestMonth = monthStart(todayIso())
+  const tomorrow = addDays(todayIso(), 1)
   const [month, setMonth] = useState(latestMonth)
   const { user } = useAuth()
   const { data: profile } = useProfile()
   const summary = useMonthSummary(month)
+  // Income and expenses in the header do not follow the month picker: an empty new month must not read as $0.
+  const overall = usePeriodSummary(addDays(tomorrow, -OVERALL_DAYS), tomorrow)
   const { openNew } = useMovementSheet()
   const features = useEnabledFeatures()
   const reminders = useRecurringReminders()
@@ -65,6 +71,7 @@ export function HomePage() {
   return (
     <HomeScreen
       summary={summary.data}
+      overall={overall.data}
       month={month}
       latestMonth={latestMonth}
       onMonthChange={setMonth}
