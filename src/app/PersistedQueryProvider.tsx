@@ -8,8 +8,9 @@ import { CACHE_MAX_AGE_MS } from '@/shared/lib/queryClient'
 import { FullScreenLoader } from '@/shared/ui/FullScreenLoader'
 
 const DEHYDRATE_OPTIONS = {
-  // Only successful reads are saved; mutations (writes) never are.
-  shouldDehydrateQuery: (query: { state: { status: string } }) => query.state.status === 'success',
+  // Only successful reads are saved; mutations (writes) never are. Admin panel data ('admin' keys) is never saved.
+  shouldDehydrateQuery: (query: { queryKey: readonly unknown[]; state: { status: string } }) =>
+    query.state.status === 'success' && query.queryKey[0] !== 'admin',
   shouldDehydrateMutation: () => false,
 }
 

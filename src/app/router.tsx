@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router'
+import { AdminRoute } from './AdminRoute'
 import { AuthCallbackPage } from '@/features/auth/ui/AuthCallbackPage'
 import {
   ONBOARDING_PATH,
@@ -125,6 +126,9 @@ export const router = createBrowserRouter([
     children: [{ path: WELCOME_PATH, element: <WelcomePage /> }],
   },
   { path: '/auth/callback', element: <AuthCallbackPage /> },
+  // Admin panel: outside the app shell and its guards on purpose. It signs in and checks access by itself, and its
+  // code is a separate lazy chunk. The server (admin-panel Edge Function) is what enforces who may see data.
+  { path: '/adminmoni/*', element: <AdminRoute /> },
   // Public: what someone without Moni sees when they open a group link (screen 127).
   { path: '/g/:code', element: <GroupLinkLandingPage /> },
   {
