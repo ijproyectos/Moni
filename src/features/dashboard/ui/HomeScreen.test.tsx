@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import type { MonthSummary } from '../domain/monthSummary'
+import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import { HomeScreen } from './HomeScreen'
 
 // HomeScreen is presentational; the budget and ants hooks need a query client, so stub them here.
@@ -52,12 +52,14 @@ function renderHome(
   summary: MonthSummary,
   isPlus?: boolean,
   overall?: { incomeCents: number; expenseCents: number },
+  movements?: RecentMovement[],
 ) {
   render(
     <MemoryRouter>
       <HomeScreen
         summary={summary}
         overall={overall}
+        movements={movements}
         month="2026-10-01"
         latestMonth="2026-10-01"
         onMonthChange={vi.fn()}
@@ -79,6 +81,29 @@ describe('HomeScreen', () => {
     const group = screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
     expect(group).toHaveTextContent('-$440.287,89')
     expect(group).toHaveTextContent('+$4.000.000')
+  })
+
+  it('lists movements of every month, grouped under month headings, even when the picked month is empty', () => {
+    const movement = (id: string, occurredOn: string, note: string): RecentMovement => ({
+      id,
+      kind: 'expense',
+      amountCents: 1_000_00,
+      occurredOn,
+      note,
+      accountId: 'a',
+      accountName: 'Efectivo',
+      categoryName: 'Comida',
+      categoryColor: '#E5533D',
+      categoryIcon: 'Utensils',
+    })
+    renderHome(empty, false, { incomeCents: 0, expenseCents: 2_000_00 }, [
+      movement('m1', '2026-10-31', 'Cena'),
+      movement('m2', '2026-09-30', 'Almuerzo'),
+    ])
+    expect(screen.queryByText('Todavía no hay movimientos')).not.toBeInTheDocument()
+    const october = screen.getByRole('region', { name: 'Octubre 2026' })
+    expect(october).toHaveTextContent('Cena')
+    expect(screen.getByRole('region', { name: 'Septiembre 2026' })).toHaveTextContent('Almuerzo')
   })
 
   it('falls back to the month totals while the whole-history totals are not loaded', () => {

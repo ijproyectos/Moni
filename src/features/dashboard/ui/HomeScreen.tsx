@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
-import { formatMonthName, formatRelativeDay } from '@/shared/lib/dates'
+import { formatMonthName, formatMonthYear, formatRelativeDay } from '@/shared/lib/dates'
 import { todayIso, type IsoDate } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
@@ -16,7 +16,8 @@ import { BudgetAlertsCard } from '@/features/budgets/ui/BudgetAlertsCard'
 import { useAnts } from '@/features/insights/api/useAnts'
 import { formatArs } from '@/shared/lib/money'
 import { MoniGlyph, ProgressBar } from '@/shared/ui/kit'
-import type { MonthSummary } from '../domain/monthSummary'
+import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
+import { groupMovementsByMonth } from '../domain/recentMovements'
 import type { PeriodSummary } from '../domain/periodSummary'
 import { addsToBalance, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
 import { buildInsight } from '../domain/insight'
@@ -28,6 +29,8 @@ interface HomeScreenProps {
   summary: MonthSummary
   /** Income and expenses across the whole history; the header shows them whatever month is picked. */
   overall?: Pick<PeriodSummary, 'incomeCents' | 'expenseCents'>
+  /** Newest movements across the whole history; they show whatever month is picked. Defaults to the month's own. */
+  movements?: readonly RecentMovement[]
   month: IsoDate
   latestMonth: IsoDate
   onMonthChange: (month: IsoDate) => void
@@ -51,6 +54,7 @@ interface HomeScreenProps {
 export function HomeScreen({
   summary,
   overall,
+  movements,
   month,
   latestMonth,
   onMonthChange,
@@ -65,8 +69,14 @@ export function HomeScreen({
   goals = { reservedCents: 0, targetCents: 0, count: 0 },
 }: HomeScreenProps) {
   const today = todayIso()
+  const recent = movements ?? summary.recent
+  const recentByMonth = groupMovementsByMonth(recent)
   const hasData =
-    summary.byCategory.length > 0 || summary.recent.length > 0 || summary.incomeCents > 0
+    summary.byCategory.length > 0 ||
+    recent.length > 0 ||
+    summary.incomeCents > 0 ||
+    (overall?.incomeCents ?? 0) > 0 ||
+    (overall?.expenseCents ?? 0) > 0
   const monthName = formatMonthName(month)
 
   return (
@@ -135,7 +145,7 @@ export function HomeScreen({
 
             <HomeShortcuts ants={shortcuts.ants} goals={goals} />
 
-            {summary.recent.length > 0 && (
+            {recent.length > 0 && (
               <section aria-labelledby="recent-title">
                 <div className="mb-2 flex items-baseline justify-between px-1">
                   <h2 id="recent-title" className="font-display text-xl font-extrabold">
@@ -148,38 +158,45 @@ export function HomeScreen({
                     Ver todos
                   </Link>
                 </div>
-                <Card className="py-1">
-                  <ul className="divide-y divide-cream">
-                    {summary.recent.map((m) => {
-                      const isIncome = addsToBalance(m.kind)
-                      return (
-                        <li key={m.id}>
-                          <MovementRow
-                            leading={
-                              isAdjustment(m.kind) || isOpening(m.kind) ? (
-                                <IconCircle icon={Scale} color="#064735" />
-                              ) : (
-                                <CategoryIconCircle
-                                  iconName={m.categoryIcon}
-                                  color={m.categoryColor}
-                                />
-                              )
-                            }
-                            title={m.note?.trim() || m.categoryName || 'Movimiento'}
-                            subtitle={`${formatRelativeDay(m.occurredOn, today)} · ${m.categoryName ?? m.accountName}`}
-                            trailing={
-                              <AmountDisplay
-                                cents={isIncome ? m.amountCents : -m.amountCents}
-                                signed
-                                className={isIncome ? 'text-income' : 'text-expense'}
+                {recentByMonth.map((group) => (
+                  <section key={group.month} aria-label={formatMonthYear(group.month)}>
+                    <h3 className="mb-1 mt-3 px-1 font-display text-[15px] font-extrabold text-text-muted first:mt-0">
+                      {formatMonthYear(group.month)}
+                    </h3>
+                    <Card className="py-1">
+                      <ul className="divide-y divide-cream">
+                        {group.movements.map((m) => {
+                          const isIncome = addsToBalance(m.kind)
+                          return (
+                            <li key={m.id}>
+                              <MovementRow
+                                leading={
+                                  isAdjustment(m.kind) || isOpening(m.kind) ? (
+                                    <IconCircle icon={Scale} color="#064735" />
+                                  ) : (
+                                    <CategoryIconCircle
+                                      iconName={m.categoryIcon}
+                                      color={m.categoryColor}
+                                    />
+                                  )
+                                }
+                                title={m.note?.trim() || m.categoryName || 'Movimiento'}
+                                subtitle={`${formatRelativeDay(m.occurredOn, today)} · ${m.categoryName ?? m.accountName}`}
+                                trailing={
+                                  <AmountDisplay
+                                    cents={isIncome ? m.amountCents : -m.amountCents}
+                                    signed
+                                    className={isIncome ? 'text-income' : 'text-expense'}
+                                  />
+                                }
                               />
-                            }
-                          />
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </Card>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </Card>
+                  </section>
+                ))}
               </section>
             )}
           </>
