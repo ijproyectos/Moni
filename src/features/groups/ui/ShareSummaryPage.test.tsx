@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { makeAccount } from '@/features/accounts/domain/testing'
@@ -8,6 +8,8 @@ import { ShareSummaryPage } from './GroupSummaryPages'
 
 const GROUP = 'g1'
 const copied = vi.hoisted(() => ({ texts: [] as string[] }))
+const image = vi.hoisted(() => ({ render: vi.fn() }))
+vi.mock('../lib/summaryImage', () => ({ renderSummaryImage: image.render }))
 
 vi.mock('@/shared/lib/share', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/lib/share')>()),
@@ -29,11 +31,34 @@ vi.mock('../api/useGroupLedger', async () => {
           { id: 'ana', name: 'Ana', hasMoni: true, isMe: false },
         ],
         transfers: [{ fromUserId: 'ana', toUserId: 'me', amountCents: 25_000_00 }],
-        expenses: [],
+        expenses: [
+          {
+            id: 'e1',
+            description: 'Cena en Ipanema',
+            amountCents: 60_000_00,
+            payers: [{ personId: 'me', cents: 60_000_00 }],
+          },
+          {
+            id: 'e2',
+            description: 'Taxi al aeropuerto',
+            amountCents: 40_000_00,
+            payers: [
+              { personId: 'me', cents: 15_000_00 },
+              { personId: 'ana', cents: 25_000_00 },
+            ],
+          },
+        ],
+        totalCents: 100_000_00,
+        paid: { me: 75_000_00, ana: 25_000_00 },
+        owed: { me: 50_000_00, ana: 50_000_00 },
+        nets: { me: 25_000_00, ana: -25_000_00 },
       },
     }),
   }
 })
+vi.mock('@/features/auth/api/useProfile', () => ({
+  useProfile: () => ({ data: { display_name: 'Iara Rodríguez' } }),
+}))
 vi.mock('@/features/accounts/api/useAccounts', () => ({
   useAccounts: () => ({
     data: [
@@ -158,5 +183,105 @@ describe('Compartir resumen: datos para transferencias', () => {
     expect(screen.getByText('No incluir mis datos')).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Copiar texto del grupo' }))
     expect(copied.texts[0]).not.toMatch(/Alias|CBU/)
+  })
+})
+
+describe('Compartir resumen: el resumen completo', () => {
+  const share = vi.fn()
+  const open = vi.fn()
+  const downloaded = { files: [] as string[] }
+
+  beforeEach(() => {
+    share.mockReset()
+    open.mockReset()
+    downloaded.files.length = 0
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true })
+    vi.spyOn(window, 'open').mockImplementation(open)
+  })
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'share')
+    Reflect.deleteProperty(navigator, 'canShare')
+    vi.restoreAllMocks()
+  })
+
+  it('opens on the full summary, with every detail of the screen and the same amounts', () => {
+    renderPage()
+    const text = screen.getByLabelText('Resumen completo').textContent ?? ''
+    expect(text).toContain('*Resumen de Viaje a Brasil*')
+    expect(text).toContain('2 personas')
+    expect(text).toContain('• Cena en Ipanema: $60.000 (pagó Iara)')
+    expect(text).toContain('• Taxi al aeropuerto: $40.000 (pagaron Iara $15.000 y Ana $25.000)')
+    expect(text).toContain('*Total gastado: $100.000*')
+    expect(text).toContain('• Iara: puso $75.000, le tocaba $50.000 → saldo +$25.000')
+    expect(text).toContain('• Ana: puso $25.000, le tocaba $50.000 → saldo -$25.000')
+    expect(text).toContain('• Ana → Iara: $25.000')
+    expect(text).toContain('Hecho con Moni')
+    // The person is named, not "Vos": whoever reads it is somebody else.
+    expect(text).not.toContain('Vos')
+  })
+
+  it('"Copiar resumen" copies exactly the text shown', async () => {
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'Copiar resumen' }))
+    expect(copied.texts).toEqual([screen.getByLabelText('Resumen completo').textContent])
+  })
+
+  it('"Compartir" opens the share menu with the whole text', async () => {
+    share.mockResolvedValue(undefined)
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'Compartir' }))
+    expect(share).toHaveBeenCalledTimes(1)
+    expect(share.mock.calls[0]?.[0].text).toBe(
+      screen.getByLabelText('Resumen completo').textContent,
+    )
+  })
+
+  it('without a share menu (desktop), "Compartir" opens WhatsApp with the summary', async () => {
+    Reflect.deleteProperty(navigator, 'share')
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'Compartir' }))
+    const url = String(open.mock.calls[0]?.[0])
+    expect(url).toMatch(/^https:\/\/wa\.me\/\?text=/)
+    expect(decodeURIComponent(url)).toContain('*Total gastado: $100.000*')
+  })
+
+  it('includes the transfer data only when the person chose them', async () => {
+    const user = renderPage()
+    expect(screen.getByLabelText('Resumen completo').textContent).not.toContain('galicia.sueldo')
+    await user.click(screen.getByRole('button', { name: /Datos para que te transfieran/ }))
+    await user.click(screen.getByRole('button', { name: /Galicia/ }))
+    await user.click(screen.getByRole('button', { name: 'Incluir en el resumen' }))
+    expect(screen.getByLabelText('Resumen completo').textContent).toContain(
+      '• Ana → Iara: $25.000 (Alias: galicia.sueldo · CBU: 0070000030000012345678)',
+    )
+  })
+
+  it('"Descargar resumen" builds the image and saves it as a PNG', async () => {
+    const png = new Blob(['x'], { type: 'image/png' })
+    image.render.mockResolvedValue(png)
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      downloaded.files.push(this.download)
+    })
+    URL.createObjectURL = vi.fn(() => 'blob:x')
+    URL.revokeObjectURL = vi.fn()
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'Descargar resumen' }))
+    await waitFor(() => expect(click).toHaveBeenCalled())
+    expect(downloaded.files).toEqual(['resumen-viaje-a-brasil.png'])
+    // The image is drawn from the same model as the text: same total and same transfer.
+    const model = image.render.mock.calls[0]?.[0]
+    expect(model.total).toBe('$100.000')
+    expect(model.transfers).toEqual([{ from: 'Ana', to: 'Iara', amount: '$25.000', transfer: '' }])
+  })
+
+  it('offers "Compartir imagen" only where the device can share files', async () => {
+    renderPage()
+    expect(screen.queryByRole('button', { name: 'Compartir imagen' })).toBeNull()
+    cleanup()
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true })
+    renderPage()
+    expect(screen.getByRole('button', { name: 'Compartir imagen' })).toBeInTheDocument()
   })
 })

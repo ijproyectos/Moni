@@ -4,7 +4,10 @@ import {
   ChevronRight,
   Copy,
   CreditCard,
+  Download,
+  Image as ImageIcon,
   Plus,
+  Share2,
   Upload,
   WalletCards,
 } from 'lucide-react'
@@ -17,9 +20,12 @@ import {
   hasTransferData,
   transferLines,
 } from '@/features/accounts/domain/account'
+import { useProfile } from '@/features/auth/api/useProfile'
+import { firstName } from '@/features/auth/domain/profile'
 import { formatLongDay } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
-import { copyText } from '@/shared/lib/share'
+import { todayIso } from '@/shared/lib/month'
+import { copyText, downloadFile, shareFile, shareText } from '@/shared/lib/share'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
@@ -29,6 +35,8 @@ import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
 import { useGroupLedger } from '../api/useGroupLedger'
 import { personName, type Ledger, type Person } from '../domain/ledger'
+import { buildSummaryModel, summaryText } from '../domain/summaryShare'
+import { renderSummaryImage } from '../lib/summaryImage'
 import { patchOverlay } from '../mock/overlayStore'
 import { AvatarStack } from './groupVisuals'
 
@@ -182,7 +190,9 @@ export function ShareSummaryPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const { groupId, ledger, name, meId, shareable, shared, myTransfer, aliasOf } = useSummaryData()
-  const [tab, setTab] = useState<'moni' | 'text'>('moni')
+  const { data: profile } = useProfile()
+  const [tab, setTab] = useState<'summary' | 'moni' | 'text'>('summary')
+  const [busy, setBusy] = useState(false)
   const [choosingAccount, setChoosingAccount] = useState(false)
   // The account highlighted in the sheet: it is only used after "Incluir en el resumen".
   const [pick, setPick] = useState<string | null>(null)
@@ -215,6 +225,72 @@ export function ShareSummaryPage() {
     }),
   ].join('\n')
 
+  // The whole detail of the Resumen screen, from the same ledger, as text and as an image.
+  const model = buildSummaryModel({
+    ledger,
+    groupName: name,
+    dateLabel: formatLongDay(todayIso()),
+    meName: firstName(profile?.display_name) || 'Yo',
+    transferOf: (id) => aliasOf(ledger.people.find((p) => p.id === id)),
+  })
+  const fullText = summaryText(model)
+  const fileName = `resumen-${
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9áéíóúñ]+/gi, '-')
+      .replace(/^-|-$/g, '') || 'grupo'
+  }.png`
+
+  async function makeImage(): Promise<File | null> {
+    setBusy(true)
+    try {
+      const blob = await renderSummaryImage(model)
+      return new File([blob], fileName, { type: 'image/png' })
+    } catch {
+      toast.show('No pudimos armar la imagen. Probá copiar el resumen.', { tone: 'error' })
+      return null
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function download() {
+    const file = await makeImage()
+    if (!file) return
+    downloadFile(file, fileName)
+    toast.show('Resumen descargado')
+  }
+  async function shareImage() {
+    const file = await makeImage()
+    if (file && !(await shareFile(file, `Resumen de ${name}`))) downloadFile(file, fileName)
+  }
+  const canShareFiles = typeof navigator !== 'undefined' && typeof navigator.canShare === 'function'
+
+  const accountPicker = (
+    <button
+      type="button"
+      onClick={() => {
+        setPick(shared?.id ?? null)
+        setChoosingAccount(true)
+      }}
+      className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4 text-left"
+    >
+      <IconTile icon={WalletCards} bg="#e3f2cf" />
+      <span className="flex-1">
+        <SectionLabel>Datos para que te transfieran</SectionLabel>
+        <span className="block text-[18px] font-extrabold">
+          {shared ? shared.name : 'No incluir mis datos'}
+        </span>
+        {shared && (
+          <span className="block break-all text-[15px] text-text-muted">{myTransfer}</span>
+        )}
+      </span>
+      <span className="flex items-center text-[15px] font-extrabold">
+        {shared ? 'Cambiar' : 'Elegir'} <ChevronRight aria-hidden="true" className="size-4" />
+      </span>
+    </button>
+  )
+
   return (
     <Page className="pb-28">
       <PageHeader title="Compartir resumen" fallbackTo={`/grupos/${groupId}/resumen`} />
@@ -223,11 +299,54 @@ export function ShareSummaryPage() {
         value={tab}
         onChange={setTab}
         options={[
+          { value: 'summary', label: 'Resumen' },
           { value: 'moni', label: 'Avisar en Moni' },
           { value: 'text', label: 'Copiar texto' },
         ]}
       />
-      {tab === 'moni' ? (
+      {tab === 'summary' ? (
+        <>
+          {accountPicker}
+          <SectionLabel>Así va a salir</SectionLabel>
+          <pre
+            aria-label="Resumen completo"
+            className="whitespace-pre-wrap break-words rounded-[20px] bg-lime/30 p-4 font-body text-[15px] leading-6 text-ink"
+          >
+            {fullText}
+          </pre>
+          <div className="flex flex-col gap-2">
+            <Button variant="dark" onClick={() => void shareText(fullText, `Resumen de ${name}`)}>
+              <Share2 aria-hidden="true" className="mr-2 size-5" /> Compartir
+            </Button>
+            <Button
+              variant="ghost"
+              className="border-2 border-sand"
+              onClick={() => void copyText(fullText, toast, 'Resumen copiado')}
+            >
+              <Copy aria-hidden="true" className="mr-2 size-5" /> Copiar resumen
+            </Button>
+            <Button
+              variant="ghost"
+              className="border-2 border-sand"
+              disabled={busy}
+              onClick={() => void download()}
+            >
+              <Download aria-hidden="true" className="mr-2 size-5" />{' '}
+              {busy ? 'Armando la imagen…' : 'Descargar resumen'}
+            </Button>
+            {canShareFiles && (
+              <Button
+                variant="ghost"
+                className="border-2 border-sand"
+                disabled={busy}
+                onClick={() => void shareImage()}
+              >
+                <ImageIcon aria-hidden="true" className="mr-2 size-5" /> Compartir imagen
+              </Button>
+            )}
+          </div>
+        </>
+      ) : tab === 'moni' ? (
         <>
           <p className="text-[16px] leading-6">
             Cada uno recibe una notificación con lo que tiene que hacer.
@@ -282,28 +401,7 @@ export function ShareSummaryPage() {
         </>
       ) : (
         <>
-          <button
-            type="button"
-            onClick={() => {
-              setPick(shared?.id ?? null)
-              setChoosingAccount(true)
-            }}
-            className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4 text-left"
-          >
-            <IconTile icon={WalletCards} bg="#e3f2cf" />
-            <span className="flex-1">
-              <SectionLabel>Datos para que te transfieran</SectionLabel>
-              <span className="block text-[18px] font-extrabold">
-                {shared ? shared.name : 'No incluir mis datos'}
-              </span>
-              {shared && (
-                <span className="block break-all text-[15px] text-text-muted">{myTransfer}</span>
-              )}
-            </span>
-            <span className="flex items-center text-[15px] font-extrabold">
-              {shared ? 'Cambiar' : 'Elegir'} <ChevronRight aria-hidden="true" className="size-4" />
-            </span>
-          </button>
+          {accountPicker}
           <SectionLabel>Para el grupo</SectionLabel>
           <div className="whitespace-pre-line rounded-[20px] bg-lime/30 p-4 text-[16px] leading-7">
             <strong className="font-extrabold">{name}</strong>
