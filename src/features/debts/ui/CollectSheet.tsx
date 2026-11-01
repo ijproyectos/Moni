@@ -19,6 +19,12 @@ import { useToast } from '@/shared/ui/toastContext'
 import { useRemindDebt } from '../api/useDebts'
 import { buildDebtMessage, toReceiveAccount, type PendingDebt } from '../domain/debts'
 
+/** The accounts to be paid into, in both themes: a card-colored box (dark in dark mode) with readable text. */
+const OPTION =
+  'flex w-full items-center gap-3 rounded-[20px] border-2 bg-card px-4 py-3 text-left text-ink'
+/** The chosen one stands out: lime border in dark mode (forest in light, where lime would not show on cream) and a tint. */
+const OPTION_SELECTED = 'border-forest bg-lime/20 dark:border-lime dark:bg-lime/10'
+
 /**
  * "Enviar cobro": the person who is owed picks which of their own banks or wallets receives the transfer (cash is not
  * offered), can add the alias / CBU-CVU right there, sees the exact message (it changes with the chosen account) and only
@@ -103,14 +109,11 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
                     type="button"
                     aria-pressed={selected}
                     onClick={() => (withData ? setPickId(a.id) : setAddingId(a.id))}
-                    className={cn(
-                      'flex w-full items-center gap-3 rounded-[20px] border-2 bg-white px-4 py-3 text-left',
-                      selected ? 'border-ink' : 'border-sand',
-                    )}
+                    className={cn(OPTION, selected ? OPTION_SELECTED : 'border-sand')}
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block text-[18px] font-extrabold">{a.name}</span>
-                      <span className="block break-all text-[15px] text-text-muted">
+                      <span className="block break-words text-[15px] text-text-muted">
                         {withData ? transferLines(a).join(' · ') : 'Sin alias ni CBU/CVU · Agregar'}
                       </span>
                     </span>
@@ -125,10 +128,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
               type="button"
               aria-pressed={picked === null}
               onClick={() => setPickId(null)}
-              className={cn(
-                'flex w-full items-center gap-3 rounded-[20px] border-2 bg-white px-4 py-3 text-left',
-                picked === null ? 'border-ink' : 'border-sand',
-              )}
+              className={cn(OPTION, picked === null ? OPTION_SELECTED : 'border-sand')}
             >
               <span className="flex-1 text-[17px] font-extrabold">
                 No incluir datos para transferir
@@ -164,11 +164,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
           <Button variant="dark" onClick={() => void sendInMoni()} disabled={remind.isPending}>
             {remind.isPending ? 'Enviando…' : 'Enviar por Moni'}
           </Button>
-          <Button
-            variant="ghost"
-            className="border-2 border-sand"
-            onClick={() => void share()}
-          >
+          <Button variant="ghost" className="border-2 border-sand" onClick={() => void share()}>
             <Share2 aria-hidden="true" className="mr-2 size-5" /> Compartir
           </Button>
           <Button

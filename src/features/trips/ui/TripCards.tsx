@@ -22,7 +22,7 @@ export function PersonalTripCard({
       to={`/viajes/${trip.id}`}
       className={
         ended
-          ? 'block rounded-[28px] border border-sand bg-white p-5'
+          ? 'block rounded-[28px] border border-sand bg-card p-5'
           : 'block rounded-[28px] bg-forest p-5 text-cream'
       }
     >

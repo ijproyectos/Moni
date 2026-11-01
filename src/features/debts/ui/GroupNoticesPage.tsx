@@ -92,7 +92,7 @@ export function GroupNoticesPage() {
               <li
                 key={n.id}
                 className={cn(
-                  'rounded-[24px] border bg-white p-4',
+                  'rounded-[24px] border bg-card p-4',
                   fresh.current?.has(n.id) ? 'border-ink' : 'border-sand',
                 )}
               >
@@ -100,14 +100,19 @@ export function GroupNoticesPage() {
                   <Avatar name={n.actorName} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[17px] font-extrabold leading-6">{noticeText(n)}</p>
-                    <p className="text-[14px] text-text-muted">
+                    <p className="flex items-center gap-2 text-[14px] text-text-muted">
                       {formatRelativeDay(n.createdAt.slice(0, 10), today)}
+                      {fresh.current?.has(n.id) && (
+                        <span className="rounded-full bg-lime px-2 py-0.5 text-[12px] font-extrabold text-forest">
+                          Nuevo
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
 
                 {n.kind === 'debt_reminder' && hasTransfer && (
-                  <div className="mt-3 rounded-[18px] bg-lime/30 p-3">
+                  <div className="mt-3 rounded-[18px] bg-lime/30 p-3 text-ink dark:bg-lime/15">
                     <p className="text-[14px] font-bold">
                       Podés transferir a {n.transferLabel ?? 'su cuenta'}:
                     </p>
@@ -125,7 +130,7 @@ export function GroupNoticesPage() {
                             type="button"
                             aria-label={`Copiar ${label}`}
                             onClick={() => void copyText(value ?? '', toast, `${label} copiado`)}
-                            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card"
+                            className="flex size-11 shrink-0 items-center justify-center rounded-full border border-line bg-card"
                           >
                             <Copy aria-hidden="true" className="size-4" />
                           </button>
@@ -168,7 +173,7 @@ export function GroupNoticesPage() {
                           )
                         }
                         disabled={reject.isPending}
-                        className={cn(pill, 'border-2 border-sand bg-white')}
+                        className={cn(pill, 'border-2 border-line bg-card text-ink')}
                       >
                         No lo recibí
                       </button>
@@ -176,7 +181,7 @@ export function GroupNoticesPage() {
                   )}
                   <Link
                     to={`/grupos/${n.groupId}`}
-                    className={cn(pill, 'border-2 border-sand bg-white')}
+                    className={cn(pill, 'border-2 border-line bg-card text-ink')}
                   >
                     <Bell aria-hidden="true" className="size-4" /> Abrir el grupo
                   </Link>

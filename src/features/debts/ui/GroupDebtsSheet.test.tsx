@@ -194,6 +194,21 @@ describe('Me deben: Enviar cobro', () => {
     return { user, sheet: screen.getByRole('dialog', { name: 'Enviar cobro' }) }
   }
 
+  it('the account options follow the theme (card colors, no hard-coded white) and the chosen one has a lime border in dark mode', async () => {
+    const { user, sheet } = await openCollect()
+    const galicia = within(sheet).getByRole('button', { name: /Galicia/ })
+    const none = within(sheet).getByRole('button', { name: /No incluir datos/ })
+    for (const option of [galicia, none]) {
+      expect(option).toHaveClass('bg-card', 'text-ink')
+      expect(option).not.toHaveClass('bg-white')
+    }
+    expect(none).toHaveClass('dark:border-lime') // nothing chosen yet: "no data" is the selected one
+    expect(galicia).not.toHaveClass('dark:border-lime')
+    await user.click(galicia)
+    expect(galicia).toHaveClass('dark:border-lime', 'border-forest')
+    expect(none).not.toHaveClass('dark:border-lime')
+  })
+
   it('lists only my banks and wallets (never cash) with their real alias or CBU', async () => {
     const { sheet } = await openCollect()
     expect(within(sheet).getByRole('button', { name: /Galicia/ })).toHaveTextContent(

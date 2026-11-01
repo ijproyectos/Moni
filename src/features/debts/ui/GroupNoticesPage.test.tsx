@@ -110,6 +110,17 @@ describe('Avisos de grupos', () => {
     expect(state.markRead).toHaveBeenCalled()
   })
 
+  it('tells unread notices apart and keeps every card on theme tokens (no fixed white)', () => {
+    state.notices = {
+      data: [notice(), notice({ id: 'n2', readAt: '2026-10-30T11:00:00Z' })],
+      isLoading: false,
+      isError: false,
+    }
+    renderPage()
+    expect(screen.getAllByText('Nuevo')).toHaveLength(1)
+    expect(document.body.innerHTML).not.toMatch(/bg-white/)
+  })
+
   it('does not ask to mark anything when everything was read', () => {
     state.notices = {
       data: [notice({ readAt: '2026-10-30T11:00:00Z' })],

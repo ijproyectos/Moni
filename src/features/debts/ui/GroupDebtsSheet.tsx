@@ -197,7 +197,7 @@ export function GroupDebtsSheet({
                                 )
                               }
                               disabled={reject.isPending}
-                              className={cn(pill, 'border-2 border-sand bg-white')}
+                              className={cn(pill, 'border-2 border-sand bg-card')}
                             >
                               No lo recibí
                             </button>
