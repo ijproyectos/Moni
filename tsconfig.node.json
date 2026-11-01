@@ -43,6 +43,8 @@
     "supabase/functions/mp-sync/categorize.ts",
     "supabase/functions/mp-sync/categorize.test.ts",
     "supabase/functions/mp-connect-webhook/lib.ts",
-    "supabase/functions/mp-connect-webhook/lib.test.ts"
+    "supabase/functions/mp-connect-webhook/lib.test.ts",
+    "supabase/functions/push-send/lib.ts",
+    "supabase/functions/push-send/lib.test.ts"
   ]
 }

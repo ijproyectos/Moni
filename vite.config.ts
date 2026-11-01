@@ -81,6 +81,9 @@ export default defineConfig({
           /^\/(rest|auth|functions|storage|realtime)\/v1\//,
         ],
         runtimeCaching: [{ urlPattern: isSupabaseRequest, handler: 'NetworkOnly' }],
+        // Web push handlers (public/push-sw.js), loaded inside the generated service worker. The glob above also
+        // precaches it with a content revision, so a change to the file changes the worker and ships to users.
+        importScripts: ['push-sw.js'],
       },
     }),
   ],

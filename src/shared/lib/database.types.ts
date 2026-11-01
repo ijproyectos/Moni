@@ -756,6 +756,13 @@ export interface Database {
       }
       /** Migration 20261112000300: hides one possible duplicate. Idempotent. */
       dismiss_mp_import_duplicate: { Args: { p_payment_id: string }; Returns: undefined }
+      /** Migration 20261113000000: registers (or reassigns) this browser's web push endpoint for the caller. */
+      register_push_subscription: {
+        Args: { p_endpoint: string; p_p256dh: string; p_auth: string; p_user_agent: string }
+        Returns: undefined
+      }
+      /** Migration 20261113000000: removes the caller's own web push endpoint. */
+      remove_push_subscription: { Args: { p_endpoint: string }; Returns: undefined }
       is_plus: {
         Args: Record<never, never>
         Returns: boolean

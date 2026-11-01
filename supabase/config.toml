@@ -82,3 +82,11 @@ entrypoint = "./functions/mp-sync/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/mp-connect-webhook/index.ts"
+
+# verify_jwt is OFF on purpose: the app owner calls this function with curl, not as a Supabase user. The function
+# compares the `x-moni-push-secret` header with its Edge secret PUSH_ADMIN_SECRET (constant time) before any
+# database or push work. See docs/PUSH.md.
+[functions.push-send]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/push-send/index.ts"
