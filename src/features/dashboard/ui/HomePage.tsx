@@ -10,7 +10,6 @@ import { activeTotals } from '@/features/goals/domain/savings'
 import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
 import { useUnreadNoticeCount } from '@/features/debts/api/useDebts'
 import { usePlus } from '@/features/plus/api/usePlus'
-import { PlusBadge } from '@/features/plus/ui/PlusBadge'
 import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
 import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
@@ -105,7 +104,6 @@ export function HomePage() {
       shortcuts={{ ants: features.has('ants') }}
       reminders={
         <>
-          <PlusBadge />
           <SavingsNotices />
           <RecurringReminders />
         </>
