@@ -11,6 +11,10 @@ const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
 interface ActivityCalendarProps {
   month: IsoDate
+  /** The summary covers every movement instead of `month`: no month navigation, no day grid. */
+  allTime?: boolean
+  /** Movements currently listed; the "Gastos" side of the all-time summary. */
+  count?: number
   days: readonly CalendarDayTotal[]
   expenseCents: Cents
   incomeCents: Cents
@@ -28,6 +32,8 @@ interface ActivityCalendarProps {
 
 export function ActivityCalendar({
   month,
+  allTime = false,
+  count = 0,
   days,
   expenseCents,
   incomeCents,
@@ -38,8 +44,9 @@ export function ActivityCalendar({
   onSelectDay,
   kind = 'all',
   incomeCount = 0,
-  showDays = true,
+  showDays: showDaysProp = true,
 }: ActivityCalendarProps) {
+  const showDays = showDaysProp && !allTime
   const { hidden } = useHiddenAmounts()
   const today = todayIso()
   const blanks = days[0] ? weekdayIndex(days[0].date) : 0
@@ -50,29 +57,33 @@ export function ActivityCalendar({
 
   return (
     <section
-      aria-label={showDays ? 'Calendario del mes' : 'Resumen del mes'}
+      aria-label={showDays ? 'Calendario del mes' : allTime ? 'Resumen de todo' : 'Resumen del mes'}
       className="rounded-[28px] bg-forest p-4 text-cream"
     >
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onPrev}
-          aria-label="Mes anterior"
-          className="flex size-11 items-center justify-center rounded-full bg-surface"
-        >
-          <ChevronLeft aria-hidden="true" className="size-5" strokeWidth={2} />
-        </button>
-        <h2 className="font-display text-[21px] font-extrabold">{formatMonthYear(month)}</h2>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={!canGoNext}
-          aria-label="Mes siguiente"
-          className="flex size-11 items-center justify-center rounded-full bg-surface disabled:opacity-40"
-        >
-          <ChevronRight aria-hidden="true" className="size-5" strokeWidth={2} />
-        </button>
-      </div>
+      {allTime ? (
+        <h2 className="text-center font-display text-[21px] font-extrabold">Todo el historial</h2>
+      ) : (
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onPrev}
+            aria-label="Mes anterior"
+            className="flex size-11 items-center justify-center rounded-full bg-surface"
+          >
+            <ChevronLeft aria-hidden="true" className="size-5" strokeWidth={2} />
+          </button>
+          <h2 className="font-display text-[21px] font-extrabold">{formatMonthYear(month)}</h2>
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={!canGoNext}
+            aria-label="Mes siguiente"
+            className="flex size-11 items-center justify-center rounded-full bg-surface disabled:opacity-40"
+          >
+            <ChevronRight aria-hidden="true" className="size-5" strokeWidth={2} />
+          </button>
+        </div>
+      )}
 
       <dl className="mt-3 flex justify-between px-1">
         <div>
@@ -83,15 +94,25 @@ export function ActivityCalendar({
         </div>
         <div className="text-right">
           <dt className={label}>
-            {kind === 'all' ? 'Ingresaste' : kind === 'expense' ? 'Por día' : 'Ingresos'}
+            {kind === 'all'
+              ? 'Ingresaste'
+              : kind === 'expense'
+                ? allTime
+                  ? 'Gastos'
+                  : 'Por día'
+                : 'Ingresos'}
           </dt>
           <dd className={cn(value, kind === 'all' ? 'text-lime' : 'text-cream')}>
             {kind === 'all' ? (
               <AmountDisplay cents={incomeCents} />
             ) : kind === 'expense' ? (
-              <AmountDisplay cents={Math.round(expenseCents / elapsed / 100) * 100} />
+              allTime ? (
+                count
+              ) : (
+                <AmountDisplay cents={Math.round(expenseCents / elapsed / 100) * 100} />
+              )
             ) : (
-              `${incomeCount} este mes`
+              `${incomeCount} ${allTime ? 'en total' : 'este mes'}`
             )}
           </dd>
         </div>

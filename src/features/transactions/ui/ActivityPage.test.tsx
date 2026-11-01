@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { todayIso } from '@/shared/lib/month'
+import { monthStart, shiftMonth, todayIso } from '@/shared/lib/month'
 import { makeTransaction } from '../domain/testing'
 import { ActivityPage } from './ActivityPage'
 
@@ -10,6 +10,8 @@ const SALARY = '33333333-3333-4333-8333-333333333333'
 const voidTx = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const voidPlan = vi.hoisted(() => vi.fn().mockResolvedValue(1))
 const today = todayIso()
+// Two months back: outside whatever month the page opens on.
+const oldDay = `${shiftMonth(monthStart(today), -2).slice(0, 8)}15`
 
 vi.mock('../api/useTransactions', () => ({
   useTransactions: () => ({
@@ -30,6 +32,13 @@ vi.mock('../api/useTransactions', () => ({
         categoryId: SALARY,
         amountCents: 9_700_000,
         occurredOn: today,
+      }),
+      makeTransaction({
+        id: 'o1',
+        note: 'Alquiler viejo',
+        categoryId: null,
+        amountCents: 5_000_000,
+        occurredOn: oldDay,
       }),
     ],
   }),
@@ -81,10 +90,39 @@ describe('ActivityPage', () => {
 
   it('lists the month and filters by search text', async () => {
     const user = setup()
-    expect(screen.getByText('2 movimientos')).toBeInTheDocument()
+    expect(screen.getByText('3 movimientos')).toBeInTheDocument()
     await user.type(screen.getByLabelText('Buscar por nota o categoría'), 'cena')
     expect(screen.getByText('1 movimiento')).toBeInTheDocument()
     expect(screen.queryByText('Sueldo octubre')).not.toBeInTheDocument()
+  })
+
+  it('shows every movement by default, not only the current month', () => {
+    setup()
+    expect(screen.getByText('3 movimientos')).toBeInTheDocument()
+    expect(screen.getByText('Alquiler viejo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Todo' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('narrows to the month only when "Por mes" is chosen, and goes back with "Todo"', async () => {
+    const user = setup()
+    await user.click(screen.getByRole('button', { name: 'Por mes' }))
+    expect(screen.getByText('2 movimientos')).toBeInTheDocument()
+    expect(screen.queryByText('Alquiler viejo')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Mes anterior' }))
+    await user.click(screen.getByRole('button', { name: 'Mes anterior' }))
+    expect(screen.getByText('Alquiler viejo')).toBeInTheDocument()
+    expect(screen.getByText('1 movimiento')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Todo' }))
+    expect(screen.getByText('3 movimientos')).toBeInTheDocument()
+  })
+
+  it('list view without a month filter summarises everything and has no month navigation', async () => {
+    const user = setup()
+    await user.click(screen.getByRole('button', { name: 'Ver por categoría' }))
+    expect(screen.getByRole('region', { name: 'Resumen de todo' })).toHaveTextContent(
+      'Todo el historial',
+    )
+    expect(screen.queryByRole('button', { name: 'Mes anterior' })).not.toBeInTheDocument()
   })
 
   it('filters by kind with the segmented control', async () => {

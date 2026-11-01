@@ -22,6 +22,7 @@ import {
   type ActivityEntry,
   type CategoryGroup,
 } from '../domain/activity'
+import type { ActivityPeriod } from '../domain/activityPeriod'
 import type { ActivityView } from '../domain/activityView'
 import {
   addsToBalance,
@@ -38,6 +39,10 @@ type KindFilter = 'all' | EntryKind
 
 interface ActivityScreenProps {
   month: IsoDate
+  /** The summary card is about `month` (calendar view, or the "Por mes" filter); otherwise it covers everything. */
+  monthScoped: boolean
+  period: ActivityPeriod
+  onPeriodChange: (period: ActivityPeriod) => void
   canGoNext: boolean
   onPrevMonth: () => void
   onNextMonth: () => void
@@ -59,8 +64,8 @@ interface ActivityScreenProps {
   groups: readonly CategoryGroup[]
   view: ActivityView
   onViewChange: (view: ActivityView) => void
-  /** True when the month has no movements at all (distinct from "filters match nothing"). */
-  monthIsEmpty: boolean
+  /** True when there are no movements at all (distinct from "filters match nothing"). */
+  noMovements: boolean
   onEdit: (transaction: Transaction) => void
   /** Voids a movement or transfer; rejects with a user-safe message on failure. */
   onVoid: (entry: ActivityEntry) => Promise<void>
@@ -70,6 +75,11 @@ const KIND_OPTIONS = [
   { value: 'all', label: 'Todos' },
   { value: 'expense', label: 'Gastos' },
   { value: 'income', label: 'Ingresos' },
+] as const
+
+const PERIOD_OPTIONS = [
+  { value: 'all', label: 'Todo' },
+  { value: 'month', label: 'Por mes' },
 ] as const
 
 const VIEW_OPTIONS = [
@@ -195,6 +205,13 @@ export function ActivityScreen(props: ActivityScreenProps) {
         }}
       />
 
+      <SegmentedControl
+        label="Período"
+        options={PERIOD_OPTIONS}
+        value={props.period}
+        onChange={props.onPeriodChange}
+      />
+
       {chipCategories.length > 0 && (
         <div
           role="group"
@@ -221,6 +238,8 @@ export function ActivityScreen(props: ActivityScreenProps) {
 
       <ActivityCalendar
         month={props.month}
+        allTime={!props.monthScoped}
+        count={count}
         days={props.calendarDays}
         expenseCents={props.totals.expenseCents}
         incomeCents={props.totals.incomeCents}
@@ -243,10 +262,10 @@ export function ActivityScreen(props: ActivityScreenProps) {
       {count === 0 ? (
         <EmptyState
           mascotUrl={mascotAnalyst}
-          title={props.monthIsEmpty ? 'Todavía no hay movimientos' : 'No encontramos movimientos'}
+          title={props.noMovements ? 'Todavía no hay movimientos' : 'No encontramos movimientos'}
           description={
-            props.monthIsEmpty
-              ? 'Cuando cargues gastos o ingresos de este mes, los ves acá.'
+            props.noMovements
+              ? 'Cuando cargues gastos o ingresos, los ves acá.'
               : 'Probá con otra búsqueda o sacá algún filtro.'
           }
         />
