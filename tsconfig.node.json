@@ -45,6 +45,8 @@
     "supabase/functions/mp-connect-webhook/lib.ts",
     "supabase/functions/mp-connect-webhook/lib.test.ts",
     "supabase/functions/push-send/lib.ts",
-    "supabase/functions/push-send/lib.test.ts"
+    "supabase/functions/push-send/lib.test.ts",
+    "supabase/functions/admin-panel/lib.ts",
+    "supabase/functions/admin-panel/lib.test.ts"
   ]
 }

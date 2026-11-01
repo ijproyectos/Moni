@@ -90,3 +90,11 @@ entrypoint = "./functions/mp-connect-webhook/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/push-send/index.ts"
+
+# verify_jwt is ON, and the function checks identity again itself: the JWT user must have a confirmed email (or a
+# verified Google identity) AND appear in the ADMIN_EMAILS secret, otherwise 403 with no data. The service-role client
+# is only created after that check. See docs/ADMIN.md.
+[functions.admin-panel]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/admin-panel/index.ts"
