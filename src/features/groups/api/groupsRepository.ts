@@ -245,9 +245,13 @@ export async function leaveGroup(groupId: string): Promise<void> {
   if (error) throw error
 }
 
+/** What a new expense replaces when an expense is edited or an individual one is shared (voided in the same step). */
+export type Replaces = { kind: 'transaction' | 'shared' | 'guest'; id: string }
+
 export async function createSharedExpense(
   groupId: string,
   values: SharedExpenseFormValues,
+  replaces?: Replaces,
 ): Promise<string> {
   const { data, error } = await getSupabase().rpc('create_shared_expense', {
     p_group: groupId,
@@ -260,6 +264,7 @@ export async function createSharedExpense(
     p_participants: values.participants,
     p_percents: values.percentValues,
     p_payer_account_id: values.payerAccountId,
+    ...(replaces ? { p_replaces_kind: replaces.kind, p_replaces_id: replaces.id } : {}),
   })
   if (error) throw error
   return data
@@ -301,4 +306,23 @@ export async function recordSettlementReceipt(
 export async function voidSettlement(settlementId: string): Promise<void> {
   const { error } = await getSupabase().rpc('void_settlement', { p_settlement: settlementId })
   if (error) throw error
+}
+
+/** The payer turns a shared expense (real or with people without an account) into an individual expense. */
+export async function convertSharedToExpense(args: {
+  kind: 'shared' | 'guest'
+  id: string
+  accountId: string
+  categoryId: string
+  note?: string
+}): Promise<string> {
+  const { data, error } = await getSupabase().rpc('convert_shared_to_expense', {
+    p_kind: args.kind,
+    p_id: args.id,
+    p_account: args.accountId,
+    p_category: args.categoryId,
+    p_note: args.note ?? null,
+  })
+  if (error) throw error
+  return data
 }

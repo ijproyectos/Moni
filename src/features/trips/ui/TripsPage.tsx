@@ -1,10 +1,12 @@
 import { ChevronRight, Send } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import mascotUrl from '@/assets/mascot/personaje_carga-de-dinero.svg'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useMyGroups } from '@/features/groups/api/useGroups'
 import { overlayDeltaFor } from '@/features/groups/domain/ledger'
-import { useOverlays } from '@/features/groups/mock/overlayStore'
+import { useGroupOverlays } from '@/features/groups/api/useGroupGuests'
+import { useGroupPhotos } from '@/features/groups/api/useGroupPhotos'
 import { AvatarStack } from '@/features/groups/ui/groupVisuals'
 import { formatArs } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
@@ -150,10 +152,34 @@ function PersonalTrips({ onNew }: { onNew: () => void }) {
   )
 }
 
+/** The group trip's picture (same round shape as the icon it replaces), or the icon when it has none. */
+function TripCircle({ photoUrl }: { photoUrl: string | null }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  if (photoUrl && failedUrl !== photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+        onError={() => setFailedUrl(photoUrl)}
+        className="size-14 shrink-0 rounded-full object-cover ring-1 ring-inset ring-ink/10"
+      />
+    )
+  }
+  return (
+    <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-lime/40">
+      <Send aria-hidden="true" className="size-6" />
+    </span>
+  )
+}
+
 function GroupTrips({ onNew }: { onNew: () => void }) {
   const groups = useMyGroups()
   const groupTrips = useGroupTrips()
-  const overlays = useOverlays()
+  const overlays = useGroupOverlays()
+  const photos = useGroupPhotos()
   const { user } = useAuth()
 
   if (groups.isLoading) {
@@ -203,9 +229,7 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
               )}
             </div>
             <div className="mt-3 flex items-center gap-3">
-              <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-lime/40">
-                <Send aria-hidden="true" className="size-6" />
-              </span>
+              <TripCircle photoUrl={photos[g.id]?.url ?? null} />
               <span className="min-w-0">
                 <span className="block break-words font-display text-[26px] font-extrabold leading-8">
                   {overlay?.name ?? g.name}

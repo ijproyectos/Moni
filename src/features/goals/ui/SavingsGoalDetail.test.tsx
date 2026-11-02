@@ -11,6 +11,7 @@ const voidMovement = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const withdraw = vi.hoisted(() => vi.fn().mockResolvedValue('m'))
 vi.mock('../api/useSavings', () => ({
   useSetGoalStatus: () => ({ mutateAsync: setStatus, isPending: false }),
+  useSavingsPlanData: () => ({ isLoading: false, isError: false, data: { months: [], lives: {} } }),
   useVoidMovement: () => ({ mutateAsync: voidMovement, isPending: false }),
   useWithdrawReserve: () => ({ mutateAsync: withdraw, isPending: false }),
   useAddDeposit: () => ({ mutateAsync: vi.fn(), isPending: false }),

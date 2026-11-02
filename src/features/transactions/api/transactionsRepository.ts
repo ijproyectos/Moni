@@ -26,6 +26,7 @@ export function toTransaction(row: TransactionRow): Transaction {
     status: row.status,
     voidedAt: row.voided_at,
     sharedExpenseId: row.shared_expense_id,
+    guestExpenseId: row.guest_expense_id ?? null,
     statementClosingOn: row.statement_closing_on ?? null,
     installmentPlanId: row.installment_plan_id ?? null,
     installmentNumber: row.installment_number ?? null,

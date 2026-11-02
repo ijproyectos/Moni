@@ -1,4 +1,4 @@
-import { ChevronRight, CreditCard, Gift, Heart, Plus, UsersRound } from 'lucide-react'
+import { Award, ChevronRight, CreditCard, Gift, Heart, Plus, UsersRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Button } from '@/shared/ui/Button'
@@ -22,12 +22,14 @@ import {
 } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { monthlyNeeded, percentLabel, progress, splitMonthly, type Goal } from '../domain/goals'
-import { useSavings } from '../api/useSavings'
+import { useRewards, useSavings } from '../api/useSavings'
+import { earnedCount } from '../domain/badges'
 import { activeTotals, goalsByStatus, type SavingsGoal } from '../domain/savings'
 import { useGoals } from '../mock/goalsStore'
 import { SavingsHero } from './goalVisuals'
 import { NewGoalSheet } from './NewGoalSheet'
 import { SavingsGoalCard } from './SavingsGoalCard'
+import { SavingsProgressCard } from './SavingsProgressCard'
 import { SavingsNotices } from './SavingsNotices'
 import { SharedGoalSheet } from './SharedGoalSheet'
 
@@ -38,6 +40,7 @@ export function GoalsPage() {
   // Personal goals are real (Supabase); the shared ones are still a simulation.
   const sharedGoals = useGoals()
   const savings = useSavings()
+  const rewards = useRewards()
   const [showOthers, setShowOthers] = useState(false)
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
@@ -75,6 +78,7 @@ export function GoalsPage() {
         <>
           <SavingsNotices />
           {active.length > 0 && <MineSummary goals={all} />}
+          {savings.data && all.length > 0 && <SavingsProgressCard overview={savings.data} />}
           {FEATURES.sharedGoals && (
             <>
               {shared[0] ? (
@@ -100,7 +104,7 @@ export function GoalsPage() {
               )}
             </>
           )}
-          <div className={FEATURES.aguinaldo ? 'grid grid-cols-2 gap-3' : 'grid gap-3'}>
+          <div className={FEATURES.aguinaldo ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-2 gap-3'}>
             <Link
               to="/metas/cuotas"
               className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-card px-3 py-3"
@@ -109,6 +113,18 @@ export function GoalsPage() {
               <span className="min-w-0">
                 <span className="block text-[17px] font-extrabold leading-5">Cuotas</span>
                 <span className="block text-[14px] text-text-muted">¿Conviene?</span>
+              </span>
+            </Link>
+            <Link
+              to="/logros"
+              className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-card px-3 py-3"
+            >
+              <IconTile icon={Award} bg="#fbdcd7" className="size-11 shrink-0" />
+              <span className="min-w-0">
+                <span className="block text-[17px] font-extrabold leading-5">Mis logros</span>
+                <span className="block text-[14px] text-text-muted">
+                  {rewards.data ? `${earnedCount(rewards.data.badges)} de 10` : 'Tus insignias'}
+                </span>
               </span>
             </Link>
             {FEATURES.aguinaldo && (
@@ -154,7 +170,7 @@ export function GoalsPage() {
                   />
                 </div>
               )}
-              <ul className="flex flex-col gap-4">
+              <ul id="metas-individuales" className="flex scroll-mt-4 flex-col gap-4">
                 {active.map((goal) => (
                   <li key={goal.id}>
                     <SavingsGoalCard

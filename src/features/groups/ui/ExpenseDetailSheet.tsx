@@ -50,7 +50,6 @@ export function ExpenseDetailSheet({
         <p className="-mt-2 text-[14px] text-text-muted">
           Cargado por{' '}
           {expense.createdBy ? personName(people, expense.createdBy) : 'alguien del grupo'}
-          {expense.source === 'sim' && ' · guardado en este dispositivo'}
         </p>
         <SectionLabel>Cómo se dividió</SectionLabel>
         <ul className="divide-y divide-sand rounded-[22px] border border-sand bg-card px-4">
@@ -66,7 +65,7 @@ export function ExpenseDetailSheet({
                 {paid ? (
                   <span className="text-[14px] text-text-muted">puso {formatArs(paid)}</span>
                 ) : person && !person.hasMoni ? (
-                  <span className="text-[14px] text-text-muted">sin Moni</span>
+                  <span className="text-[14px] text-text-muted">sin cuenta</span>
                 ) : null}
                 <span className="w-24 text-right text-[18px] font-extrabold">
                   {formatArs(s.cents)}

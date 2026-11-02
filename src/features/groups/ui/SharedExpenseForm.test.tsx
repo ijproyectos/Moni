@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { makeAccount } from '@/features/accounts/domain/testing'
 import type { GroupMember } from '../domain/group'
 import { SharedExpenseForm } from './SharedExpenseForm'
 
@@ -43,7 +44,7 @@ describe('SharedExpenseForm', () => {
     expect(within(third as HTMLElement).getByText('$33,33')).toBeInTheDocument()
   })
 
-  it('offers only real split methods and a single payer while the simulated splits flag is off', () => {
+  it('offers only the shared split methods and a single payer when it cannot store records for people without an account', () => {
     setup()
     expect(screen.getByRole('button', { name: 'Partes iguales' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Por %' })).toBeInTheDocument()
@@ -107,5 +108,63 @@ describe('SharedExpenseForm', () => {
       await screen.findByText('Elegí al menos una persona.', { selector: '[role=alert]' }),
     ).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()
+  })
+  describe('con alguien sin cuenta', () => {
+    const FRAN = 'guest-fran'
+    function setupGuest() {
+      const onSubmit = vi.fn()
+      const onSubmitSimulated = vi.fn()
+      render(
+        <SharedExpenseForm
+          members={members}
+          meId={ME}
+          templates={[]}
+          accounts={[makeAccount({ id: 'gal', name: 'Galicia', kind: 'bank' })]}
+          guests={[{ id: FRAN, name: 'Fran', alias: '' }]}
+          isSubmitting={false}
+          submitError={null}
+          onSubmit={onSubmit}
+          onSubmitSimulated={onSubmitSimulated}
+        />,
+      )
+      return { onSubmit, onSubmitSimulated, user: userEvent.setup() }
+    }
+
+    it('lets the payer take the whole amount from their own account, sent once', async () => {
+      const { user, onSubmit, onSubmitSimulated } = setupGuest()
+      await user.type(screen.getByLabelText('Monto'), '100')
+      await user.type(screen.getByLabelText('Descripción'), 'Cena')
+      await user.click(screen.getByRole('button', { name: /Fecha, categoría y cuenta/ }))
+      await user.selectOptions(screen.getByRole('combobox', { name: /Pagado desde/ }), 'gal')
+      await user.click(screen.getByRole('button', { name: 'Guardar gasto' }))
+      await waitFor(() => expect(onSubmitSimulated).toHaveBeenCalledTimes(1))
+      expect(onSubmit).not.toHaveBeenCalled()
+      const sent = onSubmitSimulated.mock.calls[0]?.[0]
+      expect(sent).toMatchObject({
+        amountCents: 10_000,
+        payerAccountId: 'gal',
+        payers: [{ personId: ME, cents: 10_000 }],
+      })
+      expect(
+        sent.shares
+          .map((x: { cents: number }) => x.cents)
+          .reduce((a: number, b: number) => a + b, 0),
+      ).toBe(10_000)
+    })
+
+    it('sends no account when none is chosen', async () => {
+      const { user, onSubmitSimulated } = setupGuest()
+      await user.type(screen.getByLabelText('Monto'), '100')
+      await user.type(screen.getByLabelText('Descripción'), 'Cena')
+      await user.click(screen.getByRole('button', { name: 'Guardar gasto' }))
+      await waitFor(() => expect(onSubmitSimulated).toHaveBeenCalled())
+      expect(onSubmitSimulated.mock.calls[0]?.[0].payerAccountId).toBeNull()
+    })
+
+    it('does not talk about "este dispositivo": it is stored in the group', async () => {
+      const { user } = setupGuest()
+      await user.type(screen.getByLabelText('Monto'), '100')
+      expect(screen.queryByText(/este dispositivo/)).toBeNull()
+    })
   })
 })

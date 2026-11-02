@@ -5,14 +5,16 @@ import type { DebtDirection } from '@/features/debts/domain/debts'
 import { GroupDebtsSheet } from '@/features/debts/ui/GroupDebtsSheet'
 import { useMyGroups } from '../api/useGroups'
 import { overlayDeltaFor } from '../domain/ledger'
-import { useOverlays } from '../mock/overlayStore'
+import { useGroupOverlays } from '../api/useGroupGuests'
+import { useGroupPhotos } from '../api/useGroupPhotos'
 import { GroupsScreen, type ListedGroup } from './GroupsScreen'
 
 export function GroupsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const groups = useMyGroups()
-  const overlays = useOverlays()
+  const overlays = useGroupOverlays()
+  const photos = useGroupPhotos()
   // The debts sheet opens from the green box, on the tab of the amount that was tapped.
   const [debtsTab, setDebtsTab] = useState<DebtDirection | null>(null)
 
@@ -27,9 +29,10 @@ export function GroupsPage() {
             name: overlay?.name ?? g.name,
             myNetCents: g.myNetCents + overlayDeltaFor(overlay, user?.id ?? ''),
             peopleCount: g.memberCount + (overlay?.guests.length ?? 0),
+            photoUrl: photos[g.id]?.url ?? null,
           }
         }),
-    [groups.data, overlays, user?.id],
+    [groups.data, overlays, photos, user?.id],
   )
 
   return (

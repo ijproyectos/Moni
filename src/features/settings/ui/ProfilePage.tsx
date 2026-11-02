@@ -32,6 +32,7 @@ import {
   useWeeklyDigestSettings,
 } from '@/features/insights/mock/digestSettings'
 import { PushNotificationsRow } from '@/features/push/ui/PushNotificationsRow'
+import { AchievementsRow } from '@/features/goals/ui/AchievementsRow'
 import { useSubscriptionState } from '@/features/plus/api/useBilling'
 import { usePlus } from '@/features/plus/api/usePlus'
 import { PlusPill } from '@/features/plus/ui/PlusPill'
@@ -247,6 +248,11 @@ export function ProfilePage() {
           subtitle="Creá y editá las tuyas"
           to="/categorias"
         />
+      </ProfileGroup>
+
+      <SectionLabel className="mt-1">Mis logros</SectionLabel>
+      <ProfileGroup>
+        <AchievementsRow />
       </ProfileGroup>
 
       <SectionLabel className="mt-1">Preferencias</SectionLabel>

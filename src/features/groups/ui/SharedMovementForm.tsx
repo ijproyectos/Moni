@@ -7,10 +7,11 @@ import { toUserMessage } from '@/shared/lib/errors'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
+import { useCreateGuestExpense, useGroupOverlay } from '../api/useGroupGuests'
 import { useCreateSharedExpense, useGroup, useGroupMembers, useMyGroups } from '../api/useGroups'
 import type { SharedExpenseFormValues } from '../domain/group'
 import { activeMembers } from '../domain/groupView'
-import { SharedExpenseForm } from './SharedExpenseForm'
+import { SharedExpenseForm, type SimulatedExpenseInput } from './SharedExpenseForm'
 import { fieldClass, labelClass } from './styles'
 
 /** What the new-movement sheet already has typed when the person marks the expense as shared. */
@@ -28,13 +29,15 @@ interface SharedMovementFormProps {
   onSaved: () => void
   /** Closes the sheet when leaving for another screen. */
   onLeave: () => void
+  /** Editing an individual expense: it is replaced by the shared one in a single step (never charged twice). */
+  replaces?: { kind: 'transaction'; id: string }
 }
 
 /**
  * "Compartido" section of the new-expense sheet: pick one of the person's real groups, then reuse
  * the shared-expense form (equal / percent split among real members) with the typed values.
  */
-export function SharedMovementForm({ draft, onSaved, onLeave }: SharedMovementFormProps) {
+export function SharedMovementForm({ draft, onSaved, onLeave, replaces }: SharedMovementFormProps) {
   const groups = useMyGroups()
   const [groupId, setGroupId] = useState('')
 
@@ -82,7 +85,13 @@ export function SharedMovementForm({ draft, onSaved, onLeave }: SharedMovementFo
         </select>
       </label>
       {groupId && (
-        <GroupExpenseForm key={groupId} groupId={groupId} draft={draft} onSaved={onSaved} />
+        <GroupExpenseForm
+          key={groupId}
+          groupId={groupId}
+          draft={draft}
+          onSaved={onSaved}
+          replaces={replaces}
+        />
       )}
     </div>
   )
@@ -92,10 +101,12 @@ function GroupExpenseForm({
   groupId,
   draft,
   onSaved,
+  replaces,
 }: {
   groupId: string
   draft: SharedMovementDraft
   onSaved: () => void
+  replaces?: { kind: 'transaction'; id: string }
 }) {
   const { user } = useAuth()
   const toast = useToast()
@@ -104,6 +115,9 @@ function GroupExpenseForm({
   const templatesQuery = useCategoryTemplates()
   const accountsQuery = useAccounts()
   const create = useCreateSharedExpense()
+  const createGuest = useCreateGuestExpense()
+  // People of the group without an account can take part too.
+  const overlay = useGroupOverlay(groupId)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const members = useMemo(() => activeMembers(membersQuery.data ?? []), [membersQuery.data])
@@ -135,8 +149,23 @@ function GroupExpenseForm({
   async function submit(values: SharedExpenseFormValues) {
     setSubmitError(null)
     try {
-      await create.mutateAsync({ groupId, values })
-      toast.show('Gasto compartido guardado', { mascotUrl: mascotGroup })
+      await create.mutateAsync({ groupId, values, replaces })
+      toast.show(replaces ? 'Ahora es un gasto compartido' : 'Gasto compartido guardado', {
+        mascotUrl: mascotGroup,
+      })
+      onSaved()
+    } catch (e) {
+      setSubmitError(toUserMessage(e))
+    }
+  }
+
+  async function submitSimulated(expense: SimulatedExpenseInput) {
+    setSubmitError(null)
+    try {
+      await createGuest.mutateAsync({ groupId, expense, replaces })
+      toast.show(replaces ? 'Ahora es un gasto compartido' : 'Gasto compartido guardado', {
+        mascotUrl: mascotGroup,
+      })
       onSaved()
     } catch (e) {
       setSubmitError(toUserMessage(e))
@@ -149,10 +178,12 @@ function GroupExpenseForm({
       meId={user.id}
       templates={templates}
       accounts={accountsQuery.data ?? []}
+      guests={overlay.guests}
       kind={group.data?.kind}
-      isSubmitting={create.isPending}
+      isSubmitting={create.isPending || createGuest.isPending}
       submitError={submitError}
       onSubmit={(values) => void submit(values)}
+      onSubmitSimulated={(expense) => void submitSimulated(expense)}
       defaults={{
         amount: draft.amount,
         description: draft.note.trim() || draft.categoryName,
@@ -160,7 +191,7 @@ function GroupExpenseForm({
         templateSlug,
         payerAccountId: draft.accountId || null,
       }}
-      submitLabel="Guardar gasto compartido"
+      submitLabel={replaces ? 'Compartir este gasto' : 'Guardar gasto compartido'}
     />
   )
 }

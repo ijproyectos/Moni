@@ -49,6 +49,8 @@ export interface PendingDebt {
   direction: DebtDirection
   otherUserId: string
   otherName: string
+  /** A person added by name, without a Moni account: no reminders or payment notices, the payment is recorded in the group. */
+  otherIsGuest: boolean
   amountCents: Cents
   /** "Ya pagué" was reported and is waiting for the receiver; null when nothing was reported. */
   report: PaymentReport | null
@@ -58,6 +60,8 @@ export interface GroupBalances {
   groupId: string
   groupName: string
   balances: readonly MemberBalance[]
+  /** Ids of the people without an account among `balances`. */
+  guestIds?: ReadonlySet<string>
 }
 
 /**
@@ -94,6 +98,7 @@ export function buildPendingDebts(
         direction,
         otherUserId,
         otherName: nameOf(otherUserId),
+        otherIsGuest: group.guestIds?.has(otherUserId) ?? false,
         amountCents: t.amountCents,
         report,
       })

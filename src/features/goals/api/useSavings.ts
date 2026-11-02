@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/features/auth/api/authContext'
 import { goalReminders, savingsAlerts, type SavingsOverview } from '../domain/savings'
 import { savingsKeys } from './queryKeys'
+import { getRewards, getSavingsPlanData, markRewardsSeen } from './rewardsRepository'
 import {
   addDeposit,
   createSavingsGoal,
@@ -151,4 +152,35 @@ export function useGoalNames() {
       savedCents: g.reservedCents,
       shared: undefined,
     }))
+}
+
+/** Month by month history of the goals (what was saved, what each goal asked for). Empty while it loads. */
+export function useSavingsPlanData() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: savingsKeys.plan(user?.id),
+    enabled: Boolean(user),
+    queryFn: getSavingsPlanData,
+    retry: false,
+  })
+}
+
+/** Badges and achieved goals. Unavailable (older database) reads as "none yet". */
+export function useRewards() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: savingsKeys.rewards(user?.id),
+    enabled: Boolean(user),
+    queryFn: getRewards,
+    retry: false,
+  })
+}
+
+export function useMarkRewardsSeen() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: markRewardsSeen,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: savingsKeys.rewards(user?.id) }),
+  })
 }

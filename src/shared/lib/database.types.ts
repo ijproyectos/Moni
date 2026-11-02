@@ -146,6 +146,10 @@ export interface Database {
           voided_at: string | null
           shared_expense_id: string | null
           settlement_id: string | null
+          /** Expense with a person without an account that this payment belongs to (migration 20261115000000). */
+          guest_expense_id?: string | null
+          /** Payment with a person without an account that moved this account (same migration). */
+          guest_settlement_id?: string | null
           /** Statement a card charge belongs to and installment data (migration 20261030000000). */
           statement_closing_on?: string | null
           installment_plan_id?: string | null
@@ -235,6 +239,104 @@ export interface Database {
         Update: { read_at?: string | null }
         Relationships: []
       }
+      group_guests: {
+        Row: {
+          id: string
+          group_id: string
+          name: string
+          alias: string
+          created_by: string
+          created_at: string
+          removed_at: string | null
+          linked_user_id: string | null
+          linked_at: string | null
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      group_guest_expenses: {
+        Row: {
+          id: string
+          group_id: string
+          description: string
+          amount: number
+          template_slug: string | null
+          method_label: string
+          occurred_on: string
+          status: 'posted' | 'voided'
+          voided_at: string | null
+          created_by: string
+          created_at: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      group_guest_expense_parts: {
+        Row: {
+          expense_id: string
+          group_id: string
+          person_id: string
+          role: 'payer' | 'share'
+          amount: number
+          reported_amount: number
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      group_guest_settlements: {
+        Row: {
+          id: string
+          group_id: string
+          from_person: string
+          to_person: string
+          amount: number
+          method: string
+          occurred_on: string
+          status: 'posted' | 'voided'
+          voided_at: string | null
+          created_by: string
+          created_at: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      goal_achievements: {
+        Row: {
+          id: string
+          owner_id: string
+          goal_id: string | null
+          goal_name: string
+          icon: string
+          target_amount: number
+          target_date: string | null
+          reached_at: string
+          seen_at: string | null
+          created_at: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          id: string
+          owner_id: string
+          badge_key: string
+          goal_id: string | null
+          goal_name: string | null
+          target_amount: number | null
+          earned_at: string
+          seen_at: string | null
+          created_at: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       group_trips: {
         Row: {
           group_id: string
@@ -308,6 +410,8 @@ export interface Database {
           currency: string
           created_by: string
           archived_at: string | null
+          /** Current photo in the private "group-photos" bucket (migration 20261116000000). */
+          photo_path?: string | null
           created_at: string
           updated_at: string
         }
@@ -560,6 +664,10 @@ export interface Database {
       dismiss_subscription_duplicate: { Args: { p_charge: string }; Returns: undefined }
       /** Migration 20261103000000 (savings goals). */
       get_savings_overview: { Args: { p_today?: string | null }; Returns: Json }
+      /** Migration 20261118000000: monthly history per goal for the progress chart, and goal life dates. */
+      get_savings_plan_data: { Args: Record<never, never>; Returns: Json }
+      claim_goal_rewards: { Args: Record<never, never>; Returns: undefined }
+      mark_goal_rewards_seen: { Args: Record<never, never>; Returns: undefined }
       create_savings_goal: {
         Args: {
           p_name: string
@@ -792,6 +900,62 @@ export interface Database {
         Args: { p_code: string }
         Returns: string | null
       }
+      set_group_photo: {
+        Args: { p_group: string; p_path: string | null }
+        Returns: string | null
+      }
+      add_group_guest: {
+        Args: { p_group: string; p_name: string; p_alias?: string }
+        Returns: string
+      }
+      update_group_guest: {
+        Args: { p_guest: string; p_name: string; p_alias?: string }
+        Returns: undefined
+      }
+      remove_group_guest: {
+        Args: { p_guest: string }
+        Returns: undefined
+      }
+      create_guest_expense: {
+        Args: {
+          p_group: string
+          p_description: string
+          p_amount: number
+          p_occurred_on: string | null
+          p_template_slug: string | null
+          p_method_label: string
+          p_payers: Json
+          p_shares: Json
+          p_payer_account_id?: string | null
+          p_replaces_kind?: string | null
+          p_replaces_id?: string | null
+        }
+        Returns: string
+      }
+      void_guest_expense: {
+        Args: { p_expense: string }
+        Returns: undefined
+      }
+      create_guest_settlement: {
+        Args: {
+          p_group: string
+          p_from: string
+          p_to: string
+          p_amount: number
+          p_method: string
+          p_occurred_on: string | null
+          p_account_id?: string | null
+        }
+        Returns: string
+      }
+      void_guest_settlement: {
+        Args: { p_settlement: string }
+        Returns: undefined
+      }
+      link_group_guest: {
+        Args: { p_guest: string; p_user: string }
+        Returns: undefined
+      }
       remind_debt: {
         Args: {
           p_group: string
@@ -854,6 +1018,19 @@ export interface Database {
           p_participants: string[]
           p_percents?: number[] | null
           p_payer_account_id?: string | null
+          /** Editing: the expense this one replaces ('transaction' | 'shared' | 'guest'), voided in the same step. */
+          p_replaces_kind?: string | null
+          p_replaces_id?: string | null
+        }
+        Returns: string
+      }
+      convert_shared_to_expense: {
+        Args: {
+          p_kind: string
+          p_id: string
+          p_account: string
+          p_category: string
+          p_note?: string | null
         }
         Returns: string
       }
@@ -923,3 +1100,8 @@ export type GroupInviteRow = Database['public']['Tables']['group_invites']['Row'
 export type SharedExpenseRow = Database['public']['Tables']['shared_expenses']['Row']
 export type SharedExpenseSplitRow = Database['public']['Tables']['shared_expense_splits']['Row']
 export type SettlementRow = Database['public']['Tables']['settlements']['Row']
+export type GroupGuestRow = Database['public']['Tables']['group_guests']['Row']
+export type GroupGuestExpenseRow = Database['public']['Tables']['group_guest_expenses']['Row']
+export type GroupGuestExpensePartRow =
+  Database['public']['Tables']['group_guest_expense_parts']['Row']
+export type GroupGuestSettlementRow = Database['public']['Tables']['group_guest_settlements']['Row']

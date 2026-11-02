@@ -1,6 +1,24 @@
 import { isPlusRequired, mapPlusRequired, PlusRequiredError, toUserMessage } from './errors'
 
 describe('toUserMessage', () => {
+  it('explains why an expense cannot be edited or shared', () => {
+    expect(toUserMessage({ message: 'expense_has_payments' })).toMatch(/pagos registrados/)
+    expect(toUserMessage({ message: 'transaction_in_trip' })).toMatch(/viaje/)
+    expect(toUserMessage({ message: 'only_payer_can_convert' })).toMatch(/quien pagó/)
+  })
+
+  it('explains the storage errors of the group photos', () => {
+    expect(toUserMessage({ message: 'Bucket not found' })).toMatch(
+      /fotos todavía no están disponibles/,
+    )
+    expect(toUserMessage({ message: 'The object exceeded the maximum allowed size' })).toMatch(
+      /pesa demasiado/,
+    )
+    expect(toUserMessage({ message: 'mime type image/png is not supported' })).toMatch(
+      /JPG, PNG o WebP/,
+    )
+  })
+
   it('translates known database exceptions', () => {
     expect(toUserMessage({ code: '23514', message: 'account_archived' })).toMatch(/archivada/)
   })

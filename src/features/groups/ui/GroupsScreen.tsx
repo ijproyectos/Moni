@@ -16,6 +16,8 @@ const DEBTS_SUMMARY_CLASS = 'flex items-center rounded-[24px] bg-forest px-4 py-
 /** A group as listed: real data plus the overlay (name, guests, simulated balance). */
 export interface ListedGroup extends MyGroup {
   peopleCount: number
+  /** Signed link to the group's photo, when it has one. */
+  photoUrl?: string | null
 }
 
 interface GroupsScreenProps {
@@ -131,7 +133,7 @@ export function GroupsScreen({
                     to={`/grupos/${group.id}`}
                     className="flex min-h-[92px] items-center gap-4 rounded-[24px] border border-sand bg-card p-4"
                   >
-                    <GroupKindTile kind={group.kind} />
+                    <GroupKindTile kind={group.kind} photoUrl={group.photoUrl} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[20px] font-extrabold leading-6">
                         {group.name}

@@ -35,6 +35,7 @@ import {
 } from '@/features/recurring/ui/LegacyRedirects'
 import { RecurringPage } from '@/features/recurring/ui/RecurringPage'
 import { GoalDetailPage } from '@/features/goals/ui/GoalDetailPage'
+import { AchievementsPage } from '@/features/goals/ui/AchievementsPage'
 import { GoalsPage } from '@/features/goals/ui/GoalsPage'
 import { InstallmentsPage } from '@/features/goals/ui/InstallmentsPage'
 import { GroupDetailPage } from '@/features/groups/ui/GroupDetailPage'
@@ -71,6 +72,7 @@ function gated(flag: FeatureFlag, element: ReactElement) {
 /** Screens backed by simulated data (no Supabase yet); the flagged ones redirect home while off. */
 const simulatedRoutes = [
   { path: 'metas', element: <GoalsPage /> },
+  { path: 'logros', element: <AchievementsPage /> },
   { path: 'metas/cuotas', element: <InstallmentsPage /> },
   { path: 'metas/:id', element: <GoalDetailPage /> },
   { path: 'hormigas', element: <AntsPage /> },

@@ -4,7 +4,8 @@ import { useAuth } from '@/features/auth/api/authContext'
 import { getGroupBalances } from '@/features/groups/api/groupsRepository'
 import { groupKeys } from '@/features/groups/api/queryKeys'
 import { useMyGroups } from '@/features/groups/api/useGroups'
-import { useOverlays } from '@/features/groups/mock/overlayStore'
+import { useGroupOverlays } from '@/features/groups/api/useGroupGuests'
+import { balancesWithGuests } from '@/features/groups/domain/ledger'
 import { buildPendingDebts, type GroupBalances } from '../domain/debts'
 import { debtKeys } from './queryKeys'
 import {
@@ -52,7 +53,7 @@ export function useUnreadNoticeCount(): number {
 export function usePendingDebts() {
   const { user } = useAuth()
   const groups = useMyGroups()
-  const overlays = useOverlays()
+  const overlays = useGroupOverlays()
   const reports = usePaymentReports()
   const visible = (groups.data ?? []).filter((g) => !overlays[g.id]?.deleted)
   const balances = useQueries({
@@ -66,7 +67,13 @@ export function usePendingDebts() {
   visible.forEach((g, i) => {
     const data = balances[i]?.data
     if (data)
-      loaded.push({ groupId: g.id, groupName: overlays[g.id]?.name ?? g.name, balances: data })
+      loaded.push({
+        groupId: g.id,
+        groupName: overlays[g.id]?.name ?? g.name,
+        // People without an account count like anyone else.
+        balances: balancesWithGuests(data, overlays[g.id]),
+        guestIds: new Set((overlays[g.id]?.guests ?? []).map((x) => x.id)),
+      })
   })
   const debts = user ? buildPendingDebts(loaded, user.id, reports.data ?? []) : []
   return {

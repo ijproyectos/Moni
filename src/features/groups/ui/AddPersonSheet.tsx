@@ -1,6 +1,5 @@
 import { Plus, Sparkles, UserPlus } from 'lucide-react'
 import { useState } from 'react'
-import { FEATURES } from '@/shared/config/features'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { InviteCodeCard } from '@/shared/ui/InviteCodeCard'
@@ -15,7 +14,8 @@ interface AddPersonSheetProps {
   code: string | null
   groupName: string
   onClose: () => void
-  onAddGuest: (name: string, alias: string) => void
+  /** Stores the person; resolves false when it failed (the sheet then stays open). */
+  onAddGuest: (name: string, alias: string) => unknown
   /** Pronoun for the guest copy ("La sumás" vs "Lo sumás"). */
   feminine?: boolean
 }
@@ -34,9 +34,8 @@ export function AddPersonSheet({
     return (
       <GuestFormSheet
         onClose={() => setGuest(false)}
-        onSubmit={(name, alias) => {
-          onAddGuest(name, alias)
-          onClose()
+        onSubmit={async (name, alias) => {
+          if ((await onAddGuest(name, alias)) !== false) onClose()
         }}
       />
     )
@@ -48,9 +47,10 @@ export function AddPersonSheet({
           <div className="flex items-start gap-3">
             <UserPlus aria-hidden="true" className="mt-1 size-6 shrink-0" />
             <div>
-              <p className="text-[19px] font-extrabold leading-6">Tiene Moni</p>
+              <p className="text-[19px] font-extrabold leading-6">Invitar con código</p>
               <p className="text-[15px] leading-5 text-text-muted">
-                Ve el grupo desde su app y le llegan los avisos.
+                Para quien quiera entrar con su cuenta de Moni: ve el grupo desde su app y le llegan
+                los avisos.
               </p>
             </div>
           </div>
@@ -71,24 +71,22 @@ export function AddPersonSheet({
             </p>
           )}
         </div>
-        {FEATURES.groupGuestsAndSimulatedSplits && (
-          <button
-            type="button"
-            onClick={() => setGuest(true)}
-            className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4 text-left"
-          >
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gold/45">
-              <Plus aria-hidden="true" className="size-6" />
+        <button
+          type="button"
+          onClick={() => setGuest(true)}
+          className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4 text-left"
+        >
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gold/45">
+            <Plus aria-hidden="true" className="size-6" />
+          </span>
+          <span className="flex-1">
+            <span className="block text-[19px] font-extrabold">Agregar por nombre</span>
+            <span className="block text-[15px] leading-5 text-text-muted">
+              {feminine ? 'La' : 'Lo'} sumás solo con el nombre, sin cuenta. Entra en los gastos y
+              en las deudas, pero no ve el grupo ni recibe avisos.
             </span>
-            <span className="flex-1">
-              <span className="block text-[19px] font-extrabold">No tiene Moni</span>
-              <span className="block text-[15px] leading-5 text-text-muted">
-                {feminine ? 'La' : 'Lo'} sumás con el nombre. Entra en las cuentas pero no recibe
-                avisos.
-              </span>
-            </span>
-          </button>
-        )}
+          </span>
+        </button>
       </div>
     </BottomSheet>
   )
@@ -101,14 +99,14 @@ export function GuestFormSheet({
   initial,
 }: {
   onClose: () => void
-  onSubmit: (name: string, alias: string) => void
+  onSubmit: (name: string, alias: string) => void | Promise<void>
   initial?: { name: string; alias: string }
 }) {
   const [name, setName] = useState(initial?.name ?? '')
   const [alias, setAlias] = useState(initial?.alias ?? '')
   const display = name.trim() || 'Esta persona'
   return (
-    <BottomSheet title="Sumar sin Moni" onClose={onClose}>
+    <BottomSheet title="Agregar por nombre" onClose={onClose}>
       <form
         className="flex flex-col gap-3"
         onSubmit={(e) => {
@@ -142,11 +140,11 @@ export function GuestFormSheet({
           lead={`${display} cuenta igual.`}
           icon={<Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
         >
-          Aparece en los gastos y en las cuentas, así se hacen bien los números. No ve el grupo ni
-          recibe avisos: su parte se la pasás vos copiando el texto.
+          Aparece como «Sin cuenta» en los gastos, aportes, deudas y resúmenes. No ve el grupo ni
+          recibe avisos: cargás vos cuánto puso o cuánto debe.
         </MoniSays>
         <p className="text-[15px] leading-5 text-text-muted">
-          Si después se baja Moni, lo invitás y se queda con todo lo cargado.
+          Si después se hace una cuenta de Moni, la vinculás y se queda con todo lo cargado.
         </p>
         <Button type="submit" disabled={!name.trim()}>
           Sumar a {name.trim() || 'la persona'}

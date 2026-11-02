@@ -8,9 +8,12 @@ import { CACHE_MAX_AGE_MS } from '@/shared/lib/queryClient'
 import { FullScreenLoader } from '@/shared/ui/FullScreenLoader'
 
 const DEHYDRATE_OPTIONS = {
-  // Only successful reads are saved; mutations (writes) never are. Admin panel data ('admin' keys) is never saved.
+  // Only successful reads are saved; mutations (writes) never are. Admin panel data ('admin' keys) is never saved, and
+  // neither are photo links: they are signed and expire, so they are fetched fresh on every start.
   shouldDehydrateQuery: (query: { queryKey: readonly unknown[]; state: { status: string } }) =>
-    query.state.status === 'success' && query.queryKey[0] !== 'admin',
+    query.state.status === 'success' &&
+    query.queryKey[0] !== 'admin' &&
+    !query.queryKey.includes('photos'),
   shouldDehydrateMutation: () => false,
 }
 

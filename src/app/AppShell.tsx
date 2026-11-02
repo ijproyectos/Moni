@@ -4,6 +4,7 @@ import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useSyncFixedExpenses } from '@/features/fixedExpenses/api/useFixedExpenses'
 import { useSyncDueSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
+import { RewardCelebration } from '@/features/goals/ui/RewardCelebration'
 import { MyInitialContext } from '@/shared/ui/myInitialContext'
 import { MovementSheetProvider } from '@/features/transactions/ui/MovementSheetProvider'
 import { QuickAdd } from '@/features/transactions/ui/QuickAdd'
@@ -40,6 +41,7 @@ export function AppShell() {
             <Outlet />
           </main>
           <ShellBottomBar />
+          <RewardCelebration />
         </div>
       </MovementSheetProvider>
     </MyInitialContext.Provider>

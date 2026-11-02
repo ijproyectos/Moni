@@ -12,6 +12,8 @@ export const groupKeys = {
     ['groups', userId, 'invites', groupId] as const,
   expenses: (userId: string | undefined, groupId: string | undefined) =>
     ['groups', userId, 'expenses', groupId] as const,
+  photos: (userId: string | undefined) => ['groups', userId, 'photos'] as const,
+  guests: (userId: string | undefined) => ['groups', userId, 'guests'] as const,
   settlements: (userId: string | undefined, groupId: string | undefined) =>
     ['groups', userId, 'settlements', groupId] as const,
 }

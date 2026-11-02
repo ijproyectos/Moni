@@ -2,7 +2,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Ellipsis,
   Heart,
   House,
   Plug,
@@ -11,7 +10,6 @@ import {
   Sparkles,
   Trash2,
   Upload,
-  UserPlus,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
@@ -47,13 +45,16 @@ import {
 import type { Settlement } from '../domain/group'
 import { canVoidExpense, canRecordReceipt, canVoidSettlement } from '../domain/groupView'
 import { personName, type LedgerExpense } from '../domain/ledger'
+import { patchOverlay } from '../mock/overlayStore'
+import type { GuestExpenseInput } from '../api/guestsRepository'
 import {
-  patchOverlay,
-  removeSimExpense,
-  restoreSimExpense,
-  type SimExpense,
-} from '../mock/overlayStore'
+  useCreateGuestExpense,
+  useVoidGuestExpense,
+  useVoidGuestSettlement,
+} from '../api/useGroupGuests'
+import { useGroupPhoto } from '../api/useGroupPhotos'
 import { EditGroupSheet } from './EditGroupSheet'
+import { GroupDetailHeader } from './GroupDetailHeader'
 import { InvitePanel } from './InvitePanel'
 import { ExpenseDetailSheet } from './ExpenseDetailSheet'
 import { expenseIcon } from './expenseIcon'
@@ -73,6 +74,7 @@ type Sheet =
   | { type: 'invite' }
   | { type: 'remove-group' }
   | { type: 'void-settlement'; settlement: Settlement }
+  | { type: 'void-guest-settlement'; id: string }
   | { type: 'receipt'; id: string }
   | null
 
@@ -93,10 +95,14 @@ export function GroupDetailPage() {
   const templates = useCategoryTemplates()
   const voidExpense = useVoidSharedExpense()
   const voidSettlement = useVoidSettlement()
+  const voidGuest = useVoidGuestExpense()
+  const voidGuestSettlement = useVoidGuestSettlement()
+  const photoUrl = useGroupPhoto(groupId)
+  const createGuest = useCreateGuestExpense()
   const leaveGroup = useLeaveGroup()
   const goals = useGoals()
   const [sheet, setSheet] = useState<Sheet>(null)
-  const [undo, setUndo] = useState<SimExpense | null>(null)
+  const [undo, setUndo] = useState<GuestExpenseInput | null>(null)
 
   const { ledger, meId, overlay, name } = data
   const kind = data.group.data?.kind ?? 'amigos'
@@ -157,8 +163,9 @@ export function GroupDetailPage() {
         await voidExpense.mutateAsync(expense.id)
         toast.show('Gasto eliminado', { mascotUrl: mascotHappy })
       } else {
-        const removed = groupId ? removeSimExpense(groupId, expense.id) : undefined
-        if (removed) setUndo(removed)
+        await voidGuest.mutateAsync(expense.id)
+        setUndo(expense)
+        toast.show('Gasto eliminado', { mascotUrl: mascotHappy })
       }
       setSheet(null)
     } catch (e) {
@@ -202,36 +209,15 @@ export function GroupDetailPage() {
 
   return (
     <section className="flex flex-col gap-4 px-4 pb-6 pt-14">
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={goBack}
-          aria-label="Volver"
-          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-card"
-        >
-          <ChevronLeft aria-hidden="true" className="size-6" />
-        </button>
-        <h1 className="min-w-0 truncate font-display text-[28px] font-extrabold leading-8">
-          {name}
-        </h1>
-        {kind === 'pareja' && <AvatarStack people={ledger.people} size="md" />}
-        <button
-          type="button"
-          aria-label="Invitar"
-          onClick={() => setSheet({ type: 'invite' })}
-          className="ml-auto flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-card"
-        >
-          <UserPlus aria-hidden="true" className="size-6" />
-        </button>
-        <button
-          type="button"
-          aria-label="Opciones del grupo"
-          onClick={() => setSheet({ type: 'group' })}
-          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-card"
-        >
-          <Ellipsis aria-hidden="true" className="size-6" />
-        </button>
-      </div>
+      <GroupDetailHeader
+        name={name}
+        kind={kind}
+        photoUrl={photoUrl}
+        extra={kind === 'pareja' ? <AvatarStack people={ledger.people} size="md" /> : null}
+        onBack={goBack}
+        onInvite={() => setSheet({ type: 'invite' })}
+        onOptions={() => setSheet({ type: 'group' })}
+      />
 
       {kind === 'pareja' ? (
         <section
@@ -332,6 +318,16 @@ export function GroupDetailPage() {
                   )
                 })}
               </ul>
+              {/* Casa groups have their own "Saldar" (pareja is another section); every other group records a payment from here. */}
+              {kind !== 'casa' && (
+                <button
+                  type="button"
+                  onClick={() => setSheet({ type: 'settle' })}
+                  className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-lime/60 text-[16px] font-extrabold text-lime"
+                >
+                  <Check aria-hidden="true" className="size-5" /> Registrar un pago
+                </button>
+              )}
             </div>
           )}
         </section>
@@ -512,7 +508,8 @@ export function GroupDetailPage() {
         </ul>
       )}
 
-      {(settlements.data ?? []).filter((s) => s.status === 'posted').length > 0 && (
+      {((settlements.data ?? []).filter((s) => s.status === 'posted').length > 0 ||
+        overlay.settlements.length > 0) && (
         <section>
           <h2 className="px-1 text-[18px] font-extrabold">Pagos registrados</h2>
           <ul className="mt-2 divide-y divide-sand rounded-[24px] border border-sand bg-card">
@@ -552,6 +549,25 @@ export function GroupDetailPage() {
                   )}
                 </li>
               ))}
+            {overlay.settlements.map((s) => (
+              <li key={s.id} className="flex items-center gap-3 px-4 py-3">
+                <Avatar name={personName(ledger.people, s.fromId)} size="sm" />
+                <span className="flex-1 text-[16px]">
+                  <strong className="font-extrabold">{personName(ledger.people, s.fromId)}</strong>{' '}
+                  le pagó a{' '}
+                  <strong className="font-extrabold">{personName(ledger.people, s.toId)}</strong>
+                </span>
+                <span className="text-[16px] font-extrabold">{formatArs(s.cents)}</span>
+                <button
+                  type="button"
+                  aria-label="Anular pago"
+                  onClick={() => setSheet({ type: 'void-guest-settlement', id: s.id })}
+                  className="p-1 text-text-muted"
+                >
+                  <Trash2 aria-hidden="true" className="size-4" />
+                </button>
+              </li>
+            ))}
           </ul>
         </section>
       )}
@@ -564,8 +580,13 @@ export function GroupDetailPage() {
           <button
             type="button"
             onClick={() => {
-              restoreSimExpense(groupId, undo)
+              const back = undo
               setUndo(null)
+              createGuest
+                .mutateAsync({ groupId, expense: back })
+                .catch((e) =>
+                  toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert }),
+                )
             }}
             className="rounded-full bg-lime px-4 py-2 text-[15px] font-extrabold text-forest"
           >
@@ -730,6 +751,22 @@ export function GroupDetailPage() {
           onConfirm={() =>
             void voidSettlement
               .mutateAsync(sheet.settlement.id)
+              .then(() => toast.show('Pago anulado', { mascotUrl: mascotHappy }))
+              .catch((e: unknown) => toast.show(toUserMessage(e), { tone: 'error' }))
+              .finally(() => setSheet(null))
+          }
+          onCancel={() => setSheet(null)}
+        />
+      )}
+      {sheet?.type === 'void-guest-settlement' && (
+        <ConfirmDialog
+          title="¿Anular este pago?"
+          message="Los saldos del grupo vuelven a como estaban antes del pago. Si lo anotaste en una de tus cuentas, esa plata se devuelve una sola vez."
+          confirmLabel="Anular pago"
+          isBusy={voidGuestSettlement.isPending}
+          onConfirm={() =>
+            void voidGuestSettlement
+              .mutateAsync(sheet.id)
               .then(() => toast.show('Pago anulado', { mascotUrl: mascotHappy }))
               .catch((e: unknown) => toast.show(toUserMessage(e), { tone: 'error' }))
               .finally(() => setSheet(null))
