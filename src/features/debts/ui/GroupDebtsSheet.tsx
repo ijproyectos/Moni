@@ -140,8 +140,13 @@ export function GroupDebtsSheet({
                     <div className="flex items-center gap-3">
                       <Avatar name={debt.otherName} />
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[18px] font-extrabold leading-6">
+                        <span className="flex items-center gap-2 text-[18px] font-extrabold leading-6">
                           {debt.otherName}
+                          {debt.otherIsGuest && (
+                            <span className="rounded-full bg-gold/40 px-2 py-0.5 text-[12px]">
+                              Sin cuenta
+                            </span>
+                          )}
                         </span>
                         <Link
                           to={`/grupos/${debt.groupId}`}
@@ -171,7 +176,25 @@ export function GroupDebtsSheet({
                       </span>
                     </div>
 
-                    {owed && debt.report && (
+                    {debt.otherIsGuest && (
+                      <>
+                        <p className="mt-3 text-[15px] leading-5 text-text-muted">
+                          {debt.otherName} no tiene cuenta de Moni, así que no recibe avisos.{' '}
+                          {owed
+                            ? 'Cuando te pague, registrá el pago en el grupo.'
+                            : 'Cuando le pagues, registrá el pago en el grupo.'}
+                        </p>
+                        <Link
+                          to={`/grupos/${debt.groupId}`}
+                          onClick={onClose}
+                          className={cn(pill, 'mt-3 w-full bg-forest text-cream')}
+                        >
+                          Abrir el grupo
+                        </Link>
+                      </>
+                    )}
+
+                    {!debt.otherIsGuest && owed && debt.report && (
                       <>
                         <p className="mt-3 text-[15px] leading-5">
                           {debt.otherName} informó que te pagó. Cuando lo veas en tu cuenta,
@@ -206,7 +229,7 @@ export function GroupDebtsSheet({
                       </>
                     )}
 
-                    {owed && !debt.report && (
+                    {!debt.otherIsGuest && owed && !debt.report && (
                       <button
                         type="button"
                         onClick={() => setCollecting(debt)}
@@ -216,7 +239,7 @@ export function GroupDebtsSheet({
                       </button>
                     )}
 
-                    {!owed && shared && (
+                    {!debt.otherIsGuest && !owed && shared && (
                       <div className="mt-3 rounded-[18px] bg-lime/30 p-3">
                         <p className="text-[14px] font-bold">
                           {debt.otherName} te compartió
@@ -250,7 +273,7 @@ export function GroupDebtsSheet({
                       </div>
                     )}
 
-                    {!owed && !debt.report && actionsEnabled && (
+                    {!debt.otherIsGuest && !owed && !debt.report && actionsEnabled && (
                       <button
                         type="button"
                         onClick={() => setPaying(debt)}
@@ -260,7 +283,7 @@ export function GroupDebtsSheet({
                       </button>
                     )}
 
-                    {!owed && debt.report && (
+                    {!debt.otherIsGuest && !owed && debt.report && (
                       <div className="mt-3 flex items-center justify-between gap-2">
                         <p className="text-[15px] leading-5 text-text-muted">
                           Esperando que {debt.otherName} lo confirme.

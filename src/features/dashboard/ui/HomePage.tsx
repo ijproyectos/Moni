@@ -17,11 +17,11 @@ import { useCategories } from '@/features/categories/api/useCategories'
 import { indexCategories } from '@/features/categories/domain/category'
 import { useTransactions } from '@/features/transactions/api/useTransactions'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
-import { addDays, monthStart, todayIso } from '@/shared/lib/month'
+import { monthStart, todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { Skeleton } from '@/shared/ui/Skeleton'
-import { useMonthSummary, usePeriodSummary } from '../api/useMonthSummary'
+import { useMonthSummary } from '../api/useMonthSummary'
 import { buildRecentMovements } from '../domain/recentMovements'
 import { HomeScreen } from './HomeScreen'
 
@@ -38,20 +38,16 @@ function HomeSkeleton() {
   )
 }
 
-/** The database caps a period summary at 400 days: the widest window the header can total in one call. */
-const OVERALL_DAYS = 400
 /** How many of the newest movements the main screen lists, across every month. */
 const RECENT_LIMIT = 20
 
 export function HomePage() {
   const latestMonth = monthStart(todayIso())
-  const tomorrow = addDays(todayIso(), 1)
   const [month, setMonth] = useState(latestMonth)
   const { user } = useAuth()
   const { data: profile } = useProfile()
   const summary = useMonthSummary(month)
-  // Income and expenses in the header do not follow the month picker: an empty new month must not read as $0.
-  const overall = usePeriodSummary(addDays(tomorrow, -OVERALL_DAYS), tomorrow)
+  // The header's income and expenses are those of the picked month; the available money is today's balance of the accounts.
   const transactions = useTransactions()
   const categories = useCategories(undefined, { includeArchived: true })
   const accounts = useAccounts({ includeArchived: true })
@@ -91,7 +87,6 @@ export function HomePage() {
   return (
     <HomeScreen
       summary={summary.data}
-      overall={overall.data}
       // While the full history loads, the month's own latest movements stand in.
       movements={transactions.data ? movements : undefined}
       month={month}

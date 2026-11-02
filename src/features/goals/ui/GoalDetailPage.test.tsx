@@ -7,6 +7,7 @@ import { GoalDetailPage } from './GoalDetailPage'
 const state = vi.hoisted(() => ({ data: null as unknown, loading: false }))
 vi.mock('../api/useSavings', () => ({
   useSavings: () => ({ data: state.data, isLoading: state.loading }),
+  useSavingsPlanData: () => ({ isLoading: false, isError: false, data: { months: [], lives: {} } }),
   useSetGoalStatus: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useVoidMovement: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useWithdrawReserve: () => ({ mutateAsync: vi.fn(), isPending: false }),

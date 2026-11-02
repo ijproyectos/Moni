@@ -23,7 +23,11 @@ import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
 import type { GroupKind } from '@/shared/lib/database.types'
 import { useCreateGroup } from '../api/useGroups'
-import { addGuest, DEFAULT_RECURRING, patchOverlay, type Recurring } from '../mock/overlayStore'
+import { DEFAULT_RECURRING, patchOverlay, type Recurring } from '../mock/overlayStore'
+import { useAddGuest } from '../api/useGroupGuests'
+import { useSetGroupPhoto } from '../api/useGroupPhotos'
+import { optimizePhoto } from '@/shared/lib/imageOptimize'
+import { GroupPhotoPicker } from './GroupPhotoPicker'
 import { FEATURES } from '@/shared/config/features'
 import { AddPersonSheet } from './AddPersonSheet'
 import { InvitePanel } from './InvitePanel'
@@ -131,6 +135,27 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
   const navigate = useNavigate()
   const toast = useToast()
   const create = useCreateGroup()
+  const addGuest = useAddGuest()
+  const setPhoto = useSetGroupPhoto()
+  // Optional photo: optimised when picked (so a bad file is refused right away) and uploaded once the group exists.
+  const [photo, setPickedPhoto] = useState<{ image: Blob; url: string } | null>(null)
+  const pickPhoto = async (file: File) => {
+    setError(null)
+    try {
+      const image = await optimizePhoto(file)
+      setPickedPhoto((old) => {
+        if (old) URL.revokeObjectURL(old.url)
+        return { image, url: URL.createObjectURL(image) }
+      })
+    } catch (e) {
+      setError(toUserMessage(e))
+    }
+  }
+  const clearPhoto = () =>
+    setPickedPhoto((old) => {
+      if (old) URL.revokeObjectURL(old.url)
+      return null
+    })
   const [name, setName] = useState(DEFAULT_NAMES[kind])
   const [guests, setGuests] = useState<PendingGuest[]>([])
   const [adding, setAdding] = useState(false)
@@ -148,12 +173,34 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
     if (!name.trim()) return setError('Ponele un nombre al grupo.')
     try {
       const groupId = await create.mutateAsync({ name: name.trim(), kind })
-      for (const g of guests) addGuest(groupId, g.name, g.alias)
+      // The group exists from here on: a person that could not be added is reported, not a reason to lose the group.
+      const failed: string[] = []
+      for (const g of guests) {
+        try {
+          await addGuest.mutateAsync({ groupId, name: g.name, alias: g.alias })
+        } catch {
+          failed.push(g.name)
+        }
+      }
       patchOverlay(groupId, {
         coupleSplit: split,
         recurring: kind === 'casa' ? recurring : [],
       })
-      toast.show('Grupo creado', { mascotUrl: mascotGroup })
+      let photoFailed = false
+      if (photo) {
+        try {
+          await setPhoto.mutateAsync({ groupId, image: photo.image })
+        } catch {
+          photoFailed = true
+        }
+      }
+      const problems = [
+        failed.length && `No pudimos sumar a ${failed.join(', ')}: agregala desde Personas.`,
+        photoFailed && 'No pudimos subir la foto: probá de nuevo desde Editar grupo.',
+      ].filter(Boolean)
+      toast.show(problems.length ? `Grupo creado. ${problems.join(' ')}` : 'Grupo creado', {
+        mascotUrl: mascotGroup,
+      })
       // Next step: show the invite code before landing on the group.
       setCreated({ id: groupId, name: name.trim() })
     } catch (e) {
@@ -203,6 +250,15 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
           placeholder={kind === 'casa' ? 'Ej: Depto Palermo' : 'Ej: Asado del viernes'}
           className={fieldClass}
         />
+        <SectionLabel>
+          Foto <span className="font-bold normal-case tracking-normal">· opcional</span>
+        </SectionLabel>
+        <GroupPhotoPicker
+          kind={kind}
+          photoUrl={photo?.url ?? null}
+          onPick={(file) => void pickPhoto(file)}
+          onRemove={clearPhoto}
+        />
 
         {couple ? (
           <>
@@ -213,12 +269,10 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                   <Avatar name={partner.name} />
                   <span className="flex-1">
                     <span className="block text-[18px] font-extrabold">{partner.name}</span>
-                    <span className="block text-[14px] text-text-muted">
-                      No tiene Moni · lo cargás vos
-                    </span>
+                    <span className="block text-[14px] text-text-muted">Lo cargás vos</span>
                   </span>
                   <span className="rounded-full bg-gold/40 px-3 py-0.5 text-[13px] font-extrabold">
-                    Sin Moni
+                    Sin cuenta
                   </span>
                 </div>
               ) : (
@@ -237,16 +291,14 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                   </span>
                 </div>
               )}
-              {FEATURES.groupGuestsAndSimulatedSplits && (
-                <button
-                  type="button"
-                  onClick={() => setAdding(true)}
-                  className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-sand text-[16px] font-extrabold"
-                >
-                  {partner ? 'Cambiar' : 'Invitarla o sumarla sin Moni'}{' '}
-                  <ChevronRight aria-hidden="true" className="size-4" />
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setAdding(true)}
+                className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-sand text-[16px] font-extrabold"
+              >
+                {partner ? 'Cambiar' : 'Agregarla por nombre'}{' '}
+                <ChevronRight aria-hidden="true" className="size-4" />
+              </button>
             </div>
             {FEATURES.groupGuestsAndSimulatedSplits ? (
               <>
@@ -306,25 +358,21 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                     <Avatar name={g.name} />
                     <span className="flex-1">
                       <span className="block text-[18px] font-extrabold">{g.name}</span>
-                      <span className="block text-[14px] text-text-muted">
-                        No tiene Moni · lo cargás vos
-                      </span>
+                      <span className="block text-[14px] text-text-muted">Lo cargás vos</span>
                     </span>
                     <span className="rounded-full bg-gold/40 px-3 py-0.5 text-[13px] font-extrabold">
-                      Sin Moni
+                      Sin cuenta
                     </span>
                   </li>
                 ))}
               </ul>
-              {FEATURES.groupGuestsAndSimulatedSplits && (
-                <button
-                  type="button"
-                  onClick={() => setAdding(true)}
-                  className="my-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-dashed border-line text-[17px] font-extrabold"
-                >
-                  <Plus aria-hidden="true" className="size-5" /> Agregar persona
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setAdding(true)}
+                className="my-2 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-dashed border-line text-[17px] font-extrabold"
+              >
+                <Plus aria-hidden="true" className="size-5" /> Agregar persona
+              </button>
             </div>
             {kind === 'casa' && recurring.length > 0 && (
               <>
@@ -333,9 +381,8 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
               </>
             )}
             <p className="text-[15px] leading-5 text-text-muted">
-              {FEATURES.groupGuestsAndSimulatedSplits
-                ? 'Los que tienen Moni ven el grupo desde su app. A los que no, los sumás con el nombre y se cuentan igual.'
-                : 'Cuando crees el grupo te damos un código para que se sumen los que tienen Moni.'}
+              Cuando crees el grupo te damos un código para los que tienen Moni. A los que no, los
+              agregás con el nombre y se cuentan igual.
             </p>
           </>
         )}

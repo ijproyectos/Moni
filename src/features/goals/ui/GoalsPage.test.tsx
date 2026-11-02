@@ -25,6 +25,12 @@ vi.mock('../api/useSavings', async () => {
     useSavingsAlerts: () => (state.data ? domain.savingsAlerts(state.data as never) : []),
     useGoalReminders: () => (state.data ? domain.goalReminders(state.data as never) : []),
     useSkipReminder: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    useRewards: () => ({ data: { badges: [], achievements: [] } }),
+    useSavingsPlanData: () => ({
+      isLoading: false,
+      isError: false,
+      data: { months: [], lives: {} },
+    }),
     useCreateSavingsGoal: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useUpdateSavingsGoal: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useAddDeposit: () => ({ mutateAsync: vi.fn(), isPending: false }),

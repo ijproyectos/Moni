@@ -96,7 +96,7 @@ export function buildLedger({ meId, members, balances, expenses, overlay }: Ledg
     occurredOn: e.occurredOn,
     templateSlug: e.templateSlug,
     methodLabel: e.methodLabel,
-    createdBy: meId,
+    createdBy: e.createdBy ?? meId,
   }))
   const all = [...real, ...sim].sort((a, b) => b.occurredOn.localeCompare(a.occurredOn))
 
@@ -175,4 +175,56 @@ export function splitByWeights(
 
 export function personName(people: readonly Person[], id: string): string {
   return people.find((p) => p.id === id)?.name ?? 'Alguien'
+}
+
+/**
+ * The server balances of a group plus what the stored guest records add: people without an account appear as one more
+ * person, and the members' nets include what they paid, owe or settled with them. Same arithmetic as `buildLedger`.
+ */
+export function balancesWithGuests(
+  balances: readonly MemberBalance[],
+  overlay: GroupOverlay | undefined,
+): MemberBalance[] {
+  if (
+    !overlay ||
+    (overlay.guests.length === 0 &&
+      overlay.expenses.length === 0 &&
+      overlay.settlements.length === 0)
+  ) {
+    return [...balances]
+  }
+  const delta: Record<string, { paid: Cents; owed: Cents; out: Cents; in: Cents }> = {}
+  const of = (id: string) => (delta[id] ??= { paid: 0, owed: 0, out: 0, in: 0 })
+  for (const e of overlay.expenses) {
+    for (const p of e.payers) of(p.personId).paid += p.cents
+    for (const s of e.shares) of(s.personId).owed += s.cents
+  }
+  for (const s of overlay.settlements) {
+    of(s.fromId).out += s.cents
+    of(s.toId).in += s.cents
+  }
+  const apply = (b: MemberBalance): MemberBalance => {
+    const d = delta[b.userId]
+    if (!d) return b
+    return {
+      ...b,
+      paidCents: b.paidCents + d.paid,
+      owedCents: b.owedCents + d.owed,
+      settledOutCents: b.settledOutCents + d.out,
+      settledInCents: b.settledInCents + d.in,
+      netCents: b.netCents + d.paid - d.owed + d.out - d.in,
+    }
+  }
+  const guests = overlay.guests.map((g) =>
+    apply({
+      userId: g.id,
+      displayName: g.name,
+      paidCents: 0,
+      owedCents: 0,
+      settledOutCents: 0,
+      settledInCents: 0,
+      netCents: 0,
+    }),
+  )
+  return [...balances.map(apply), ...guests]
 }

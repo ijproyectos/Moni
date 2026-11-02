@@ -12,6 +12,7 @@ import { FEATURES } from '@/shared/config/features'
 import { DEFAULT_RECURRING, patchOverlay, type GroupOverlay } from '../mock/overlayStore'
 import { RecurringList } from './CreateGroupPage'
 import { AvatarStack } from './groupVisuals'
+import { GroupPhotoEditor } from './GroupPhotoEditor'
 import { fieldClass } from './styles'
 
 interface EditGroupSheetProps {
@@ -66,6 +67,8 @@ export function EditGroupSheet({
         >
           Todos los del grupo pueden editar. Moni avisa cada cambio.
         </MoniSays>
+        <SectionLabel>Foto</SectionLabel>
+        <GroupPhotoEditor groupId={groupId} kind={kind} />
         <SectionLabel>Nombre</SectionLabel>
         <input
           value={draft}
@@ -121,7 +124,7 @@ export function EditGroupSheet({
             <span className="block text-[14px] text-text-muted">
               {others.length === 0
                 ? 'Solo vos por ahora'
-                : `${others.map((o) => o.name).join(' y ')}${guests.length ? ` · ${guests.map((g) => g.name).join(' y ')} sin Moni` : ''}`}
+                : `${others.map((o) => o.name).join(' y ')}${guests.length ? ` · ${guests.map((g) => g.name).join(' y ')} sin cuenta` : ''}`}
             </span>
           </span>
           <ChevronRight aria-hidden="true" className="size-5" />

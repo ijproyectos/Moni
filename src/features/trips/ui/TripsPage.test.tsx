@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   expenses: { data: [] } as Record<string, unknown>,
   groupTrips: { data: [] as GroupTripInfo[] },
   groups: { data: [] as unknown[], isLoading: false },
+  photos: {} as Record<string, { path: string; url: string }>,
   createTrip: vi.fn(),
   updateTrip: vi.fn(),
   setGroupTrip: vi.fn(),
@@ -25,6 +26,8 @@ vi.mock('../api/useTrips', () => ({
   useUpdateTrip: () => ({ mutateAsync: state.updateTrip, isPending: false }),
   useSetGroupTrip: () => ({ mutateAsync: state.setGroupTrip, isPending: false }),
 }))
+vi.mock('@/features/groups/api/useGroupGuests', () => ({ useGroupOverlays: () => ({}) }))
+vi.mock('@/features/groups/api/useGroupPhotos', () => ({ useGroupPhotos: () => state.photos }))
 vi.mock('@/features/groups/api/useGroups', () => ({
   useMyGroups: () => state.groups,
   useCreateGroup: () => ({ mutateAsync: state.createGroup, isPending: false }),
@@ -67,6 +70,7 @@ beforeEach(() => {
   state.expenses = { data: [] }
   state.groupTrips = { data: [] }
   state.groups = { data: [], isLoading: false }
+  state.photos = {}
   state.createTrip.mockReset()
   state.setGroupTrip.mockReset()
   state.createGroup.mockReset()
@@ -152,6 +156,22 @@ describe('Viajes: tabs and lists', () => {
     expect(card).toHaveTextContent('Presupuesto $900.000')
     // A group that is not a trip stays out.
     expect(screen.queryByRole('link', { name: /Casa/ })).toBeNull()
+  })
+
+  it('En grupo: a trip with a photo shows it in place of the icon; the others keep the icon', async () => {
+    state.groups = {
+      data: [group('g1', 'Viaje a Brasil'), group('g3', 'Salta')],
+      isLoading: false,
+    }
+    state.photos = { g1: { path: 'g1/a.jpg', url: 'https://s/brasil.jpg' } }
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'En grupo' }))
+    const withPhoto = screen.getByRole('link', { name: /Viaje a Brasil/ })
+    const img = withPhoto.querySelector('img')
+    expect(img).toHaveAttribute('src', 'https://s/brasil.jpg')
+    expect(img).toHaveClass('size-14', 'rounded-full')
+    expect(withPhoto).toHaveTextContent('3 personas')
+    expect(screen.getByRole('link', { name: /Salta/ }).querySelector('img')).toBeNull()
   })
 
   it('En grupo: a group of another kind that got trip dates is a trip too', async () => {

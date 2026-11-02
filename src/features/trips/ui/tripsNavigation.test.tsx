@@ -28,6 +28,8 @@ vi.mock('../api/useTrips', () => ({
   useUpdateTrip: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSetGroupTrip: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
+vi.mock('@/features/groups/api/useGroupGuests', () => ({ useGroupOverlays: () => ({}) }))
+vi.mock('@/features/groups/api/useGroupPhotos', () => ({ useGroupPhotos: () => ({}) }))
 vi.mock('@/features/groups/api/useGroups', () => ({
   useMyGroups: () => ({
     data: [

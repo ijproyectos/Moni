@@ -27,6 +27,10 @@ export interface SimExpense {
   templateSlug: string | null
   methodLabel: string
   createdAt: string
+  /** Who loaded it; stored expenses carry it, local ones leave it empty. */
+  createdBy?: string
+  /** The caller's account the payment is taken from (stored expenses only); the amount is what the caller paid. */
+  payerAccountId?: string | null
 }
 
 export interface SimSettlement {
@@ -36,6 +40,8 @@ export interface SimSettlement {
   cents: Cents
   method: string
   occurredOn: IsoDate
+  /** The caller's account the money moved in or out of (input only; the movement itself lives in Cuentas). */
+  accountId?: string | null
 }
 
 export interface Recurring {

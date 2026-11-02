@@ -18,6 +18,8 @@ export interface Transaction {
   status: RowStatus
   voidedAt: string | null
   sharedExpenseId: string | null
+  /** Expense with people without an account that this payment belongs to. */
+  guestExpenseId?: string | null
   /** Statement of a card charge (its closing date); null for anything else. */
   statementClosingOn: IsoDate | null
   /** Installment of a purchase in cuotas: plan, number and total. All null for ordinary movements. */

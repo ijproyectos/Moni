@@ -24,6 +24,7 @@ import {
   type SavingsGoal,
 } from '../domain/savings'
 import { GoalMoneySheet } from './GoalMoneySheet'
+import { GoalPlanSection } from './GoalPlanSection'
 import { SavingsAlertCard } from './SavingsAlertCard'
 import { SavingsGoalFormSheet } from './SavingsGoalFormSheet'
 import { SavingsHero } from './goalVisuals'
@@ -147,6 +148,8 @@ export function SavingsGoalDetail({
           </p>
         )}
       </Panel>
+
+      <GoalPlanSection goal={goal} overview={overview} />
 
       {alert && <SavingsAlertCard alert={alert} />}
       {!goal.accountUsable && goal.status !== 'archived' && (

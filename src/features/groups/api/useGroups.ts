@@ -13,6 +13,7 @@ import {
   createGroup,
   createInvite,
   createSettlement,
+  convertSharedToExpense,
   createSharedExpense,
   getGroup,
   getGroupBalances,
@@ -27,6 +28,7 @@ import {
   revokeInvite,
   voidSettlement,
   voidSharedExpense,
+  type Replaces,
 } from './groupsRepository'
 import { groupKeys } from './queryKeys'
 
@@ -178,10 +180,23 @@ export function useLeaveGroup() {
 export function useCreateSharedExpense() {
   const invalidate = useInvalidateGroupMoney()
   return useMutation({
-    mutationFn: ({ groupId, values }: { groupId: string; values: SharedExpenseFormValues }) =>
-      createSharedExpense(groupId, values),
+    mutationFn: ({
+      groupId,
+      values,
+      replaces,
+    }: {
+      groupId: string
+      values: SharedExpenseFormValues
+      replaces?: Replaces
+    }) => createSharedExpense(groupId, values, replaces),
     onSuccess: invalidate,
   })
+}
+
+/** Shared -> individual: one atomic step on the server, refreshing groups, accounts, activity and Inicio. */
+export function useConvertSharedToExpense() {
+  const invalidate = useInvalidateGroupMoney()
+  return useMutation({ mutationFn: convertSharedToExpense, onSuccess: invalidate })
 }
 
 export function useVoidSharedExpense() {

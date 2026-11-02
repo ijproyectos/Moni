@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import { useAuth } from '@/features/auth/api/authContext'
 import { buildLedger } from '../domain/ledger'
-import { useOverlay } from '../mock/overlayStore'
+import { useGroupOverlay } from './useGroupGuests'
 import { useGroup, useGroupBalances, useGroupMembers, useSharedExpenses } from './useGroups'
 
-/** Real group data (Supabase) merged with the in-memory overlay. */
+/** Shared group data (Supabase) merged with the stored guests/records and the local-only settings. */
 export function useGroupLedger(groupId: string | undefined) {
   const { user } = useAuth()
   const meId = user?.id ?? ''
@@ -12,7 +12,7 @@ export function useGroupLedger(groupId: string | undefined) {
   const members = useGroupMembers(groupId)
   const balances = useGroupBalances(groupId)
   const expenses = useSharedExpenses(groupId)
-  const overlay = useOverlay(groupId)
+  const overlay = useGroupOverlay(groupId)
 
   const ledger = useMemo(
     () =>

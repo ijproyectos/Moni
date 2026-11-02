@@ -98,3 +98,9 @@ entrypoint = "./functions/push-send/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/admin-panel/index.ts"
+
+# Private bucket for group photos (the migration creates it too; this keeps a local stack in sync).
+[storage.buckets.group-photos]
+public = false
+file_size_limit = "1MiB"
+allowed_mime_types = ["image/jpeg"]

@@ -17,6 +17,7 @@ import { SavingsCommittedSheet } from '@/features/goals/ui/SavingsCommittedSheet
 import { CreditLimitSheet } from '@/features/cards/ui/CreditLimitSheet'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { SharedMovementForm } from '@/features/groups/ui/SharedMovementForm'
+import { formatAmountInput } from '@/shared/lib/amountInput'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -122,6 +123,8 @@ export function MovementSheet({
     [categoriesQuery.data, mode, transaction?.categoryId],
   )
 
+  // Any new expense can be shared; so can an existing individual one, unless it belongs to a trip or is an installment.
+  const canShare = !isEdit || (!transaction?.tripId && !transaction?.installmentPlanId)
   const isLoading = accountsQuery.isLoading || categoriesQuery.isLoading
   const loadFailed = accountsQuery.isError || categoriesQuery.isError
 
@@ -302,11 +305,13 @@ export function MovementSheet({
           />
         )}
 
-        {mode === 'expense' && !isEdit && !isLoading && !loadFailed && (
+        {mode === 'expense' && canShare && !isLoading && !loadFailed && (
           <div className="flex items-center justify-between gap-3 rounded-[18px] border border-sand bg-card px-4 py-2">
             <span>
               <span className="block text-[17px] font-extrabold">Compartido</span>
-              <span className="block text-[14px] text-text-muted">Dividirlo con un grupo</span>
+              <span className="block text-[14px] text-text-muted">
+                {isEdit ? 'Pasarlo a un grupo y dividirlo' : 'Dividirlo con un grupo'}
+              </span>
             </span>
             <Toggle label="Compartido" checked={shared} onChange={setShared} />
           </div>
@@ -340,15 +345,21 @@ export function MovementSheet({
               onSubmit={(values) => void saveTransfer(values)}
             />
           )
-        ) : shared && mode === 'expense' && !isEdit ? (
+        ) : shared && mode === 'expense' && canShare ? (
           <SharedMovementForm
             draft={{
-              amount: draft?.amount ?? '',
-              note: draft?.note ?? '',
-              occurredOn: draft?.occurredOn ?? '',
-              accountId: draft?.accountId ?? '',
-              categoryName: categories.find((c) => c.id === draft?.categoryId)?.name ?? '',
+              // Editing: what the expense already has, unless the person changed it in the form before sharing.
+              amount:
+                draft?.amount ?? (transaction ? formatAmountInput(transaction.amountCents) : ''),
+              note: draft?.note ?? transaction?.note ?? '',
+              occurredOn: draft?.occurredOn ?? transaction?.occurredOn ?? '',
+              accountId: draft?.accountId ?? transaction?.accountId ?? '',
+              categoryName:
+                (categoriesQuery.data ?? []).find(
+                  (c) => c.id === (draft?.categoryId ?? transaction?.categoryId),
+                )?.name ?? '',
             }}
+            replaces={transaction ? { kind: 'transaction', id: transaction.id } : undefined}
             onSaved={onClose}
             onLeave={onClose}
           />

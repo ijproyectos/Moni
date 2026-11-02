@@ -70,8 +70,11 @@ interface SharedExpenseFormProps {
 
 const NO_PERCENTS: Readonly<Record<string, string>> = {}
 
-function methodOptions(kind: GroupKind | undefined): readonly SegmentOption<UiMethod>[] {
-  // "Por monto" and "Según ingresos" only exist in the simulated overlay (no backend yet).
+function methodOptions(
+  kind: GroupKind | undefined,
+  canStoreByAmount: boolean,
+): readonly SegmentOption<UiMethod>[] {
+  // "Según ingresos" still depends on a local-only setting; "Por monto" is stored with the group's records.
   const simulatedSplits = FEATURES.groupGuestsAndSimulatedSplits
   return kind === 'pareja'
     ? [
@@ -81,7 +84,7 @@ function methodOptions(kind: GroupKind | undefined): readonly SegmentOption<UiMe
       ]
     : [
         { value: 'equal', label: 'Partes iguales' },
-        ...(simulatedSplits ? [{ value: 'amount' as const, label: 'Por monto' }] : []),
+        ...(canStoreByAmount ? [{ value: 'amount' as const, label: 'Por monto' }] : []),
         { value: 'percent', label: 'Por %' },
       ]
 }
@@ -184,16 +187,18 @@ export function SharedExpenseForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected.join(',')])
 
-  useEffect(() => {
-    if (paidBy !== meId) setValue('payerAccountId', null)
-  }, [paidBy, meId, setValue])
-
   const payerList: SimAmount[] = multiPayer
     ? Object.entries(payers)
         .map(([personId, text]) => ({ personId, cents: parseAmountInput(text) ?? 0 }))
         .filter((p) => p.cents > 0)
     : [{ personId: paidBy, cents: total }]
   const payersTotal = payerList.reduce((s, p) => s + p.cents, 0)
+  const iPay = payerList.some((p) => p.personId === meId)
+
+  // Only someone who paid can take the payment from their own account.
+  useEffect(() => {
+    if (!iPay) setValue('payerAccountId', null)
+  }, [iPay, setValue])
 
   const percentPreview = useMemo(
     () =>
@@ -285,6 +290,7 @@ export function SharedExpenseForm({
       shares,
       occurredOn: getValues('occurredOn'),
       templateSlug: getValues('templateSlug') ?? null,
+      payerAccountId: getValues('payerAccountId') ?? null,
       methodLabel:
         method === 'amount'
           ? 'por monto'
@@ -430,7 +436,7 @@ export function SharedExpenseForm({
       {!multiPayer && (
         <SegmentedControl
           label="Cómo dividir"
-          options={methodOptions(kind)}
+          options={methodOptions(kind, Boolean(onSubmitSimulated))}
           value={method}
           onChange={changeMethod}
         />
@@ -472,7 +478,7 @@ export function SharedExpenseForm({
                   </span>
                   {!p.hasMoni && (
                     <span className="shrink-0 rounded-full bg-gold/40 px-2 py-0.5 text-[12px] font-extrabold">
-                      Sin Moni
+                      Sin cuenta
                     </span>
                   )}
                 </label>
@@ -544,7 +550,7 @@ export function SharedExpenseForm({
                 ? `Vos ponés ${formatArs(shareOf(meId) ?? 0)} y ${others.find((o) => o.id !== meId)?.name ?? 'tu pareja'} ${formatArs(shares.find((s) => s.personId !== meId)?.cents ?? 0)}.`
                 : `Cada uno pone ${formatArs(shares[0]?.cents ?? 0)}.${others.length > 0 && paidBy === meId ? ` ${others.map((o) => o.name).join(', ')} te ${others.length > 1 ? 'pasan' : 'pasa'} ${formatArs(shares[0]?.cents ?? 0)} a vos.` : ''}`}
           {guestNames.length > 0 &&
-            ` ${guestNames.join(' y ')} no ${guestNames.length > 1 ? 'tienen' : 'tiene'} Moni, pero se cuenta${guestNames.length > 1 ? 'n' : ''}.`}
+            ` ${guestNames.join(' y ')} no ${guestNames.length > 1 ? 'tienen' : 'tiene'} cuenta, pero se cuenta${guestNames.length > 1 ? 'n' : ''}.`}
         </p>
       )}
 
@@ -585,7 +591,7 @@ export function SharedExpenseForm({
               </div>
             </fieldset>
           )}
-          {paidBy === meId && accounts.length > 0 && !simulated && (
+          {iPay && accounts.length > 0 && (
             <label className="flex flex-col gap-1">
               <span className={labelClass}>Pagado desde</span>
               <select
@@ -601,7 +607,9 @@ export function SharedExpenseForm({
                 ))}
               </select>
               <span className="px-2 text-sm leading-5 text-text-muted">
-                Descuenta de tu cuenta el total; en tus gastos solo cuenta tu parte.
+                {multiPayer
+                  ? 'Descuenta de tu cuenta lo que pusiste vos; en tus gastos solo cuenta tu parte.'
+                  : 'Descuenta de tu cuenta el total; en tus gastos solo cuenta tu parte.'}
               </span>
             </label>
           )}
@@ -610,8 +618,8 @@ export function SharedExpenseForm({
 
       {simulated && (
         <p className="rounded-[14px] bg-gold/25 px-3 py-2 text-[13px] leading-4">
-          Este gasto usa funciones nuevas: se guarda solo en este dispositivo hasta que estén
-          disponibles.
+          Este gasto incluye a alguien sin cuenta o una división por monto: se guarda en el grupo
+          igual que los demás.
         </p>
       )}
       {initial && (

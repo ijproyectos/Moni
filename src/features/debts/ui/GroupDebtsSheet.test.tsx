@@ -60,6 +60,7 @@ const owedByJoni: PendingDebt = {
   direction: 'owed',
   otherUserId: 'joni',
   otherName: 'Joni Ríos',
+  otherIsGuest: false,
   amountCents: 10_000_00,
   report: null,
 }
@@ -453,5 +454,41 @@ describe('Historial de pagos y migración pendiente', () => {
     expect(screen.getByText('Joni Ríos')).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Debo' }))
     expect(screen.queryByRole('button', { name: 'Ya pagué' })).toBeNull()
+  })
+  it('a debt with a person without an account is listed, but offers no reminder or payment notice', () => {
+    state.debts = [
+      {
+        ...owedByJoni,
+        key: 'g1:fran:me',
+        otherUserId: 'guest-fran',
+        otherName: 'Fran',
+        otherIsGuest: true,
+      },
+      {
+        ...iOweAna,
+        key: 'g1:me:lola',
+        otherUserId: 'guest-lola',
+        otherName: 'Lola',
+        otherIsGuest: true,
+      },
+    ]
+    renderSheet('owed')
+    expect(screen.getByText('Fran')).toBeInTheDocument()
+    expect(screen.getAllByText('Sin cuenta')).toHaveLength(1)
+    expect(
+      screen.getByText(/no tiene cuenta de Moni, así que no recibe avisos/),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Enviar cobro' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Abrir el grupo' })).toHaveAttribute(
+      'href',
+      '/grupos/g1',
+    )
+  })
+
+  it('what the person owes to someone without an account has no "Ya pagué" either', async () => {
+    state.debts = [{ ...iOweAna, otherUserId: 'guest-lola', otherName: 'Lola', otherIsGuest: true }]
+    renderSheet('owe')
+    expect(screen.getByText('Lola')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Ya pagué/ })).toBeNull()
   })
 })

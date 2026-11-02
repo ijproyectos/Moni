@@ -8,17 +8,13 @@ import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
-import {
-  useCreateSharedExpense,
-  useGroup,
-  useGroupMembers,
-  useVoidSharedExpense,
-} from '../api/useGroups'
+import { useCreateGuestExpense, useGroupOverlay } from '../api/useGroupGuests'
+import { useCreateSharedExpense, useGroup, useGroupMembers } from '../api/useGroups'
+import { useTransactions } from '@/features/transactions/api/useTransactions'
+import { ConvertToPersonalSheet } from './ConvertToPersonalSheet'
 import type { SharedExpenseFormValues } from '../domain/group'
 import { activeMembers } from '../domain/groupView'
 import type { LedgerExpense } from '../domain/ledger'
-import { FEATURES } from '@/shared/config/features'
-import { addSimExpense, removeSimExpense, useOverlay } from '../mock/overlayStore'
 import { SharedExpenseForm, type SimulatedExpenseInput } from './SharedExpenseForm'
 
 interface SharedExpenseSheetProps {
@@ -29,7 +25,7 @@ interface SharedExpenseSheetProps {
   onDelete?: () => void
 }
 
-/** Nuevo / Editar gasto sheet: real expenses go to Supabase, new features stay in memory. */
+/** Nuevo / Editar gasto sheet: expenses between members and expenses that involve people without an account. */
 export function SharedExpenseSheet({
   groupId,
   onClose,
@@ -42,9 +38,12 @@ export function SharedExpenseSheet({
   const membersQuery = useGroupMembers(groupId)
   const templatesQuery = useCategoryTemplates()
   const accountsQuery = useAccounts()
-  const overlay = useOverlay(groupId)
+  const overlay = useGroupOverlay(groupId)
   const create = useCreateSharedExpense()
-  const voidExpense = useVoidSharedExpense()
+  const createGuest = useCreateGuestExpense()
+  // Editing: the account the expense was paid from, so saving does not silently stop charging it.
+  const transactionsQuery = useTransactions()
+  const [converting, setConverting] = useState(false)
   const toast = useToast()
 
   const members = useMemo(() => activeMembers(membersQuery.data ?? []), [membersQuery.data])
@@ -53,20 +52,31 @@ export function SharedExpenseSheet({
     [templatesQuery.data],
   )
 
-  const isLoading = membersQuery.isLoading || accountsQuery.isLoading || templatesQuery.isLoading
+  const isLoading =
+    membersQuery.isLoading ||
+    accountsQuery.isLoading ||
+    templatesQuery.isLoading ||
+    Boolean(editing && transactionsQuery.isLoading)
   const loadFailed = membersQuery.isError || accountsQuery.isError || templatesQuery.isError
 
-  async function removeOld() {
-    if (!editing) return
-    if (editing.source === 'real') await voidExpense.mutateAsync(editing.id)
-    else removeSimExpense(groupId, editing.id)
-  }
+  // The old expense is retired by the same server step that creates the new one: all or nothing, charged once.
+  const replaces = editing
+    ? { kind: editing.source === 'real' ? ('shared' as const) : ('guest' as const), id: editing.id }
+    : undefined
+  const paymentOf = editing
+    ? (transactionsQuery.data ?? []).find((t) =>
+        editing.source === 'real'
+          ? t.sharedExpenseId === editing.id
+          : t.guestExpenseId === editing.id,
+      )
+    : undefined
+  const iPaid =
+    Boolean(editing) && editing?.payers.length === 1 && editing.payers[0]?.personId === user?.id
 
   async function submit(values: SharedExpenseFormValues) {
     setSubmitError(null)
     try {
-      await removeOld()
-      await create.mutateAsync({ groupId, values })
+      await create.mutateAsync({ groupId, values, replaces })
       toast.show(editing ? 'Gasto actualizado' : 'Gasto guardado', { mascotUrl: mascotGroup })
       onClose()
     } catch (e) {
@@ -77,13 +87,23 @@ export function SharedExpenseSheet({
   async function submitSimulated(expense: SimulatedExpenseInput) {
     setSubmitError(null)
     try {
-      await removeOld()
-      addSimExpense(groupId, expense)
+      await createGuest.mutateAsync({ groupId, expense, replaces })
       toast.show(editing ? 'Gasto actualizado' : 'Gasto guardado', { mascotUrl: mascotGroup })
       onClose()
     } catch (e) {
       setSubmitError(toUserMessage(e))
     }
+  }
+
+  if (converting && editing) {
+    return (
+      <ConvertToPersonalSheet
+        expense={editing}
+        defaultAccountId={paymentOf?.accountId ?? null}
+        onClose={() => setConverting(false)}
+        onDone={onClose}
+      />
+    )
   }
 
   return (
@@ -105,21 +125,27 @@ export function SharedExpenseSheet({
           meId={user.id}
           templates={templates}
           accounts={accountsQuery.data ?? []}
-          guests={FEATURES.groupGuestsAndSimulatedSplits ? overlay.guests : []}
+          guests={overlay.guests}
           kind={group.data?.kind}
           incomeShare={overlay.coupleSplit === 'income' ? overlay.incomeShare : 0.5}
-          isSubmitting={create.isPending || voidExpense.isPending}
+          isSubmitting={create.isPending || createGuest.isPending}
           submitError={submitError}
           onSubmit={(values) => void submit(values)}
-          onSubmitSimulated={
-            FEATURES.groupGuestsAndSimulatedSplits
-              ? (expense) => void submitSimulated(expense)
-              : undefined
-          }
+          onSubmitSimulated={(expense) => void submitSimulated(expense)}
           initial={editing}
+          defaults={{ payerAccountId: paymentOf?.accountId ?? null }}
           submitLabel={editing ? 'Guardar cambios' : 'Guardar gasto'}
           onDelete={onDelete}
         />
+      )}
+      {editing && iPaid && !isLoading && !loadFailed && (
+        <button
+          type="button"
+          onClick={() => setConverting(true)}
+          className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full border-2 border-line bg-card px-4 text-[16px] font-extrabold text-ink"
+        >
+          Pasar a gasto individual
+        </button>
       )}
     </BottomSheet>
   )

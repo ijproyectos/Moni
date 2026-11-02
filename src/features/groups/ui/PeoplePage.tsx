@@ -1,4 +1,4 @@
-import { ChevronRight, Copy, Gift, Trash2, Upload, UserPlus } from 'lucide-react'
+import { ChevronRight, Copy, Gift, Link2, Trash2, Upload, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router'
 import { FEATURES } from '@/shared/config/features'
@@ -8,19 +8,20 @@ import { copyText } from '@/shared/lib/share'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import { Avatar, MoniSays, Page, SectionLabel } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { ShareLinkSheet } from '@/shared/ui/ShareLinkSheet'
 import { useToast } from '@/shared/ui/toastContext'
 import { useReferralLink } from '@/features/pro/ui/useReferralLink'
+import { useAddGuest, useLinkGuest, useRemoveGuest, useUpdateGuest } from '../api/useGroupGuests'
 import { useGroupLedger } from '../api/useGroupLedger'
 import { useNewMemberNotice } from '../api/useNewMemberNotice'
 import { useCreateInvite, useGroupInvites } from '../api/useGroups'
 import { isInviteActive } from '../domain/group'
 import { inviteLink } from '../domain/groupView'
 import type { Person } from '../domain/ledger'
-import { addGuest, removeGuest, updateGuest } from '../mock/overlayStore'
 import { prettyCode } from '../domain/inviteCode'
 import { AddPersonSheet } from './AddPersonSheet'
 import { fieldClass } from './styles'
@@ -30,13 +31,18 @@ type Sheet =
   | { type: 'edit'; person: Person }
   | { type: 'remove'; person: Person }
   | { type: 'invite'; person: Person }
+  | { type: 'link'; person: Person }
   | null
 
 // Screens 083 / 086 / 105 / 115 — Personas del grupo.
 export function PeoplePage() {
   const { id: groupId = '' } = useParams()
   const toast = useToast()
-  const { ledger, name, meId } = useGroupLedger(groupId)
+  const { ledger, name, meId, overlay } = useGroupLedger(groupId)
+  const addGuest = useAddGuest()
+  const updateGuest = useUpdateGuest()
+  const removeGuest = useRemoveGuest()
+  const linkGuest = useLinkGuest()
   useNewMemberNotice(groupId)
   const invites = useGroupInvites(groupId)
   const createInvite = useCreateInvite()
@@ -54,6 +60,24 @@ export function PeoplePage() {
   }
 
   const remaining = ledger.people.length - 1
+  // A person with records in the group cannot just disappear: it would change what the others owe.
+  const hasHistory = (personId: string) =>
+    overlay.expenses.some(
+      (e) =>
+        e.payers.some((p) => p.personId === personId) ||
+        e.shares.some((x) => x.personId === personId),
+    ) || overlay.settlements.some((x) => x.fromId === personId || x.toId === personId)
+
+  async function run(action: () => Promise<unknown>, done: string): Promise<boolean> {
+    try {
+      await action()
+      toast.show(done)
+      return true
+    } catch (e) {
+      toast.show(toUserMessage(e), { tone: 'error' })
+      return false
+    }
+  }
   return (
     <Page className="pb-28">
       <PageHeader title="Personas" fallbackTo={`/grupos/${groupId}`} />
@@ -76,12 +100,12 @@ export function PeoplePage() {
                     {p.name}
                     {!p.hasMoni && (
                       <span className="rounded-full bg-gold/40 px-2 py-0.5 text-[12px]">
-                        Sin Moni
+                        Sin cuenta
                       </span>
                     )}
                   </span>
                   <span className="block text-[15px] text-text-muted">
-                    {p.hasMoni ? 'Tiene Moni' : 'No tiene Moni · lo cargás vos'}
+                    {p.hasMoni ? 'Tiene cuenta de Moni' : 'Sus gastos los cargan entre todos'}
                   </span>
                 </span>
                 {net !== 0 && (
@@ -106,8 +130,8 @@ export function PeoplePage() {
       </ul>
       {FEATURES.groupGuestsAndSimulatedSplits && (
         <p className="text-[15px] leading-5 text-text-muted">
-          Tocá a una persona para editarla o sacarla del grupo. Los que no tienen Moni se cuentan
-          igual, pero no reciben avisos.
+          Tocá a una persona sin cuenta para editarla, vincularla con una cuenta de Moni o quitarla.
+          Cuentan en los gastos y en las deudas, pero no ven el grupo ni reciben avisos.
         </p>
       )}
       <div className="flex items-center justify-between gap-3 rounded-[24px] border border-sand bg-card p-4">
@@ -141,26 +165,52 @@ export function PeoplePage() {
           code={code}
           groupName={name}
           onClose={() => setSheet(null)}
-          onAddGuest={(n, a) => {
-            addGuest(groupId, n, a)
-            toast.show(`${n} se sumó al grupo`)
-          }}
+          onAddGuest={(n, a) =>
+            run(() => addGuest.mutateAsync({ groupId, name: n, alias: a }), `${n} se sumó al grupo`)
+          }
         />
       )}
       {sheet?.type === 'edit' && (
         <EditPersonSheet
           person={sheet.person}
           onClose={() => setSheet(null)}
-          onSave={(n, a) => {
-            updateGuest(groupId, sheet.person.id, { name: n, alias: a })
-            toast.show('Cambios guardados')
-            setSheet(null)
+          onSave={async (n, a) => {
+            const ok = await run(
+              () => updateGuest.mutateAsync({ guestId: sheet.person.id, name: n, alias: a }),
+              'Cambios guardados',
+            )
+            if (ok) setSheet(null)
           }}
+          onLink={() => setSheet({ type: 'link', person: sheet.person })}
           onInvite={() => setSheet({ type: 'invite', person: sheet.person })}
           onRemove={() => setSheet({ type: 'remove', person: sheet.person })}
         />
       )}
-      {sheet?.type === 'remove' && (
+      {sheet?.type === 'remove' && hasHistory(sheet.person.id) && (
+        <DecisionSheet
+          icon={<Trash2 className="size-6" />}
+          title={`${sheet.person.name} ya tiene movimientos`}
+          onClose={() => setSheet(null)}
+          actions={[
+            { label: 'Entendido', onClick: () => setSheet(null) },
+            {
+              label: 'Vincular con una cuenta de Moni',
+              onClick: () => setSheet({ type: 'link', person: sheet.person }),
+            },
+          ]}
+        >
+          <p>
+            {sheet.person.name} participó en gastos o pagos del grupo (
+            {formatArs(ledger.paid[sheet.person.id] ?? 0)} puestos y{' '}
+            {formatArs(ledger.owed[sheet.person.id] ?? 0)} que le tocan). Si la quitáramos,
+            cambiarían las cuentas de los demás, así que se queda en el grupo.
+          </p>
+          <p className="mt-3 text-[15px] text-text-muted">
+            Cuando se haga una cuenta de Moni, la vinculás y conserva todo su historial.
+          </p>
+        </DecisionSheet>
+      )}
+      {sheet?.type === 'remove' && !hasHistory(sheet.person.id) && (
         <DecisionSheet
           icon={<Trash2 className="size-6" />}
           title={`¿Quitar a ${sheet.person.name} del grupo?`}
@@ -180,25 +230,36 @@ export function PeoplePage() {
           actions={[
             { label: 'Dejarlo en el grupo', onClick: () => setSheet(null) },
             {
-              label: 'Quitar y recalcular',
+              label: 'Quitar del grupo',
               tone: 'danger',
               onClick: () => {
-                removeGuest(groupId, sheet.person.id)
-                toast.show(`${sheet.person.name} ya no está en el grupo`)
+                const { id, name: who } = sheet.person
                 setSheet(null)
+                void run(() => removeGuest.mutateAsync(id), `${who} ya no está en el grupo`)
               },
             },
           ]}
         >
           <p>
-            {sheet.person.name} tiene {formatArs(ledger.paid[sheet.person.id] ?? 0)} puestos y{' '}
-            {formatArs(ledger.owed[sheet.person.id] ?? 0)} que le tocan en este grupo. Si lo sacás,
-            Moni recalcula las cuentas entre los otros {remaining}.
-          </p>
-          <p className="mt-3 text-[15px] text-text-muted">
-            Si {sheet.person.name} ya te pasó la plata, mejor dejalo y saldá la cuenta.
+            {sheet.person.name} todavía no participó en ningún gasto ni pago, así que se puede
+            quitar sin cambiar las cuentas de los otros {remaining}.
           </p>
         </DecisionSheet>
+      )}
+      {sheet?.type === 'link' && (
+        <LinkGuestSheet
+          guest={sheet.person}
+          candidates={ledger.people.filter((p) => p.hasMoni)}
+          isBusy={linkGuest.isPending}
+          onClose={() => setSheet(null)}
+          onConfirm={async (member) => {
+            const ok = await run(
+              () => linkGuest.mutateAsync({ guestId: sheet.person.id, userId: member.id }),
+              `${sheet.person.name} quedó vinculada con ${member.isMe ? 'tu cuenta' : member.name}`,
+            )
+            if (ok) setSheet(null)
+          }}
+        />
       )}
       {sheet?.type === 'invite' && (
         <InviteToMoniSheet
@@ -219,12 +280,14 @@ function EditPersonSheet({
   person,
   onClose,
   onSave,
+  onLink,
   onInvite,
   onRemove,
 }: {
   person: Person
   onClose: () => void
   onSave: (name: string, alias: string) => void
+  onLink: () => void
   onInvite: () => void
   onRemove: () => void
 }) {
@@ -236,8 +299,8 @@ function EditPersonSheet({
         <div className="flex items-center gap-3">
           <Avatar name={person.name} size="lg" />
           <p className="text-[16px] leading-6">
-            Tiene Moni: ve el grupo desde su app. Si quiere irse, sale desde sus opciones del grupo
-            cuando esté a mano.
+            Tiene cuenta de Moni: ve el grupo desde su app. Si quiere irse, sale desde sus opciones
+            del grupo.
           </p>
         </div>
         <Button className="mt-4" onClick={onClose}>
@@ -252,7 +315,7 @@ function EditPersonSheet({
         <div className="flex items-center gap-3">
           <Avatar name={person.name} size="lg" />
           <p className="text-[16px] leading-6">
-            No tiene Moni. Entra en las cuentas pero no ve el grupo ni recibe avisos.
+            Sin cuenta. Entra en los gastos y en las deudas, pero no ve el grupo ni recibe avisos.
           </p>
         </div>
         <SectionLabel>Nombre</SectionLabel>
@@ -274,15 +337,22 @@ function EditPersonSheet({
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={onInvite}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
+            onClick={onLink}
+            className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card px-3 text-center text-[16px] font-extrabold"
           >
-            <UserPlus aria-hidden="true" className="size-5" /> Invitarlo a Moni
+            <Link2 aria-hidden="true" className="size-5 shrink-0" /> Vincular con una cuenta de Moni
+          </button>
+          <button
+            type="button"
+            onClick={onInvite}
+            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[16px] font-extrabold"
+          >
+            <UserPlus aria-hidden="true" className="size-5" /> Invitarla
           </button>
           <button
             type="button"
             onClick={onRemove}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold text-expense"
+            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[16px] font-extrabold text-expense"
           >
             <Trash2 aria-hidden="true" className="size-5" /> Quitar del grupo
           </button>
@@ -372,6 +442,61 @@ function InviteToMoniSheet({
           {inviteLink(window.location.origin, code)}
         </p>
       )}
+    </BottomSheet>
+  )
+}
+
+// Screen — Vincular: a person without an account becomes an existing member, keeping everything they did.
+function LinkGuestSheet({
+  guest,
+  candidates,
+  isBusy,
+  onClose,
+  onConfirm,
+}: {
+  guest: Person
+  candidates: Person[]
+  isBusy: boolean
+  onClose: () => void
+  onConfirm: (member: Person) => void
+}) {
+  const [picked, setPicked] = useState<Person | null>(null)
+  if (picked) {
+    return (
+      <ConfirmDialog
+        title={`¿Vincular a ${guest.name} con ${picked.isMe ? 'tu cuenta' : picked.name}?`}
+        message={`Todo lo de ${guest.name} (lo que puso, lo que le toca y sus pagos) pasa a ${picked.isMe ? 'tu cuenta' : picked.name} y deja de figurar como persona sin cuenta. No se pierde ningún gasto y las cuentas del grupo no cambian. No se puede deshacer.`}
+        confirmLabel="Sí, vincular"
+        cancelLabel="Volver"
+        isBusy={isBusy}
+        onConfirm={() => onConfirm(picked)}
+        onCancel={() => setPicked(null)}
+      />
+    )
+  }
+  return (
+    <BottomSheet title={`Vincular a ${guest.name}`} onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <p className="text-[16px] leading-6">
+          Elegí con qué cuenta de Moni se corresponde. Tiene que ser alguien que ya esté en el
+          grupo: si todavía no entró, pasale el código y volvé acá.
+        </p>
+        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+          {candidates.map((c) => (
+            <li key={c.id}>
+              <button
+                type="button"
+                onClick={() => setPicked(c)}
+                className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left"
+              >
+                <Avatar name={c.name} />
+                <span className="flex-1 text-[18px] font-extrabold">{c.isMe ? 'Yo' : c.name}</span>
+                <ChevronRight aria-hidden="true" className="size-5 text-text-muted" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </BottomSheet>
   )
 }

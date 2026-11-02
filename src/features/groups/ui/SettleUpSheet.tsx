@@ -13,10 +13,11 @@ import { Avatar, ChoiceChip, MoniSays, SectionLabel } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
 import { useCreateSettlement } from '../api/useGroups'
 import { settlementFormSchema } from '../domain/group'
+import { fieldClass } from './styles'
 import { personName, type Person } from '../domain/ledger'
 import type { Transfer } from '../domain/split'
 import { FEATURES } from '@/shared/config/features'
-import { addSimSettlement } from '../mock/overlayStore'
+import { useCreateGuestSettlement } from '../api/useGroupGuests'
 
 const METHODS = [
   { label: 'Transferencia', icon: CreditCard },
@@ -38,10 +39,13 @@ interface SettleUpSheetProps {
 export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: SettleUpSheetProps) {
   const toast = useToast()
   const create = useCreateSettlement()
+  const createGuest = useCreateGuestSettlement()
   const accounts = useAccounts()
   const mine = transfers.filter((t) => t.fromUserId === meId || t.toUserId === meId)
   const [index, setIndex] = useState(0)
   const [method, setMethod] = useState('Transferencia')
+  // Optional: the own account the money moved in or out of (only for payments recorded in the group).
+  const [accountId, setAccountId] = useState('')
   const [error, setError] = useState<string | null>(null)
   const transfer = (mine.length ? mine : transfers)[index]
 
@@ -63,8 +67,11 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
     : transfer.toUserId === meId
       ? `${from} te pasa`
       : `${from} le pasa a ${to}`
-  // Only the payer can register a real settlement; recording one for someone else is a simulation.
-  const canRecord = (iPay && toIsReal) || FEATURES.groupGuestsAndSimulatedSplits
+  const saving = create.isPending || createGuest.isPending
+  const iReceive = transfer.toUserId === meId
+  // Payments between two members where I pay already move my account through the shared settlement.
+  const canPickAccount = !(iPay && toIsReal) && (iPay || iReceive)
+  const pickable = (accounts.data ?? []).filter((a) => a.kind !== 'credit_card' && !a.archivedAt)
   const message = `${iPay ? `Te pasé ${formatArs(transfer.amountCents)}` : `Pasame ${formatArs(transfer.amountCents)}`} por Moni 🙌`
 
   async function markSettled() {
@@ -84,12 +91,16 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
         })
         await create.mutateAsync({ groupId, values })
       } else {
-        addSimSettlement(groupId, {
-          fromId: transfer.fromUserId,
-          toId: transfer.toUserId,
-          cents: transfer.amountCents,
-          method,
-          occurredOn: todayIso(),
+        await createGuest.mutateAsync({
+          groupId,
+          settlement: {
+            fromId: transfer.fromUserId,
+            toId: transfer.toUserId,
+            cents: transfer.amountCents,
+            method,
+            occurredOn: todayIso(),
+            accountId: accountId || null,
+          },
         })
       }
       toast.show('Cuenta saldada', { mascotUrl: mascotHappy })
@@ -120,7 +131,10 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
               <ChoiceChip
                 key={`${t.fromUserId}-${t.toUserId}`}
                 selected={i === index}
-                onClick={() => setIndex(i)}
+                onClick={() => {
+                  setIndex(i)
+                  setAccountId('')
+                }}
               >
                 {personName(people, t.fromUserId)} → {personName(people, t.toUserId)}
               </ChoiceChip>
@@ -140,24 +154,39 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
             </ChoiceChip>
           ))}
         </div>
+        {canPickAccount && pickable.length > 0 && (
+          <label className="flex flex-col gap-1">
+            <span className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
+              {iReceive ? '¿En qué cuenta lo recibiste?' : '¿Desde qué cuenta lo pagaste?'}
+              <span className="font-bold normal-case tracking-normal"> · opcional</span>
+            </span>
+            <select
+              className={fieldClass}
+              value={accountId}
+              onChange={(event) => setAccountId(event.target.value)}
+            >
+              <option value="">Sin cuenta: solo saldar la deuda</option>
+              {pickable.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <MoniSays>
-          queda como un pago entre ustedes. No cuenta como gasto ni como ingreso tuyo.
+          {canPickAccount && accountId
+            ? `queda como un pago entre ustedes y ${iReceive ? 'se suma a' : 'se descuenta de'} tu cuenta. No cuenta como gasto ni como ingreso tuyo.`
+            : 'queda como un pago entre ustedes. No cuenta como gasto ni como ingreso tuyo.'}
         </MoniSays>
         {error && (
           <p role="alert" className="text-center text-sm text-expense">
             {error}
           </p>
         )}
-        {canRecord ? (
-          <Button onClick={() => void markSettled()} disabled={create.isPending}>
-            {create.isPending ? 'Guardando…' : 'Marcar como saldado'}
-          </Button>
-        ) : (
-          <p className="text-center text-[15px] leading-5 text-text-muted">
-            El pago lo registra quien paga. Cuando {other} te pase la plata, lo marca desde su Moni
-            y tu saldo se actualiza.
-          </p>
-        )}
+        <Button onClick={() => void markSettled()} disabled={saving}>
+          {saving ? 'Guardando…' : 'Marcar como saldado'}
+        </Button>
         <div className={FEATURES.notifications ? 'grid grid-cols-2 gap-2' : 'grid gap-2'}>
           {FEATURES.notifications && (
             <button
