@@ -37,6 +37,12 @@ vi.mock('../api/useMonthSummary', () => ({
       refetch: vi.fn(),
     }
   },
+  // The header totals the whole history, whatever month is picked.
+  usePeriodSummary: () => ({
+    isLoading: false,
+    isError: false,
+    data: { incomeCents: 4_000_000_00, expenseCents: 800_000_00 },
+  }),
 }))
 vi.mock('@/features/auth/api/authContext', () => ({
   useAuth: () => ({ user: { id: 'u1', email: 'a@b.c' } }),
@@ -97,45 +103,35 @@ describe('Inicio: importes de la tarjeta principal', () => {
   })
   afterEach(() => vi.useRealTimers())
 
-  it('opens on the current month with its own income and expenses', () => {
+  it('shows the whole-history income and expenses and the available money', () => {
     setup()
-    expect(header()).toHaveTextContent('-$300.000')
-    expect(header()).toHaveTextContent('+$1.000.000')
+    expect(header()).toHaveTextContent('-$800.000')
+    expect(header()).toHaveTextContent('+$4.000.000')
     expect(available()).toHaveTextContent('$500.000')
   })
 
-  it('switching to October shows October only; the available money does not move', async () => {
+  it('keeps the header amounts when another month is picked, and still loads that month', async () => {
     const user = setup()
     await pick(user, /octubre/i)
-    expect(header()).toHaveTextContent('-$70.000')
-    expect(header()).toHaveTextContent('+$900.000')
-    expect(header()).not.toHaveTextContent('$300.000')
+    expect(asked.months).toContain('2026-10-01')
+    expect(header()).toHaveTextContent('-$800.000')
+    expect(header()).toHaveTextContent('+$4.000.000')
     expect(available()).toHaveTextContent('$500.000')
   })
 
-  it('a month of the previous year uses that month and year only', async () => {
+  it('a month with no movements does not read as $0 in the header', async () => {
+    const user = setup()
+    await pick(user, /septiembre/i)
+    expect(header()).not.toHaveTextContent('$0Gastos')
+    expect(header()).toHaveTextContent('+$4.000.000')
+    expect(available()).toHaveTextContent('$500.000')
+  })
+
+  it('a month of the previous year keeps the header amounts too', async () => {
     const user = setup()
     await pick(user, /diciembre.*2025/i)
     expect(asked.months).toContain('2025-12-01')
-    expect(header()).toHaveTextContent('-$15.000')
-    expect(header()).toHaveTextContent('$0Ingresos')
-    expect(available()).toHaveTextContent('$500.000')
-  })
-
-  it('a month with no movements shows $0 and $0, never other months', async () => {
-    const user = setup()
-    await pick(user, /septiembre/i)
-    expect(header()).toHaveTextContent('$0Gastos$0Ingresos')
-    expect(available()).toHaveTextContent('$500.000')
-  })
-
-  it('keeps the cents of the picked month and can come back to the current one', async () => {
-    const user = setup()
-    await pick(user, /enero.*2026/i)
-    expect(header()).toHaveTextContent('-$12.345,67')
-    expect(header()).toHaveTextContent('+$50.000')
-    await pick(user, /noviembre.*2026/i)
-    expect(header()).toHaveTextContent('-$300.000')
-    expect(header()).toHaveTextContent('+$1.000.000')
+    expect(header()).toHaveTextContent('-$800.000')
+    expect(header()).toHaveTextContent('+$4.000.000')
   })
 })

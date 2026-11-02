@@ -18,6 +18,7 @@ import { formatArs } from '@/shared/lib/money'
 import { MoniGlyph, ProgressBar } from '@/shared/ui/kit'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import { groupMovementsByMonth } from '../domain/recentMovements'
+import type { PeriodSummary } from '../domain/periodSummary'
 import { addsToBalance, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
 import { buildInsight } from '../domain/insight'
 import { CategoryDonut } from './CategoryDonut'
@@ -26,6 +27,8 @@ import { AntIcon } from '@/shared/ui/AntIcon'
 
 interface HomeScreenProps {
   summary: MonthSummary
+  /** Income and expenses across the whole history; the header shows them whatever month is picked. */
+  overall?: Pick<PeriodSummary, 'incomeCents' | 'expenseCents'>
   /** Newest movements across the whole history; they show whatever month is picked. Defaults to the month's own. */
   movements?: readonly RecentMovement[]
   month: IsoDate
@@ -50,6 +53,7 @@ interface HomeScreenProps {
 
 export function HomeScreen({
   summary,
+  overall,
   movements,
   month,
   latestMonth,
@@ -67,7 +71,12 @@ export function HomeScreen({
   const today = todayIso()
   const recent = movements ?? summary.recent
   const recentByMonth = groupMovementsByMonth(recent)
-  const hasData = summary.byCategory.length > 0 || recent.length > 0 || summary.incomeCents > 0
+  const hasData =
+    summary.byCategory.length > 0 ||
+    recent.length > 0 ||
+    summary.incomeCents > 0 ||
+    (overall?.incomeCents ?? 0) > 0 ||
+    (overall?.expenseCents ?? 0) > 0
   const monthName = formatMonthName(month)
 
   return (
@@ -80,8 +89,8 @@ export function HomeScreen({
         photoUrl={photoUrl}
         isPlus={isPlus}
         availableCents={summary.availableBalanceCents}
-        incomeCents={summary.incomeCents}
-        expenseCents={summary.expenseCents}
+        incomeCents={(overall ?? summary).incomeCents}
+        expenseCents={(overall ?? summary).expenseCents}
         reminderCount={reminderCount}
         noticeCount={noticeCount}
       />

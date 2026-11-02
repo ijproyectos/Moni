@@ -51,16 +51,17 @@ const withData: MonthSummary = {
 function renderHome(
   summary: MonthSummary,
   isPlus?: boolean,
+  overall?: { incomeCents: number; expenseCents: number },
   movements?: RecentMovement[],
-  month = '2026-10-01',
 ) {
   render(
     <MemoryRouter>
       <HomeScreen
         summary={summary}
+        overall={overall}
         movements={movements}
-        month={month}
-        latestMonth="2026-11-01"
+        month="2026-10-01"
+        latestMonth="2026-10-01"
         onMonthChange={vi.fn()}
         initial="J"
         onAddMovement={vi.fn()}
@@ -75,22 +76,11 @@ describe('HomeScreen', () => {
     budgetStatus.data = []
   })
 
-  it("the header shows the picked month's income and expenses", () => {
-    renderHome(withData)
+  it('shows the whole-history income and expenses in the header even when the picked month is empty', () => {
+    renderHome(empty, false, { incomeCents: 400_000_000, expenseCents: 44_028_789 })
     const group = screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
-    expect(group).toHaveTextContent('-$119.500')
-    expect(group).toHaveTextContent('+$970.000')
-  })
-
-  it('a month without movements shows $0 in both, not the totals of other months', () => {
-    renderHome({ ...empty, availableBalanceCents: 85_050_000 }, false, undefined, '2026-11-01')
-    const group = screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
-    expect(group).toHaveTextContent('$0Gastos$0Ingresos')
-  })
-
-  it('the available money is the current balance whatever month is picked', () => {
-    renderHome({ ...empty, availableBalanceCents: 85_050_000 }, false, undefined, '2025-03-01')
-    expect(screen.getByText('Dinero disponible').parentElement).toHaveTextContent('$850.500')
+    expect(group).toHaveTextContent('-$440.287,89')
+    expect(group).toHaveTextContent('+$4.000.000')
   })
 
   it('lists movements of every month, grouped under month headings, even when the picked month is empty', () => {
@@ -106,7 +96,7 @@ describe('HomeScreen', () => {
       categoryColor: '#E5533D',
       categoryIcon: 'Utensils',
     })
-    renderHome(empty, false, [
+    renderHome(empty, false, { incomeCents: 0, expenseCents: 2_000_00 }, [
       movement('m1', '2026-10-31', 'Cena'),
       movement('m2', '2026-09-30', 'Almuerzo'),
     ])
@@ -114,6 +104,13 @@ describe('HomeScreen', () => {
     const october = screen.getByRole('region', { name: 'Octubre 2026' })
     expect(october).toHaveTextContent('Cena')
     expect(screen.getByRole('region', { name: 'Septiembre 2026' })).toHaveTextContent('Almuerzo')
+  })
+
+  it('falls back to the month totals while the whole-history totals are not loaded', () => {
+    renderHome(withData)
+    const group = screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
+    expect(group).toHaveTextContent('-$119.500')
+    expect(group).toHaveTextContent('+$970.000')
   })
 
   it('shows a friendly insight and an empty state without data', () => {
