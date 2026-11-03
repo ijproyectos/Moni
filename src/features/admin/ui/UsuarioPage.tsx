@@ -5,6 +5,7 @@ import { adminApi, AdminApiError } from '../api/adminRepository'
 import { useAdminQuery } from '../api/useAdminQuery'
 import { formatArDate, formatArDateTime, formatCount, formatPesos } from '../domain/format'
 import { PushToUser } from './PushToUser'
+import { SuspensionCard } from './SuspensionCard'
 import {
   BarChart,
   Chip,
@@ -55,7 +56,15 @@ export function UsuarioPage() {
           <DetailRow label="Último ingreso">{formatArDateTime(u.last_sign_in_at)}</DetailRow>
           <DetailRow label="Última actividad">{formatArDateTime(u.last_activity_at)}</DetailRow>
           <DetailRow label="Estado">
-            <DaysInactiveChip days={u.days_inactive} />
+            <span className="flex flex-wrap justify-end gap-2">
+              {u.estado.suspended && <Chip tone="bad">Suspendida</Chip>}
+              <DaysInactiveChip days={u.days_inactive} />
+            </span>
+          </DetailRow>
+          <DetailRow label="Consultas a soporte">
+            {u.estado.tickets_total === 0
+              ? 'Ninguna'
+              : `${u.estado.tickets_total} (${u.estado.tickets_open} abierta(s))`}
           </DetailRow>
           <DetailRow label="Email confirmado">{u.email_confirmed ? 'Sí' : 'No'}</DetailRow>
           <DetailRow label="Ingreso con">
@@ -198,6 +207,8 @@ export function UsuarioPage() {
       </PanelCard>
 
       <PushToUser userId={u.user_id} devices={u.counts.push_devices} />
+
+      <SuspensionCard user={u} />
     </div>
   )
 }

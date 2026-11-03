@@ -4,6 +4,7 @@ import { adminPath } from '../domain/paths'
 import { adminApi } from '../api/adminRepository'
 import { useAdminQuery } from '../api/useAdminQuery'
 import { formatArDate, formatArDateTime, formatCount, formatPesos } from '../domain/format'
+import { PlusExpiring } from './PlusExpiring'
 import {
   BarChart,
   ErrorBlock,
@@ -44,6 +45,8 @@ export function PlusPage() {
         <Kpi label="Pausadas" value={formatCount(p.subscriptions.paused)} />
         <Kpi label="Canceladas" value={formatCount(p.subscriptions.cancelled)} />
       </KpiGrid>
+
+      <PlusExpiring />
 
       <PanelCard title="Ingresos por día (ARS, 30 días)">
         <BarChart

@@ -37,6 +37,7 @@ export interface UserRow {
   o_movements_total: number
   o_accounts_total: number
   o_movements_30d: number
+  o_suspended: boolean
 }
 
 export interface UsersPage {
@@ -89,6 +90,15 @@ export interface UserDetail {
     needs_review: number
     poison_rows: number
   } | null
+  /** Suspension and support state (admin_usuario_estado). */
+  estado: UserEstado
+}
+
+export interface UserEstado {
+  suspended: boolean
+  suspension: { reason: string; suspended_by: string; suspended_at: string } | null
+  tickets_total: number
+  tickets_open: number
 }
 
 export interface PlusOverview {
@@ -187,3 +197,73 @@ export interface PushResult {
 }
 
 export type AccessDeniedReason = 'no_email' | 'email_not_confirmed' | 'not_allowed'
+
+export interface PlusExpiringRow {
+  user_id: string
+  email: string | null
+  source: string
+  expires_at: string
+  days_left: number
+  subscription_status: string | null
+  push_devices: number
+  /** Days-left levels already notified for this expiry (3, 1, or the day an admin notified). */
+  notified_levels: number[]
+}
+
+export interface PlusExpiring {
+  days: number
+  /** Plus ending soon that renews by itself (authorized subscription): not listed, not notified. */
+  auto_renewing_excluded: number
+  rows: PlusExpiringRow[]
+}
+
+export interface AvisosState {
+  nightly_push_enabled: boolean
+  plus_expiry_push_enabled: boolean
+  /** The cron secret is stored: without it the scheduled pushes do nothing. */
+  cron_configured: boolean
+  nightly_last_sent_at: string | null
+  nightly_last_sent_count: number | null
+  plus_notices_30d: number
+}
+
+export type SettingKey = 'nightly_push_enabled' | 'plus_expiry_push_enabled'
+
+export type SupportFilter = 'open' | 'resolved' | 'todas'
+
+export interface SupportRow {
+  o_total: number
+  o_id: string
+  o_user_id: string
+  o_email: string | null
+  o_subject: string
+  o_status: 'open' | 'resolved'
+  o_created_at: string
+  o_replied_at: string | null
+}
+
+export interface SupportInbox {
+  rows: SupportRow[]
+  total: number
+}
+
+export interface SupportTicketDetail {
+  id: string
+  user_id: string
+  email: string | null
+  name: string | null
+  subject: string
+  message: string
+  status: 'open' | 'resolved'
+  reply: string | null
+  replied_at: string | null
+  replied_by: string | null
+  resolved_at: string | null
+  created_at: string
+  user_tickets_total: number
+}
+
+export interface SupportReplyResult {
+  replied: boolean
+  push: PushResult
+}

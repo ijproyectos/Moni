@@ -115,6 +115,11 @@ export function UsuariosPage() {
                         >
                           {row.o_email ?? '(sin email)'}
                         </Link>
+                        {row.o_suspended && (
+                          <span className="ml-2">
+                            <Chip tone="bad">Suspendida</Chip>
+                          </span>
+                        )}
                       </td>
                       <td className={TD}>{formatArDate(row.o_created_at)}</td>
                       <td className={TD}>{formatArDateTime(row.o_last_sign_in_at)}</td>

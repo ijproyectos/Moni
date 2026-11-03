@@ -18,6 +18,8 @@ import { MpPage } from './MpPage'
 import { PlusPage } from './PlusPage'
 import { ResumenPage } from './ResumenPage'
 import { SistemaPage } from './SistemaPage'
+import { SoportePage } from './SoportePage'
+import { SoporteTicketPage } from './SoporteTicketPage'
 import { UsuarioPage } from './UsuarioPage'
 import { UsuariosPage } from './UsuariosPage'
 import { ErrorBlock } from './widgets'
@@ -26,6 +28,7 @@ const NAV = [
   { to: ADMIN_PATH, label: 'Resumen', end: true },
   { to: adminPath('usuarios'), label: 'Usuarios', end: false },
   { to: adminPath('plus'), label: 'Plus', end: false },
+  { to: adminPath('soporte'), label: 'Soporte', end: false },
   { to: adminPath('ia'), label: 'IA y costos', end: false },
   { to: adminPath('mp'), label: 'Mercado Pago', end: false },
   { to: adminPath('sistema'), label: 'Sistema', end: false },
@@ -88,6 +91,8 @@ function Panel({ email, onLogout }: { email: string; onLogout: () => void }) {
           <Route path="usuarios" element={<UsuariosPage />} />
           <Route path="usuarios/:id" element={<UsuarioPage />} />
           <Route path="plus" element={<PlusPage />} />
+          <Route path="soporte" element={<SoportePage />} />
+          <Route path="soporte/:id" element={<SoporteTicketPage />} />
           <Route path="ia" element={<IaPage />} />
           <Route path="mp" element={<MpPage />} />
           <Route path="sistema" element={<SistemaPage />} />

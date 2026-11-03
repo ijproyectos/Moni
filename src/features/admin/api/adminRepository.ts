@@ -2,10 +2,17 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 import { getSupabase } from '@/shared/lib/supabase'
 import type {
   AiOverview,
+  AvisosState,
   MpOverview,
+  PlusExpiring,
   PlusOverview,
   PushResult,
   Resumen,
+  SettingKey,
+  SupportFilter,
+  SupportInbox,
+  SupportReplyResult,
+  SupportTicketDetail,
   SystemOverview,
   UserDetail,
   UserFilter,
@@ -64,6 +71,41 @@ export const adminApi = {
   ia: () => section<AiOverview>({ section: 'ia' }),
   mp: () => section<MpOverview>({ section: 'mp' }),
   sistema: () => section<SystemOverview>({ section: 'sistema' }),
+  plusVencen: (days: number) => section<PlusExpiring>({ section: 'plus_vencen', days }),
+  avisos: () => section<AvisosState>({ section: 'avisos' }),
+  soporte: (args: { status: SupportFilter; limit: number; offset: number }) =>
+    section<SupportInbox>({ section: 'soporte', ...args }),
+  soporteTicket: (ticketId: string) =>
+    section<SupportTicketDetail>({ section: 'soporte_ticket', ticket_id: ticketId }),
+  suspend: async (args: { userId: string; reason: string; confirmEmail: string }) =>
+    (await invoke({
+      action: 'suspend_user',
+      user_id: args.userId,
+      reason: args.reason,
+      confirm_email: args.confirmEmail,
+    })) as { suspended: true },
+  unsuspend: async (userId: string) =>
+    (await invoke({ action: 'unsuspend_user', user_id: userId })) as { suspended: false },
+  notifyPlus: async (userId: string) =>
+    (await invoke({ action: 'plus_notify', user_id: userId })) as PushResult,
+  replyTicket: async (args: { ticketId: string; reply: string; resolve: boolean }) =>
+    (await invoke({
+      action: 'support_reply',
+      ticket_id: args.ticketId,
+      reply: args.reply,
+      resolve: args.resolve,
+    })) as SupportReplyResult,
+  setTicketStatus: async (args: { ticketId: string; status: 'open' | 'resolved' }) =>
+    (await invoke({
+      action: 'support_status',
+      ticket_id: args.ticketId,
+      status: args.status,
+    })) as { status: 'open' | 'resolved' },
+  setSetting: async (args: { key: SettingKey; enabled: boolean }) =>
+    (await invoke({ action: 'setting_set', key: args.key, enabled: args.enabled })) as {
+      key: SettingKey
+      enabled: boolean
+    },
   pushToUser: async (args: { userId: string; title: string; body: string }) =>
     (await invoke({
       action: 'push_user',

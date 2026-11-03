@@ -3,6 +3,8 @@ import {
   auditSection,
   decideAccess,
   decidePushRateLimit,
+  decideSuspension,
+  supportReplyPush,
   hasVerifiedGoogleIdentity,
   isAllowedEmail,
   parseAdminRequest,
@@ -197,5 +199,200 @@ describe('auditSection', () => {
     expect(auditSection({ kind: 'section', section: 'plus' })).toBe('plus')
     const parsed = parseAdminRequest({ action: 'push_user', user_id: ID, title: 't', body: 'b' })
     if (parsed.ok) expect(auditSection(parsed.value)).toBe('push_user')
+  })
+})
+
+describe('parseAdminRequest: support and plus sections', () => {
+  it('reads the support inbox with defaults and a validated filter', () => {
+    expect(parseAdminRequest({ section: 'soporte' })).toEqual({
+      ok: true,
+      value: { kind: 'section', section: 'soporte', status: 'open', limit: 25, offset: 0 },
+    })
+    const resolved = parseAdminRequest({ section: 'soporte', status: 'resolved', limit: 500 })
+    expect(resolved).toMatchObject({ ok: true, value: { status: 'resolved', limit: 100 } })
+    expect(parseAdminRequest({ section: 'soporte', status: 'closed' })).toEqual({
+      ok: false,
+      reason: 'invalid_status',
+    })
+  })
+  it('reads one ticket only with a uuid', () => {
+    expect(parseAdminRequest({ section: 'soporte_ticket', ticket_id: ID })).toEqual({
+      ok: true,
+      value: { kind: 'section', section: 'soporte_ticket', ticketId: ID },
+    })
+    expect(parseAdminRequest({ section: 'soporte_ticket', ticket_id: 'nope' }).ok).toBe(false)
+  })
+  it('reads the expiring Plus list, 7 days by default and 30 at most', () => {
+    expect(parseAdminRequest({ section: 'plus_vencen' })).toMatchObject({
+      ok: true,
+      value: { section: 'plus_vencen', days: 7 },
+    })
+    expect(parseAdminRequest({ section: 'plus_vencen', days: 999 })).toMatchObject({
+      value: { days: 30 },
+    })
+    expect(parseAdminRequest({ section: 'plus_vencen', days: 'x' }).ok).toBe(false)
+  })
+  it('reads the automatic notices state', () => {
+    expect(parseAdminRequest({ section: 'avisos' })).toEqual({
+      ok: true,
+      value: { kind: 'section', section: 'avisos' },
+    })
+  })
+})
+
+describe('parseAdminRequest: actions', () => {
+  it('suspends with a trimmed reason and a lowercase confirmation', () => {
+    expect(
+      parseAdminRequest({
+        action: 'suspend_user',
+        user_id: ID,
+        reason: '  Uso abusivo  ',
+        confirm_email: ' Persona@Example.com ',
+      }),
+    ).toEqual({
+      ok: true,
+      value: {
+        kind: 'suspend',
+        userId: ID,
+        reason: 'Uso abusivo',
+        confirmEmail: 'persona@example.com',
+      },
+    })
+  })
+  it.each([
+    [{ user_id: 'x', reason: 'Uso abusivo', confirm_email: 'a@b.c' }, 'invalid_user_id'],
+    [{ user_id: ID, reason: 'ab', confirm_email: 'a@b.c' }, 'invalid_reason'],
+    [{ user_id: ID, reason: 'x'.repeat(201), confirm_email: 'a@b.c' }, 'invalid_reason'],
+    [{ user_id: ID, reason: 'Uso abusivo', confirm_email: '  ' }, 'invalid_confirmation'],
+  ])('refuses a bad suspension %j', (body, reason) => {
+    expect(parseAdminRequest({ action: 'suspend_user', ...body })).toEqual({ ok: false, reason })
+  })
+  it('lifts a suspension and notifies an expiring Plus by user id only', () => {
+    expect(parseAdminRequest({ action: 'unsuspend_user', user_id: ID })).toEqual({
+      ok: true,
+      value: { kind: 'unsuspend', userId: ID },
+    })
+    expect(parseAdminRequest({ action: 'plus_notify', user_id: ID })).toEqual({
+      ok: true,
+      value: { kind: 'plus_notify', userId: ID },
+    })
+    expect(parseAdminRequest({ action: 'plus_notify' }).ok).toBe(false)
+  })
+  it('replies to a ticket within 2000 characters, optionally resolving it', () => {
+    expect(
+      parseAdminRequest({
+        action: 'support_reply',
+        ticket_id: ID,
+        reply: ' Listo ',
+        resolve: true,
+      }),
+    ).toEqual({
+      ok: true,
+      value: { kind: 'support_reply', ticketId: ID, reply: 'Listo', resolve: true },
+    })
+    expect(
+      parseAdminRequest({ action: 'support_reply', ticket_id: ID, reply: 'ok' }),
+    ).toMatchObject({
+      value: { resolve: false },
+    })
+    expect(parseAdminRequest({ action: 'support_reply', ticket_id: ID, reply: ' ' }).ok).toBe(false)
+    expect(
+      parseAdminRequest({ action: 'support_reply', ticket_id: ID, reply: 'x'.repeat(2001) }).ok,
+    ).toBe(false)
+    expect(
+      parseAdminRequest({ action: 'support_reply', ticket_id: ID, reply: 'ok', resolve: 'yes' }).ok,
+    ).toBe(false)
+  })
+  it('changes a ticket status only to open or resolved', () => {
+    expect(
+      parseAdminRequest({ action: 'support_status', ticket_id: ID, status: 'resolved' }),
+    ).toEqual({ ok: true, value: { kind: 'support_status', ticketId: ID, status: 'resolved' } })
+    expect(parseAdminRequest({ action: 'support_status', ticket_id: ID, status: 'x' }).ok).toBe(
+      false,
+    )
+  })
+  it('flips only the known switches with a boolean', () => {
+    expect(
+      parseAdminRequest({ action: 'setting_set', key: 'nightly_push_enabled', enabled: false }),
+    ).toEqual({ ok: true, value: { kind: 'setting', key: 'nightly_push_enabled', enabled: false } })
+    expect(parseAdminRequest({ action: 'setting_set', key: 'other', enabled: true }).ok).toBe(false)
+    expect(
+      parseAdminRequest({ action: 'setting_set', key: 'nightly_push_enabled', enabled: 'no' }).ok,
+    ).toBe(false)
+  })
+  it('refuses an unknown action', () => {
+    expect(parseAdminRequest({ action: 'delete_everything' })).toEqual({
+      ok: false,
+      reason: 'invalid_action',
+    })
+  })
+})
+
+describe('decideSuspension', () => {
+  const base = {
+    adminEmail: 'admin@x.com',
+    targetEmail: 'persona@x.com',
+    confirmEmail: 'persona@x.com',
+    allowlist: ['admin@x.com', 'otro-admin@x.com'],
+  }
+  it('allows a regular user whose email was typed back', () => {
+    expect(decideSuspension(base)).toEqual({ ok: true })
+    expect(decideSuspension({ ...base, confirmEmail: ' PERSONA@x.com ' })).toEqual({ ok: true })
+  })
+  it('never suspends the admin who asks', () => {
+    expect(
+      decideSuspension({ ...base, targetEmail: 'ADMIN@x.com', confirmEmail: 'admin@x.com' }),
+    ).toEqual({ ok: false, reason: 'cannot_suspend_self' })
+  })
+  it('never suspends another admin', () => {
+    expect(
+      decideSuspension({
+        ...base,
+        targetEmail: 'otro-admin@x.com',
+        confirmEmail: 'otro-admin@x.com',
+      }),
+    ).toEqual({ ok: false, reason: 'cannot_suspend_admin' })
+  })
+  it('requires the typed confirmation to match', () => {
+    expect(decideSuspension({ ...base, confirmEmail: 'otra@x.com' })).toEqual({
+      ok: false,
+      reason: 'confirmation_mismatch',
+    })
+  })
+  it('refuses an account without email', () => {
+    expect(decideSuspension({ ...base, targetEmail: null })).toEqual({
+      ok: false,
+      reason: 'no_target_email',
+    })
+  })
+})
+
+describe('supportReplyPush', () => {
+  it('tells the person there is an answer without putting it in the notification', () => {
+    const push = supportReplyPush(ID)
+    expect(push).toMatchObject({
+      kind: 'support',
+      audience: 'user',
+      userId: ID,
+      url: '/soporte',
+      dryRun: false,
+    })
+    expect(push.title.length).toBeLessThanOrEqual(80)
+    expect(push.body.length).toBeLessThanOrEqual(240)
+  })
+})
+
+describe('auditSection for the new requests', () => {
+  it('records every kind with a name the audit table accepts', () => {
+    const names = [
+      auditSection({ kind: 'suspend', userId: ID, reason: 'abc', confirmEmail: 'a@b.c' }),
+      auditSection({ kind: 'unsuspend', userId: ID }),
+      auditSection({ kind: 'plus_notify', userId: ID }),
+      auditSection({ kind: 'support_reply', ticketId: ID, reply: 'x', resolve: false }),
+      auditSection({ kind: 'support_status', ticketId: ID, status: 'open' }),
+      auditSection({ kind: 'setting', key: 'nightly_push_enabled', enabled: true }),
+      auditSection({ kind: 'section', section: 'soporte_ticket', ticketId: ID }),
+    ]
+    for (const name of names) expect(name).toMatch(/^[a-z_]{1,40}$/)
   })
 })

@@ -1,6 +1,7 @@
 import { adminApi } from '../api/adminRepository'
 import { useAdminQuery } from '../api/useAdminQuery'
 import { formatArDateTime, formatBytes, formatCount } from '../domain/format'
+import { AutomaticNotices } from './AutomaticNotices'
 import {
   Chip,
   DetailRow,
@@ -36,6 +37,8 @@ export function SistemaPage() {
           <DetailRow label="Datos generados">{formatArDateTime(s.generated_at)}</DetailRow>
         </dl>
       </PanelCard>
+
+      <AutomaticNotices />
 
       <PanelCard title="Tareas programadas (pg_cron)">
         {s.cron === null ? (
