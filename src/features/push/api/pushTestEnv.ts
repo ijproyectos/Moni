@@ -2,7 +2,13 @@
 import { vi } from 'vitest'
 
 export interface FakePush {
-  subscription: { endpoint: string; toJSON: () => unknown; unsubscribe: ReturnType<typeof vi.fn> }
+  subscription: {
+    endpoint: string
+    expirationTime: number | null
+    options: { applicationServerKey: ArrayBuffer | null }
+    toJSON: () => unknown
+    unsubscribe: ReturnType<typeof vi.fn>
+  }
   subscribe: ReturnType<typeof vi.fn>
   getSubscription: ReturnType<typeof vi.fn>
   requestPermission: ReturnType<typeof vi.fn>
@@ -13,11 +19,20 @@ export function installFakePush(options: {
   permission?: NotificationPermission
   requestResult?: NotificationPermission
   existing?: boolean
+  /** Epoch ms the existing subscription expires at (default: never). */
+  expirationTime?: number | null
+  /** Key the existing subscription was made with (default: the test VAPID key 'SGk'). */
+  existingKey?: Uint8Array
   userAgent?: string
   standalone?: boolean
 }): FakePush {
   const subscription = {
     endpoint: 'https://push.example.com/abc',
+    expirationTime: options.expirationTime ?? null,
+    options: {
+      applicationServerKey: (options.existingKey ?? new Uint8Array([72, 105]))
+        .buffer as ArrayBuffer,
+    },
     toJSON: () => ({ endpoint: 'https://push.example.com/abc', keys: { p256dh: 'p', auth: 'a' } }),
     unsubscribe: vi.fn().mockResolvedValue(true),
   }

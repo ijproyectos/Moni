@@ -64,3 +64,38 @@ export function subscriptionToRpcArgs(
     p_user_agent: userAgent.slice(0, 512),
   }
 }
+
+/** True when the browser's stored `applicationServerKey` holds exactly the bytes of the current VAPID key. */
+export function sameApplicationServerKey(
+  stored: ArrayBuffer | null | undefined,
+  current: Uint8Array,
+): boolean {
+  if (!stored) return false
+  const bytes = new Uint8Array(stored)
+  if (bytes.length !== current.length) return false
+  for (let i = 0; i < bytes.length; i++) if (bytes[i] !== current[i]) return false
+  return true
+}
+
+/** A subscription this close to expiring is renewed on the next app start. */
+export const RENEW_BEFORE_EXPIRY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Whether the browser's existing subscription must be replaced: it expired (or is about to), or it was made with
+ * another VAPID key (the key was rotated) so the server could no longer reach it. A browser that does not report its
+ * key is trusted. This is renewal, never an opt-out: the replacement is created right away.
+ */
+export function needsResubscribe(
+  subscription: {
+    expirationTime?: number | null
+    options?: { applicationServerKey?: ArrayBuffer | null }
+  },
+  currentKey: Uint8Array,
+  now: number,
+): boolean {
+  const expiresAt = subscription.expirationTime
+  if (typeof expiresAt === 'number' && expiresAt - RENEW_BEFORE_EXPIRY_MS <= now) return true
+  const stored = subscription.options?.applicationServerKey
+  if (stored && !sameApplicationServerKey(stored, currentKey)) return true
+  return false
+}

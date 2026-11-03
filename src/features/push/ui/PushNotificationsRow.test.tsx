@@ -27,32 +27,43 @@ describe('PushNotificationsRow', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('shows the toggle and turns the notices on from a tap', async () => {
+  it('offers a button (not a switch) while the permission is undecided, and turns the notices on', async () => {
     vi.stubEnv('VITE_VAPID_PUBLIC_KEY', 'SGk')
     fake = installFakePush({})
     render(<PushNotificationsRow />)
-    const toggle = screen.getByRole('switch', { name: 'Avisos de Moni' })
-    expect(toggle).toHaveAttribute('aria-checked', 'false')
-    await userEvent.click(toggle)
-    await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'))
-    expect(screen.getByText('Activados en este dispositivo')).toBeInTheDocument()
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Activar' }))
+    await waitFor(() =>
+      expect(screen.getByText('Siempre activos en este dispositivo')).toBeInTheDocument(),
+    )
     expect(rpc).toHaveBeenCalledWith('register_push_subscription', expect.anything())
   })
 
-  it('explains the iPhone install step instead of offering the toggle', () => {
+  it('shows them as always on, with no control to turn them off, once granted', async () => {
+    vi.stubEnv('VITE_VAPID_PUBLIC_KEY', 'SGk')
+    fake = installFakePush({ permission: 'granted', existing: true })
+    render(<PushNotificationsRow />)
+    await waitFor(() => expect(screen.getByText('Activados')).toBeInTheDocument())
+    expect(screen.getByText('Siempre activos en este dispositivo')).toBeInTheDocument()
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('explains the iPhone install step instead of offering the button', () => {
     vi.stubEnv('VITE_VAPID_PUBLIC_KEY', 'SGk')
     fake = installFakePush({ userAgent: IPHONE, standalone: false })
     render(<PushNotificationsRow />)
     expect(screen.getByText(/Agregar a pantalla de inicio/)).toBeInTheDocument()
-    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('explains a blocked permission', () => {
+  it('explains how to unblock the notices when the device blocks them', () => {
     vi.stubEnv('VITE_VAPID_PUBLIC_KEY', 'SGk')
     fake = installFakePush({ permission: 'denied' })
     render(<PushNotificationsRow />)
-    expect(screen.getByText(/Los bloqueaste en el navegador/)).toBeInTheDocument()
-    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+    expect(screen.getByText(/Los bloqueaste en este dispositivo/)).toBeInTheDocument()
+    expect(screen.getByText(/ajustes del sitio/)).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('explains an unsupported browser', () => {

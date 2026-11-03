@@ -1,10 +1,14 @@
-// Supabase Edge Function (Deno): owner-triggered web push. Thin wiring only; the logic lives in lib.ts
+// Supabase Edge Function (Deno): owner-triggered and scheduled web push. Thin wiring only; the logic lives in lib.ts
 // (unit-tested under Vitest with an injected sender).
 //
 // Security model:
-//   * verify_jwt = false (supabase/config.toml): the caller is the app owner (curl), not a Supabase user. The shared
-//     secret in `x-moni-push-secret` is compared in constant time with the Edge secret PUSH_ADMIN_SECRET BEFORE any
-//     database or push work. Any failure answers 401 with no detail.
+//   * verify_jwt = false (supabase/config.toml): the caller is the app owner (curl) or the database cron, not a
+//     Supabase user. The shared secret in `x-moni-push-secret` is compared in constant time with the Edge secrets
+//     PUSH_ADMIN_SECRET (owner) or PUSH_CRON_SECRET (pg_cron) BEFORE any database or push work. Any failure answers
+//     401 with no detail.
+//   * Two kinds of call: a message (`{ kind, title, body, audience, ... }`, e.g. the nightly reminder) and a job
+//     (`{ "job": "plus_expiry" }`, the daily Plus expiry notices).
+//   * Subscriptions of suspended accounts never receive anything.
 //   * The service-role client is the only door to push_subscriptions (all users) and push_messages.
 //   * Endpoints, keys and push-service bodies are never logged or returned.
 //   * No CORS: server-to-server only.
@@ -14,23 +18,121 @@ import webpush from 'npm:web-push@3.6.7'
 import { jsonResponse, readBodyCapped } from '../_shared/http.ts'
 import {
   buildPayload,
+  filterSuspended,
+  parsePushJob,
   parsePushRequest,
+  runPlusExpiryJob,
   sendToAll,
   TTL_SECONDS,
-  verifyPushSecret,
+  verifyAnyPushSecret,
+  type PlusExpiryDue,
   type PushSubscriptionRow,
 } from './lib.ts'
 
 const MAX_BODY_BYTES = 4096
 const PAGE_SIZE = 1000
+const SUBSCRIPTION_COLUMNS = 'id, user_id, endpoint, p256dh, auth'
+
+type ServiceClient = ReturnType<typeof createClient>
+
+async function loadSuspendedIds(admin: ServiceClient): Promise<Set<string> | null> {
+  const ids = new Set<string>()
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await admin
+      .from('account_suspensions')
+      .select('user_id')
+      .order('user_id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+    if (error) return null
+    for (const row of data as Array<{ user_id: string }>) ids.add(row.user_id)
+    if (data.length < PAGE_SIZE) break
+  }
+  return ids
+}
+
+async function runPlusExpiry(
+  admin: ServiceClient,
+  vapid: { subject: string; publicKey: string; privateKey: string },
+): Promise<Response> {
+  const suspended = await loadSuspendedIds(admin)
+  if (suspended === null) {
+    console.error('push-send: could not load suspended accounts')
+    return jsonResponse(500, { error: 'internal_error' }, null)
+  }
+  webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey)
+
+  try {
+    const result = await runPlusExpiryJob({
+      listDue: async () => {
+        const { data, error } = await admin.rpc('plus_expiry_due', { p_levels: [3, 1] })
+        if (error) throw new Error('plus_expiry_due')
+        return (
+          (data ?? []) as Array<{ o_user_id: string; o_expires_at: string; o_days_left: number }>
+        ).map((row): PlusExpiryDue => ({
+          userId: row.o_user_id,
+          expiresAt: row.o_expires_at,
+          daysLeft: row.o_days_left,
+        }))
+      },
+      loadSubscriptions: async (userId) => {
+        if (suspended.has(userId)) return []
+        const { data, error } = await admin
+          .from('push_subscriptions')
+          .select(SUBSCRIPTION_COLUMNS)
+          .eq('user_id', userId)
+        if (error) throw new Error('load_subscriptions')
+        return data as PushSubscriptionRow[]
+      },
+      send: (s, payload) =>
+        webpush.sendNotification(
+          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+          payload,
+          { TTL: TTL_SECONDS },
+        ),
+      recordNotice: async (due) => {
+        const { data, error } = await admin.rpc('record_plus_expiry_notice', {
+          p_user: due.userId,
+          p_expires_at: due.expiresAt,
+          p_level: due.daysLeft,
+          p_source: 'cron',
+        })
+        if (error) throw new Error('record_plus_expiry_notice')
+        return data === true
+      },
+      pruneSubscriptions: async (ids) => {
+        const { error } = await admin.from('push_subscriptions').delete().in('id', ids)
+        if (error) console.error('push-send: could not prune dead subscriptions')
+      },
+      recordMessage: async (entry) => {
+        const { error } = await admin.from('push_messages').insert({
+          kind: 'plus_expiry',
+          title: entry.title,
+          body: entry.body,
+          url: entry.url,
+          audience: 'user',
+          target_user_id: entry.userId,
+          sent_at: new Date().toISOString(),
+          sent_count: entry.sent,
+          failed_count: entry.failed,
+          removed_count: entry.removed,
+        })
+        if (error) console.error('push-send: could not record the message')
+      },
+    })
+    return jsonResponse(200, result, null)
+  } catch {
+    console.error('push-send: the plus_expiry job failed')
+    return jsonResponse(500, { error: 'internal_error' }, null)
+  }
+}
 
 async function handle(req: Request): Promise<Response> {
   if (req.method !== 'POST') return jsonResponse(405, { error: 'method_not_allowed' }, null)
   if (
-    !(await verifyPushSecret(
-      req.headers.get('x-moni-push-secret'),
+    !(await verifyAnyPushSecret(req.headers.get('x-moni-push-secret'), [
       Deno.env.get('PUSH_ADMIN_SECRET'),
-    ))
+      Deno.env.get('PUSH_CRON_SECRET'),
+    ]))
   ) {
     return jsonResponse(401, { error: 'unauthorized' }, null)
   }
@@ -43,10 +145,18 @@ async function handle(req: Request): Promise<Response> {
   } catch {
     return jsonResponse(400, { error: 'invalid_request' }, null)
   }
-  const parsed = parsePushRequest(parsedJson)
-  if (!parsed.ok)
+
+  const isJob =
+    typeof parsedJson === 'object' &&
+    parsedJson !== null &&
+    !Array.isArray(parsedJson) &&
+    'job' in parsedJson
+  const job = isJob ? parsePushJob(parsedJson) : null
+  if (job && !job.ok)
+    return jsonResponse(400, { error: 'invalid_request', reason: job.reason }, null)
+  const parsed = job ? null : parsePushRequest(parsedJson)
+  if (parsed && !parsed.ok)
     return jsonResponse(400, { error: 'invalid_request', reason: parsed.reason }, null)
-  const request = parsed.value
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -68,12 +178,22 @@ async function handle(req: Request): Promise<Response> {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
+  if (job) {
+    return runPlusExpiry(admin, {
+      subject: vapidSubject,
+      publicKey: vapidPublic,
+      privateKey: vapidPrivate,
+    })
+  }
+  if (!parsed || !parsed.ok) return jsonResponse(400, { error: 'invalid_request' }, null)
+  const request = parsed.value
+
   // Load every matching subscription (paged: PostgREST caps a response at 1000 rows).
-  const subscriptions: PushSubscriptionRow[] = []
+  const loaded: PushSubscriptionRow[] = []
   for (let from = 0; ; from += PAGE_SIZE) {
     let query = admin
       .from('push_subscriptions')
-      .select('id, endpoint, p256dh, auth')
+      .select(SUBSCRIPTION_COLUMNS)
       .order('created_at', { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
     if (request.audience === 'user' && request.userId) query = query.eq('user_id', request.userId)
@@ -82,9 +202,17 @@ async function handle(req: Request): Promise<Response> {
       console.error('push-send: could not load subscriptions')
       return jsonResponse(500, { error: 'internal_error' }, null)
     }
-    subscriptions.push(...(data as PushSubscriptionRow[]))
+    loaded.push(...(data as PushSubscriptionRow[]))
     if (data.length < PAGE_SIZE) break
   }
+
+  // Suspended accounts receive nothing (neither the nightly reminder nor an owner message).
+  const suspended = await loadSuspendedIds(admin)
+  if (suspended === null) {
+    console.error('push-send: could not load suspended accounts')
+    return jsonResponse(500, { error: 'internal_error' }, null)
+  }
+  const subscriptions = filterSuspended(loaded, suspended)
 
   if (request.dryRun) {
     return jsonResponse(200, { dry_run: true, recipients: subscriptions.length }, null)

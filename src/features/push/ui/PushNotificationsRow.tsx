@@ -1,43 +1,41 @@
 import { Bell } from 'lucide-react'
-import { IconTile, OptionRow, Toggle } from '@/shared/ui/kit'
+import { Button } from '@/shared/ui/Button'
+import { IconTile, OptionRow } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
 import { getVapidPublicKey, usePushSubscription } from '../api/usePushSubscription'
 
-/** "Avisos de Moni" row for Perfil. Renders nothing when this build has no VAPID public key. */
+/**
+ * "Avisos de Moni" row for Perfil. Informational: web push is always on, so there is no switch to turn it off.
+ * Without the permission it offers the button that asks for it. Renders nothing when this build has no VAPID key.
+ */
 export function PushNotificationsRow() {
   if (!getVapidPublicKey()) return null
   return <PushRow />
 }
 
 function PushRow() {
-  const { state, needsInstall, enable, disable } = usePushSubscription()
+  const { state, needsInstall, enable } = usePushSubscription()
   const toast = useToast()
 
-  async function toggle(checked: boolean) {
+  async function activate() {
     try {
-      if (checked) await enable()
-      else await disable()
+      await enable()
     } catch {
-      toast.show(
-        checked
-          ? 'No pudimos activar los avisos. Probá de nuevo.'
-          : 'No pudimos desactivar los avisos. Probá de nuevo.',
-        { tone: 'error' },
-      )
+      toast.show('No pudimos activar los avisos. Probá de nuevo.', { tone: 'error' })
     }
   }
 
-  const toggleable = state === 'off' || state === 'on' || state === 'working'
-  let subtitle = 'Mantenimiento, novedades y pedidos de opinión'
+  let subtitle = 'Activalos para recibir recordatorios, novedades y avisos del equipo'
   if (needsInstall) {
     subtitle =
       'En iPhone, primero tocá Compartir y elegí “Agregar a pantalla de inicio”. Después abrí Moni desde ahí.'
   } else if (state === 'unsupported') {
     subtitle = 'Este navegador no permite recibir avisos.'
   } else if (state === 'denied') {
-    subtitle = 'Los bloqueaste en el navegador. Activalos desde los ajustes del sitio.'
+    subtitle =
+      'Los bloqueaste en este dispositivo. Activalos desde los ajustes del sitio (candado junto a la dirección) o desde Notificaciones del teléfono.'
   } else if (state === 'on') {
-    subtitle = 'Activados en este dispositivo'
+    subtitle = 'Siempre activos en este dispositivo'
   } else if (state === 'working') {
     subtitle = 'Un segundo…'
   }
@@ -50,14 +48,19 @@ function PushRow() {
       subtitle={subtitle}
       chevron={false}
       trailing={
-        toggleable ? (
-          <Toggle
-            label="Avisos de Moni"
-            checked={state === 'on' || state === 'working'}
-            onChange={(checked) => {
-              if (state !== 'working') void toggle(checked)
-            }}
-          />
+        state === 'on' ? (
+          <span className="rounded-full bg-lime px-3 py-1 text-[13px] font-extrabold text-forest">
+            Activados
+          </span>
+        ) : state === 'off' || state === 'working' ? (
+          <Button
+            variant="dark"
+            className="h-10 w-auto px-4 text-[15px]"
+            disabled={state === 'working'}
+            onClick={() => void activate()}
+          >
+            Activar
+          </Button>
         ) : undefined
       }
     />

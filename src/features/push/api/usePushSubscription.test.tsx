@@ -33,20 +33,82 @@ describe('usePushSubscription', () => {
     expect(result.current.needsInstall).toBe(true)
   })
 
-  it('is denied when the browser blocks notifications', () => {
+  it('is denied when the browser blocks notifications, and never tries to subscribe', () => {
     fake = installFakePush({ permission: 'denied' })
     const { result } = renderHook(() => usePushSubscription())
     expect(result.current.state).toBe('denied')
+    expect(fake.subscribe).not.toHaveBeenCalled()
   })
 
-  it('starts on when this device already has a subscription, and refreshes it', async () => {
+  it('has no way to turn the notices off', () => {
     fake = installFakePush({ permission: 'granted', existing: true })
     const { result } = renderHook(() => usePushSubscription())
+    expect(Object.keys(result.current).sort()).toEqual(['enable', 'needsInstall', 'state'])
+  })
+
+  it('does not ask or subscribe on its own while the permission is undecided', async () => {
+    fake = installFakePush({ permission: 'default' })
+    const { result } = renderHook(() => usePushSubscription())
+    await Promise.resolve()
     expect(result.current.state).toBe('off')
+    expect(fake.requestPermission).not.toHaveBeenCalled()
+    expect(fake.subscribe).not.toHaveBeenCalled()
+  })
+
+  it('with the permission granted, keeps an existing subscription and refreshes its server row', async () => {
+    fake = installFakePush({ permission: 'granted', existing: true })
+    const { result } = renderHook(() => usePushSubscription())
     await waitFor(() => expect(result.current.state).toBe('on'))
-    await waitFor(() =>
-      expect(rpc).toHaveBeenCalledWith('register_push_subscription', expect.anything()),
-    )
+    expect(fake.subscribe).not.toHaveBeenCalled()
+    expect(fake.subscription.unsubscribe).not.toHaveBeenCalled()
+    expect(rpc).toHaveBeenCalledWith('register_push_subscription', expect.anything())
+  })
+
+  it('with the permission granted and no subscription, subscribes silently', async () => {
+    fake = installFakePush({ permission: 'granted' })
+    const { result } = renderHook(() => usePushSubscription())
+    await waitFor(() => expect(result.current.state).toBe('on'))
+    expect(fake.requestPermission).not.toHaveBeenCalled()
+    expect(fake.subscribe).toHaveBeenCalledTimes(1)
+    expect(rpc).toHaveBeenCalledWith('register_push_subscription', {
+      p_endpoint: 'https://push.example.com/abc',
+      p_p256dh: 'p',
+      p_auth: 'a',
+      p_user_agent: navigator.userAgent,
+    })
+  })
+
+  it('renews a subscription made with an old VAPID key', async () => {
+    fake = installFakePush({
+      permission: 'granted',
+      existing: true,
+      existingKey: new Uint8Array([1, 2, 3]),
+    })
+    const { result } = renderHook(() => usePushSubscription())
+    await waitFor(() => expect(result.current.state).toBe('on'))
+    expect(fake.subscription.unsubscribe).toHaveBeenCalledTimes(1)
+    expect(fake.subscribe).toHaveBeenCalledTimes(1)
+    expect(rpc).toHaveBeenCalledWith('register_push_subscription', expect.anything())
+  })
+
+  it('renews an expired subscription', async () => {
+    fake = installFakePush({
+      permission: 'granted',
+      existing: true,
+      expirationTime: Date.now() - 1,
+    })
+    const { result } = renderHook(() => usePushSubscription())
+    await waitFor(() => expect(result.current.state).toBe('on'))
+    expect(fake.subscription.unsubscribe).toHaveBeenCalledTimes(1)
+    expect(fake.subscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it('stays off (and retries on the next start) when the server rejects the registration', async () => {
+    fake = installFakePush({ permission: 'granted' })
+    rpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
+    const { result } = renderHook(() => usePushSubscription())
+    await waitFor(() => expect(rpc).toHaveBeenCalled())
+    expect(result.current.state).toBe('off')
   })
 
   it('enable() asks permission, subscribes and registers the endpoint', async () => {
@@ -82,27 +144,12 @@ describe('usePushSubscription', () => {
     expect(result.current.state).toBe('denied')
   })
 
-  it('enable() rolls the local subscription back when the server rejects it', async () => {
+  it('enable() reports the failure and goes back to off when the server rejects it', async () => {
     fake = installFakePush({})
     rpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
     const { result } = renderHook(() => usePushSubscription())
     await act(async () => {
       await expect(result.current.enable()).rejects.toThrow('boom')
-    })
-    expect(fake.subscription.unsubscribe).toHaveBeenCalled()
-    expect(result.current.state).toBe('off')
-  })
-
-  it('disable() unsubscribes and removes the endpoint', async () => {
-    fake = installFakePush({ permission: 'granted', existing: true })
-    const { result } = renderHook(() => usePushSubscription())
-    await waitFor(() => expect(result.current.state).toBe('on'))
-    await act(async () => {
-      await result.current.disable()
-    })
-    expect(fake.subscription.unsubscribe).toHaveBeenCalled()
-    expect(rpc).toHaveBeenCalledWith('remove_push_subscription', {
-      p_endpoint: 'https://push.example.com/abc',
     })
     expect(result.current.state).toBe('off')
   })

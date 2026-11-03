@@ -1,6 +1,9 @@
 import {
   detectPushSupport,
   isIos,
+  needsResubscribe,
+  RENEW_BEFORE_EXPIRY_MS,
+  sameApplicationServerKey,
   subscriptionToRpcArgs,
   urlBase64ToUint8Array,
   type PushEnvironment,
@@ -78,5 +81,53 @@ describe('subscriptionToRpcArgs', () => {
   it('returns null when something is missing', () => {
     expect(subscriptionToRpcArgs({ endpoint: 'https://x' }, 'ua')).toBeNull()
     expect(subscriptionToRpcArgs({ keys: { p256dh: 'p', auth: 'a' } }, 'ua')).toBeNull()
+  })
+})
+
+describe('sameApplicationServerKey', () => {
+  const key = new Uint8Array([1, 2, 3])
+  it('compares the bytes', () => {
+    expect(sameApplicationServerKey(new Uint8Array([1, 2, 3]).buffer, key)).toBe(true)
+    expect(sameApplicationServerKey(new Uint8Array([1, 2, 4]).buffer, key)).toBe(false)
+    expect(sameApplicationServerKey(new Uint8Array([1, 2]).buffer, key)).toBe(false)
+  })
+  it('is false when the browser keeps no key', () => {
+    expect(sameApplicationServerKey(null, key)).toBe(false)
+    expect(sameApplicationServerKey(undefined, key)).toBe(false)
+  })
+})
+
+describe('needsResubscribe', () => {
+  const key = new Uint8Array([1, 2, 3])
+  const now = 1_000_000_000_000
+  const same = { applicationServerKey: new Uint8Array([1, 2, 3]).buffer }
+
+  it('keeps a healthy subscription made with the current key', () => {
+    expect(needsResubscribe({ expirationTime: null, options: same }, key, now)).toBe(false)
+    expect(
+      needsResubscribe(
+        { expirationTime: now + 30 * RENEW_BEFORE_EXPIRY_MS, options: same },
+        key,
+        now,
+      ),
+    ).toBe(false)
+  })
+  it('renews one that expired or is about to', () => {
+    expect(needsResubscribe({ expirationTime: now - 1, options: same }, key, now)).toBe(true)
+    expect(
+      needsResubscribe(
+        { expirationTime: now + RENEW_BEFORE_EXPIRY_MS - 1, options: same },
+        key,
+        now,
+      ),
+    ).toBe(true)
+  })
+  it('renews one made with another VAPID key', () => {
+    const other = { applicationServerKey: new Uint8Array([9, 9, 9]).buffer }
+    expect(needsResubscribe({ expirationTime: null, options: other }, key, now)).toBe(true)
+  })
+  it('trusts a browser that does not report its key or expiry', () => {
+    expect(needsResubscribe({}, key, now)).toBe(false)
+    expect(needsResubscribe({ options: { applicationServerKey: null } }, key, now)).toBe(false)
   })
 })

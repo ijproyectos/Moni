@@ -1,7 +1,14 @@
 // Pure logic for the push-send Edge Function: secret check, payload validation, bounded-concurrency fan-out.
 // Web-standard APIs only (no Deno imports) so Vitest runs the tests from the Node project.
 
-export const PUSH_KINDS = ['maintenance', 'feedback', 'news'] as const
+export const PUSH_KINDS = [
+  'maintenance',
+  'feedback',
+  'news',
+  'reminder',
+  'plus_expiry',
+  'support',
+] as const
 export type PushKind = (typeof PUSH_KINDS)[number]
 
 export const TITLE_MAX = 80
@@ -26,6 +33,8 @@ export type ParseResult = { ok: true; value: PushRequest } | { ok: false; reason
 
 export interface PushSubscriptionRow {
   id: string
+  /** Present when the row was loaded together with its owner (push-send does; per-user sends already know it). */
+  user_id?: string
   endpoint: string
   p256dh: string
   auth: string
@@ -60,6 +69,26 @@ export async function verifyPushSecret(
   let diff = 0
   for (let i = 0; i < a.length; i++) diff |= (a[i] ?? 0) ^ (b[i] ?? 1)
   return diff === 0
+}
+
+/**
+ * True when the header matches ANY of the expected secrets (the admin secret and the cron secret). Every candidate is
+ * compared, so the time taken does not reveal which one matched. Missing secrets never match.
+ */
+export async function verifyAnyPushSecret(
+  header: string | null,
+  expected: ReadonlyArray<string | undefined>,
+): Promise<boolean> {
+  const results = await Promise.all(expected.map((secret) => verifyPushSecret(header, secret)))
+  return results.some(Boolean)
+}
+
+/** Drops the subscriptions of suspended accounts: they must not receive anything. */
+export function filterSuspended<T extends { user_id?: string }>(
+  subscriptions: readonly T[],
+  suspendedUserIds: ReadonlySet<string>,
+): T[] {
+  return subscriptions.filter((s) => !s.user_id || !suspendedUserIds.has(s.user_id))
 }
 
 /** An in-app path: starts with a single '/', no scheme, no protocol-relative form, no control characters. */
@@ -166,4 +195,124 @@ export async function sendToAll(
   const workers = Math.max(1, Math.min(concurrency, subscriptions.length))
   await Promise.all(Array.from({ length: workers }, () => worker()))
   return outcome
+}
+
+// Scheduled job: Plus expiry notices --------------------------------------------------------------------------------
+
+export const PLUS_EXPIRY_JOB = 'plus_expiry'
+/** Safety cap of notices sent by one run. */
+export const PLUS_EXPIRY_MAX_PER_RUN = 500
+
+export type PushJobResult =
+  { ok: true; job: typeof PLUS_EXPIRY_JOB } | { ok: false; reason: string }
+
+/** The body of a scheduled call: exactly `{ "job": "plus_expiry" }`. */
+export function parsePushJob(input: unknown): PushJobResult {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    return { ok: false, reason: 'invalid_body' }
+  }
+  const raw = input as Record<string, unknown>
+  if (raw.job !== PLUS_EXPIRY_JOB) return { ok: false, reason: 'invalid_job' }
+  if (Object.keys(raw).some((key) => key !== 'job')) return { ok: false, reason: 'invalid_body' }
+  return { ok: true, job: PLUS_EXPIRY_JOB }
+}
+
+/** The push a person gets when their Plus ends in `daysLeft` Argentina calendar days (0 = today). */
+export function plusExpiryMessage(daysLeft: number): {
+  kind: 'plus_expiry'
+  title: string
+  body: string
+  url: string
+} {
+  const days = Math.max(0, Math.floor(daysLeft))
+  const when = days === 0 ? 'hoy' : days === 1 ? 'mañana' : `en ${days} días`
+  return {
+    kind: 'plus_expiry',
+    title: `Tu Moni Plus vence ${when}`,
+    body: 'Si querés seguir con la voz, los tickets y más grupos, renovalo desde tu perfil.',
+    url: '/perfil',
+  }
+}
+
+export interface PlusExpiryDue {
+  userId: string
+  expiresAt: string
+  daysLeft: number
+}
+
+export interface PlusExpiryDeps {
+  listDue: () => Promise<PlusExpiryDue[]>
+  /** The person's push subscriptions (none for a suspended account). */
+  loadSubscriptions: (userId: string) => Promise<PushSubscriptionRow[]>
+  send: (subscription: PushSubscriptionRow, payload: string) => Promise<unknown>
+  /** Reserves the notice. false when it was already recorded (another run, or the panel, got there first). */
+  recordNotice: (due: PlusExpiryDue) => Promise<boolean>
+  pruneSubscriptions: (ids: string[]) => Promise<void>
+  recordMessage: (entry: {
+    userId: string
+    title: string
+    body: string
+    url: string
+    sent: number
+    failed: number
+    removed: number
+  }) => Promise<void>
+}
+
+export interface PlusExpiryResult {
+  due: number
+  notified: number
+  already_notified: number
+  without_devices: number
+  failed: number
+  skipped_over_cap: number
+}
+
+/**
+ * Runs the Plus expiry notices. The notice is reserved BEFORE sending, so a repeated run never tells the same
+ * person twice (at most once per user, expiry date and level). A person with no device is skipped without reserving,
+ * so enabling push later in the window still gets the next level.
+ */
+export async function runPlusExpiryJob(deps: PlusExpiryDeps): Promise<PlusExpiryResult> {
+  const due = await deps.listDue()
+  const result: PlusExpiryResult = {
+    due: due.length,
+    notified: 0,
+    already_notified: 0,
+    without_devices: 0,
+    failed: 0,
+    skipped_over_cap: Math.max(0, due.length - PLUS_EXPIRY_MAX_PER_RUN),
+  }
+  for (const item of due.slice(0, PLUS_EXPIRY_MAX_PER_RUN)) {
+    const subscriptions = await deps.loadSubscriptions(item.userId)
+    if (subscriptions.length === 0) {
+      result.without_devices++
+      continue
+    }
+    if (!(await deps.recordNotice(item))) {
+      result.already_notified++
+      continue
+    }
+    const message = plusExpiryMessage(item.daysLeft)
+    const payload = JSON.stringify({
+      title: message.title,
+      body: message.body,
+      url: message.url,
+      kind: message.kind,
+    })
+    const outcome = await sendToAll(subscriptions, (s) => deps.send(s, payload))
+    if (outcome.removedIds.length > 0) await deps.pruneSubscriptions(outcome.removedIds)
+    await deps.recordMessage({
+      userId: item.userId,
+      title: message.title,
+      body: message.body,
+      url: message.url,
+      sent: outcome.sent,
+      failed: outcome.failed,
+      removed: outcome.removedIds.length,
+    })
+    if (outcome.sent > 0) result.notified++
+    else result.failed++
+  }
+  return result
 }
