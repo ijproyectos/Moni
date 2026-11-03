@@ -38,8 +38,9 @@ select is((select count(*)::int from unnest(array[
     'public.admin_sistema()']) f where has_function_privilege('service_role', f, 'EXECUTE')), 8,
   'service_role can execute every admin function');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and p.proname like 'admin\_%' and p.prosecdef and p.proconfig @> array['search_path=""']), 8,
-  'all eight admin functions are SECURITY DEFINER with an empty search_path');
+    where n.nspname = 'public' and p.proname like 'admin\_%'
+      and not (p.prosecdef and p.proconfig @> array['search_path=""'])), 0,
+  'every admin function (later migrations add more) is SECURITY DEFINER with an empty search_path');
 
 -- Audit tables: RLS on, no policies, closed to clients -------------------------------------------------------------
 select is((select count(*)::int from pg_class c where c.oid in ('public.admin_accesos'::regclass, 'public.admin_acciones'::regclass)

@@ -529,6 +529,23 @@ export interface Database {
         Update: Record<never, never>
         Relationships: []
       }
+      /** Migration 20261120000000: a person reads their own tickets; tickets are created by create_support_ticket(). */
+      support_tickets: {
+        Row: {
+          id: string
+          user_id: string
+          subject: string
+          message: string
+          status: 'open' | 'resolved'
+          reply: string | null
+          replied_at: string | null
+          resolved_at: string | null
+          created_at: string
+        }
+        Insert: Record<never, never>
+        Update: Record<never, never>
+        Relationships: []
+      }
       /** Migration 20261106000000_moni_plus: clients can only read their own row. */
       plus_entitlements: {
         Row: {
@@ -869,8 +886,10 @@ export interface Database {
         Args: { p_endpoint: string; p_p256dh: string; p_auth: string; p_user_agent: string }
         Returns: undefined
       }
-      /** Migration 20261113000000: removes the caller's own web push endpoint. */
-      remove_push_subscription: { Args: { p_endpoint: string }; Returns: undefined }
+      /** Migration 20261120000000: true when the caller's account is suspended (never the reason). */
+      my_account_suspended: { Args: Record<never, never>; Returns: boolean }
+      /** Migration 20261120000000: opens a support ticket (5 per rolling 24 h; 'too_many_tickets' beyond that). */
+      create_support_ticket: { Args: { p_subject: string; p_message: string }; Returns: string }
       is_plus: {
         Args: Record<never, never>
         Returns: boolean

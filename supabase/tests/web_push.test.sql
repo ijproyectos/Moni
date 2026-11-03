@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(21);
+select plan(24);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'a@example.com'),
@@ -15,8 +15,14 @@ select is(has_function_privilege('authenticated', 'public.register_push_subscrip
   'authenticated can execute register_push_subscription');
 select is(has_function_privilege('anon', 'public.register_push_subscription(text, text, text, text)', 'EXECUTE'), false,
   'anon cannot execute register_push_subscription');
-select is(has_function_privilege('anon', 'public.remove_push_subscription(text)', 'EXECUTE'), false,
-  'anon cannot execute remove_push_subscription');
+-- Push is always on (migration 20261119000000): there is no way for a client to remove a subscription.
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'remove_push_subscription'), 0,
+  'remove_push_subscription no longer exists');
+select is(has_table_privilege('authenticated', 'public.push_subscriptions', 'DELETE'), false,
+  'authenticated has no DELETE privilege on push_subscriptions');
+select lives_ok($$insert into public.push_messages (kind, title, body) values ('reminder', 'Moni', 'Cargaste tus gastos de hoy')$$,
+  'the nightly reminder kind is accepted');
 
 -- User A -------------------------------------------------------------------------------------------------
 set local role authenticated;
@@ -45,7 +51,7 @@ select throws_ok($$update public.push_subscriptions set p256dh = 'x'$$, '42501',
 select set_config('request.jwt.claims', '{"sub": "22222222-2222-2222-2222-222222222222", "role": "authenticated"}', true);
 
 select is((select count(*)::int from public.push_subscriptions), 0, 'B does not see A''s subscription');
-select lives_ok($$select public.remove_push_subscription('https://push.example.com/a')$$, 'B removing A''s endpoint is a no-op');
+select throws_ok($$delete from public.push_subscriptions$$, '42501', null, 'B cannot delete a subscription');
 select lives_ok($$select public.register_push_subscription('https://push.example.com/b', 'p2', 'a2', null)$$,
   'B registers their own endpoint');
 
@@ -61,11 +67,12 @@ reset role;
 
 select is((select count(*)::int from public.push_subscriptions), 2, 'two rows in total, no duplicates');
 
--- Remove only own ----------------------------------------------------------------------------------------
+-- Nobody removes one from the client ----------------------------------------------------------------------
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub": "22222222-2222-2222-2222-222222222222", "role": "authenticated"}', true);
-select public.remove_push_subscription('https://push.example.com/b');
-select is((select count(*)::int from public.push_subscriptions), 1, 'B removed their own endpoint only');
+select throws_ok($$delete from public.push_subscriptions where endpoint = 'https://push.example.com/b'$$, '42501', null,
+  'a client cannot delete even their own subscription');
+select is((select count(*)::int from public.push_subscriptions), 2, 'B still has both endpoints');
 
 -- push_messages is service-only --------------------------------------------------------------------------
 select throws_ok($$select * from public.push_messages$$, '42501', null, 'authenticated cannot read push_messages');
