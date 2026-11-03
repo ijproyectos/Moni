@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { clearSuspendedNotice, markSuspendedNotice } from '@/features/auth/domain/suspendedNotice'
 import { WelcomePage } from './WelcomePage'
 
 const signInWithOAuth = vi.fn()
@@ -11,6 +12,22 @@ vi.mock('@/shared/lib/supabase', () => ({
 describe('WelcomePage', () => {
   beforeEach(() => {
     signInWithOAuth.mockReset().mockResolvedValue({ data: {}, error: null })
+    clearSuspendedNotice()
+  })
+
+  it('tells a suspended account why it was refused, until they try again', async () => {
+    markSuspendedNotice()
+    render(<WelcomePage />)
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Tu cuenta está suspendida. Escribinos a soporte.',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Ya tengo cuenta' }))
+    expect(screen.queryByText(/suspendida/)).not.toBeInTheDocument()
+  })
+
+  it('has no suspension text on a normal visit', () => {
+    render(<WelcomePage />)
+    expect(screen.queryByText(/suspendida/)).not.toBeInTheDocument()
   })
 
   it.each(['Registrarse', 'Ya tengo cuenta'])('"%s" starts Google OAuth', async (label) => {

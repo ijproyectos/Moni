@@ -6,6 +6,7 @@ import {
   ONBOARDING_PATH,
   RedirectIfAuthenticated,
   RedirectIfOnboarded,
+  RequireActiveAccount,
   RequireAuth,
   RequireOnboarded,
   WELCOME_PATH,
@@ -55,6 +56,7 @@ import { PeoplePage } from '@/features/groups/ui/PeoplePage'
 import { PersonalTripPage } from '@/features/trips/ui/PersonalTripPage'
 import { TripsPage } from '@/features/trips/ui/TripsPage'
 import { OnboardingPage } from '@/features/onboarding/ui/OnboardingPage'
+import { SupportPage } from '@/features/support/ui/SupportPage'
 import { WelcomePage } from '@/features/onboarding/ui/WelcomePage'
 import { MorePage } from '@/features/settings/ui/MorePage'
 import { ProfilePage } from '@/features/settings/ui/ProfilePage'
@@ -110,6 +112,7 @@ export const appRoutes = [
   { path: 'cuentas', element: <AccountsPage /> },
   { path: 'categorias', element: <CategoriesPage /> },
   { path: 'perfil', element: <ProfilePage /> },
+  { path: 'soporte', element: <SupportPage /> },
   // Return page of the Mercado Pago checkout (back_url). Lazy: it is only opened once, right after paying.
   {
     path: 'plus/gracias',
@@ -137,15 +140,20 @@ export const router = createBrowserRouter([
     element: <RequireAuth />,
     children: [
       {
-        element: <RedirectIfOnboarded />,
-        children: [{ path: ONBOARDING_PATH, element: <OnboardingPage /> }],
-      },
-      {
-        element: <RequireOnboarded />,
+        element: <RequireActiveAccount />,
         children: [
           {
-            element: <AppShell />,
-            children: appRoutes,
+            element: <RedirectIfOnboarded />,
+            children: [{ path: ONBOARDING_PATH, element: <OnboardingPage /> }],
+          },
+          {
+            element: <RequireOnboarded />,
+            children: [
+              {
+                element: <AppShell />,
+                children: appRoutes,
+              },
+            ],
           },
         ],
       },

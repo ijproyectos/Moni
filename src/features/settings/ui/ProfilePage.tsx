@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   CreditCard,
   Images,
+  LifeBuoy,
   LogOut,
   Moon,
   Gift,
@@ -327,6 +328,17 @@ export function ProfilePage() {
           title="Recomendá a un amigo"
           subtitle="Compartí el link de Moni"
           onClick={recommend}
+        />
+      </ProfileGroup>
+
+      <SectionLabel className="mt-1">Ayuda</SectionLabel>
+      <ProfileGroup>
+        <OptionRow
+          className="rounded-none border-0"
+          icon={<IconTile icon={LifeBuoy} bg="#e3f2cf" className="size-11" />}
+          title="Contactar a soporte"
+          subtitle="Escribinos y mirá tus consultas"
+          to="/soporte"
         />
       </ProfileGroup>
 

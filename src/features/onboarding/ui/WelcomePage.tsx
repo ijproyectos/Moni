@@ -2,6 +2,8 @@ import { useState } from 'react'
 import mascotUrl from '@/assets/mascot/personaje_asistente.svg'
 import logoUrl from '@/assets/brand/logo_moni_lima.svg'
 import { signInWithGoogle } from '@/features/auth/api/authActions'
+import { clearSuspendedNotice, readSuspendedNotice } from '@/features/auth/domain/suspendedNotice'
+import { SUSPENDED_MESSAGE } from '@/features/support/domain/support'
 import { Button } from '@/shared/ui/Button'
 import { Coin } from '@/shared/ui/Coin'
 
@@ -9,8 +11,11 @@ import { Coin } from '@/shared/ui/Coin'
 export function WelcomePage() {
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [suspended, setSuspended] = useState(readSuspendedNotice)
 
   async function handleSignIn() {
+    clearSuspendedNotice()
+    setSuspended(false)
     setError(null)
     setIsRedirecting(true)
     try {
@@ -60,6 +65,11 @@ export function WelcomePage() {
           >
             Ya tengo cuenta
           </Button>
+          {suspended && (
+            <p role="alert" className="text-center text-sm text-blush">
+              {SUSPENDED_MESSAGE}
+            </p>
+          )}
           {error && (
             <p role="alert" className="text-center text-sm text-blush">
               {error}

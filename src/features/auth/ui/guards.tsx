@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { FullScreenLoader } from '@/shared/ui/FullScreenLoader'
 import { Button } from '@/shared/ui/Button'
+import { useAccountSuspended } from '../api/useAccountSuspended'
 import { useAuth } from '../api/authContext'
 import { useProfile } from '../api/useProfile'
 import { clearReturnTo, peekReturnTo, rememberReturnTo } from '../domain/returnTo'
+import { SuspendedScreen } from './SuspendedScreen'
 
 export const WELCOME_PATH = '/bienvenida'
 export const ONBOARDING_PATH = '/onboarding'
@@ -22,6 +24,13 @@ export function RequireAuth() {
 
   if (isLoading) return <FullScreenLoader />
   if (!session) return <Navigate to={WELCOME_PATH} replace state={{ from: location.pathname }} />
+  return <Outlet />
+}
+
+/** A suspended account sees the suspension notice instead of the app (and of the onboarding). */
+export function RequireActiveAccount() {
+  const suspended = useAccountSuspended()
+  if (suspended) return <SuspendedScreen />
   return <Outlet />
 }
 
