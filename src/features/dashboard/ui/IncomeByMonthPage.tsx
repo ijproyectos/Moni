@@ -13,7 +13,7 @@ import { annualIncomeCents, monthlyIncomeForYear } from '../domain/monthlyIncome
 const MIN_YEAR = 2000
 
 const stepClass =
-  'flex size-11 items-center justify-center rounded-full border border-sand bg-card text-ink disabled:opacity-40'
+  'flex size-11 items-center justify-center rounded-full border border-line bg-card text-ink disabled:opacity-40'
 
 // Ingresos por mes — income received each month of a year, with the annual total (real data:
 // one get_period_summary call for the whole year).
@@ -28,7 +28,7 @@ export function IncomeByMonthPage() {
   const total = annualIncomeCents(months)
 
   return (
-    <Page>
+    <Page native>
       <PageHeader title="Ingresos por mes" fallbackTo="/tu-anio" />
 
       <div className="flex items-center justify-between gap-3">
@@ -88,7 +88,7 @@ export function IncomeByMonthPage() {
         </Panel>
       ) : (
         <Panel className="py-1">
-          <ul aria-label={`Ingresos por mes de ${year}`} className="divide-y divide-sand">
+          <ul aria-label={`Ingresos por mes de ${year}`} className="divide-y divide-line">
             {months.map((m) => {
               const empty = m.incomeCents === 0
               return (

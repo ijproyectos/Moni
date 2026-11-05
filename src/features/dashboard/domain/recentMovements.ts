@@ -55,3 +55,19 @@ export function groupMovementsByMonth(movements: readonly RecentMovement[]): Mov
   }
   return groups
 }
+
+export interface MovementDayGroup {
+  date: IsoDate
+  movements: RecentMovement[]
+}
+
+/** Splits movements (already newest first) into one group per day, keeping their order. */
+export function groupMovementsByDay(movements: readonly RecentMovement[]): MovementDayGroup[] {
+  const groups: MovementDayGroup[] = []
+  for (const movement of movements) {
+    const last = groups[groups.length - 1]
+    if (last && last.date === movement.occurredOn) last.movements.push(movement)
+    else groups.push({ date: movement.occurredOn, movements: [movement] })
+  }
+  return groups
+}

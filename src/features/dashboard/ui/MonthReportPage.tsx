@@ -1,4 +1,4 @@
-import { Banknote, ChevronLeft, CreditCard, WalletCards } from 'lucide-react'
+import { Banknote, CreditCard, WalletCards } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { AssistantEntryLink } from '@/features/assistant/ui/AssistantEntryLink'
@@ -6,10 +6,9 @@ import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { availableBalance } from '@/features/accounts/domain/account'
 import { formatArs } from '@/shared/lib/money'
 import { monthStart, todayIso } from '@/shared/lib/month'
-import { useGoBack } from '@/shared/lib/useGoBack'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
-import { CategoryIconCircle } from '@/shared/ui/IconCircle'
 import { MonthPicker } from '@/shared/ui/MonthPicker'
+import { PageHeader } from '@/shared/ui/PageHeader'
 import { themedColor } from '@/shared/ui/categoryIcons'
 import { Panel } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -24,8 +23,6 @@ const ACCOUNT_ICONS = {
 
 // Screen 034 — Este mes (real data: month summary + accounts).
 export function MonthReportPage() {
-  // Back to where the report was opened from (Inicio, Tu año, the assistant…); Inicio if there was nothing before.
-  const goBack = useGoBack('/')
   const latest = monthStart(todayIso())
   const [month, setMonth] = useState(latest)
   const summary = useMonthSummary(month)
@@ -35,24 +32,18 @@ export function MonthReportPage() {
   const accountList = accounts.data ?? []
 
   return (
-    <>
-      <header className="rounded-b-[40px] bg-forest px-5 pb-6 pt-12 text-cream">
+    <div className="figma-scale pb-6">
+      <div className="px-5 pt-14">
+        {/* Back to where the report was opened from (Inicio, Tu año, the assistant…); Inicio if there was nothing before. */}
+        <PageHeader title="Informes" fallbackTo="/" />
+      </div>
+      <header className="mx-5 mt-4 rounded-[32px] bg-forest p-5 text-cream">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              aria-label="Volver"
-              onClick={goBack}
-              className="flex size-12 items-center justify-center rounded-full bg-surface"
-            >
-              <ChevronLeft aria-hidden="true" className="size-6" />
-            </button>
-            <MonthPicker value={month} latest={latest} onChange={setMonth} />
-          </div>
+          <MonthPicker value={month} latest={latest} onChange={setMonth} />
           <Link
             to="/tu-anio"
             replace
-            className="flex min-h-11 items-center rounded-full bg-surface px-4 text-[16px] font-extrabold"
+            className="flex min-h-9 items-center rounded-full bg-white/15 px-4 text-[15px] font-extrabold"
           >
             Tu año
           </Link>
@@ -73,7 +64,7 @@ export function MonthReportPage() {
         )}
       </header>
 
-      <div className="flex flex-col gap-4 px-4 pt-4">
+      <div className="flex flex-col gap-4 px-5 pt-4">
         <AssistantEntryLink />
         <Panel>
           <div className="flex items-baseline justify-between">
@@ -91,17 +82,17 @@ export function MonthReportPage() {
                   />
                 ))}
               </div>
-              <ul className="mt-2 divide-y divide-sand">
+              <ul className="mt-2 divide-y divide-line">
                 {sorted.map((s) => (
                   <li key={s.categoryId} className="flex items-center gap-3 py-2.5">
-                    <CategoryIconCircle iconName={s.icon} color={s.color} className="size-12" />
+                    <span
+                      aria-hidden="true"
+                      className="size-5 shrink-0 rounded-full"
+                      style={{ backgroundColor: themedColor(s.color) }}
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block text-[18px] font-extrabold">{s.name}</span>
-                      <span className="flex items-center gap-1.5 text-[15px] text-text-muted">
-                        <span
-                          className="size-2.5 rounded-full"
-                          style={{ backgroundColor: themedColor(s.color) }}
-                        />
+                      <span className="block text-[15px] text-text-muted">
                         {Math.round(s.percent)}% del total
                       </span>
                     </span>
@@ -120,7 +111,9 @@ export function MonthReportPage() {
         <section className="rounded-[28px] bg-forest p-5 text-cream">
           <div className="flex justify-between text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
             <span>Saldo total</span>
-            <span className="normal-case tracking-normal">{accountList.length} medios de pago</span>
+            <span className="normal-case tracking-normal">
+              {accountList.length} {accountList.length === 1 ? 'medio' : 'medios'} de pago
+            </span>
           </div>
           <AmountDisplay
             cents={availableBalance(accountList)}
@@ -143,6 +136,6 @@ export function MonthReportPage() {
           </ul>
         </section>
       </div>
-    </>
+    </div>
   )
 }

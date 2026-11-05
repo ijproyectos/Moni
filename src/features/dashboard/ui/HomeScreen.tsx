@@ -1,86 +1,105 @@
-import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
-import { formatMonthName, formatMonthYear, formatRelativeDay } from '@/shared/lib/dates'
+import { useAnts } from '@/features/insights/api/useAnts'
+import { formatMonthName } from '@/shared/lib/dates'
+import { formatArs } from '@/shared/lib/money'
 import { todayIso, type IsoDate } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
+import { AntIcon } from '@/shared/ui/AntIcon'
 import { Button } from '@/shared/ui/Button'
 import { Card } from '@/shared/ui/Card'
-import { CategoryIconCircle, IconCircle } from '@/shared/ui/IconCircle'
+import { CompactHeader } from '@/shared/ui/CompactHeader'
+import { useScrolledPast } from '@/shared/ui/useScrolledPast'
 import { EmptyState } from '@/shared/ui/EmptyState'
-import { MovementRow } from '@/shared/ui/MovementRow'
-import { Scale, Target } from 'lucide-react'
-import { percentLabel } from '@/features/goals/domain/goals'
-import { BudgetAlertsCard } from '@/features/budgets/ui/BudgetAlertsCard'
-import { useAnts } from '@/features/insights/api/useAnts'
-import { formatArs } from '@/shared/lib/money'
-import { MoniGlyph, ProgressBar } from '@/shared/ui/kit'
+import type { BalancePoint } from '../domain/balanceSeries'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
-import { groupMovementsByMonth } from '../domain/recentMovements'
-import type { PeriodSummary } from '../domain/periodSummary'
-import { addsToBalance, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
-import { buildInsight } from '../domain/insight'
-import { CategoryDonut } from './CategoryDonut'
+import type { Story } from '../domain/stories'
+import { BalanceSparkline } from './BalanceSparkline'
+import { GoalsSummary, type GoalsOverview } from './GoalsSummary'
 import { HomeHeader } from './HomeHeader'
-import { AntIcon } from '@/shared/ui/AntIcon'
+import { RecentMovements, type MovementActions } from './RecentMovements'
+import { SpendingBreakdown } from './SpendingBreakdown'
+import { StoriesRow } from './StoriesRow'
+import { StoryViewer } from './StoryViewer'
+import { useStorySeen } from './storySeen'
 
 interface HomeScreenProps {
+  /** Everything about the picked month: totals, categories. */
   summary: MonthSummary
-  /** Income and expenses across the whole history; the header shows them whatever month is picked. */
-  overall?: Pick<PeriodSummary, 'incomeCents' | 'expenseCents'>
   /** Newest movements across the whole history; they show whatever month is picked. Defaults to the month's own. */
   movements?: readonly RecentMovement[]
+  /** How many movements there are in all (for "Ver los N"). */
+  movementsTotal?: number
+  /** Edit and void from the list; without it the rows are plain. */
+  movementActions?: MovementActions
   month: IsoDate
   latestMonth: IsoDate
   onMonthChange: (month: IsoDate) => void
   initial: string
+  /** First name for the greeting. */
+  name?: string | null
+  /** Who is looking: the stories that were already seen are remembered per person. */
+  userId?: string
   photoUrl?: string | null
   /** Moni Plus is running right now: shows the PLUS badge on the avatar. */
   isPlus?: boolean
   onAddMovement: () => void
   /** Whether the person has Hormigas turned on (it still needs real expenses to show its card). */
   shortcuts?: { ants: boolean }
-  /** In-app reminders shown above the insight (e.g. tomorrow's subscription charges). */
-  reminders?: ReactNode
   /** Reminders counted next to the unread notices on the bell. */
   reminderCount?: number
   /** Unread notices of groups (debt reminders, payments to confirm). */
   noticeCount?: number
-  /** What the active savings goals reserve and aim for, and how many there are (real data, from the page). */
-  goals?: { reservedCents: number; targetCents: number; count?: number }
+  /** What the active savings goals reserve and aim for, and what is left this month (real data, from the page). */
+  goals?: GoalsOverview
+  /** Daily available money for the chart; null when the history is too thin to draw it honestly. */
+  balanceSeries?: readonly BalancePoint[] | null
+  /** "Para hoy": what Moni has to tell, from the person's real data. */
+  stories?: readonly Story[]
 }
 
 export function HomeScreen({
   summary,
-  overall,
   movements,
+  movementsTotal,
+  movementActions,
   month,
   latestMonth,
   onMonthChange,
   initial,
+  name = null,
+  userId = 'anonymous',
   photoUrl,
   isPlus,
   onAddMovement,
   shortcuts = { ants: true },
-  reminders,
   reminderCount = 0,
   noticeCount = 0,
   goals = { reservedCents: 0, targetCents: 0, count: 0 },
+  balanceSeries = null,
+  stories = [],
 }: HomeScreenProps) {
-  const today = todayIso()
+  const { isSeen, markSeen } = useStorySeen(userId)
+  const [openStory, setOpenStory] = useState<number | null>(null)
   const recent = movements ?? summary.recent
-  const recentByMonth = groupMovementsByMonth(recent)
   const hasData =
     summary.byCategory.length > 0 ||
     recent.length > 0 ||
     summary.incomeCents > 0 ||
-    (overall?.incomeCents ?? 0) > 0 ||
-    (overall?.expenseCents ?? 0) > 0
+    summary.expenseCents > 0
   const monthName = formatMonthName(month)
+  const [balanceRef, scrolled] = useScrolledPast<HTMLDivElement>()
+  const sameYear = month.slice(0, 4) === latestMonth.slice(0, 4)
 
   return (
-    <>
+    <div className="figma-scale">
+      <CompactHeader
+        title="Inicio"
+        subtitle={sameYear ? monthName : `${monthName} ${month.slice(0, 4)}`}
+        visible={scrolled}
+      />
       <HomeHeader
         month={month}
         latestMonth={latestMonth}
@@ -88,26 +107,36 @@ export function HomeScreen({
         initial={initial}
         photoUrl={photoUrl}
         isPlus={isPlus}
+        name={name}
         availableCents={summary.availableBalanceCents}
-        incomeCents={(overall ?? summary).incomeCents}
-        expenseCents={(overall ?? summary).expenseCents}
+        incomeCents={summary.incomeCents}
+        expenseCents={summary.expenseCents}
         reminderCount={reminderCount}
         noticeCount={noticeCount}
+        chart={<BalanceSparkline series={balanceSeries} />}
       />
+      {/* Marks the end of the big header: once it leaves the screen the compact one shows. */}
+      <div ref={balanceRef} aria-hidden="true" className="h-px" />
 
-      <div className="flex flex-col gap-4 px-4 pt-4">
-        {reminders}
+      {stories.length > 0 && (
+        <section aria-labelledby="today-title" className="border-t border-line px-5 py-5">
+          <h2 id="today-title" className="mb-4 font-display text-[28px] font-extrabold">
+            Para hoy
+          </h2>
+          <StoriesRow stories={stories} isSeen={isSeen} onOpen={setOpenStory} />
+        </section>
+      )}
+      {openStory !== null && (
+        <StoryViewer
+          stories={stories}
+          startIndex={openStory}
+          onClose={() => setOpenStory(null)}
+          onViewed={markSeen}
+        />
+      )}
 
-        <Card className="flex items-center gap-4 rounded-[24px] p-4">
-          <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40 text-ink">
-            <MoniGlyph className="size-9" />
-          </span>
-          <p className="text-[17px] leading-6 text-ink">
-            <strong className="font-extrabold">Sugerido:</strong> {buildInsight(summary.byCategory)}
-          </p>
-        </Card>
-
-        {!hasData ? (
+      {!hasData ? (
+        <div className="px-4 pt-4">
           <Card>
             <EmptyState
               mascotUrl={mascotAssistant}
@@ -116,139 +145,75 @@ export function HomeScreen({
               action={<Button onClick={onAddMovement}>Cargar movimiento</Button>}
             />
           </Card>
-        ) : (
-          <>
-            <Card className="rounded-[24px] p-4">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="whitespace-nowrap font-display text-[20px] font-extrabold">
-                  Gastos por categoría
-                </h2>
-                <Link
-                  to="/actividad"
-                  className="flex min-h-11 items-center whitespace-nowrap rounded-full border border-sand bg-canvas px-3 font-display text-[14px] font-extrabold"
-                >
-                  Ver movimientos
-                </Link>
-              </div>
-              {summary.byCategory.length > 0 ? (
-                <CategoryDonut slices={summary.byCategory} totalCents={summary.expenseCents} />
-              ) : (
+        </div>
+      ) : (
+        <>
+          <section aria-labelledby="spent-title" className="border-t border-line py-6">
+            <div className="mb-4 flex items-baseline justify-between gap-3 px-5">
+              <h2
+                id="spent-title"
+                className="whitespace-nowrap font-display text-[28px] font-extrabold"
+              >
+                En qué se fue
+              </h2>
+              {summary.byCategory.length > 0 && (
+                <AmountDisplay
+                  cents={summary.expenseCents}
+                  className="font-display text-[24px] font-extrabold"
+                />
+              )}
+            </div>
+            {summary.byCategory.length > 0 ? (
+              <SpendingBreakdown slices={summary.byCategory} />
+            ) : (
+              <div className="px-5">
                 <EmptyState
                   mascotUrl={mascotAnalyst}
                   title="Sin gastos este mes"
                   description="Cuando cargues gastos, acá ves en qué categorías se van."
                 />
-              )}
-            </Card>
-
-            <BudgetAlertsCard month={month} />
-
-            <HomeShortcuts ants={shortcuts.ants} goals={goals} />
-
-            {recent.length > 0 && (
-              <section aria-labelledby="recent-title">
-                <div className="mb-2 flex items-baseline justify-between px-1">
-                  <h2 id="recent-title" className="font-display text-xl font-extrabold">
-                    Últimos movimientos
-                  </h2>
-                  <Link
-                    to="/actividad"
-                    className="flex min-h-11 items-center text-[15px] font-semibold underline"
-                  >
-                    Ver todos
-                  </Link>
-                </div>
-                {recentByMonth.map((group) => (
-                  <section key={group.month} aria-label={formatMonthYear(group.month)}>
-                    <h3 className="mb-1 mt-3 px-1 font-display text-[15px] font-extrabold text-text-muted first:mt-0">
-                      {formatMonthYear(group.month)}
-                    </h3>
-                    <Card className="py-1">
-                      <ul className="divide-y divide-cream">
-                        {group.movements.map((m) => {
-                          const isIncome = addsToBalance(m.kind)
-                          return (
-                            <li key={m.id}>
-                              <MovementRow
-                                leading={
-                                  isAdjustment(m.kind) || isOpening(m.kind) ? (
-                                    <IconCircle icon={Scale} color="#064735" />
-                                  ) : (
-                                    <CategoryIconCircle
-                                      iconName={m.categoryIcon}
-                                      color={m.categoryColor}
-                                    />
-                                  )
-                                }
-                                title={m.note?.trim() || m.categoryName || 'Movimiento'}
-                                subtitle={`${formatRelativeDay(m.occurredOn, today)} · ${m.categoryName ?? m.accountName}`}
-                                trailing={
-                                  <AmountDisplay
-                                    cents={isIncome ? m.amountCents : -m.amountCents}
-                                    signed
-                                    className={isIncome ? 'text-income' : 'text-expense'}
-                                  />
-                                }
-                              />
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    </Card>
-                  </section>
-                ))}
-              </section>
+              </div>
             )}
-          </>
-        )}
-      </div>
-    </>
+            <Link
+              to="/actividad"
+              className="mt-2 flex min-h-11 items-center justify-center text-[16px] text-text-muted"
+            >
+              Ver movimientos
+            </Link>
+          </section>
+
+          <GoalsSummary goals={goals} />
+          <HomeAnts enabled={shortcuts.ants} />
+
+          {recent.length > 0 && (
+            <RecentMovements movements={recent} total={movementsTotal} actions={movementActions} />
+          )}
+        </>
+      )}
+    </div>
   )
 }
 
 /**
- * Metas and Hormigas shortcut cards. Neither is there by default: Metas needs at least one active goal, Hormigas needs
- * the feature on and real ant expenses this month. Without them the card is not rendered at all (no empty space and no
- * $0 filler: the screens stay one tap away from Más), and the cards below move up.
+ * Hormigas shortcut: there only when the feature is on and there are real ant expenses this month (no $0 filler: the
+ * screen stays one tap away from Más).
  */
-function HomeShortcuts({
-  ants: antsOn,
-  goals,
-}: {
-  ants: boolean
-  goals: { reservedCents: number; targetCents: number; count?: number }
-}) {
+function HomeAnts({ enabled }: { enabled: boolean }) {
   const ants = useAnts(todayIso())
-  const showSavings = (goals.count ?? 0) > 0
-  const antsTotal = ants.data?.monthTotalCents ?? 0
-  const showAnts = antsOn && antsTotal > 0
-  // Real goals: what is reserved over what the active goals aim for (the bar never goes past full).
-  const value = goals.targetCents > 0 ? Math.min(1, goals.reservedCents / goals.targetCents) : 0
-  if (!showSavings && !showAnts) return null
+  const total = ants.data?.monthTotalCents ?? 0
+  if (!enabled || total <= 0) return null
   return (
-    <div className={showSavings && showAnts ? 'grid grid-cols-2 gap-3' : 'grid gap-3'}>
-      {showSavings && (
-        <Link to="/metas" className="rounded-[24px] border border-cream bg-card p-4">
-          <span className="flex items-center gap-2 text-[18px] font-extrabold">
-            <Target aria-hidden="true" className="size-5" strokeWidth={2.25} /> Metas
-          </span>
-          <ProgressBar value={value} className="mt-3" label="Avance de tus metas" />
-          <span className="mt-1.5 block text-[15px] text-text-muted">
-            {percentLabel(value)} juntado
-          </span>
-        </Link>
-      )}
-      {showAnts && (
-        <Link to="/hormigas" className="rounded-[24px] border border-cream bg-card p-4">
-          <span className="flex items-center gap-2 text-[18px] font-extrabold">
-            <AntIcon aria-hidden="true" className="size-5" strokeWidth={2.25} /> Hormigas
-          </span>
-          <span className="mt-2 block font-display text-[22px] font-extrabold leading-7">
-            {formatArs(antsTotal)}
+    <section className="border-t border-line px-5 py-5">
+      <Link to="/hormigas" className="flex items-center gap-3">
+        <AntIcon aria-hidden="true" className="size-6" strokeWidth={2.25} />
+        <span className="flex-1 text-[19px] font-extrabold">Hormigas</span>
+        <span className="text-right">
+          <span className="block font-display text-[22px] font-extrabold leading-7">
+            {formatArs(total)}
           </span>
           <span className="block text-[15px] text-text-muted">este mes</span>
-        </Link>
-      )}
-    </div>
+        </span>
+      </Link>
+    </section>
   )
 }

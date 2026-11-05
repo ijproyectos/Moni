@@ -45,10 +45,12 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
 
   describe('Gastos and Ingresos chips adapt to long amounts', () => {
     const chips = () => ({
-      expense: screen.getByRole('link', { name: /Gastos del mes/ })
-        .firstElementChild as HTMLElement,
-      income: screen.getByRole('link', { name: /Ingresos del mes/ })
-        .firstElementChild as HTMLElement,
+      expense: screen
+        .getByRole('link', { name: /Gastos del mes/ })
+        .querySelector('[data-amount]') as HTMLElement,
+      income: screen
+        .getByRole('link', { name: /Ingresos del mes/ })
+        .querySelector('[data-amount]') as HTMLElement,
     })
 
     it('never wraps the amount (the minus sign stays glued to it) and sizes each chip to its text', () => {
@@ -70,13 +72,13 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
 
     it('keeps the regular size for short amounts and shrinks BOTH chips together for long ones', () => {
       renderHeader({ expenseCents: 5_000_00, incomeCents: 10_000_00 })
-      expect(chips().expense).toHaveClass('text-[17px]')
-      expect(chips().income).toHaveClass('text-[17px]')
+      expect(chips().expense).toHaveClass('text-[26px]')
+      expect(chips().income).toHaveClass('text-[26px]')
       cleanup()
 
       renderHeader({ expenseCents: 123_456_789_00, incomeCents: 10_000_00 })
       const long = chips()
-      expect(long.expense).not.toHaveClass('text-[17px]')
+      expect(long.expense).not.toHaveClass('text-[26px]')
       // Same size on both so they read as a pair, even though only one amount is long.
       expect(long.income.className.match(/text-\[\d+px\]/)?.[0]).toBe(
         long.expense.className.match(/text-\[\d+px\]/)?.[0],
@@ -88,7 +90,7 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
     renderHeader({ availableCents: -1_250_00 })
     const link = screen.getByRole('link', { name: 'Ver tus medios de pago' })
     expect(link).toHaveTextContent(/-\$\s*1\.250/)
-    expect(link.querySelectorAll('p')[1]).toHaveClass('text-blush')
+    expect(link.querySelectorAll('p')[1]).toHaveClass('text-expense')
   })
 
   it('does not reveal a negative balance (minus sign or warning color) while amounts are hidden', async () => {
@@ -96,14 +98,14 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
     await user.click(screen.getByRole('button', { name: 'Ocultar montos' }))
     const link = screen.getByRole('link', { name: 'Ver tus medios de pago' })
     expect(link).not.toHaveTextContent('-')
-    expect(link.querySelectorAll('p')[1]).not.toHaveClass('text-blush')
+    expect(link.querySelectorAll('p')[1]).not.toHaveClass('text-expense')
   })
 
   it('shows a positive available money without a minus sign', () => {
     renderHeader({ availableCents: 5_000_00 })
     const link = screen.getByRole('link', { name: 'Ver tus medios de pago' })
     expect(link).not.toHaveTextContent('-')
-    expect(link.querySelectorAll('p')[1]).not.toHaveClass('text-blush')
+    expect(link.querySelectorAll('p')[1]).not.toHaveClass('text-expense')
   })
 
   it('no longer shows "Balance del mes" nor its amount; only Gastos and Ingresos stay', () => {
@@ -129,11 +131,16 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
     )
   })
 
-  it('the green card has very round corners all around, not square ones', () => {
-    renderHeader()
+  it('sits on the page itself (no green card) and greets the person by name', () => {
+    renderHeader({ name: 'Iara' })
     const header = screen.getByRole('banner')
-    expect(header).toHaveClass('rounded-[48px]', 'bg-forest')
-    expect(header).not.toHaveClass('rounded-b-[40px]')
+    expect(header).not.toHaveClass('bg-forest')
+    expect(screen.getByRole('heading', { level: 1, name: 'Hola, Iara' })).toBeInTheDocument()
+  })
+
+  it('shows the chart it is given between the balance and the month totals', () => {
+    renderHeader({ chart: <div data-testid="chart" /> })
+    expect(screen.getByTestId('chart')).toBeInTheDocument()
   })
 
   it('the available money does not depend on the month: it is what you have now', () => {
