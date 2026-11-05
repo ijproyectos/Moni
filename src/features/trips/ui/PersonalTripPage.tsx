@@ -34,7 +34,7 @@ export function PersonalTripPage() {
 
   if (trips.isLoading) {
     return (
-      <Page>
+      <Page native>
         <PageHeader title="Viaje" fallbackTo="/viajes" />
         <div role="status" aria-label="Cargando el viaje" className="flex flex-col gap-3">
           <Skeleton className="h-52" />
@@ -46,7 +46,7 @@ export function PersonalTripPage() {
   const trip = trips.data?.find((t) => t.id === id)
   if (trips.isError || !trip) {
     return (
-      <Page>
+      <Page native>
         <PageHeader title="Viaje" fallbackTo="/viajes" />
         <EmptyState
           mascotUrl={mascotUrl}
@@ -72,7 +72,7 @@ export function PersonalTripPage() {
   const percent = Math.round(summary.progress * 100)
 
   return (
-    <Page className="pb-28">
+    <Page native className="pb-28">
       <PageHeader
         title={trip.name}
         fallbackTo="/viajes"
@@ -140,9 +140,9 @@ export function PersonalTripPage() {
       </section>
 
       {summary.byCategory.length > 0 && (
-        <section className="rounded-[24px] border border-sand bg-card p-4">
+        <section className="rounded-[24px] border border-line bg-card p-4">
           <h2 className="text-[22px] font-extrabold">En qué gastaste</h2>
-          <ul className="mt-1 divide-y divide-sand">
+          <ul className="mt-1 divide-y divide-line">
             {summary.byCategory.map((row) => {
               const category = row.categoryId ? categoryById.get(row.categoryId) : undefined
               return (
@@ -168,11 +168,11 @@ export function PersonalTripPage() {
       {expensesQuery.isLoading ? (
         <Skeleton className="h-24" />
       ) : expenses.length === 0 ? (
-        <p className="rounded-[24px] border border-sand bg-card p-4 text-[16px] text-text-muted">
+        <p className="rounded-[24px] border border-line bg-card p-4 text-[16px] text-text-muted">
           Todavía no cargaste gastos de este viaje.
         </p>
       ) : (
-        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card px-4">
+        <ul className="divide-y divide-line rounded-[24px] border border-line bg-card px-4">
           {expenses.map((t) => {
             const category = t.categoryId ? categoryById.get(t.categoryId) : undefined
             return (
@@ -201,7 +201,7 @@ export function PersonalTripPage() {
           }}
         />
       )}
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-5 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button onClick={() => openNew('expense', { tripId: trip.id })}>
           <Plus aria-hidden="true" className="mr-2 size-5" /> Cargar gasto
         </Button>

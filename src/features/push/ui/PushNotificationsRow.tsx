@@ -1,6 +1,5 @@
-import { Bell } from 'lucide-react'
 import { Button } from '@/shared/ui/Button'
-import { IconTile, OptionRow } from '@/shared/ui/kit'
+import { OptionRow } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
 import { getVapidPublicKey, usePushSubscription } from '../api/usePushSubscription'
 
@@ -43,13 +42,12 @@ function PushRow() {
   return (
     <OptionRow
       className="rounded-none border-0"
-      icon={<IconTile icon={Bell} bg="#d9ebe4" className="size-11" />}
       title="Avisos de Moni"
       subtitle={subtitle}
       chevron={false}
       trailing={
         state === 'on' ? (
-          <span className="rounded-full bg-lime px-3 py-1 text-[13px] font-extrabold text-forest">
+          <span className="rounded-full bg-tint-green px-3 py-1 text-[13px] font-extrabold text-ink">
             Activados
           </span>
         ) : state === 'off' || state === 'working' ? (

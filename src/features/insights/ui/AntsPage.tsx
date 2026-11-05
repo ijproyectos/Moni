@@ -32,7 +32,7 @@ export function AntsPage() {
   const previous = useAnts(shiftMonth(month, -1))
 
   return (
-    <Page>
+    <Page native>
       <PageHeader title="Gastos hormiga" />
       <SegmentedControl
         label="Período"
@@ -123,7 +123,7 @@ function AntsContent({
         {previousData && (
           <>
             {[
-              { label: previousLabel, cents: previousData.monthTotalCents, color: 'bg-[#6e9c8d]' },
+              { label: previousLabel, cents: previousData.monthTotalCents, color: 'bg-lime/60' },
               { label: currentLabel, cents: data.monthTotalCents, color: 'bg-blush' },
             ].map((row) => (
               <div key={row.label} className="mt-3 flex items-center gap-3 text-[15px]">
@@ -141,7 +141,7 @@ function AntsContent({
         )}
       </section>
       <Panel className="flex items-start gap-4">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40 text-ink">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-tint-gold text-ink">
           <MoniGlyph className="size-9" />
         </span>
         <p className="text-[16px] leading-6">
@@ -155,7 +155,7 @@ function AntsContent({
         </p>
       </div>
       <Panel className="py-1">
-        <ul className="divide-y divide-sand">
+        <ul className="divide-y divide-line">
           {data.groups.map((group) => (
             <AntRow key={antKey(group)} group={group} delta={deltas.get(antKey(group)) ?? null} />
           ))}
@@ -185,11 +185,11 @@ function AntRow({ group, delta }: { group: AntGroup; delta: number | null }) {
         ) : delta === 0 ? (
           <span className="rounded-full bg-sand px-2 py-0.5 text-[13px] font-extrabold">Igual</span>
         ) : delta > 0 ? (
-          <span className="flex items-center gap-0.5 rounded-full bg-gold/45 px-2 py-0.5 text-[13px] font-extrabold">
+          <span className="flex items-center gap-0.5 rounded-full bg-tint-gold px-2 py-0.5 text-[13px] font-extrabold">
             <ArrowUp aria-hidden="true" className="size-3.5" /> {formatArs(delta)}
           </span>
         ) : (
-          <span className="flex items-center gap-0.5 rounded-full bg-lime/45 px-2 py-0.5 text-[13px] font-extrabold">
+          <span className="flex items-center gap-0.5 rounded-full bg-tint-green px-2 py-0.5 text-[13px] font-extrabold">
             <ArrowDown aria-hidden="true" className="size-3.5" /> {formatArs(-delta)}
           </span>
         )}

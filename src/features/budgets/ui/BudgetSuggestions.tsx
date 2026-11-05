@@ -36,7 +36,7 @@ export function BudgetSuggestions() {
       <p className="px-1 text-[15px] leading-5 text-text-muted">
         Según lo que gastaste en los últimos 3 meses. Podés cambiarlo cuando quieras.
       </p>
-      <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+      <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
         {list.map((s) => (
           <li key={s.categoryId} className="flex items-center gap-3 px-4 py-3">
             <CategoryIconCircle iconName={s.icon} color={s.color} className="size-12" />
@@ -51,7 +51,7 @@ export function BudgetSuggestions() {
               disabled={pendingId !== null}
               onClick={() => void use(s)}
               aria-label={`Usar sugerencia para ${s.name}`}
-              className="min-h-11 rounded-full bg-lime px-4 text-[15px] font-extrabold text-forest disabled:opacity-60"
+              className="min-h-11 rounded-full bg-forest px-4 text-[15px] font-extrabold text-cream dark:bg-lime dark:text-forest disabled:opacity-60"
             >
               Usar sugerencia
             </button>

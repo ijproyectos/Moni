@@ -73,7 +73,7 @@ export function InstallmentsPanel() {
       {views.map((c) => (
         <Panel key={c.id}>
           <div className="flex items-center gap-3">
-            <IconTile icon={ShoppingBag} bg="#e3f2cf" color="#2f7d1f" />
+            <IconTile icon={ShoppingBag} color="var(--color-income)" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[19px] font-extrabold">{c.description}</span>
               <span className="block text-[15px] text-text-muted">
@@ -124,7 +124,9 @@ export function InstallmentsPanel() {
       )}
       <OptionRow
         to="/metas/cuotas"
-        icon={<IconTile icon={CreditCard} bg="#fdeab8" />}
+        icon={
+          <IconTile icon={CreditCard} bg="color-mix(in srgb, var(--color-gold) 30%, transparent)" />
+        }
         title="¿Vas a comprar algo en cuotas?"
         subtitle="Compará si te conviene"
       />

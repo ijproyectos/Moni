@@ -142,7 +142,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       )}
 
       {subscriptions.length === 0 && (
-        <div className="rounded-[24px] border border-sand bg-card p-4">
+        <div className="rounded-[24px] border border-line bg-card p-4">
           <EmptyState
             mascotUrl={mascotAssistant}
             title="Todavía no cargaste suscripciones"
@@ -155,7 +155,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {attention.length > 0 && (
         <>
           <SectionLabel>Para revisar</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+          <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
             {attention.map((c) => {
               const s = byId.get(c.subscriptionId)
               return s ? (
@@ -176,7 +176,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {upcoming.length > 0 && (
         <>
           <SectionLabel>Próximos cobros</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+          <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
             {upcoming.map((s) => (
               <SubscriptionRow
                 key={s.id}
@@ -192,7 +192,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {history.length > 0 && (
         <>
           <SectionLabel>Historial de pagos</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+          <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
             {shown.map((c) => {
               const s = byId.get(c.subscriptionId)
               return s ? (
@@ -218,7 +218,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {paused.length > 0 && (
         <>
           <SectionLabel>Pausadas</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+          <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
             {paused.map((s) => (
               <SubscriptionRow
                 key={s.id}
@@ -235,7 +235,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {cancelled.length > 0 && (
         <>
           <SectionLabel>Canceladas en Moni</SectionLabel>
-          <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+          <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
             {cancelled.map((s) => (
               <SubscriptionRow
                 key={s.id}

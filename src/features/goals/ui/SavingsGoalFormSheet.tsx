@@ -33,7 +33,7 @@ import {
 } from '../domain/savings'
 
 const fieldClass =
-  'h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
+  'h-14 w-full rounded-[18px] border border-line bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
 const FREQUENCIES: GoalFrequency[] = ['weekly', 'biweekly', 'monthly', 'free']
 const WEEKDAY_LETTERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
@@ -274,7 +274,7 @@ export function SavingsGoalFormSheet({
             {initialTooMuch && (
               <div
                 role="alert"
-                className="flex flex-col gap-2 rounded-[14px] bg-blush/60 p-3 text-[15px] leading-5"
+                className="flex flex-col gap-2 rounded-[14px] bg-tint-red p-3 text-[15px] leading-5"
               >
                 <span>
                   {account?.name} tiene {formatArs(freeCents)} libres: el resto ya está reservado
@@ -349,7 +349,7 @@ export function SavingsGoalFormSheet({
         />
 
         {frequency !== 'free' && (
-          <div className="flex flex-col gap-3 rounded-[22px] border border-sand bg-card p-4">
+          <div className="flex flex-col gap-3 rounded-[22px] border border-line bg-card p-4">
             <div className="flex items-center gap-3">
               <span className="flex-1">
                 <span className="block text-[17px] font-extrabold">Recordarme ahorrar</span>
@@ -395,7 +395,7 @@ export function SavingsGoalFormSheet({
                           'flex size-11 flex-1 items-center justify-center rounded-full border-2 font-display text-[16px] font-extrabold',
                           weekdayIndex(firstDate) === i
                             ? 'border-ink bg-forest text-cream'
-                            : 'border-sand bg-card text-ink',
+                            : 'border-line bg-card text-ink',
                         )}
                       >
                         {letter}
@@ -424,7 +424,7 @@ export function SavingsGoalFormSheet({
 
         {!editing && (
           <OptionRow
-            icon={<IconTile icon={CreditCard} bg="#fdeab8" />}
+            icon={<IconTile icon={CreditCard} bg="var(--color-tint-gold)" />}
             title="¿Lo vas a pagar en cuotas?"
             subtitle="Compará y Moni te dice si conviene"
             onClick={() =>

@@ -48,7 +48,7 @@ export function BudgetAlertsCard({ month }: { month: IsoDate }) {
       </ul>
       <Link
         to="/categorias"
-        className="mt-3 flex min-h-11 items-center justify-center rounded-full border border-sand bg-canvas px-3 font-display text-[15px] font-extrabold"
+        className="mt-3 flex min-h-11 items-center justify-center rounded-full border border-line bg-canvas px-3 font-display text-[15px] font-extrabold"
       >
         Ver límites
       </Link>

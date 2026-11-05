@@ -28,7 +28,7 @@ export function RemindSheet({
   return (
     <BottomSheet title={`Recordarle a ${notice.person}`} onClose={onClose}>
       <SectionLabel>Así le llega</SectionLabel>
-      <div className="mt-2 rounded-[22px] border border-sand bg-card p-4 shadow-sm">
+      <div className="mt-2 rounded-[22px] border border-line bg-card p-4 shadow-sm">
         <p className="flex items-center gap-2 text-[14px] text-text-muted">
           <img src={mascotUrl} alt="" className="size-6 rounded-md bg-lime" />
           <strong className="font-extrabold text-ink">Moni</strong> · ahora
@@ -53,7 +53,7 @@ export function RemindSheet({
         <button
           type="button"
           onClick={() => void copyText(`${title}. ${body}`, toast, 'Mensaje copiado')}
-          className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[18px] font-extrabold"
+          className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[18px] font-extrabold"
         >
           <Copy aria-hidden="true" className="size-5" /> Copiar
         </button>

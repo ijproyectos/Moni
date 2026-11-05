@@ -23,7 +23,7 @@ export function RecurringPage() {
   const tab: Tab = params.get('tab') === 'gastos-fijos' ? 'gastos-fijos' : 'suscripciones'
 
   return (
-    <Page>
+    <Page native>
       <PageHeader
         title="Pagos recurrentes"
         backTo="/mas"

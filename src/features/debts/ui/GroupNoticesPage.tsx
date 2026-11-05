@@ -64,7 +64,7 @@ export function GroupNoticesPage() {
       : undefined
 
   return (
-    <Page>
+    <Page native>
       <PageHeader title="Avisos de grupos" fallbackTo="/grupos" />
       {notices.isLoading ? (
         <div role="status" aria-label="Cargando avisos" className="flex flex-col gap-3">
@@ -93,7 +93,7 @@ export function GroupNoticesPage() {
                 key={n.id}
                 className={cn(
                   'rounded-[24px] border bg-card p-4',
-                  fresh.current?.has(n.id) ? 'border-ink' : 'border-sand',
+                  fresh.current?.has(n.id) ? 'border-ink' : 'border-line',
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -103,7 +103,7 @@ export function GroupNoticesPage() {
                     <p className="flex items-center gap-2 text-[14px] text-text-muted">
                       {formatRelativeDay(n.createdAt.slice(0, 10), today)}
                       {fresh.current?.has(n.id) && (
-                        <span className="rounded-full bg-lime px-2 py-0.5 text-[12px] font-extrabold text-forest">
+                        <span className="rounded-full bg-tint-green px-2 py-0.5 text-[12px] font-extrabold text-ink">
                           Nuevo
                         </span>
                       )}
@@ -112,7 +112,7 @@ export function GroupNoticesPage() {
                 </div>
 
                 {n.kind === 'debt_reminder' && hasTransfer && (
-                  <div className="mt-3 rounded-[18px] bg-lime/30 p-3 text-ink dark:bg-lime/15">
+                  <div className="mt-3 rounded-[18px] bg-tint-green p-3 text-ink dark:bg-lime/15">
                     <p className="text-[14px] font-bold">
                       Podés transferir a {n.transferLabel ?? 'su cuenta'}:
                     </p>

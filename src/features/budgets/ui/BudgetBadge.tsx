@@ -4,7 +4,7 @@ import { budgetBadge, type BudgetStatus } from '../domain/budget'
 const TONE = {
   ok: 'bg-sand text-ink',
   warning: 'bg-gold/45 text-ink',
-  over: 'bg-[#fbdcd7] text-[#b8321f]',
+  over: 'bg-tint-red text-expense',
 } as const
 
 /** Small pill shown next to a category that has a monthly limit. */

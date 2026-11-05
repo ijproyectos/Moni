@@ -33,7 +33,7 @@ export function RecurringReminders({ className }: { className?: string }) {
     <section
       aria-label="Recordatorios de pagos"
       className={cn(
-        'relative flex flex-col gap-2 rounded-[24px] border border-gold/60 bg-gold/25 p-4 pr-14',
+        'relative flex flex-col gap-2 rounded-[24px] border border-gold/40 bg-tint-gold p-4 pr-14',
         className,
       )}
     >

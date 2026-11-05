@@ -11,7 +11,7 @@ import { Chip, DetailRow, PanelCard } from './widgets'
 const REASON_MIN = 3
 const REASON_MAX = 200
 const FIELD =
-  'w-full rounded-2xl border border-sand bg-card px-4 py-3 text-[16px] text-ink placeholder:text-placeholder'
+  'w-full rounded-2xl border border-line bg-card px-4 py-3 text-[16px] text-ink placeholder:text-placeholder'
 
 /** Suspend / reactivate an account. Suspending needs the typed email and a reason, and never targets an admin. */
 export function SuspensionCard({ user }: { user: UserDetail }) {

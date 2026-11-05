@@ -149,7 +149,7 @@ export function SavingsChart({
           type="button"
           aria-label="Meses anteriores"
           onClick={() => onShift(-BUTTON_STEP)}
-          className="flex size-10 items-center justify-center rounded-full border border-sand bg-card"
+          className="flex size-10 items-center justify-center rounded-full border border-line bg-card"
         >
           <ChevronLeft aria-hidden="true" className="size-5" />
         </button>
@@ -160,7 +160,7 @@ export function SavingsChart({
           type="button"
           aria-label="Meses siguientes"
           onClick={() => onShift(BUTTON_STEP)}
-          className="flex size-10 items-center justify-center rounded-full border border-sand bg-card"
+          className="flex size-10 items-center justify-center rounded-full border border-line bg-card"
         >
           <ChevronRight aria-hidden="true" className="size-5" />
         </button>

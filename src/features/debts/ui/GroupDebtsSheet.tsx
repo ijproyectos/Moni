@@ -111,8 +111,8 @@ export function GroupDebtsSheet({
             No pudimos calcular tus deudas. Probá de nuevo.
           </p>
         ) : shown.length === 0 ? (
-          <div className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-lime/40">
+          <div className="flex items-center gap-3 rounded-[24px] border border-line bg-card p-4">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-tint-green">
               <Handshake aria-hidden="true" className="size-6" />
             </span>
             <span>
@@ -136,14 +136,14 @@ export function GroupDebtsSheet({
                 const owed = debt.direction === 'owed'
                 const shared = owed ? null : sharedTransferFor(debt, notices.data ?? [])
                 return (
-                  <li key={debt.key} className="rounded-[24px] border border-sand bg-card p-4">
+                  <li key={debt.key} className="rounded-[24px] border border-line bg-card p-4">
                     <div className="flex items-center gap-3">
                       <Avatar name={debt.otherName} />
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-2 text-[18px] font-extrabold leading-6">
                           {debt.otherName}
                           {debt.otherIsGuest && (
-                            <span className="rounded-full bg-gold/40 px-2 py-0.5 text-[12px]">
+                            <span className="rounded-full bg-tint-gold px-2 py-0.5 text-[12px]">
                               Sin cuenta
                             </span>
                           )}
@@ -168,7 +168,7 @@ export function GroupDebtsSheet({
                         <span
                           className={cn(
                             'mt-0.5 inline-block rounded-full px-2.5 py-0.5 text-[12px] font-extrabold',
-                            debt.report ? 'bg-gold/40' : 'bg-sand',
+                            debt.report ? 'bg-tint-gold' : 'bg-sand',
                           )}
                         >
                           {debt.report ? 'Pago informado' : 'Pendiente'}
@@ -220,7 +220,7 @@ export function GroupDebtsSheet({
                                 )
                               }
                               disabled={reject.isPending}
-                              className={cn(pill, 'border-2 border-sand bg-card')}
+                              className={cn(pill, 'border-2 border-line bg-card')}
                             >
                               No lo recibí
                             </button>
@@ -240,7 +240,7 @@ export function GroupDebtsSheet({
                     )}
 
                     {!debt.otherIsGuest && !owed && shared && (
-                      <div className="mt-3 rounded-[18px] bg-lime/30 p-3">
+                      <div className="mt-3 rounded-[18px] bg-tint-green p-3">
                         <p className="text-[14px] font-bold">
                           {debt.otherName} te compartió
                           {shared.label ? ` su cuenta ${shared.label}` : ' sus datos'}:
@@ -299,7 +299,7 @@ export function GroupDebtsSheet({
                               )
                             }
                             disabled={cancel.isPending}
-                            className="min-h-11 shrink-0 rounded-full border-2 border-sand px-4 text-[15px] font-extrabold"
+                            className="min-h-11 shrink-0 rounded-full border-2 border-line px-4 text-[15px] font-extrabold"
                           >
                             Anular aviso
                           </button>
@@ -314,7 +314,7 @@ export function GroupDebtsSheet({
         )}
 
         {history.length > 0 && (
-          <div className="rounded-[24px] border border-sand bg-card">
+          <div className="rounded-[24px] border border-line bg-card">
             <button
               type="button"
               aria-expanded={showHistory}
@@ -328,7 +328,7 @@ export function GroupDebtsSheet({
               />
             </button>
             {showHistory && (
-              <ul className="divide-y divide-sand px-4 pb-2">
+              <ul className="divide-y divide-line px-4 pb-2">
                 {history.map((r) => (
                   <li key={r.id} className="flex items-center justify-between gap-3 py-3">
                     <span className="min-w-0">

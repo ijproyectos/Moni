@@ -112,11 +112,11 @@ export function TableWrap({ children }: { children: ReactNode }) {
 export const TH = 'whitespace-nowrap px-3 py-2 text-left text-[13px] font-bold text-text-muted'
 export const TD = 'whitespace-nowrap px-3 py-2 text-[15px]'
 export const TABLE = 'w-full min-w-[560px] border-collapse'
-export const TR = 'border-t border-sand'
+export const TR = 'border-t border-line'
 
 export function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-t border-sand py-2 first:border-t-0">
+    <div className="flex items-baseline justify-between gap-4 border-t border-line py-2 first:border-t-0">
       <dt className="text-[14px] text-text-muted">{label}</dt>
       <dd className="text-right text-[15px] font-semibold">{children}</dd>
     </div>

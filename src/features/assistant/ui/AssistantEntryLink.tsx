@@ -9,7 +9,7 @@ export function AssistantEntryLink() {
   return (
     <Link
       to={ASSISTANT_PATH}
-      className="flex min-h-14 items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3"
+      className="flex min-h-14 items-center gap-3 rounded-[24px] bg-tint-green px-4 py-3"
     >
       <MoniCat className="w-14 shrink-0" />
       <span className="flex-1">

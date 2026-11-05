@@ -17,7 +17,7 @@ import {
 } from '../domain/support'
 
 const FIELD =
-  'w-full rounded-2xl border border-sand bg-card px-4 py-3 text-[16px] text-ink placeholder:text-text-muted'
+  'w-full rounded-2xl border border-line bg-card px-4 py-3 text-[16px] text-ink placeholder:text-text-muted'
 
 const DATE = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' })
 
@@ -29,7 +29,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
         <h3 className="font-display text-[17px] font-extrabold leading-6">{ticket.subject}</h3>
         <span
           className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-extrabold ${
-            label === 'Abierta' ? 'bg-gold text-forest' : 'bg-lime text-forest'
+            label === 'Abierta' ? 'bg-tint-gold text-ink' : 'bg-tint-green text-ink'
           }`}
         >
           {label}
@@ -76,7 +76,7 @@ export function SupportPage() {
   }
 
   return (
-    <Page className="pb-10">
+    <Page native className="pb-10">
       <PageHeader title="Soporte" backTo="/perfil" />
 
       <Card className="flex flex-col gap-3">

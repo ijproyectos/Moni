@@ -61,7 +61,7 @@ export function UsuariosPage() {
             placeholder="Buscar por email"
             aria-label="Buscar por email"
             maxLength={100}
-            className="h-12 min-w-0 flex-1 rounded-full border border-sand bg-card px-5 text-[16px] text-ink placeholder:text-placeholder"
+            className="h-12 min-w-0 flex-1 rounded-full border border-line bg-card px-5 text-[16px] text-ink placeholder:text-placeholder"
           />
           <select
             value={filter}
@@ -70,7 +70,7 @@ export function UsuariosPage() {
               setPage(0)
             }}
             aria-label="Filtro"
-            className="h-12 rounded-full border border-sand bg-card px-4 text-[16px] text-ink"
+            className="h-12 rounded-full border border-line bg-card px-4 text-[16px] text-ink"
           >
             {FILTERS.map((f) => (
               <option key={f.value} value={f.value}>

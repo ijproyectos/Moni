@@ -91,7 +91,7 @@ export function ChargeRow({
       {effective && charge.negativeBalance && (
         <div
           role="alert"
-          className="flex gap-2 rounded-[14px] bg-blush/60 p-3 text-[14px] leading-5"
+          className="flex gap-2 rounded-[14px] bg-tint-red p-3 text-[14px] leading-5"
         >
           <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-expense" />
           <span>
@@ -105,7 +105,7 @@ export function ChargeRow({
       {effective && charge.overLimit && (
         <div
           role="alert"
-          className="flex gap-2 rounded-[14px] bg-blush/60 p-3 text-[14px] leading-5"
+          className="flex gap-2 rounded-[14px] bg-tint-red p-3 text-[14px] leading-5"
         >
           <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-expense" />
           <span>
@@ -116,7 +116,7 @@ export function ChargeRow({
       )}
 
       {duplicate && (
-        <div role="alert" className="flex flex-col gap-2 rounded-[14px] bg-gold/30 p-3">
+        <div role="alert" className="flex flex-col gap-2 rounded-[14px] bg-tint-gold p-3">
           <p className="text-[14px] leading-5">
             <strong className="font-extrabold">Posible duplicado:</strong> ya tenías un gasto de{' '}
             {formatArs(duplicate.amountCents)} el {formatDayMonth(duplicate.occurredOn)}

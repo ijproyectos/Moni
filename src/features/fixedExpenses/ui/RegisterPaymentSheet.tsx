@@ -31,7 +31,7 @@ import { paymentQuestion } from '../domain/labels'
 import { KindTile } from './KindTile'
 
 const fieldClass =
-  'h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
+  'h-14 w-full rounded-[18px] border border-line bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
 
 type Pending =
   | { type: 'overdraft'; warning: OverdraftWarning; accountName: string }
@@ -213,7 +213,7 @@ export function RegisterPaymentSheet({
         </p>
 
         {candidates.length > 0 && (
-          <div role="alert" className="flex flex-col gap-2 rounded-[14px] bg-gold/30 p-3">
+          <div role="alert" className="flex flex-col gap-2 rounded-[14px] bg-tint-gold p-3">
             <p className="text-[14px] leading-5">
               <strong className="font-extrabold">Posible duplicado:</strong> ya tenés cargado{' '}
               {candidates.length === 1 ? 'este gasto' : 'estos gastos'} parecido
@@ -241,7 +241,7 @@ export function RegisterPaymentSheet({
           </div>
         )}
 
-        <div className="flex items-center gap-3 rounded-[18px] border border-sand bg-card px-4 py-3">
+        <div className="flex items-center gap-3 rounded-[18px] border border-line bg-card px-4 py-3">
           <span className="flex-1">
             <span className="block text-[17px] font-extrabold">
               Usar este importe como próximo estimado

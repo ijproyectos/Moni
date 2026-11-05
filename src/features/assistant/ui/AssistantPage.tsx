@@ -56,7 +56,7 @@ export function AssistantPage() {
   const locked = plus.isFree || chat.plusRequired
 
   return (
-    <Page>
+    <Page native>
       <PageHeader title="Asistente" fallbackTo="/este-mes" />
       <section className="flex items-center gap-3 rounded-[24px] bg-cream p-4 text-forest">
         <MoniCat className="w-20 shrink-0" />
@@ -150,7 +150,7 @@ export function AssistantPage() {
               type="submit"
               aria-label="Enviar"
               disabled={chat.isPending || !isSendable(draft)}
-              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-lime text-forest disabled:opacity-60"
+              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-forest text-cream disabled:opacity-60 dark:bg-lime dark:text-forest"
             >
               <Send aria-hidden="true" className="size-5" />
             </button>

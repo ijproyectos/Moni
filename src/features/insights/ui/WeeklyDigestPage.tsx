@@ -49,16 +49,16 @@ export function WeeklyDigestPage() {
     .slice(0, TOP_CATEGORIES)
 
   return (
-    <main className="min-h-dvh bg-forest px-4 pb-8 pt-10 text-cream">
+    <main className="figma-scale min-h-dvh bg-canvas px-5 pb-8 pt-14 text-ink">
       <div className="flex items-center justify-between">
-        <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
+        <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
           {formatDayMonth(week.from)} al {formatDayMonth(week.lastDay)}
         </p>
         <button
           type="button"
           aria-label="Cerrar"
           onClick={() => navigate(-1)}
-          className="flex size-10 items-center justify-center rounded-full bg-surface"
+          className="flex size-11 items-center justify-center rounded-full bg-card shadow-[0_1px_3px_rgb(16_48_30/0.12)]"
         >
           <X aria-hidden="true" className="size-5" />
         </button>
@@ -72,12 +72,11 @@ export function WeeklyDigestPage() {
           aria-label="Cargando resumen semanal"
           className="mt-5 flex flex-col gap-4"
         >
-          <Skeleton className="h-36 rounded-[24px] bg-surface" />
-          <Skeleton className="h-44 rounded-[24px] bg-surface" />
+          <Skeleton className="h-36 rounded-[24px]" />
+          <Skeleton className="h-44 rounded-[24px]" />
         </div>
       ) : current.isError || !current.data || !comparison ? (
         <EmptyState
-          className="text-cream"
           mascotUrl={mascotAlert}
           title="No pudimos cargar tu semana"
           description="Revisá tu conexión y probá de nuevo."
@@ -85,8 +84,8 @@ export function WeeklyDigestPage() {
         />
       ) : (
         <>
-          <section className="mt-5 rounded-[24px] bg-cream p-5 text-forest shadow-lg">
-            <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
+          <section className="mt-5 rounded-[28px] bg-forest p-5 text-cream">
+            <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
               Gastaste en la semana
             </p>
             <div className="mt-1 flex items-center justify-between gap-3">
@@ -94,7 +93,7 @@ export function WeeklyDigestPage() {
                 {formatArs(current.data.expenseCents)}
               </p>
               {comparison.deltaPercent !== null && comparison.direction !== 'same' && (
-                <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[15px] font-extrabold">
+                <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[15px] font-extrabold text-forest">
                   {comparison.direction === 'up' ? (
                     <ArrowUp aria-hidden="true" className="size-4" />
                   ) : (
@@ -105,26 +104,29 @@ export function WeeklyDigestPage() {
                 </span>
               )}
             </div>
-            <p className="mt-1 text-[16px] leading-6 text-text-muted">
+            <p className="mt-1 text-[16px] leading-6 text-text-muted-on-dark">
               {comparisonText(comparison)}
             </p>
             {previous.data && (
-              <p className="text-[15px] text-text-muted">
+              <p className="text-[15px] text-text-muted-on-dark">
                 Semana pasada: {formatArs(previous.data.expenseCents)}
               </p>
             )}
           </section>
 
-          <section className="mt-4 rounded-[24px] bg-surface p-4" aria-labelledby="top-title">
+          <section
+            className="mt-4 rounded-[28px] border border-line bg-card p-4"
+            aria-labelledby="top-title"
+          >
             <h2 id="top-title" className="text-[20px] font-extrabold">
               Donde más se fue
             </h2>
             {top.length === 0 ? (
-              <p className="mt-2 text-[16px] text-text-muted-on-dark">
+              <p className="mt-2 text-[16px] text-text-muted">
                 Cuando cargues gastos esta semana, acá ves en qué categorías se van.
               </p>
             ) : (
-              <ul className="mt-2 divide-y divide-white/10">
+              <ul className="mt-2 divide-y divide-line">
                 {top.map((c) => (
                   <li key={c.categoryId} className="flex items-center gap-3 py-3">
                     <CategoryIconCircle iconName={c.icon} color={c.color} className="size-11" />
@@ -142,13 +144,13 @@ export function WeeklyDigestPage() {
 
       <Link
         to="/hormigas"
-        className="mt-4 flex items-center gap-3 rounded-[24px] bg-surface p-4"
+        className="mt-4 flex items-center gap-3 rounded-[28px] border border-line bg-card p-4"
         aria-label="Ver gastos hormiga"
       >
-        <img src={mascotUrl} alt="" className="size-12 rounded-[12px] bg-lime p-1" />
+        <img src={mascotUrl} alt="" className="size-12 rounded-[12px] bg-tint-green p-1" />
         <span className="min-w-0 flex-1">
           <span className="block text-[17px] font-extrabold">Tus gastos hormiga</span>
-          <span className="block text-[15px] text-text-muted-on-dark">
+          <span className="block text-[15px] text-text-muted">
             {ants.data
               ? ants.data.groups.length === 0
                 ? 'Este mes no se repite ninguno. Bien ahí.'
@@ -156,10 +158,10 @@ export function WeeklyDigestPage() {
               : 'Mirá las cositas chicas que se repiten.'}
           </span>
         </span>
-        <span className="text-[15px] font-extrabold text-lime">Ver</span>
+        <span className="text-[15px] font-extrabold text-ink underline">Ver</span>
       </Link>
 
-      <p className="mt-6 text-[14px] leading-5 text-text-muted-on-dark">
+      <p className="mt-6 text-[14px] leading-5 text-text-muted">
         Por ahora el resumen se mira acá, a mano. Los avisos automáticos llegan más adelante.
       </p>
     </main>

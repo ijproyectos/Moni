@@ -55,7 +55,7 @@ function useNoIndex() {
 function Panel({ email, onLogout }: { email: string; onLogout: () => void }) {
   return (
     <div className="min-h-dvh bg-canvas text-ink">
-      <header className="border-b border-sand bg-card">
+      <header className="border-b border-line bg-card">
         <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <h1 className="font-display text-xl font-extrabold">Moni · Admin</h1>
           <div className="flex items-center gap-3">

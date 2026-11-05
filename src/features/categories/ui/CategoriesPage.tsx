@@ -1,4 +1,3 @@
-import { Pencil } from 'lucide-react'
 import { useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
@@ -22,7 +21,7 @@ import { todayIso } from '@/shared/lib/month'
 import { HeaderAddButton } from '@/shared/ui/kit'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
-import { CategoryIconCircle } from '@/shared/ui/IconCircle'
+import { themedColor } from '@/shared/ui/categoryIcons'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -133,7 +132,7 @@ export function CategoriesPage() {
   }
 
   return (
-    <section className="flex flex-col gap-4 px-4 pt-14">
+    <section className="figma-scale flex flex-col gap-4 px-5 pt-14">
       <PageHeader
         title="Categorías"
         backTo="/mas"
@@ -166,7 +165,7 @@ export function CategoriesPage() {
           description="Creá la primera para ordenar tus movimientos."
         />
       ) : (
-        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+        <ul className="divide-y divide-line overflow-hidden rounded-[28px] border border-line bg-card">
           {list.map((category) => {
             const spent = spentById.get(category.id) ?? 0
             const budget = budgetsByCategory.get(category.id)
@@ -178,10 +177,10 @@ export function CategoriesPage() {
                   aria-label={`Editar ${category.name}`}
                   className="flex min-h-[64px] w-full items-center gap-3 px-4 py-2 text-left"
                 >
-                  <CategoryIconCircle
-                    iconName={category.icon}
-                    color={category.color}
-                    className="size-12"
+                  <span
+                    aria-hidden="true"
+                    className="size-5 shrink-0 rounded-full"
+                    style={{ backgroundColor: themedColor(category.color) }}
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[18px] font-extrabold">
@@ -196,7 +195,9 @@ export function CategoriesPage() {
                     </span>
                     {budget && <BudgetBadge budget={budget} className="mt-1" />}
                   </span>
-                  <Pencil aria-hidden="true" className="size-5 text-ink" strokeWidth={2} />
+                  <span aria-hidden="true" className="text-[16px] font-extrabold text-text-muted">
+                    Editar
+                  </span>
                 </button>
               </li>
             )
@@ -235,7 +236,7 @@ export function CategoriesPage() {
             onArchive={editing.category ? () => setArchiving(editing.category ?? null) : undefined}
           >
             {editing.category?.kind === 'expense' && (
-              <label className="flex items-center gap-3 rounded-[18px] border border-sand bg-card px-4 py-3">
+              <label className="flex items-center gap-3 rounded-[18px] border border-line bg-card px-4 py-3">
                 <span className="flex-1">
                   <span className="block text-[17px] font-extrabold">Límite por mes</span>
                   <span className="block text-[14px] text-text-muted">

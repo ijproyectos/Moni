@@ -55,7 +55,7 @@ export function GoalsPage() {
   const today = todayIso()
 
   return (
-    <Page>
+    <Page native>
       <PageHeader
         title="Metas"
         backTo="/mas"
@@ -92,7 +92,7 @@ export function GoalsPage() {
                   onClick={() => setCreatingShared(true)}
                   className="flex min-h-[76px] w-full items-center gap-3 rounded-[22px] border-2 border-dashed border-line px-4 text-left"
                 >
-                  <IconTile icon={UsersRound} bg="#d9ebe4" />
+                  <IconTile icon={UsersRound} bg="var(--color-tint-teal)" />
                   <span className="flex-1">
                     <span className="block text-[18px] font-extrabold">Compartidas</span>
                     <span className="block text-[14px] text-text-muted">
@@ -107,9 +107,13 @@ export function GoalsPage() {
           <div className={FEATURES.aguinaldo ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-2 gap-3'}>
             <Link
               to="/metas/cuotas"
-              className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-card px-3 py-3"
+              className="flex min-w-0 items-center gap-2 rounded-[22px] border border-line bg-card px-3 py-3"
             >
-              <IconTile icon={CreditCard} bg="#fdeab8" className="size-11 shrink-0" />
+              <IconTile
+                icon={CreditCard}
+                bg="var(--color-tint-gold)"
+                className="size-11 shrink-0"
+              />
               <span className="min-w-0">
                 <span className="block text-[17px] font-extrabold leading-5">Cuotas</span>
                 <span className="block text-[14px] text-text-muted">¿Conviene?</span>
@@ -117,9 +121,9 @@ export function GoalsPage() {
             </Link>
             <Link
               to="/logros"
-              className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-card px-3 py-3"
+              className="flex min-w-0 items-center gap-2 rounded-[22px] border border-line bg-card px-3 py-3"
             >
-              <IconTile icon={Award} bg="#fbdcd7" className="size-11 shrink-0" />
+              <IconTile icon={Award} bg="var(--color-tint-red)" className="size-11 shrink-0" />
               <span className="min-w-0">
                 <span className="block text-[17px] font-extrabold leading-5">Mis logros</span>
                 <span className="block text-[14px] text-text-muted">
@@ -130,9 +134,9 @@ export function GoalsPage() {
             {FEATURES.aguinaldo && (
               <Link
                 to="/aguinaldo"
-                className="flex min-w-0 items-center gap-2 rounded-[22px] border border-sand bg-card px-3 py-3"
+                className="flex min-w-0 items-center gap-2 rounded-[22px] border border-line bg-card px-3 py-3"
               >
-                <IconTile icon={Gift} bg="#e3f2cf" className="size-11 shrink-0" />
+                <IconTile icon={Gift} bg="var(--color-tint-green)" className="size-11 shrink-0" />
                 <span className="min-w-0">
                   <span className="block text-[17px] font-extrabold leading-5">Aguinaldo</span>
                   <span className="block text-[14px] text-text-muted">Repartilo</span>
@@ -159,7 +163,7 @@ export function GoalsPage() {
           ) : (
             <>
               {all.length === 0 && (
-                <div className="rounded-[24px] border border-sand bg-card p-4">
+                <div className="rounded-[24px] border border-line bg-card p-4">
                   <EmptyState
                     mascotUrl={mascotAssistant}
                     title="Todavía no tenés metas"
@@ -255,9 +259,9 @@ function SharedTeaser({ goal, onOpen }: { goal: Goal; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="flex min-h-[80px] w-full items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3 text-left"
+      className="flex min-h-[80px] w-full items-center gap-3 rounded-[22px] border border-line bg-card px-4 py-3 text-left"
     >
-      <IconTile icon={Heart} bg="#fbdcd7" color="#b8321f" />
+      <IconTile icon={Heart} bg="var(--color-tint-red)" color="var(--color-expense)" />
       <span className="min-w-0 flex-1">
         <span className="block text-[18px] font-extrabold">Compartidas</span>
         <span className="block text-[15px] leading-5 text-text-muted">
@@ -297,10 +301,10 @@ function SharedOverview({ goal, today }: { goal: Goal; today: string }) {
       />
       <Link
         to={`/metas/${goal.id}`}
-        className="block rounded-[24px] border border-sand bg-card p-4"
+        className="block rounded-[24px] border border-line bg-card p-4"
       >
         <div className="flex items-center gap-3">
-          <IconTile icon={Heart} bg="#fbdcd7" color="#b8321f" />
+          <IconTile icon={Heart} bg="var(--color-tint-red)" color="var(--color-expense)" />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[19px] font-extrabold">{goal.name}</span>
             <span className="block text-[15px] text-text-muted">

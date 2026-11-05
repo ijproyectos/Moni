@@ -39,7 +39,7 @@ export function PushToUser({ userId, devices }: { userId: string; devices: numbe
 
   const valid = title.trim() !== '' && body.trim() !== ''
   const fieldClass =
-    'w-full rounded-2xl border border-sand bg-card px-4 py-3 text-[16px] text-ink placeholder:text-placeholder'
+    'w-full rounded-2xl border border-line bg-card px-4 py-3 text-[16px] text-ink placeholder:text-placeholder'
 
   return (
     <PanelCard title="Enviar aviso push">

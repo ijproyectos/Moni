@@ -1,4 +1,3 @@
-import { ChevronRight, Send } from 'lucide-react'
 import { Link } from 'react-router'
 import { formatArs } from '@/shared/lib/money'
 import { ProgressBar } from '@/shared/ui/kit'
@@ -22,7 +21,7 @@ export function PersonalTripCard({
       to={`/viajes/${trip.id}`}
       className={
         ended
-          ? 'block rounded-[28px] border border-sand bg-card p-5'
+          ? 'block rounded-[28px] border border-line bg-card p-5'
           : 'block rounded-[28px] bg-forest p-5 text-cream'
       }
     >
@@ -30,8 +29,8 @@ export function PersonalTripCard({
         <span
           className={
             ended
-              ? 'rounded-full bg-sand px-3 py-1 text-[13px] font-extrabold uppercase tracking-[0.1em]'
-              : 'rounded-full bg-surface px-3 py-1 text-[13px] font-extrabold uppercase tracking-[0.1em] text-lime'
+              ? 'rounded-full bg-tint-green px-3 py-1 text-[15px] font-bold'
+              : 'rounded-full bg-white/15 px-3 py-1 text-[15px] font-bold text-cream'
           }
         >
           Personal
@@ -40,16 +39,7 @@ export function PersonalTripCard({
           {tripTimeLabel(trip, summary, today)}
         </span>
       </div>
-      <div className="mt-3 flex items-center gap-3">
-        <span
-          className={
-            ended
-              ? 'flex size-14 shrink-0 items-center justify-center rounded-full bg-lime/40'
-              : 'flex size-14 shrink-0 items-center justify-center rounded-full bg-lime text-forest'
-          }
-        >
-          <Send aria-hidden="true" className="size-6" />
-        </span>
+      <div className="mt-3">
         <span className="min-w-0 flex-1">
           <span className="block break-words font-display text-[26px] font-extrabold leading-8">
             {trip.name}
@@ -59,7 +49,6 @@ export function PersonalTripCard({
             {summary.totalDays === 1 ? 'día' : 'días'}
           </span>
         </span>
-        <ChevronRight aria-hidden="true" className="size-5 shrink-0" />
       </div>
       <div
         className={`mt-4 flex flex-wrap justify-between gap-x-3 text-[15px] font-extrabold ${muted}`}

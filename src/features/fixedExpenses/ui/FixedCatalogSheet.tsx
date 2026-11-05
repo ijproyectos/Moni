@@ -23,7 +23,7 @@ export function FixedCatalogSheet({
               <button
                 type="button"
                 onClick={() => onPick(kind)}
-                className="flex h-full min-h-[104px] w-full flex-col items-center justify-start gap-2 rounded-[18px] border border-sand bg-card px-1.5 py-3 text-center"
+                className="flex h-full min-h-[104px] w-full flex-col items-center justify-start gap-2 rounded-[18px] border border-line bg-card px-1.5 py-3 text-center"
               >
                 <KindTile kindId={kind.id} size="md" className="border-0" />
                 <span className="line-clamp-2 w-full break-words text-[14px] font-extrabold leading-[18px] text-ink">

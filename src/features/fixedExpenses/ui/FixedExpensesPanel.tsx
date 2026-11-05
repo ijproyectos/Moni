@@ -121,7 +121,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
       </section>
 
       {expenses.length === 0 && (
-        <div className="rounded-[24px] border border-sand bg-card p-4">
+        <div className="rounded-[24px] border border-line bg-card p-4">
           <EmptyState
             mascotUrl={mascotAssistant}
             title="Todavía no cargaste gastos fijos"
@@ -152,7 +152,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
           {others.length === 0 ? (
             <p className="text-[15px] text-text-muted">No hay gastos fijos en esta lista.</p>
           ) : (
-            <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+            <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
               {others.map((e) => (
                 <ExpenseRow key={e.id} expense={e} muted onOpen={() => setOpenId(e.id)} />
               ))}
@@ -184,7 +184,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
           {upcoming.length === 0 ? (
             <p className="text-[15px] text-text-muted">No hay gastos fijos activos.</p>
           ) : (
-            <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+            <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
               {upcoming.map((e) => (
                 <ExpenseRow key={e.id} expense={e} onOpen={() => setOpenId(e.id)} />
               ))}
@@ -196,7 +196,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
             <p className="text-[15px] text-text-muted">Todavía no registraste pagos.</p>
           ) : (
             <>
-              <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+              <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
                 {shown.map((item) => {
                   if (item.type === 'payment') {
                     return (
@@ -316,7 +316,7 @@ function PendingBillCard({
     <li
       className={cn(
         'flex flex-col gap-3 rounded-[24px] border bg-card p-4',
-        bill.state === 'overdue' ? 'border-expense/50' : 'border-sand',
+        bill.state === 'overdue' ? 'border-expense/50' : 'border-line',
       )}
     >
       <div className="flex items-center gap-3">

@@ -186,15 +186,19 @@ export function AccountDetail({
       aria-modal="true"
       aria-label={account.name}
       tabIndex={-1}
-      className="fixed inset-0 z-40 overflow-y-auto outline-none"
+      className="figma-scale fixed inset-0 z-40 overflow-y-auto outline-none"
     >
       <div ref={backdropRef} aria-hidden="true" className="fixed inset-0 -z-10 bg-canvas" />
-      <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col gap-4 px-4 pb-[max(env(safe-area-inset-bottom),24px)] pt-14">
+      <div
+        tabIndex={-1}
+        data-autofocus
+        className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col gap-4 px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-14"
+      >
         <button
           type="button"
           onClick={requestClose}
           aria-label="Volver"
-          className="flex size-12 items-center justify-center rounded-full border border-sand bg-card text-ink"
+          className="flex size-12 items-center justify-center rounded-full border border-line bg-card text-ink"
         >
           <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2.25} />
         </button>
@@ -203,7 +207,7 @@ export function AccountDetail({
           ref={cardRef}
           data-testid="account-hero"
           className={cn(
-            'relative overflow-hidden rounded-[30px] shadow-[0_14px_34px_rgba(6,71,53,0.22)]',
+            'relative overflow-hidden rounded-[30px] shadow-[0_14px_34px_rgb(16_48_30/0.22)]',
             !skin && tone,
           )}
           style={skin ? skinStyle(skin) : undefined}
@@ -278,9 +282,9 @@ export function AccountDetail({
             onDone={() => setMode('view')}
           />
 
-          <section className="rounded-[24px] border border-sand bg-card p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
+          <section className="rounded-[24px] border border-line bg-card p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-[10rem] flex-1">
                 <SectionLabel>{card ? 'Deuda actual' : 'Saldo actual'}</SectionLabel>
                 <AmountDisplay
                   cents={card ? Math.abs(account.balanceCents) : account.balanceCents}
@@ -317,7 +321,7 @@ export function AccountDetail({
           )}
 
           {!card && account.openingBalanceCents > 0 && (
-            <section className="rounded-[24px] border border-sand bg-card p-4">
+            <section className="rounded-[24px] border border-line bg-card p-4">
               {mode === 'classify' ? (
                 <div className="flex flex-col gap-2">
                   <ClassifyOpeningSection
@@ -349,7 +353,7 @@ export function AccountDetail({
             <div className="flex flex-col gap-2">
               <Link
                 to="/tarjetas"
-                className="flex min-h-12 items-center justify-center rounded-full border-2 border-sand bg-card px-4 text-[16px] font-extrabold"
+                className="flex min-h-12 items-center justify-center rounded-full border-2 border-line bg-card px-4 text-[16px] font-extrabold"
               >
                 Ver resumen y cuotas
               </Link>
@@ -431,7 +435,7 @@ function NameBlock({
 
   if (!editing) {
     return (
-      <section className="flex items-center justify-between gap-3 rounded-[24px] border border-sand bg-card p-4">
+      <section className="flex items-center justify-between gap-3 rounded-[24px] border border-line bg-card p-4">
         <div className="min-w-0">
           <SectionLabel>Nombre</SectionLabel>
           <p className="break-words text-[20px] font-extrabold leading-7">{account.name}</p>
@@ -458,7 +462,7 @@ function NameBlock({
           value={name}
           onChange={(e) => setName(e.target.value)}
           aria-label="Nombre del medio de pago"
-          className="h-14 w-full rounded-[18px] border border-sand bg-canvas px-4 text-[18px] font-extrabold text-ink"
+          className="h-14 w-full rounded-[18px] border border-line bg-canvas px-4 text-[18px] font-extrabold text-ink"
         />
       </label>
       {card && (
@@ -488,7 +492,7 @@ function NameBlock({
                   aria-label={label as string}
                   value={value as string}
                   onChange={(e) => (set as (v: string) => void)(e.target.value)}
-                  className="h-14 w-full min-w-0 rounded-[18px] border border-sand bg-canvas px-4 text-[17px] text-ink"
+                  className="h-14 w-full min-w-0 rounded-[18px] border border-line bg-canvas px-4 text-[17px] text-ink"
                 />
               </label>
             ))}
@@ -505,7 +509,7 @@ function NameBlock({
           variant="ghost"
           onClick={onDone}
           disabled={update.isPending}
-          className="border-2 border-sand"
+          className="border-2 border-line"
         >
           Cancelar
         </Button>

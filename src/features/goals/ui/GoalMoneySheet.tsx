@@ -91,7 +91,7 @@ export function GoalMoneySheet({
         {tooMuch && (
           <div
             role="alert"
-            className="flex flex-col gap-2 rounded-[14px] bg-blush/60 p-3 text-[15px] leading-5"
+            className="flex flex-col gap-2 rounded-[14px] bg-tint-red p-3 text-[15px] leading-5"
           >
             <span>
               {deposit
