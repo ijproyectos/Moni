@@ -71,9 +71,9 @@ export function GroupSummaryPage() {
   const last = dates[dates.length - 1]
   const when = last ? formatLongDay(last) : ''
   return (
-    <Page className="pb-28">
+    <Page native className="pb-28">
       <PageHeader title="Resumen" fallbackTo={`/grupos/${groupId}`} />
-      <article className="rounded-[24px] border border-sand bg-card p-4 shadow-sm">
+      <article className="rounded-[24px] border border-line bg-card p-4 shadow-sm">
         <header className="flex items-center gap-3">
           <img src={mascotUrl} alt="" className="size-12 rounded-[12px] bg-lime p-1" />
           <div>
@@ -87,7 +87,7 @@ export function GroupSummaryPage() {
         {ledger.transfers.length === 0 ? (
           <p className="py-3 text-[16px]">¡Están todos a mano!</p>
         ) : (
-          <ul className="divide-y divide-sand">
+          <ul className="divide-y divide-line">
             {ledger.transfers.map((t) => {
               const to = ledger.people.find((p) => p.id === t.toUserId)
               return (
@@ -172,7 +172,7 @@ export function GroupSummaryPage() {
             })}
           </tbody>
         </table>
-        <p className="mt-4 border-t border-dashed border-sand pt-3 text-center text-[14px] text-text-muted">
+        <p className="mt-4 border-t border-dashed border-line pt-3 text-center text-[14px] text-text-muted">
           Hecho con Moni
         </p>
       </article>
@@ -273,9 +273,9 @@ export function ShareSummaryPage() {
         setPick(shared?.id ?? null)
         setChoosingAccount(true)
       }}
-      className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4 text-left"
+      className="flex items-center gap-3 rounded-[24px] border border-line bg-card p-4 text-left"
     >
-      <IconTile icon={WalletCards} bg="#e3f2cf" />
+      <IconTile icon={WalletCards} bg="var(--color-tint-green)" />
       <span className="flex-1">
         <SectionLabel>Datos para que te transfieran</SectionLabel>
         <span className="block text-[18px] font-extrabold">
@@ -292,7 +292,7 @@ export function ShareSummaryPage() {
   )
 
   return (
-    <Page className="pb-28">
+    <Page native className="pb-28">
       <PageHeader title="Compartir resumen" fallbackTo={`/grupos/${groupId}/resumen`} />
       <SegmentedControl
         label="Cómo compartir"
@@ -310,7 +310,7 @@ export function ShareSummaryPage() {
           <SectionLabel>Así va a salir</SectionLabel>
           <pre
             aria-label="Resumen completo"
-            className="whitespace-pre-wrap break-words rounded-[20px] bg-lime/30 p-4 font-body text-[15px] leading-6 text-ink"
+            className="whitespace-pre-wrap break-words rounded-[20px] bg-tint-green p-4 font-body text-[15px] leading-6 text-ink"
           >
             {fullText}
           </pre>
@@ -320,14 +320,14 @@ export function ShareSummaryPage() {
             </Button>
             <Button
               variant="ghost"
-              className="border-2 border-sand"
+              className="border-2 border-line"
               onClick={() => void copyText(fullText, toast, 'Resumen copiado')}
             >
               <Copy aria-hidden="true" className="mr-2 size-5" /> Copiar resumen
             </Button>
             <Button
               variant="ghost"
-              className="border-2 border-sand"
+              className="border-2 border-line"
               disabled={busy}
               onClick={() => void download()}
             >
@@ -337,7 +337,7 @@ export function ShareSummaryPage() {
             {canShareFiles && (
               <Button
                 variant="ghost"
-                className="border-2 border-sand"
+                className="border-2 border-line"
                 disabled={busy}
                 onClick={() => void shareImage()}
               >
@@ -355,7 +355,7 @@ export function ShareSummaryPage() {
             {involved.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4"
+                className="flex items-center gap-3 rounded-[24px] border border-line bg-card p-4"
               >
                 <Avatar name={p.name} size="lg" />
                 <span className="flex-1">
@@ -363,7 +363,7 @@ export function ShareSummaryPage() {
                   <span className="block text-[15px] leading-5 text-text-muted">{lineFor(p)}</span>
                 </span>
                 {p.hasMoni ? (
-                  <span className="rounded-full bg-lime/40 px-3 py-1 text-[13px] font-extrabold">
+                  <span className="rounded-full bg-tint-green px-3 py-1 text-[13px] font-extrabold">
                     Le llega en Moni
                   </span>
                 ) : (
@@ -403,7 +403,7 @@ export function ShareSummaryPage() {
         <>
           {accountPicker}
           <SectionLabel>Para el grupo</SectionLabel>
-          <div className="whitespace-pre-line rounded-[20px] bg-lime/30 p-4 text-[16px] leading-7">
+          <div className="whitespace-pre-line rounded-[20px] bg-tint-green p-4 text-[16px] leading-7">
             <strong className="font-extrabold">{name}</strong>
             {'\n'}
             {groupText.split('\n').slice(1).join('\n')}
@@ -415,7 +415,7 @@ export function ShareSummaryPage() {
               .map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3"
+                  className="flex items-center gap-3 rounded-[22px] border border-line bg-card px-4 py-3"
                 >
                   <Avatar name={p.name} />
                   <span className="flex-1">
@@ -459,10 +459,10 @@ export function ShareSummaryPage() {
                   onClick={() => setPick(a.id)}
                   className={cn(
                     'flex w-full items-center gap-3 rounded-[20px] border-2 bg-card px-4 py-3 text-left',
-                    pick === a.id ? 'border-forest' : 'border-sand',
+                    pick === a.id ? 'border-forest' : 'border-line',
                   )}
                 >
-                  <IconTile icon={CreditCard} bg="#e3f2cf" />
+                  <IconTile icon={CreditCard} bg="var(--color-tint-green)" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-[18px] font-extrabold">{a.name}</span>
                     <span className="block break-all text-[15px] text-text-muted">
@@ -480,7 +480,7 @@ export function ShareSummaryPage() {
                 onClick={() => setPick(null)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-[20px] border-2 bg-card px-4 py-3 text-left',
-                  pick === null ? 'border-forest' : 'border-sand',
+                  pick === null ? 'border-forest' : 'border-line',
                 )}
               >
                 <span className="flex-1 text-[17px] font-extrabold">No incluir mis datos</span>
@@ -530,7 +530,7 @@ export function NoticesSentPage() {
     return `Te pasan ${formatArs(incoming.reduce((s, t) => s + t.amountCents, 0))}`
   }
   return (
-    <Page className="pb-28 pt-20">
+    <Page native className="pb-28 pt-20">
       <span className="mx-auto flex size-24 items-center justify-center rounded-full bg-lime">
         <Check aria-hidden="true" className="size-12" strokeWidth={3} />
       </span>
@@ -544,7 +544,7 @@ export function NoticesSentPage() {
         {involved.map((p) => (
           <li
             key={p.id}
-            className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4"
+            className="flex items-center gap-3 rounded-[24px] border border-line bg-card p-4"
           >
             <Avatar name={p.name} size="lg" />
             <span className="flex-1">
@@ -555,7 +555,7 @@ export function NoticesSentPage() {
               </span>
             </span>
             {p.hasMoni ? (
-              <span className="rounded-full bg-lime/40 px-3 py-1 text-[13px] font-extrabold">
+              <span className="rounded-full bg-tint-green px-3 py-1 text-[13px] font-extrabold">
                 Avisado en Moni
               </span>
             ) : (

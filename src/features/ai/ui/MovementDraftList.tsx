@@ -4,6 +4,7 @@ import type { Category } from '@/features/categories/domain/category'
 import { formatArs } from '@/shared/lib/money'
 import { parseAmountInput } from '@/shared/lib/amountInput'
 import { cn } from '@/shared/ui/cn'
+import { KIND_ACTIVE } from '@/shared/ui/fieldStyles'
 import { CategoryChip } from '@/shared/ui/CategoryChip'
 import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import { needsReview, type DraftMovement } from '../domain/draft'
@@ -22,7 +23,7 @@ interface MovementDraftListProps {
 }
 
 const fieldClass =
-  'h-12 w-full rounded-[14px] border border-sand bg-card px-3 text-[16px] text-ink placeholder:text-text-muted'
+  'h-12 w-full rounded-[14px] border border-line bg-card px-3 text-[16px] text-ink placeholder:text-text-muted'
 
 /** Confirmation list: every parsed movement is editable before anything is saved. */
 export function MovementDraftList({
@@ -49,7 +50,7 @@ export function MovementDraftList({
             aria-label={`Movimiento ${n}`}
             className={cn(
               'rounded-[22px] border-2 bg-card p-3',
-              review ? 'border-gold' : 'border-sand',
+              review ? 'border-gold' : 'border-line',
             )}
           >
             <div className="flex items-center justify-between gap-2">
@@ -70,8 +71,8 @@ export function MovementDraftList({
                       'min-h-11 rounded-full px-4 font-display text-[15px] font-extrabold',
                       draft.kind === kind
                         ? kind === 'expense'
-                          ? 'bg-blush text-forest'
-                          : 'bg-lime text-forest'
+                          ? KIND_ACTIVE.expense
+                          : KIND_ACTIVE.income
                         : 'bg-sand text-text-muted',
                     )}
                   >
@@ -102,7 +103,9 @@ export function MovementDraftList({
                   aria-label={`Monto del movimiento ${n}`}
                   value={draft.amount}
                   disabled={disabled}
-                  onChange={withAmountFormatting((e) => onChange(draft.key, { amount: e.target.value }))}
+                  onChange={withAmountFormatting((e) =>
+                    onChange(draft.key, { amount: e.target.value }),
+                  )}
                   className={cn(fieldClass, 'font-display font-extrabold')}
                 />
               </label>

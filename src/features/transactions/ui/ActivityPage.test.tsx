@@ -91,6 +91,7 @@ describe('ActivityPage', () => {
   it('lists the month and filters by search text', async () => {
     const user = setup()
     expect(screen.getByText('3 movimientos')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Buscar' }))
     await user.type(screen.getByLabelText('Buscar por nota o categoría'), 'cena')
     expect(screen.getByText('1 movimiento')).toBeInTheDocument()
     expect(screen.queryByText('Sueldo octubre')).not.toBeInTheDocument()
@@ -118,19 +119,29 @@ describe('ActivityPage', () => {
 
   it('list view without a month filter summarises everything and has no month navigation', async () => {
     const user = setup()
-    await user.click(screen.getByRole('button', { name: 'Ver por categoría' }))
-    expect(screen.getByRole('region', { name: 'Resumen de todo' })).toHaveTextContent(
-      'Todo el historial',
-    )
+    await user.click(screen.getByRole('button', { name: 'Agrupar por categoría' }))
+    expect(screen.getByText('Todo el historial')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Mes anterior' })).not.toBeInTheDocument()
   })
 
-  it('filters by kind with the segmented control', async () => {
+  it('filters by kind by tapping Gastos or Ingresos, and tapping again clears it', async () => {
     const user = setup()
-    await user.click(screen.getByRole('button', { name: 'Ingresos' }))
+    await user.click(screen.getByRole('button', { name: /^Ingresos/ }))
+    expect(screen.getByRole('button', { name: /^Ingresos/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     expect(screen.getByText('1 ingreso')).toBeInTheDocument()
     expect(screen.getByText('Sueldo octubre')).toBeInTheDocument()
     expect(screen.queryByText('Cena')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^Ingresos/ }))
+    expect(screen.getByText('3 movimientos')).toBeInTheDocument()
+  })
+
+  it('shows the totals of the month in the header', () => {
+    setup()
+    expect(screen.getByRole('button', { name: /^Gastos/ })).toHaveTextContent('$22.000')
+    expect(screen.getByRole('button', { name: /^Ingresos/ })).toHaveTextContent('$97.000')
   })
 
   it('asks for confirmation before voiding a movement', async () => {
@@ -150,22 +161,34 @@ describe('ActivityPage', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  describe('view toggle', () => {
-    const listButton = () => screen.getByRole('button', { name: 'Ver por categoría' })
-    const calendarButton = () => screen.getByRole('button', { name: 'Ver calendario' })
+  describe('calendar and grouping', () => {
+    const groupByCategory = () => screen.getByRole('button', { name: 'Agrupar por categoría' })
+    const groupByDay = () => screen.getByRole('button', { name: 'Ver por día' })
+    const openMonth = (user: ReturnType<typeof userEvent.setup>) =>
+      user.click(screen.getByRole('button', { name: 'Ver el mes completo' }))
 
-    it('starts in calendar view with the calendar pressed', () => {
-      setup()
-      expect(calendarButton()).toHaveAttribute('aria-pressed', 'true')
-      expect(listButton()).toHaveAttribute('aria-pressed', 'false')
+    it('starts by days with the week strip, and the full month opens on demand', async () => {
+      const user = setup()
+      expect(screen.getByRole('group', { name: 'Últimos días del mes' })).toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
+      await openMonth(user)
       expect(screen.getByRole('region', { name: 'Calendario del mes' })).toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: 'Últimos días del mes' })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Ocultar el calendario' }))
+      expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
     })
 
-    it('list view groups the month by category, biggest total first, and hides the day grid', async () => {
+    it('the open calendar keeps its own month navigation', async () => {
       const user = setup()
-      await user.click(listButton())
-      expect(listButton()).toHaveAttribute('aria-pressed', 'true')
-      expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
+      await openMonth(user)
+      expect(screen.getByRole('button', { name: 'Mes anterior' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Mes siguiente' })).toBeDisabled()
+    })
+
+    it('grouping by category lists the month by category, biggest total first, with no days', async () => {
+      const user = setup()
+      await user.click(groupByCategory())
+      expect(screen.queryByRole('group', { name: 'Últimos días del mes' })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /^Día \d+$/ })).not.toBeInTheDocument()
       const headings = screen
         .getAllByRole('heading', { level: 2 })
@@ -177,46 +200,60 @@ describe('ActivityPage', () => {
       expect(within(comida).getByText('Cena')).toBeInTheDocument()
     })
 
-    it('respects the search filter in list view', async () => {
+    it('respects the search filter when grouped by category', async () => {
       const user = setup()
-      await user.click(listButton())
+      await user.click(groupByCategory())
+      await user.click(screen.getByRole('button', { name: 'Buscar' }))
       await user.type(screen.getByLabelText('Buscar por nota o categoría'), 'cena')
       expect(screen.getByRole('region', { name: 'Comida' })).toBeInTheDocument()
       expect(screen.queryByRole('region', { name: 'Sueldo' })).not.toBeInTheDocument()
     })
 
-    it('ignores the selected day in list view and restores it back in calendar view', async () => {
+    it('ignores the selected day when grouped by category and restores it back by day', async () => {
       const user = setup()
       const otherDay = Number(today.slice(8, 10)) === 1 ? 2 : 1
+      await openMonth(user)
       await user.click(screen.getByRole('button', { name: `Día ${otherDay}` }))
       expect(screen.getByText('No encontramos movimientos')).toBeInTheDocument()
-      await user.click(listButton())
+      await user.click(groupByCategory())
       expect(screen.getByRole('region', { name: 'Comida' })).toBeInTheDocument()
-      await user.click(calendarButton())
+      await user.click(groupByDay())
       expect(screen.getByText('No encontramos movimientos')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: `Día ${otherDay}` })).toHaveAttribute(
+    })
+
+    it('filters by a day tapped on the week strip and clears it with a second tap', async () => {
+      const user = setup()
+      const todayNumber = Number(today.slice(8, 10))
+      await user.click(screen.getByRole('button', { name: `Día ${todayNumber}` }))
+      expect(screen.getByText('Cena')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: `Día ${todayNumber}` })).toHaveAttribute(
         'aria-pressed',
         'true',
       )
+      await user.click(screen.getByRole('button', { name: `Día ${todayNumber}` }))
+      expect(screen.getByRole('button', { name: `Día ${todayNumber}` })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
     })
 
-    it('remembers the chosen view', async () => {
+    it('remembers the chosen grouping', async () => {
       const user = setup()
-      await user.click(listButton())
+      await user.click(groupByCategory())
       expect(window.localStorage.getItem('moni:activity-view:v1')).toBe('list')
     })
 
-    it('opens in the stored view', () => {
+    it('opens in the stored grouping', () => {
       window.localStorage.setItem('moni:activity-view:v1', 'list')
       setup()
-      expect(listButton()).toHaveAttribute('aria-pressed', 'true')
+      expect(groupByDay()).toBeInTheDocument()
       expect(screen.getByRole('region', { name: 'Comida' })).toBeInTheDocument()
     })
 
-    it('falls back to calendar when the stored value is unknown', () => {
+    it('falls back to days when the stored value is unknown', () => {
       window.localStorage.setItem('moni:activity-view:v1', 'grid')
       setup()
-      expect(calendarButton()).toHaveAttribute('aria-pressed', 'true')
+      expect(groupByCategory()).toBeInTheDocument()
     })
   })
 })

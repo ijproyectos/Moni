@@ -21,6 +21,7 @@ import { formatAmountInput } from '@/shared/lib/amountInput'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Skeleton } from '@/shared/ui/Skeleton'
+import { KIND_ACTIVE } from '@/shared/ui/fieldStyles'
 import { Toggle } from '@/shared/ui/kit'
 import { SegmentedControl, type SegmentOption } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
@@ -54,8 +55,8 @@ interface MovementSheetProps {
 
 // Screen 019: Gasto / Ingreso. Transfers open from Medios de pago with their own title.
 const MODE_OPTIONS: readonly SegmentOption<SheetMode>[] = [
-  { value: 'expense', label: 'Gasto', activeClassName: 'bg-blush text-forest' },
-  { value: 'income', label: 'Ingreso', activeClassName: 'bg-lime text-forest' },
+  { value: 'expense', label: 'Gasto', activeClassName: KIND_ACTIVE.expense },
+  { value: 'income', label: 'Ingreso', activeClassName: KIND_ACTIVE.income },
 ]
 
 type PendingOverdraft =
@@ -306,7 +307,7 @@ export function MovementSheet({
         )}
 
         {mode === 'expense' && canShare && !isLoading && !loadFailed && (
-          <div className="flex items-center justify-between gap-3 rounded-[18px] border border-sand bg-card px-4 py-2">
+          <div className="flex items-center justify-between gap-3 rounded-[18px] border border-line bg-card px-4 py-2">
             <span>
               <span className="block text-[17px] font-extrabold">Compartido</span>
               <span className="block text-[14px] text-text-muted">

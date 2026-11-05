@@ -79,12 +79,12 @@ export function PeoplePage() {
     }
   }
   return (
-    <Page className="pb-28">
+    <Page native className="pb-28">
       <PageHeader title="Personas" fallbackTo={`/grupos/${groupId}`} />
       <p className="-mt-2 text-[16px] text-text-muted">
         {name} · {ledger.people.length} {ledger.people.length === 1 ? 'persona' : 'personas'}
       </p>
-      <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+      <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
         {ledger.people.map((p) => {
           const net = ledger.nets[p.id] ?? 0
           return (
@@ -99,7 +99,7 @@ export function PeoplePage() {
                   <span className="flex items-center gap-2 text-[19px] font-extrabold">
                     {p.name}
                     {!p.hasMoni && (
-                      <span className="rounded-full bg-gold/40 px-2 py-0.5 text-[12px]">
+                      <span className="rounded-full bg-tint-gold px-2 py-0.5 text-[12px]">
                         Sin cuenta
                       </span>
                     )}
@@ -134,7 +134,7 @@ export function PeoplePage() {
           Cuentan en los gastos y en las deudas, pero no ven el grupo ni reciben avisos.
         </p>
       )}
-      <div className="flex items-center justify-between gap-3 rounded-[24px] border border-sand bg-card p-4">
+      <div className="flex items-center justify-between gap-3 rounded-[24px] border border-line bg-card p-4">
         <div>
           <SectionLabel>Código del grupo</SectionLabel>
           <p className="mt-1 font-display text-[19px] font-extrabold tracking-[0.08em]">
@@ -416,7 +416,7 @@ function InviteToMoniSheet({
             await ensureCode()
             setPreview(true)
           }}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
+          className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[16px] font-extrabold"
         >
           <Upload aria-hidden="true" className="size-5" /> Compartir
         </button>
@@ -481,7 +481,7 @@ function LinkGuestSheet({
           Elegí con qué cuenta de Moni se corresponde. Tiene que ser alguien que ya esté en el
           grupo: si todavía no entró, pasale el código y volvé acá.
         </p>
-        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+        <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
           {candidates.map((c) => (
             <li key={c.id}>
               <button

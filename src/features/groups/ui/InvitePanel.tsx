@@ -139,13 +139,17 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
               href={whatsappUrl(message)}
               target="_blank"
               rel="noopener noreferrer"
-              className={cn(actionClass, 'bg-lime text-forest')}
+              className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-forest')}
             >
               <MessageCircle aria-hidden="true" className="size-5" />
               Enviar por WhatsApp
             </a>
           ) : (
-            <button type="button" disabled className={cn(actionClass, 'bg-lime text-forest')}>
+            <button
+              type="button"
+              disabled
+              className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-forest')}
+            >
               <MessageCircle aria-hidden="true" className="size-5" />
               Enviar por WhatsApp
             </button>
@@ -155,7 +159,7 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
               type="button"
               onClick={() => void share()}
               disabled={!online}
-              className={cn(actionClass, 'border-2 border-sand bg-card')}
+              className={cn(actionClass, 'border-2 border-line bg-card')}
             >
               <Upload aria-hidden="true" className="size-5" />
               Compartir

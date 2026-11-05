@@ -398,7 +398,7 @@ export function SharedExpenseForm({
               }}
               className={cn(
                 'inline-flex min-h-12 items-center gap-1.5 rounded-full border-2 pl-1 pr-3 text-[16px] font-extrabold',
-                active ? 'border-ink bg-forest text-cream' : 'border-sand bg-card',
+                active ? 'border-ink bg-forest text-cream' : 'border-line bg-card',
               )}
             >
               <Avatar name={p.name} size="sm" />
@@ -409,7 +409,7 @@ export function SharedExpenseForm({
       </div>
       {multiPayer && Object.keys(payers).length > 0 && (
         <>
-          <div className="divide-y divide-sand rounded-[22px] border border-sand bg-card px-4">
+          <div className="divide-y divide-line rounded-[22px] border border-line bg-card px-4">
             {Object.keys(payers).map((id) => {
               const person = people.find((p) => p.id === id)
               return (
@@ -444,7 +444,7 @@ export function SharedExpenseForm({
 
       <fieldset>
         <legend className="sr-only">Entre quiénes</legend>
-        <ul className="flex flex-col divide-y divide-sand rounded-[22px] border border-sand bg-card">
+        <ul className="flex flex-col divide-y divide-line rounded-[22px] border border-line bg-card">
           {people.map((p) => {
             const checked = selected.includes(p.id)
             const share = shareOf(p.id)
@@ -477,7 +477,7 @@ export function SharedExpenseForm({
                     {p.name}
                   </span>
                   {!p.hasMoni && (
-                    <span className="shrink-0 rounded-full bg-gold/40 px-2 py-0.5 text-[12px] font-extrabold">
+                    <span className="shrink-0 rounded-full bg-tint-gold px-2 py-0.5 text-[12px] font-extrabold">
                       Sin cuenta
                     </span>
                   )}
@@ -495,7 +495,7 @@ export function SharedExpenseForm({
                     {share !== undefined && (
                       <span className="text-[14px] text-text-muted">{formatArs(share)}</span>
                     )}
-                    <span className="flex h-11 items-center rounded-[14px] border border-sand bg-canvas px-3 text-[18px] font-extrabold">
+                    <span className="flex h-11 items-center rounded-[14px] border border-line bg-canvas px-3 text-[18px] font-extrabold">
                       <input
                         type="text"
                         inputMode="decimal"
@@ -617,7 +617,7 @@ export function SharedExpenseForm({
       )}
 
       {simulated && (
-        <p className="rounded-[14px] bg-gold/25 px-3 py-2 text-[13px] leading-4">
+        <p className="rounded-[14px] bg-tint-gold px-3 py-2 text-[13px] leading-4">
           Este gasto incluye a alguien sin cuenta o una división por monto: se guarda en el grupo
           igual que los demás.
         </p>
@@ -648,7 +648,7 @@ export function SharedExpenseForm({
             type="button"
             onClick={onDelete}
             aria-label="Eliminar gasto"
-            className="flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-sand bg-card text-expense"
+            className="flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-line bg-card text-expense"
           >
             <Trash2 aria-hidden="true" className="size-5" />
           </button>
@@ -683,7 +683,7 @@ function AmountField({
   onChange: (v: string) => void
 }) {
   return (
-    <span className="flex h-11 items-center rounded-[14px] border border-sand bg-canvas px-3 text-[18px] font-extrabold">
+    <span className="flex h-11 items-center rounded-[14px] border border-line bg-canvas px-3 text-[18px] font-extrabold">
       $
       <input
         type="text"
@@ -703,7 +703,7 @@ function SumLine({ ok, text }: { ok: boolean; text: string }) {
       aria-live="polite"
       className={cn(
         'flex items-center gap-2 rounded-[14px] px-3 py-2 text-[15px] font-extrabold',
-        ok ? 'bg-lime/30 text-ink' : 'bg-blush/30 text-expense',
+        ok ? 'bg-tint-green text-ink' : 'bg-blush/30 text-expense',
       )}
     >
       {ok && <Check aria-hidden="true" className="size-4" strokeWidth={3} />}

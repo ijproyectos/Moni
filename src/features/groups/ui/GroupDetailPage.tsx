@@ -208,7 +208,7 @@ export function GroupDetailPage() {
   }
 
   return (
-    <section className="flex flex-col gap-4 px-4 pb-6 pt-14">
+    <section className="figma-scale flex flex-col gap-4 px-5 pb-6 pt-8">
       <GroupDetailHeader
         name={name}
         kind={kind}
@@ -221,30 +221,30 @@ export function GroupDetailPage() {
 
       {kind === 'pareja' ? (
         <section
-          className="rounded-[28px] bg-forest p-5 text-cream"
+          className="border-b border-line px-1 pb-5 text-ink"
           aria-label="Saldo de la pareja"
         >
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
+            <p className="text-[16px] font-semibold text-text-muted">
               {myNet > 0
                 ? `${partner?.name ?? 'Tu pareja'} te debe`
                 : myNet < 0
                   ? `Le debés a ${partner?.name ?? 'tu pareja'}`
                   : 'Están a mano'}
             </p>
-            <span className="rounded-full bg-surface px-3 py-1 text-[14px] font-extrabold text-lime">
+            <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold text-ink">
               {overlay.coupleSplit === 'income' ? 'Según ingresos' : 'Mitad y mitad'}
             </span>
           </div>
           <p
             className={cn(
               'font-display text-[48px] font-extrabold leading-[56px]',
-              myNet >= 0 ? 'text-lime' : 'text-blush',
+              myNet >= 0 ? 'text-income' : 'text-expense',
             )}
           >
             {formatArs(Math.abs(myNet))}
           </p>
-          <p className="text-[16px] text-text-muted-on-dark">
+          <p className="text-[16px] text-text-muted">
             Gastos compartidos de {formatMonthName(month).toLowerCase()}:{' '}
             {formatArs(monthExpenses.reduce((s, e) => s + e.amountCents, 0))}
           </p>
@@ -257,46 +257,38 @@ export function GroupDetailPage() {
           </Button>
         </section>
       ) : (
-        <section className="rounded-[28px] bg-forest p-5 text-cream" aria-label="Total del grupo">
+        <section className="border-b border-line px-1 pb-5 text-ink" aria-label="Total del grupo">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
-              Total del grupo
-            </p>
+            <p className="text-[16px] font-semibold text-text-muted">Total del grupo</p>
             <span
               className={cn(
                 'rounded-full px-3 py-1 text-[14px] font-extrabold',
-                myNet > 0 ? 'bg-lime text-forest' : 'bg-surface text-lime',
+                myNet > 0 ? 'bg-tint-green text-ink' : 'bg-sand text-ink',
               )}
             >
               {badge}
             </span>
           </div>
           <p className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-display text-[40px] font-extrabold leading-[50px]">
+            <span className="font-display text-[44px] font-extrabold leading-[52px]">
               {formatArs(ledger.totalCents)}
             </span>
-            <span className="text-[16px] text-text-muted-on-dark">
+            <span className="text-[16px] text-text-muted">
               tu parte {formatArs(ledger.myShareCents)}
             </span>
           </p>
           {groupTrip && (
             <>
-              <ProgressBar
-                value={ledger.totalCents / groupTrip.budgetCents}
-                tone="dark"
-                className="mt-2"
-              />
-              <p className="mt-1 text-[14px] text-text-muted-on-dark">
+              <ProgressBar value={ledger.totalCents / groupTrip.budgetCents} className="mt-2" />
+              <p className="mt-1 text-[14px] text-text-muted">
                 Presupuesto del grupo {formatArs(groupTrip.budgetCents)} · gastaron el{' '}
                 {Math.round((ledger.totalCents / groupTrip.budgetCents) * 100)}%
               </p>
             </>
           )}
           {ledger.transfers.length > 0 && (
-            <div className="mt-4 border-t border-white/15 pt-3">
-              <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
-                Para quedar a mano
-              </p>
+            <div className="mt-4 border-t border-line pt-3">
+              <p className="text-[16px] font-semibold text-text-muted">Para quedar a mano</p>
               <ul className="mt-2 flex flex-col gap-2">
                 {ledger.transfers.map((t) => {
                   const from = personName(ledger.people, t.fromUserId)
@@ -311,7 +303,7 @@ export function GroupDetailPage() {
                             ? `${from} te pasa a vos`
                             : `${from} le pasa a ${to}`}
                       </span>
-                      <span className="text-[19px] font-extrabold text-lime">
+                      <span className="text-[19px] font-extrabold text-ink">
                         {formatArs(t.amountCents)}
                       </span>
                     </li>
@@ -323,7 +315,7 @@ export function GroupDetailPage() {
                 <button
                   type="button"
                   onClick={() => setSheet({ type: 'settle' })}
-                  className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-lime/60 text-[16px] font-extrabold text-lime"
+                  className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-forest text-[17px] font-extrabold text-cream dark:bg-lime dark:text-forest"
                 >
                   <Check aria-hidden="true" className="size-5" /> Registrar un pago
                 </button>
@@ -336,9 +328,9 @@ export function GroupDetailPage() {
       {FEATURES.sharedGoals && kind === 'pareja' && sharedGoal && (
         <Link
           to={`/metas/${sharedGoal.id}`}
-          className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3"
+          className="flex items-center gap-3 rounded-[22px] border border-line bg-card px-4 py-3"
         >
-          <span className="flex size-12 items-center justify-center rounded-full bg-blush/50 text-expense">
+          <span className="flex size-12 items-center justify-center rounded-full bg-tint-red text-expense">
             <Heart aria-hidden="true" className="size-5" />
           </span>
           <span className="flex-1">
@@ -351,7 +343,7 @@ export function GroupDetailPage() {
       )}
 
       {FEATURES.aguinaldo && kind === 'viaje' && myNet < 0 && (
-        <div className="flex items-center gap-3 rounded-[22px] bg-lime/30 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-[22px] bg-tint-green px-4 py-3">
           <MoniGlyph />
           <p className="flex-1 text-[16px] leading-5">
             <strong className="font-extrabold">Con el aguinaldo:</strong> tu parte (
@@ -367,11 +359,11 @@ export function GroupDetailPage() {
       )}
 
       {kind === 'casa' && overlay.recurring.some((r) => r.enabled) && (
-        <section className="rounded-[24px] border border-sand bg-card px-4 py-3">
+        <section className="rounded-[24px] border border-line bg-card px-4 py-3">
           <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
             Se repiten cada mes
           </p>
-          <ul className="mt-1 divide-y divide-sand">
+          <ul className="mt-1 divide-y divide-line">
             {overlay.recurring
               .filter((r) => r.enabled)
               .map((r) => {
@@ -395,7 +387,7 @@ export function GroupDetailPage() {
                     <span
                       className={cn(
                         'rounded-full px-3 py-0.5 text-[13px] font-extrabold',
-                        loaded ? 'bg-lime/40' : 'bg-sand',
+                        loaded ? 'bg-tint-green' : 'bg-sand',
                       )}
                     >
                       {loaded ? 'Cargado' : 'Pendiente'}
@@ -428,11 +420,11 @@ export function GroupDetailPage() {
       </div>
 
       {ledger.expenses.length === 0 ? (
-        <p className="rounded-[24px] border border-sand bg-card p-5 text-center text-[16px] text-text-muted">
+        <p className="rounded-[24px] border border-line bg-card p-5 text-center text-[16px] text-text-muted">
           Todavía no hay gastos. Cargá el primero y Moni hace las cuentas.
         </p>
       ) : (
-        <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+        <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
           {(kind === 'casa' ? monthExpenses : ledger.expenses).map((e) => {
             const Icon = icon(e)
             const payerId = e.payers[0]?.personId ?? ''
@@ -456,7 +448,7 @@ export function GroupDetailPage() {
                     className={cn(
                       'flex size-12 shrink-0 items-center justify-center rounded-full',
                       coupleDelta < 0 && kind === 'pareja'
-                        ? 'bg-blush/50 text-expense'
+                        ? 'bg-tint-red text-expense'
                         : 'bg-lime/35',
                     )}
                   >
@@ -512,7 +504,7 @@ export function GroupDetailPage() {
         overlay.settlements.length > 0) && (
         <section>
           <h2 className="px-1 text-[18px] font-extrabold">Pagos registrados</h2>
-          <ul className="mt-2 divide-y divide-sand rounded-[24px] border border-sand bg-card">
+          <ul className="mt-2 divide-y divide-line rounded-[24px] border border-line bg-card">
             {(settlements.data ?? [])
               .filter((s) => s.status === 'posted')
               .map((s) => (
@@ -588,7 +580,7 @@ export function GroupDetailPage() {
                   toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert }),
                 )
             }}
-            className="rounded-full bg-lime px-4 py-2 text-[15px] font-extrabold text-forest"
+            className="rounded-full bg-forest px-4 py-2 text-[15px] font-extrabold text-cream dark:bg-lime dark:text-forest"
           >
             Deshacer
           </button>
@@ -601,7 +593,7 @@ export function GroupDetailPage() {
         {kind === 'casa' ? (
           <Button
             variant="ghost"
-            className="h-14 flex-1 rounded-full border-2 border-sand bg-card text-ink"
+            className="h-14 flex-1 rounded-full border-2 border-line bg-card text-ink"
             onClick={() => setSheet({ type: 'settle' })}
           >
             <Check aria-hidden="true" className="mr-2 size-5" /> Saldar
@@ -609,7 +601,7 @@ export function GroupDetailPage() {
         ) : kind !== 'pareja' ? (
           <Link
             to={`/grupos/${groupId}/resumen`}
-            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[18px] font-extrabold"
+            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[18px] font-extrabold"
           >
             <Upload aria-hidden="true" className="size-5" /> Resumen
           </Link>
@@ -701,7 +693,7 @@ export function GroupDetailPage() {
         >
           <p>Dejás de ver el grupo y de recibir avisos. Los demás siguen con sus cuentas.</p>
           {myNet !== 0 && (
-            <p className="mt-3 flex gap-2 rounded-[18px] bg-lime/30 px-4 py-3 text-[16px]">
+            <p className="mt-3 flex gap-2 rounded-[18px] bg-tint-green px-4 py-3 text-[16px]">
               <Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
               {myNet < 0
                 ? `Antes de irte tenés que saldar los ${formatArs(-myNet)} que debés.`
@@ -733,7 +725,7 @@ export function GroupDetailPage() {
         >
           <p>Se borran los gastos del grupo para todos.</p>
           {myNet !== 0 && (
-            <p className="mt-3 rounded-[18px] bg-gold/30 px-4 py-3 text-[16px]">
+            <p className="mt-3 rounded-[18px] bg-tint-gold px-4 py-3 text-[16px]">
               <strong className="font-extrabold">
                 {myNet < 0 ? `Debés ${formatArs(-myNet)}.` : `Te deben ${formatArs(myNet)}.`}
               </strong>{' '}

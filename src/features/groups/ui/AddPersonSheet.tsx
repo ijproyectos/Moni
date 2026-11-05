@@ -43,7 +43,7 @@ export function AddPersonSheet({
   return (
     <BottomSheet title={title} onClose={onClose}>
       <div className="flex flex-col gap-3">
-        <div className="rounded-[24px] border border-sand bg-card p-4">
+        <div className="rounded-[24px] border border-line bg-card p-4">
           <div className="flex items-start gap-3">
             <UserPlus aria-hidden="true" className="mt-1 size-6 shrink-0" />
             <div>
@@ -74,9 +74,9 @@ export function AddPersonSheet({
         <button
           type="button"
           onClick={() => setGuest(true)}
-          className="flex items-center gap-3 rounded-[24px] border border-sand bg-card p-4 text-left"
+          className="flex items-center gap-3 rounded-[24px] border border-line bg-card p-4 text-left"
         >
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gold/45">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-tint-gold">
             <Plus aria-hidden="true" className="size-6" />
           </span>
           <span className="flex-1">
