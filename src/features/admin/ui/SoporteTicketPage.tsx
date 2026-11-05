@@ -114,7 +114,7 @@ export function SoporteTicketPage() {
           rows={5}
           placeholder="Escribí la respuesta"
           aria-label="Respuesta"
-          className="w-full rounded-2xl border border-sand bg-card px-4 py-3 text-[16px] text-ink placeholder:text-placeholder"
+          className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-[16px] text-ink placeholder:text-placeholder"
         />
         <label className="flex items-center gap-2 text-[15px]">
           <input

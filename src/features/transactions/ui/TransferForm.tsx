@@ -7,6 +7,7 @@ import { AmountInput } from '@/shared/ui/AmountInput'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { Button } from '@/shared/ui/Button'
+import { FIELD_CLASS } from '@/shared/ui/fieldStyles'
 import {
   transferFormSchema,
   type TransferFormInput,
@@ -24,8 +25,7 @@ interface TransferFormProps {
   onSubmit: (values: TransferFormValues) => void
 }
 
-const fieldClass =
-  'h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
+const fieldClass = FIELD_CLASS
 const labelClass = 'text-[13px] font-extrabold uppercase tracking-[0.1em] text-text-muted'
 
 /** Presentational form for moving money between two own accounts. Transfers are not income or expense. */

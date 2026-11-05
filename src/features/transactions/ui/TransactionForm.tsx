@@ -10,6 +10,7 @@ import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { Button } from '@/shared/ui/Button'
 import { CategorySelect } from '@/shared/ui/CategorySelect'
+import { FIELD_CLASS } from '@/shared/ui/fieldStyles'
 import {
   transactionFormSchema,
   type EntryKind,
@@ -45,8 +46,7 @@ interface TransactionFormProps {
   extra?: ReactNode
 }
 
-const fieldClass =
-  'h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
+const fieldClass = FIELD_CLASS
 
 /** Presentational form for expenses and incomes. Emits parsed values: amount in integer cents. */
 export function TransactionForm({

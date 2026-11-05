@@ -143,7 +143,7 @@ export function FixedExpenseDetailSheet({
         {items.length === 0 ? (
           <p className="text-[15px] text-text-muted">Todavía no registraste pagos.</p>
         ) : (
-          <ul className="-mx-4 divide-y divide-sand">
+          <ul className="-mx-4 divide-y divide-line">
             {items.map((item) =>
               item.type === 'payment' ? (
                 <PaymentRow

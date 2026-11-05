@@ -52,7 +52,7 @@ export function ExpenseDetailSheet({
           {expense.createdBy ? personName(people, expense.createdBy) : 'alguien del grupo'}
         </p>
         <SectionLabel>Cómo se dividió</SectionLabel>
-        <ul className="divide-y divide-sand rounded-[22px] border border-sand bg-card px-4">
+        <ul className="divide-y divide-line rounded-[22px] border border-line bg-card px-4">
           {expense.shares.map((s) => {
             const person = people.find((p) => p.id === s.personId)
             const paid = expense.payers.find((p) => p.personId === s.personId)?.cents
@@ -79,7 +79,7 @@ export function ExpenseDetailSheet({
             type="button"
             onClick={onDelete}
             disabled={!canEdit}
-            className="flex min-h-14 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[18px] font-extrabold text-expense disabled:opacity-50"
+            className="flex min-h-14 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[18px] font-extrabold text-expense disabled:opacity-50"
           >
             <Trash2 aria-hidden="true" className="size-5" /> Eliminar
           </button>

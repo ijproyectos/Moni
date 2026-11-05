@@ -78,7 +78,7 @@ export function PaymentRow({
       {payment.voidedElsewhere && payment.status === 'posted' && (
         <div
           role="alert"
-          className="flex gap-2 rounded-[14px] bg-blush/60 p-3 text-[14px] leading-5"
+          className="flex gap-2 rounded-[14px] bg-tint-red p-3 text-[14px] leading-5"
         >
           <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-expense" />
           <span>

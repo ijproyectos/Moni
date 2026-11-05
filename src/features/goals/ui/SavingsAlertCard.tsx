@@ -19,7 +19,7 @@ export function SavingsAlertCard({
     <section
       aria-label={`Ahorros comprometidos en ${alert.accountName}`}
       className={cn(
-        'flex flex-col gap-2 rounded-[24px] border border-expense/40 bg-blush/50 p-4',
+        'flex flex-col gap-2 rounded-[24px] border border-expense/40 bg-tint-red p-4',
         className,
       )}
     >

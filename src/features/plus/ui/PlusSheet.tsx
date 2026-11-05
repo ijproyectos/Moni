@@ -100,7 +100,7 @@ export function PlusSheet({ onClose, reason = 'generic' }: PlusSheetProps) {
           spellCheck={false}
           maxLength={64}
           placeholder="Escribí tu código"
-          className="h-14 rounded-[18px] border border-sand bg-card px-4 text-[17px]"
+          className="h-14 rounded-[18px] border border-line bg-card px-4 text-[17px]"
         />
         {error && (
           <p role="alert" className="text-center text-sm text-expense">

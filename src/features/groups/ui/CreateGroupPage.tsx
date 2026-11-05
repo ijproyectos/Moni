@@ -65,7 +65,7 @@ export function CreateGroupPage() {
   const [kind, setKind] = useState<GroupKind | null>(null)
 
   return (
-    <section className="flex flex-col gap-3 px-4 pt-14">
+    <section className="figma-scale flex flex-col gap-3 px-5 pt-14">
       <button
         type="button"
         aria-label="Cerrar"
@@ -84,9 +84,9 @@ export function CreateGroupPage() {
             <button
               type="button"
               onClick={() => setKind(o.kind)}
-              className="flex w-full items-center gap-4 rounded-[24px] border border-sand bg-card p-4 text-left"
+              className="flex w-full items-center gap-4 rounded-[24px] border border-line bg-card p-4 text-left"
             >
-              <span className="flex size-[60px] shrink-0 items-center justify-center rounded-[18px] bg-lime/40">
+              <span className="flex size-[60px] shrink-0 items-center justify-center rounded-[18px] bg-tint-green">
                 <o.icon aria-hidden="true" className="size-7" strokeWidth={2} />
               </span>
               <span className="flex-1">
@@ -263,7 +263,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
         {couple ? (
           <>
             <SectionLabel className="mt-1">Tu pareja</SectionLabel>
-            <div className="rounded-[24px] border border-sand bg-card p-4">
+            <div className="rounded-[24px] border border-line bg-card p-4">
               {partner ? (
                 <div className="flex items-center gap-3">
                   <Avatar name={partner.name} />
@@ -271,13 +271,13 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                     <span className="block text-[18px] font-extrabold">{partner.name}</span>
                     <span className="block text-[14px] text-text-muted">Lo cargás vos</span>
                   </span>
-                  <span className="rounded-full bg-gold/40 px-3 py-0.5 text-[13px] font-extrabold">
+                  <span className="rounded-full bg-tint-gold px-3 py-0.5 text-[13px] font-extrabold">
                     Sin cuenta
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <span className="flex size-12 items-center justify-center rounded-full bg-blush/60">
+                  <span className="flex size-12 items-center justify-center rounded-full bg-tint-red">
                     <UserPlus aria-hidden="true" className="size-5" />
                   </span>
                   <span className="flex-1">
@@ -286,7 +286,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                       Le mandás el código y se une
                     </span>
                   </span>
-                  <span className="rounded-full bg-gold/40 px-3 py-0.5 text-[13px] font-extrabold">
+                  <span className="rounded-full bg-tint-gold px-3 py-0.5 text-[13px] font-extrabold">
                     Pendiente
                   </span>
                 </div>
@@ -294,7 +294,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
               <button
                 type="button"
                 onClick={() => setAdding(true)}
-                className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-sand text-[16px] font-extrabold"
+                className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-line text-[16px] font-extrabold"
               >
                 {partner ? 'Cambiar' : 'Agregarla por nombre'}{' '}
                 <ChevronRight aria-hidden="true" className="size-4" />
@@ -313,7 +313,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                   ]}
                 />
                 {split === 'income' ? (
-                  <div className="rounded-[20px] border border-sand bg-card p-4">
+                  <div className="rounded-[20px] border border-line bg-card p-4">
                     <div className="flex justify-between text-[17px] font-extrabold">
                       <span>Vos 60 %</span>
                       <span>{partner?.name ?? 'Tu pareja'} 40 %</span>
@@ -341,8 +341,8 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
             <SectionLabel className="mt-1">
               {kind === 'casa' ? 'Quiénes viven' : 'Quiénes están'}
             </SectionLabel>
-            <div className="rounded-[24px] border border-sand bg-card px-4 py-2">
-              <ul className="divide-y divide-sand">
+            <div className="rounded-[24px] border border-line bg-card px-4 py-2">
+              <ul className="divide-y divide-line">
                 <li className="flex items-center gap-3 py-2">
                   <Avatar name="Vos" />
                   <span className="flex-1">
@@ -360,7 +360,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                       <span className="block text-[18px] font-extrabold">{g.name}</span>
                       <span className="block text-[14px] text-text-muted">Lo cargás vos</span>
                     </span>
-                    <span className="rounded-full bg-gold/40 px-3 py-0.5 text-[13px] font-extrabold">
+                    <span className="rounded-full bg-tint-gold px-3 py-0.5 text-[13px] font-extrabold">
                       Sin cuenta
                     </span>
                   </li>
@@ -408,7 +408,7 @@ export function RecurringList({
   onChange: (items: Recurring[]) => void
 }) {
   return (
-    <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card px-4">
+    <ul className="divide-y divide-line rounded-[24px] border border-line bg-card px-4">
       {items.map((r) => {
         const Icon = RECURRING_ICONS[r.icon]
         return (

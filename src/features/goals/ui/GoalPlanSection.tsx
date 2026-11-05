@@ -103,7 +103,7 @@ export function GoalPlanSection({
       )}
 
       {plan.remainingCents > 0 && goal.status !== 'completed' && (
-        <div className="flex flex-col gap-2 border-t border-sand pt-3">
+        <div className="flex flex-col gap-2 border-t border-line pt-3">
           <label className="flex flex-col gap-1">
             <span className="text-[16px] font-extrabold">Simulador</span>
             <span className="text-[14px] leading-5 text-text-muted">

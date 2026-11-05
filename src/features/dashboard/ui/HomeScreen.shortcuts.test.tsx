@@ -29,7 +29,7 @@ const summary: MonthSummary = {
   ],
 }
 
-function renderHome(props: { goals?: { count: number }; antsOn?: boolean } = {}) {
+function renderHome(props: { antsOn?: boolean } = {}) {
   render(
     <MemoryRouter>
       <HomeScreen
@@ -40,65 +40,41 @@ function renderHome(props: { goals?: { count: number }; antsOn?: boolean } = {})
         initial="J"
         onAddMovement={vi.fn()}
         shortcuts={{ ants: props.antsOn ?? true }}
-        goals={
-          props.goals
-            ? { reservedCents: 100, targetCents: 1_000, count: props.goals.count }
-            : undefined
-        }
       />
     </MemoryRouter>,
   )
 }
 
-const metas = () => screen.queryByRole('link', { name: /Metas/ })
 const hormigas = () => screen.queryByRole('link', { name: /Hormigas/ })
 
 beforeEach(() => {
   ants.data = undefined
 })
 
-describe('Home: Metas and Hormigas only when there is something real to show', () => {
-  it('shows neither by default, and "Últimos movimientos" takes their place', () => {
+describe('Home: Hormigas only when there is something real to show', () => {
+  it('is not there by default, and "Movimientos" lists the newest', () => {
     renderHome()
-    expect(metas()).toBeNull()
     expect(hormigas()).toBeNull()
-    expect(screen.getByRole('heading', { name: 'Últimos movimientos' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Movimientos' })).toBeInTheDocument()
+    expect(screen.getByText('Café de prueba')).toBeInTheDocument()
   })
 
-  it('Metas appears with at least one active goal', () => {
-    renderHome({ goals: { count: 1 } })
-    expect(metas()).toHaveAttribute('href', '/metas')
-    expect(hormigas()).toBeNull()
-  })
-
-  it('Hormigas appears only with the feature on and real ant expenses', () => {
+  it('appears only with the feature on and real ant expenses', () => {
     ants.data = { monthTotalCents: 1_200_000 }
     renderHome()
     expect(hormigas()).toHaveTextContent('$12.000')
-    expect(metas()).toBeNull()
+    expect(hormigas()).toHaveAttribute('href', '/hormigas')
   })
 
-  it('Hormigas with no ant expenses (total $0) is not shown, nor a "—" placeholder', () => {
+  it('with no ant expenses (total $0) it is not shown, nor a "—" placeholder', () => {
     ants.data = { monthTotalCents: 0 }
     renderHome()
     expect(hormigas()).toBeNull()
   })
 
-  it('Hormigas turned off stays hidden even with expenses', () => {
+  it('turned off it stays hidden even with expenses', () => {
     ants.data = { monthTotalCents: 1_200_000 }
     renderHome({ antsOn: false })
     expect(hormigas()).toBeNull()
-  })
-
-  it('with both, they share the row; with one, it takes the full width', () => {
-    ants.data = { monthTotalCents: 1_200_000 }
-    renderHome({ goals: { count: 2 } })
-    expect(metas()?.parentElement).toHaveClass('grid-cols-2')
-    expect(hormigas()?.parentElement).toBe(metas()?.parentElement)
-  })
-
-  it('the single card is not squeezed into half a row', () => {
-    renderHome({ goals: { count: 1 } })
-    expect(metas()?.parentElement).not.toHaveClass('grid-cols-2')
   })
 })

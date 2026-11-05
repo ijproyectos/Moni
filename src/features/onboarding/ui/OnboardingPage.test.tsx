@@ -61,6 +61,16 @@ function renderFlow() {
   return user
 }
 
+const BENEFIT_SLIDES = 7
+
+/** Walks the benefit slides: "Seguir" on all but the last, "Continuar" on the last. */
+async function throughBenefits(user: ReturnType<typeof renderFlow>) {
+  for (let i = 1; i < BENEFIT_SLIDES; i++) {
+    await user.click(screen.getByRole('button', { name: 'Seguir' }))
+  }
+  await user.click(screen.getByRole('button', { name: 'Continuar' }))
+}
+
 async function goToCategories() {
   const user = renderFlow()
   await user.click(screen.getByRole('button', { name: /Saber en qué se me va la plata/ }))
@@ -68,9 +78,7 @@ async function goToCategories() {
   expect(
     screen.getByRole('heading', { name: 'Jonatan, así te va a ayudar Moni' }),
   ).toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: 'Seguir' }))
-  await user.click(screen.getByRole('button', { name: 'Seguir' }))
-  await user.click(screen.getByRole('button', { name: 'Continuar' }))
+  await throughBenefits(user)
   await user.click(screen.getByRole('checkbox', { name: /También uso dólares/ }))
   await user.click(screen.getByRole('button', { name: 'Continuar' }))
   return user
@@ -160,47 +168,101 @@ describe('OnboardingPage', () => {
       notificationsOptIn: null,
     }
 
-    it('shows only three benefit slides, with Omitir on every one including the last', async () => {
+    /** "Omitir configuración" asks first; this confirms it. */
+    async function skipAll(user: ReturnType<typeof renderFlow>) {
+      await user.click(screen.getByRole('button', { name: 'Omitir configuración' }))
+      await user.click(screen.getByRole('button', { name: 'Omitir y terminar' }))
+    }
+
+    it('shows the seven benefit slides of the design, with Saltar and Omitir configuración on every one', async () => {
       const user = renderFlow()
       await user.click(screen.getByRole('button', { name: /Saber en qué se me va la plata/ }))
       await user.click(screen.getByRole('button', { name: 'Continuar' }))
       expect(
         screen
           .getAllByRole('listitem')
-          .filter((li) => /de 3$/.test(li.getAttribute('aria-label') ?? '')),
-      ).toHaveLength(3)
-      expect(screen.getByRole('button', { name: 'Omitir' })).toBeInTheDocument()
-      await user.click(screen.getByRole('button', { name: 'Seguir' }))
-      await user.click(screen.getByRole('button', { name: 'Seguir' }))
+          .filter((li) => /de 7$/.test(li.getAttribute('aria-label') ?? '')),
+      ).toHaveLength(7)
+      expect(screen.getByRole('button', { name: 'Saltar' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Omitir configuración' })).toBeInTheDocument()
+      for (let i = 1; i < BENEFIT_SLIDES; i++) {
+        await user.click(screen.getByRole('button', { name: 'Seguir' }))
+      }
       expect(screen.getByRole('button', { name: 'Continuar' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Omitir' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Saltar' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Omitir configuración' })).toBeInTheDocument()
+    })
+
+    it('Saltar on the benefits only moves on to the currency: nothing is saved', async () => {
+      const user = renderFlow()
+      await user.click(screen.getByRole('button', { name: /Saber en qué se me va la plata/ }))
+      await user.click(screen.getByRole('button', { name: 'Continuar' }))
+      await user.click(screen.getByRole('button', { name: 'Saltar' }))
+      expect(
+        screen.getByRole('heading', { name: '¿En qué moneda manejás tu plata?' }),
+      ).toBeInTheDocument()
+      expect(mutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('Saltar on the currency keeps pesos only and goes on to the categories', async () => {
+      const user = renderFlow()
+      await user.click(screen.getByRole('button', { name: 'Continuar' }))
+      await throughBenefits(user)
+      await user.click(screen.getByRole('checkbox', { name: /También uso dólares/ }))
+      await user.click(screen.getByRole('button', { name: 'Saltar' }))
+      expect(screen.getByRole('heading', { name: 'Elegí tus categorías' })).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Volver' }))
+      expect(screen.getByRole('checkbox', { name: /También uso dólares/ })).toHaveAttribute(
+        'aria-checked',
+        'false',
+      )
+      expect(mutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('Saltar on the categories restores the suggested ones and goes on to the notifications', async () => {
+      const user = await goToCategories()
+      await user.click(screen.getByRole('button', { name: 'Quitar todas' }))
+      await user.click(screen.getByRole('button', { name: 'Saltar' }))
+      expect(screen.getByRole('heading', { name: 'Que no se te escape nada' })).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Volver' }))
+      expect(screen.getByRole('button', { name: 'Continuar · 3 elegidas' })).toBeInTheDocument()
+      expect(mutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('Omitir configuración asks first and does not save if the person keeps configuring', async () => {
+      const user = renderFlow()
+      await user.click(screen.getByRole('button', { name: /Saber en qué se me va la plata/ }))
+      await user.click(screen.getByRole('button', { name: 'Continuar' }))
+      await user.click(screen.getByRole('button', { name: 'Omitir configuración' }))
+      expect(screen.getByRole('dialog', { name: '¿Omitir la configuración?' })).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Seguir configurando' }))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(mutateAsync).not.toHaveBeenCalled()
     })
 
     it('finishes with defaults from the benefits step', async () => {
       const user = renderFlow()
       await user.click(screen.getByRole('button', { name: /Saber en qué se me va la plata/ }))
       await user.click(screen.getByRole('button', { name: 'Continuar' }))
-      await user.click(screen.getByRole('button', { name: 'Omitir' }))
+      await skipAll(user)
       await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith(defaults))
       expect(await screen.findByText('home')).toBeInTheDocument()
     })
 
-    it('ignores earlier answers when skipping from the currency step', async () => {
+    it('ignores earlier answers when skipping everything from the currency step', async () => {
       const user = renderFlow()
       await user.click(screen.getByRole('button', { name: /Saber en qué se me va la plata/ }))
       await user.click(screen.getByRole('button', { name: 'Continuar' }))
-      await user.click(screen.getByRole('button', { name: 'Seguir' }))
-      await user.click(screen.getByRole('button', { name: 'Seguir' }))
-      await user.click(screen.getByRole('button', { name: 'Continuar' }))
+      await throughBenefits(user)
       await user.click(screen.getByRole('checkbox', { name: /También uso dólares/ }))
-      await user.click(screen.getByRole('button', { name: 'Omitir' }))
+      await skipAll(user)
       await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith(defaults))
     })
 
     it('finishes with defaults from the categories step even with a custom selection', async () => {
       const user = await goToCategories()
       await user.click(screen.getByRole('button', { name: 'Comida' }))
-      await user.click(screen.getByRole('button', { name: 'Omitir' }))
+      await skipAll(user)
       await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith(defaults))
       expect(await screen.findByText('home')).toBeInTheDocument()
     })
@@ -208,7 +270,7 @@ describe('OnboardingPage', () => {
     it('finishes with defaults from the notifications step, bypassing the paywall', async () => {
       const user = await goToCategories()
       await user.click(screen.getByRole('button', { name: 'Continuar · 3 elegidas' }))
-      await user.click(screen.getByRole('button', { name: 'Omitir' }))
+      await skipAll(user)
       await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith(defaults))
       expect(await screen.findByText('home')).toBeInTheDocument()
     })
@@ -216,9 +278,45 @@ describe('OnboardingPage', () => {
     it('shows an error and stays when saving the skip fails', async () => {
       mutateAsync.mockRejectedValueOnce(new Error('offline'))
       const user = await goToCategories()
-      await user.click(screen.getByRole('button', { name: 'Omitir' }))
+      await skipAll(user)
       expect(await screen.findByRole('alert')).toBeInTheDocument()
       expect(screen.queryByText('home')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('design', () => {
+    it('the screen takes the tint of each benefit slide and goes back to the canvas after them', async () => {
+      const user = renderFlow()
+      await user.click(screen.getByRole('button', { name: /Saber en qué se me va la plata/ }))
+      await user.click(screen.getByRole('button', { name: 'Continuar' }))
+      const main = screen.getByRole('main')
+      expect(main.style.getPropertyValue('--ob-light')).toBe('#dce9c8')
+      await user.click(screen.getByRole('button', { name: 'Seguir' }))
+      expect(main.style.getPropertyValue('--ob-light')).toBe('#f5e9c8')
+      for (let i = 2; i < BENEFIT_SLIDES; i++) {
+        await user.click(screen.getByRole('button', { name: 'Seguir' }))
+      }
+      await user.click(screen.getByRole('button', { name: 'Continuar' }))
+      expect(main.style.getPropertyValue('--ob-light')).toBe('')
+    })
+
+    it('the progress bar has one segment per step and fills the ones reached', async () => {
+      const user = renderFlow()
+      const bar = () => screen.getByRole('progressbar', { name: 'Progreso' })
+      expect(bar().children).toHaveLength(5)
+      expect(bar()).toHaveAttribute('aria-valuenow', '1')
+      await user.click(screen.getByRole('button', { name: 'Continuar' }))
+      expect(bar()).toHaveAttribute('aria-valuenow', '2')
+    })
+
+    it('the dollar row lights up only when the second currency is chosen', async () => {
+      const user = renderFlow()
+      await user.click(screen.getByRole('button', { name: 'Continuar' }))
+      await throughBenefits(user)
+      const usd = () => screen.getByLabelText(/Dólar, USD/)
+      expect(usd()).toHaveAttribute('aria-label', 'Segunda moneda disponible: Dólar, USD')
+      await user.click(screen.getByRole('checkbox', { name: /También uso dólares/ }))
+      expect(usd()).toHaveAttribute('aria-label', 'Segunda moneda: Dólar, USD')
     })
   })
 })

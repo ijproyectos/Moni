@@ -28,7 +28,7 @@ import type { Subscription, SubscriptionPeriod } from '../domain/subscription'
 import { ServiceLogo } from './ServiceLogo'
 
 const fieldClass =
-  'h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
+  'h-14 w-full rounded-[18px] border border-line bg-card px-4 text-[17px] text-ink placeholder:text-text-muted'
 
 type Target =
   | { kind: 'catalog'; service: CatalogService }
@@ -286,7 +286,7 @@ export function SubscriptionFormSheet({
           </div>
         </fieldset>
 
-        <div className="flex items-center gap-3 rounded-[18px] border border-sand bg-card px-4 py-3">
+        <div className="flex items-center gap-3 rounded-[18px] border border-line bg-card px-4 py-3">
           <span className="flex-1">
             <span className="block text-[17px] font-extrabold">Avisarme antes del cobro</span>
             <span className="block text-[14px] text-text-muted">

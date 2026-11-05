@@ -7,6 +7,7 @@ import { parseAmountInput } from '@/shared/lib/amountInput'
 import { formatRelativeDay } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
 import { cn } from '@/shared/ui/cn'
+import { KIND_ACTIVE } from '@/shared/ui/fieldStyles'
 import { formatAmountEvent } from '@/shared/ui/amountField'
 
 interface MovementConfirmCardsProps {
@@ -66,7 +67,7 @@ function InlineEdit({
         }}
         className={cn(
           className,
-          'w-full min-w-0 rounded-[12px] border border-sand bg-canvas px-2 outline-none',
+          'w-full min-w-0 rounded-[12px] border border-line bg-canvas px-2 outline-none',
         )}
       />
     )
@@ -159,7 +160,7 @@ export function MovementConfirmCards({
           <li
             key={draft.key}
             aria-label={`Movimiento ${n}`}
-            className={cn('rounded-[24px] bg-card ring-1 ring-sand', dense ? 'p-3' : 'p-3.5')}
+            className={cn('rounded-[24px] bg-card ring-1 ring-line', dense ? 'p-3' : 'p-3.5')}
           >
             <div className="flex items-center justify-between gap-2">
               <div role="group" aria-label={`Tipo del movimiento ${n}`} className="flex gap-1">
@@ -176,8 +177,8 @@ export function MovementConfirmCards({
                       'min-h-8 rounded-full px-3 font-display text-[13px] font-extrabold',
                       draft.kind === kind
                         ? kind === 'expense'
-                          ? 'bg-blush text-forest'
-                          : 'bg-lime text-forest'
+                          ? KIND_ACTIVE.expense
+                          : KIND_ACTIVE.income
                         : 'bg-transparent text-text-muted',
                     )}
                   >
@@ -284,7 +285,9 @@ export function MovementConfirmCards({
             </div>
 
             {hint && !error && (
-              <p className="mt-1.5 text-[13px] font-semibold text-[#8a5a00] dark:text-gold">{hint}</p>
+              <p className="mt-1.5 text-[13px] font-semibold text-[#8a5a00] dark:text-gold">
+                {hint}
+              </p>
             )}
             {error && (
               <p role="alert" className="mt-1.5 text-[13px] font-semibold text-expense">

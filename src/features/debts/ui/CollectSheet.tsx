@@ -109,7 +109,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
                     type="button"
                     aria-pressed={selected}
                     onClick={() => (withData ? setPickId(a.id) : setAddingId(a.id))}
-                    className={cn(OPTION, selected ? OPTION_SELECTED : 'border-sand')}
+                    className={cn(OPTION, selected ? OPTION_SELECTED : 'border-line')}
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block text-[18px] font-extrabold">{a.name}</span>
@@ -128,7 +128,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
               type="button"
               aria-pressed={picked === null}
               onClick={() => setPickId(null)}
-              className={cn(OPTION, picked === null ? OPTION_SELECTED : 'border-sand')}
+              className={cn(OPTION, picked === null ? OPTION_SELECTED : 'border-line')}
             >
               <span className="flex-1 text-[17px] font-extrabold">
                 No incluir datos para transferir
@@ -149,7 +149,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
         <SectionLabel>Así va a salir</SectionLabel>
         <p
           aria-label="Mensaje"
-          className="whitespace-pre-line break-words rounded-[20px] bg-lime/30 p-4 text-[16px] leading-6"
+          className="whitespace-pre-line break-words rounded-[20px] bg-tint-green p-4 text-[16px] leading-6"
         >
           {message}
         </p>
@@ -164,12 +164,12 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
           <Button variant="dark" onClick={() => void sendInMoni()} disabled={remind.isPending}>
             {remind.isPending ? 'Enviando…' : 'Enviar por Moni'}
           </Button>
-          <Button variant="ghost" className="border-2 border-sand" onClick={() => void share()}>
+          <Button variant="ghost" className="border-2 border-line" onClick={() => void share()}>
             <Share2 aria-hidden="true" className="mr-2 size-5" /> Compartir
           </Button>
           <Button
             variant="ghost"
-            className="border-2 border-sand"
+            className="border-2 border-line"
             onClick={() => void copyText(message, toast, 'Mensaje copiado')}
           >
             Copiar mensaje

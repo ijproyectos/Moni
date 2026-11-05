@@ -75,7 +75,7 @@ export function AguinaldoPage() {
   }
 
   return (
-    <Page className="pb-28">
+    <Page native className="pb-28">
       <PageHeader title="Tu aguinaldo" />
       <MoniCalcCard
         label="Moni te acompaña"
@@ -106,7 +106,7 @@ export function AguinaldoPage() {
           {isDefaultDate ? 'Otra fecha' : formatDayMonth(plan.payDate)}
         </ChoiceChip>
       </div>
-      <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3">
+      <div className="flex items-center gap-3 rounded-[22px] border border-line bg-card px-4 py-3">
         <span className="flex-1">
           <span className="block text-[17px] font-extrabold">Avisarme cuando cobre</span>
           <span className="block text-[15px] text-text-muted">
@@ -135,11 +135,11 @@ export function AguinaldoPage() {
 }
 
 const KIND_ICONS: Record<DestinationKind, { icon: LucideIcon; bg: string; color: string }> = {
-  goal: { icon: House, bg: '#e3f2cf', color: '#064735' },
-  trip: { icon: Send, bg: '#fdeab8', color: '#c47f00' },
+  goal: { icon: House, bg: 'var(--color-tint-green)', color: 'var(--color-ink)' },
+  trip: { icon: Send, bg: 'var(--color-tint-gold)', color: '#c47f00' },
   card: { icon: CreditCard, bg: '#e7defa', color: '#6b4fb8' },
-  account: { icon: WalletCards, bg: '#e3f2cf', color: '#2f7d1f' },
-  installments: { icon: RefreshCw, bg: '#fdeab8', color: '#8a5a00' },
+  account: { icon: WalletCards, bg: 'var(--color-tint-green)', color: '#2f7d1f' },
+  installments: { icon: RefreshCw, bg: 'var(--color-tint-gold)', color: '#8a5a00' },
 }
 
 // Screens 071 / 072 — ¿A dónde va?
@@ -159,14 +159,14 @@ export function AguinaldoSplitPage() {
   }
 
   return (
-    <Page className="pb-28">
+    <Page native className="pb-28">
       <PageHeader title="¿A dónde va?" />
       <section className="rounded-[28px] bg-forest p-5 text-cream">
         <div className="flex items-start justify-between">
           <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
             Tu aguinaldo
           </p>
-          <span className="rounded-full bg-lime px-3 py-0.5 text-[14px] font-extrabold text-forest">
+          <span className="rounded-full bg-tint-green px-3 py-0.5 text-[14px] font-extrabold text-ink">
             {left === 0
               ? 'Todo repartido'
               : left > 0
@@ -185,7 +185,7 @@ export function AguinaldoSplitPage() {
           ))}
         </div>
       </section>
-      <ul className="divide-y divide-sand rounded-[24px] border border-sand bg-card">
+      <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
         {plan.destinations.map((d) => {
           const visual = KIND_ICONS[d.kind]
           return (
@@ -205,7 +205,7 @@ export function AguinaldoSplitPage() {
                 <span className="block text-[16px] font-extrabold leading-5">{d.name}</span>
                 <span className="block text-[13px] leading-4 text-text-muted">{detail(d)}</span>
               </span>
-              <label className="flex items-center rounded-[14px] border border-sand bg-canvas px-2 py-1.5 text-[17px] font-extrabold">
+              <label className="flex items-center rounded-[14px] border border-line bg-canvas px-2 py-1.5 text-[17px] font-extrabold">
                 $
                 <input
                   aria-label={`Monto para ${d.name}`}
@@ -224,7 +224,7 @@ export function AguinaldoSplitPage() {
         <Plus aria-hidden="true" className="size-5" strokeWidth={2.5} /> Agregar otro destino
       </DashedButton>
       <Panel className="flex items-start gap-4">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-tint-gold">
           <MoniGlyph className="size-9" />
         </span>
         <p className="text-[16px] leading-6">
@@ -248,8 +248,20 @@ export function AguinaldoSplitPage() {
           <div className="flex flex-col gap-3">
             {(
               [
-                ['goal', Target, 'Una meta', 'Sumarlo a una que ya tenés o crear una', '#e3f2cf'],
-                ['trip', Send, 'Un viaje', 'Para tu parte o tu presupuesto', '#d9ebe4'],
+                [
+                  'goal',
+                  Target,
+                  'Una meta',
+                  'Sumarlo a una que ya tenés o crear una',
+                  'var(--color-tint-green)',
+                ],
+                [
+                  'trip',
+                  Send,
+                  'Un viaje',
+                  'Para tu parte o tu presupuesto',
+                  'var(--color-tint-teal)',
+                ],
                 [
                   'card',
                   CreditCard,
@@ -257,7 +269,13 @@ export function AguinaldoSplitPage() {
                   'Pagar el cierre o dejarlo guardado',
                   '#e7defa',
                 ],
-                ['installments', RefreshCw, 'Cuotas', 'Adelantar las que ya tenés', '#fdeab8'],
+                [
+                  'installments',
+                  RefreshCw,
+                  'Cuotas',
+                  'Adelantar las que ya tenés',
+                  'var(--color-tint-gold)',
+                ],
               ] as const
             ).map(([kind, icon, title, subtitle, bg]) => (
               <OptionRow
@@ -305,7 +323,7 @@ export function AguinaldoSplitPage() {
             <Button
               variant="ghost"
               onClick={() => setAdding(false)}
-              className="h-14 rounded-full border-2 border-sand bg-card text-ink"
+              className="h-14 rounded-full border-2 border-line bg-card text-ink"
             >
               Cancelar
             </Button>
@@ -321,7 +339,7 @@ export function AguinaldoDonePage() {
   const navigate = useNavigate()
   const plan = useAguinaldo()
   return (
-    <Page className="pb-28 pt-12">
+    <Page native className="pb-28 pt-12">
       <button
         type="button"
         aria-label="Cerrar"

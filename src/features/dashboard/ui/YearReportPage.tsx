@@ -34,7 +34,7 @@ export function YearReportPage() {
     average ? Math.round(((cents - average) / average) * 100) : 0
 
   return (
-    <Page>
+    <Page native>
       <PageHeader
         title="Tu año"
         fallbackTo="/"
@@ -48,7 +48,7 @@ export function YearReportPage() {
           </Link>
         }
       />
-      <section className="flex items-center gap-3 rounded-[24px] bg-cream p-5">
+      <section className="flex items-center gap-3 rounded-[24px] border border-line bg-card p-5">
         <div className="flex-1">
           <h2 className="text-[24px] font-extrabold">Tu año en plata</h2>
           <p className="text-[16px] leading-6 text-text-muted">
@@ -62,9 +62,9 @@ export function YearReportPage() {
 
       <Link
         to="/ingresos"
-        className="flex min-h-14 items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3"
+        className="flex min-h-14 items-center gap-3 rounded-[22px] border border-line bg-card px-4 py-3"
       >
-        <span className="flex size-11 items-center justify-center rounded-full bg-lime/40">
+        <span className="flex size-11 items-center justify-center rounded-full bg-tint-green">
           <Wallet aria-hidden="true" className="size-5" />
         </span>
         <span className="flex-1">
@@ -141,7 +141,7 @@ export function YearReportPage() {
 
       {top && lightest && (
         <Panel className="flex items-start gap-4">
-          <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-gold/40">
+          <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-tint-gold">
             <MoniGlyph className="size-9" />
           </span>
           <p className="text-[16px] leading-6">
@@ -154,12 +154,12 @@ export function YearReportPage() {
 
       {ranked.length > 0 && (
         <Panel className="py-1">
-          <ul className="divide-y divide-sand">
+          <ul className="divide-y divide-line">
             {ranked.slice(0, 3).map((t, i) => {
               const pct = vsAverage(t.cents)
               return (
                 <li key={t.month} className="flex items-center gap-3 py-3">
-                  <span className="flex size-9 items-center justify-center rounded-full bg-gold/40 font-extrabold">
+                  <span className="flex size-9 items-center justify-center rounded-full bg-tint-gold font-extrabold">
                     {i + 1}
                   </span>
                   <span className="flex-1">
@@ -170,7 +170,7 @@ export function YearReportPage() {
                   </span>
                   <span className="flex flex-col items-end gap-1">
                     <span className="text-[18px] font-extrabold">{formatArs(t.cents)}</span>
-                    <span className="flex items-center gap-0.5 rounded-full bg-gold/45 px-2 py-0.5 text-[13px] font-extrabold">
+                    <span className="flex items-center gap-0.5 rounded-full bg-tint-gold px-2 py-0.5 text-[13px] font-extrabold">
                       {pct >= 0 ? (
                         <ArrowUp aria-hidden="true" className="size-3.5" />
                       ) : (

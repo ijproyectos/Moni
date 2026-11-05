@@ -24,7 +24,7 @@ export function GroupKindTile({
     <span
       aria-hidden="true"
       className={cn(
-        'flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-[16px] bg-lime/40 text-ink',
+        'flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-[16px] bg-tint-green text-ink',
         showPhoto && 'ring-1 ring-inset ring-ink/10',
         className,
       )}

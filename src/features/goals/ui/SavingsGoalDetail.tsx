@@ -85,7 +85,7 @@ export function SavingsGoalDetail({
   }
 
   return (
-    <Page>
+    <Page native>
       <PageHeader title={goal.name} backTo="/metas" />
       <SavingsHero
         label={
@@ -186,7 +186,7 @@ export function SavingsGoalDetail({
         {movements.length === 0 ? (
           <p className="mt-2 text-[15px] text-text-muted">Todavía no hay aportes ni retiros.</p>
         ) : (
-          <ul className="mt-1 divide-y divide-sand">
+          <ul className="mt-1 divide-y divide-line">
             {movements.map((m) => {
               const posted = m.status === 'posted'
               return (

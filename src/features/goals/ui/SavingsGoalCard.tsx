@@ -42,7 +42,7 @@ export function SavingsGoalCard({
       type="button"
       onClick={onOpen}
       aria-label={`${goal.name}, ${percentText(goal)} reservado`}
-      className="block w-full rounded-[24px] border border-sand bg-card p-4 text-left"
+      className="block w-full rounded-[24px] border border-line bg-card p-4 text-left"
     >
       <div className="flex items-center gap-3">
         <IconTile icon={kind.icon} bg={kind.bg} color={kind.color} />

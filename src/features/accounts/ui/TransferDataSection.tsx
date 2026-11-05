@@ -16,7 +16,7 @@ import {
 } from '../domain/account'
 
 const inputClass =
-  'h-14 w-full min-w-0 rounded-[18px] border border-sand bg-canvas px-4 text-[17px] font-extrabold text-ink placeholder:font-normal placeholder:text-text-muted'
+  'h-14 w-full min-w-0 rounded-[18px] border border-line bg-canvas px-4 text-[17px] font-extrabold text-ink placeholder:font-normal placeholder:text-text-muted'
 
 /**
  * "Datos para transferencias" of a bank or a wallet: an optional alias and CBU / CVU, kept in Supabase. Saving them only
@@ -115,7 +115,7 @@ export function TransferDataSection({
             variant="ghost"
             onClick={onDone}
             disabled={update.isPending}
-            className="border-2 border-sand"
+            className="border-2 border-line"
           >
             Cancelar
           </Button>
@@ -133,9 +133,9 @@ export function TransferDataSection({
   ].filter((r) => r.value)
 
   return (
-    <section className="rounded-[24px] border border-sand bg-card p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+    <section className="rounded-[24px] border border-line bg-card p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-[10rem] flex-1">
           <SectionLabel>Datos para transferencias</SectionLabel>
           {!hasTransferData(account) && (
             <p className="mt-1 text-[15px] leading-5 text-text-muted">

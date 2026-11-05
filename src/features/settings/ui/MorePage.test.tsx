@@ -22,6 +22,21 @@ vi.mock('@/features/auth/api/useProfile', () => ({
 vi.mock('@/features/onboarding/api/useGoals', () => ({
   useEnabledFeatures: () => ({ has: () => true }),
 }))
+vi.mock('@/features/goals/api/useSavings', () => ({
+  useSavings: () => ({ data: { goals: [] } }),
+}))
+vi.mock('@/features/subscriptions/api/useSubscriptions', () => ({
+  useSubscriptions: () => ({ data: { subscriptions: subsData.current } }),
+}))
+vi.mock('@/features/categories/api/useCategories', () => ({
+  useCategories: () => ({ data: [{ id: 'c', name: 'Comida', color: '#e5533d' }] }),
+}))
+vi.mock('@/features/trips/api/useTrips', () => ({ useTrips: () => ({ data: [] }) }))
+vi.mock('@/features/insights/api/useAnts', () => ({
+  useAnts: () => ({ data: { monthTotalCents: antsData.current } }),
+}))
+const subsData = vi.hoisted(() => ({ current: [] as unknown[] }))
+const antsData = vi.hoisted(() => ({ current: 0 }))
 const plusState = vi.hoisted(() => ({ isPlus: false, isLoading: false }))
 vi.mock('@/features/plus/api/usePlus', () => ({
   usePlus: () => ({ ...plusState, isFree: !plusState.isPlus, expiresAt: null }),
@@ -98,8 +113,44 @@ describe('MorePage navigation', () => {
     const tile = screen.getByRole('link', { name: /Gastos hormiga/ })
     expect(tile).toHaveAttribute('href', '/hormigas')
     expect(tile).toHaveTextContent('Esos gustitos que suman')
+    expect(tile).toHaveTextContent('Sin hormigas')
     expect(tile).not.toHaveTextContent('Lo chico que se repite')
-    expect(tile.querySelector('svg.lucide-ant')).not.toBeNull()
+  })
+
+  it('shows the real ant total of the month when there is one', () => {
+    antsData.current = 12_500_00
+    try {
+      renderPage()
+      expect(screen.getByRole('link', { name: /Gastos hormiga/ })).toHaveTextContent('$12.500')
+    } finally {
+      antsData.current = 0
+    }
+  })
+
+  it('"Pagos recurrentes" adds up only the active monthly subscriptions', () => {
+    subsData.current = [
+      { id: 'a', status: 'active', period: 'monthly', amountCents: 10_000_00 },
+      { id: 'b', status: 'active', period: 'monthly', amountCents: 5_000_00 },
+      { id: 'c', status: 'active', period: 'yearly', amountCents: 90_000_00 },
+      { id: 'd', status: 'paused', period: 'monthly', amountCents: 7_000_00 },
+    ]
+    try {
+      renderPage()
+      const tile = screen.getByRole('link', { name: /Pagos recurrentes/ })
+      expect(tile).toHaveTextContent('$15.000')
+      expect(tile).toHaveTextContent('por mes · 2 activas')
+    } finally {
+      subsData.current = []
+    }
+  })
+
+  it('"Medios de pago" counts the real media', () => {
+    accountsData.current = [
+      makeAccount({ id: 'a', name: 'Efectivo' }),
+      makeAccount({ id: 'b', name: 'Galicia', kind: 'bank' }),
+    ]
+    renderPage()
+    expect(screen.getByRole('link', { name: /^Medios de pago/ })).toHaveTextContent('2 medios')
   })
 
   it('keeps Medios de pago next to it', () => {

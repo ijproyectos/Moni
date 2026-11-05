@@ -21,7 +21,7 @@ export function ReferralPage() {
   const link = useReferralLink()
   const [sharing, setSharing] = useState(false)
   return (
-    <Page className="pb-28">
+    <Page native className="pb-28">
       <PageHeader title="Recomendá Moni" backTo="/mas" />
       <MoniCalcCard label="Regalá y ganá" mascot={mascotGroup} title="2 meses de Moni Pro gratis" />
       <p className="text-[16px] leading-6">
@@ -58,14 +58,14 @@ export function ReferralPage() {
       <Panel>
         <SectionLabel
           action={
-            <span className="rounded-full bg-lime/40 px-3 py-0.5 text-[13px] font-extrabold">
+            <span className="rounded-full bg-tint-green px-3 py-0.5 text-[13px] font-extrabold">
               Ganaste 2 meses
             </span>
           }
         >
           Tus invitaciones
         </SectionLabel>
-        <ul className="mt-2 divide-y divide-sand">
+        <ul className="mt-2 divide-y divide-line">
           {INVITES.map((inv) => (
             <li key={inv.name} className="flex items-center gap-3 py-2.5">
               <Avatar name={inv.name} />
@@ -76,7 +76,7 @@ export function ReferralPage() {
               <span
                 className={cn(
                   'rounded-full px-3 py-0.5 text-[13px] font-extrabold',
-                  inv.done ? 'bg-lime/40' : 'bg-gold/40',
+                  inv.done ? 'bg-tint-green' : 'bg-tint-gold',
                 )}
               >
                 {inv.badge}

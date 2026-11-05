@@ -29,7 +29,7 @@ export function GoalDetailPage() {
   if (!goal) {
     if (savings.isLoading) {
       return (
-        <Page>
+        <Page native>
           <Skeleton className="h-48" />
         </Page>
       )
@@ -70,7 +70,7 @@ function SharedGoalDetail({
     { name: info.partner, month: info.monthTheirsCents, due: theirs, total: info.theirsCents },
   ]
   return (
-    <Page>
+    <Page native>
       <PageHeader title="Meta compartida" backTo="/metas?tab=shared" />
       <SavingsHero
         label={`${info.space} · ${goal.name}`}
@@ -97,7 +97,7 @@ function SharedGoalDetail({
         <button
           type="button"
           onClick={() => setInviting(true)}
-          className="rounded-[18px] bg-gold/40 px-4 py-3 text-left text-[15px] font-bold"
+          className="rounded-[18px] bg-tint-gold px-4 py-3 text-left text-[15px] font-bold"
         >
           {info.partner} todavía no entró. Tocá para reenviarle el código {info.inviteCode}.
         </button>
@@ -111,7 +111,7 @@ function SharedGoalDetail({
         incomeShare={info.incomeShare}
       />
       <Panel>
-        <ul className="divide-y divide-sand">
+        <ul className="divide-y divide-line">
           {people.map((p) => {
             const done = p.month >= p.due
             return (

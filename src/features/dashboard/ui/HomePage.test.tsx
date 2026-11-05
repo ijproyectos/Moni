@@ -37,12 +37,6 @@ vi.mock('../api/useMonthSummary', () => ({
       refetch: vi.fn(),
     }
   },
-  // The header totals the whole history, whatever month is picked.
-  usePeriodSummary: () => ({
-    isLoading: false,
-    isError: false,
-    data: { incomeCents: 4_000_000_00, expenseCents: 800_000_00 },
-  }),
 }))
 vi.mock('@/features/auth/api/authContext', () => ({
   useAuth: () => ({ user: { id: 'u1', email: 'a@b.c' } }),
@@ -56,11 +50,14 @@ vi.mock('@/features/onboarding/api/useGoals', () => ({
 vi.mock('@/features/goals/api/useSavings', () => ({
   useSavings: () => ({ data: { goals: [] } }),
   useSavingsNoticeCount: () => 0,
+  useSavingsPlanData: () => ({ data: undefined }),
 }))
-vi.mock('@/features/goals/ui/SavingsNotices', () => ({ SavingsNotices: () => null }))
-vi.mock('@/features/recurring/ui/RecurringReminders', () => ({ RecurringReminders: () => null }))
 vi.mock('@/features/recurring/api/useRecurringReminders', () => ({
   useRecurringReminders: () => [],
+}))
+vi.mock('../api/useHomeStories', () => ({ useHomeStories: () => [] }))
+vi.mock('@/features/cards/api/useCards', () => ({
+  useVoidInstallmentPlan: () => ({ mutateAsync: vi.fn() }),
 }))
 vi.mock('@/features/debts/api/useDebts', () => ({ useUnreadNoticeCount: () => 0 }))
 vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: false }) }))
@@ -68,9 +65,11 @@ vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ da
 vi.mock('@/features/categories/api/useCategories', () => ({ useCategories: () => ({ data: [] }) }))
 vi.mock('@/features/transactions/api/useTransactions', () => ({
   useTransactions: () => ({ data: [] }),
+  useTransfers: () => ({ data: [] }),
+  useVoidTransaction: () => ({ mutateAsync: vi.fn() }),
 }))
 vi.mock('@/features/transactions/ui/movementSheetContext', () => ({
-  useMovementSheet: () => ({ openNew: vi.fn() }),
+  useMovementSheet: () => ({ openNew: vi.fn(), openEdit: vi.fn() }),
 }))
 vi.mock('@/features/budgets/api/useBudgets', () => ({ useBudgetStatus: () => ({ data: [] }) }))
 vi.mock('@/features/insights/api/useAnts', () => ({
@@ -103,35 +102,36 @@ describe('Inicio: importes de la tarjeta principal', () => {
   })
   afterEach(() => vi.useRealTimers())
 
-  it('shows the whole-history income and expenses and the available money', () => {
+  it('shows the income and expenses of the current month and the available money', () => {
     setup()
-    expect(header()).toHaveTextContent('-$800.000')
-    expect(header()).toHaveTextContent('+$4.000.000')
+    expect(header()).toHaveTextContent('-$300.000')
+    expect(header()).toHaveTextContent('+$1.000.000')
     expect(available()).toHaveTextContent('$500.000')
   })
 
-  it('keeps the header amounts when another month is picked, and still loads that month', async () => {
+  it('totals follow the month picked, while the available money stays the current balance', async () => {
     const user = setup()
     await pick(user, /octubre/i)
     expect(asked.months).toContain('2026-10-01')
-    expect(header()).toHaveTextContent('-$800.000')
-    expect(header()).toHaveTextContent('+$4.000.000')
+    expect(header()).toHaveTextContent('-$70.000')
+    expect(header()).toHaveTextContent('+$900.000')
+    expect(header()).not.toHaveTextContent('300.000')
     expect(available()).toHaveTextContent('$500.000')
   })
 
-  it('a month with no movements does not read as $0 in the header', async () => {
+  it('a month with no movements reads as $0 in both totals', async () => {
     const user = setup()
     await pick(user, /septiembre/i)
-    expect(header()).not.toHaveTextContent('$0Gastos')
-    expect(header()).toHaveTextContent('+$4.000.000')
+    expect(header()).toHaveTextContent(/Gastos\$0/)
+    expect(header()).toHaveTextContent(/Ingresos\+?\$0/)
     expect(available()).toHaveTextContent('$500.000')
   })
 
-  it('a month of the previous year keeps the header amounts too', async () => {
+  it("a month of the previous year shows that year's own totals", async () => {
     const user = setup()
     await pick(user, /diciembre.*2025/i)
     expect(asked.months).toContain('2025-12-01')
-    expect(header()).toHaveTextContent('-$800.000')
-    expect(header()).toHaveTextContent('+$4.000.000')
+    expect(header()).toHaveTextContent('-$15.000')
+    expect(header()).not.toHaveTextContent('1.000.000')
   })
 })

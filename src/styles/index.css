@@ -7,36 +7,43 @@
   --color-*: initial;
 
   /* Primary palette */
-  --color-forest: #064735;
-  --color-lime: #b8ec7c;
-  --color-cream: #fff2d8;
-  --color-gold: #ffc83d;
+  --color-forest: #1e5233;
+  --color-lime: #b3d99f;
+  --color-cream: #f1f4e2;
+  --color-gold: #f0b43c;
 
   /* Secondary & interface */
-  --color-blush: #f5b8b0;
+  --color-blush: #f2c3b8;
   --color-lacquer: #e5533d;
-  --color-canvas: #fff8ec;
-  --color-surface: #0a5440;
-  --color-text-muted: #3f5a50;
-  --color-text-muted-on-dark: #a9c4b8;
+  --color-canvas: #edefdd;
+  --color-surface: #2c7044;
+  --color-text-muted: #4f6354;
+  --color-text-muted-on-dark: #b5cbb0;
   --color-white: #ffffff;
-  --color-sand: #f3e8d2;
+  --color-sand: #e2e5d3;
   /* Semantic roles that flip in the dark theme. `forest`, `lime`, `gold`, `blush`, `cream` are fixed brand
      fills; use `ink` for text/borders on neutral surfaces and `card` for raised white surfaces. */
-  --color-ink: #064735;
-  --color-card: #ffffff;
-  --color-line: #d9c9a6;
-  --color-track: #e0d3b6;
-  --color-placeholder: #c4b38c;
-  --color-expense: #b8321f;
-  --color-income: #2f7d1f;
-  --color-scrim: rgb(6 71 53 / 0.55);
+  --color-ink: #10301e;
+  --color-card: #f8f8ec;
+  --color-line: #d3dbbf;
+  --color-track: #c9d6b5;
+  --color-placeholder: #97a588;
+  --color-expense: #b23b2e;
+  --color-income: #2e6b3f;
+  --color-scrim: rgb(16 48 28 / 0.55);
+  /* Soft fills for icon tiles, tags and callouts; they flip with the theme. */
+  --color-tint-green: #dfe9cc;
+  --color-tint-gold: #f5e9c8;
+  --color-tint-red: #f6dcd0;
+  --color-tint-teal: #d3eadf;
+  --color-tint-blue: #d8e5f1;
+  --color-tint-violet: #eae0f4;
   --color-transparent: transparent;
   --color-current: currentColor;
 
   /* Category data colors */
   --color-category-food: #e5533d;
-  --color-category-groceries: #064735;
+  --color-category-groceries: #1e5233;
   --color-category-transport: #2f9e8f;
   --color-category-outings: #f0aa2a;
   --color-category-subscriptions: #8a6bd1;
@@ -60,25 +67,33 @@
  */
 html.dark {
   color-scheme: dark;
-  --color-canvas: #0c1914;
-  --color-card: #14261f;
-  --color-sand: #25403a;
-  --color-ink: #eaf3ed;
-  --color-line: #3b5a50;
-  --color-track: #3b5148;
-  --color-placeholder: #7c988b;
-  --color-text-muted: #a2bbb0;
+  --color-canvas: #0e1811;
+  --color-card: #172619;
+  --color-sand: #223626;
+  --color-ink: #e9f0e3;
+  --color-line: #37503b;
+  --color-track: #314635;
+  --color-placeholder: #7c9180;
+  --color-text-muted: #a4b8a0;
   --color-expense: #ff8f7e;
-  --color-income: #8fdc78;
+  --color-income: #94d98a;
   --color-scrim: rgb(0 0 0 / 0.65);
-  --color-category-groceries: #5fc9a0;
+  --color-tint-green: #223626;
+  --color-tint-gold: #2b2616;
+  --color-tint-red: #2d1d19;
+  --color-tint-teal: #16281f;
+  --color-tint-blue: #17232d;
+  --color-tint-violet: #231d2e;
+  --color-category-groceries: #7fcf9a;
+  --cat-lift: 45%;
+  --cat-sink: 0%;
 }
 
 /* Bright brand fills keep dark text in both themes, including descendants that use the neutral tokens. */
 html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
-  --color-ink: #064735;
-  --color-text-muted: #3f5a50;
-  color: #064735;
+  --color-ink: #10301c;
+  --color-text-muted: #56694f;
+  color: #10301c;
 }
 
 @keyframes sheet-in {
@@ -132,12 +147,16 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
  * tap targets are raised so they stay >= 44px after scaling.
  */
 :root {
+  --cat-lift: 0%;
+  --cat-sink: 35%;
   --ui-zoom: 1;
   --tap: 44px;
 }
+/* The global 85% is retired: every screen is laid out at the Figma scale. To bring it back, set the factor below
+   (and --ui-unzoom further down) to 0.85 and `zoom: var(--ui-zoom)` on html inside this @supports block. */
 @supports (zoom: 1) {
   :root {
-    --ui-zoom: 0.85;
+    --ui-zoom: 1;
     --tap: calc(44px / var(--ui-zoom));
   }
   html {
@@ -159,6 +178,24 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
 .max-w-\[390px\] {
   max-width: calc(390px / var(--ui-zoom));
 }
+/*
+ * Figma scale: screens redesigned from the Figma are measured at its native size (390pt wide), so they cancel the global
+ * density lever: the zoom is undone for the subtree and the variables the rules above read go back to 1.
+ */
+:root {
+  --ui-unzoom: 1;
+}
+@supports (zoom: 1) {
+  :root {
+    --ui-unzoom: calc(1 / var(--ui-zoom));
+  }
+}
+.figma-scale {
+  --ui-zoom: 1;
+  --tap: 44px;
+  zoom: var(--ui-unzoom);
+}
+
 /* Legibility floors: small text is scaled less so it stays >= 14px (body), 13px, 12.5px or 12px on screen. */
 .text-\[16px\],
 .text-base {
@@ -332,48 +369,117 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
   }
 }
 @keyframes moni-hop {
-  0% { transform: translateY(0) scale(1, 1); }
-  30% { transform: translateY(1px) scale(1.04, 0.93); }
-  60% { transform: translateY(-4px) scale(0.98, 1.04); }
-  100% { transform: translateY(0) scale(1, 1); }
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  30% {
+    transform: translateY(1px) scale(1.04, 0.93);
+  }
+  60% {
+    transform: translateY(-4px) scale(0.98, 1.04);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
 }
 @keyframes moni-paw-up {
-  0% { opacity: 0; transform: rotate(60deg) scale(0.6); }
-  30% { opacity: 1; transform: rotate(-16deg) scale(1); }
-  50% { transform: rotate(8deg); }
-  70% { transform: rotate(-9deg); }
-  100% { opacity: 1; transform: rotate(0deg); }
+  0% {
+    opacity: 0;
+    transform: rotate(60deg) scale(0.6);
+  }
+  30% {
+    opacity: 1;
+    transform: rotate(-16deg) scale(1);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+  70% {
+    transform: rotate(-9deg);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
 }
 @keyframes moni-paw-down {
-  0% { opacity: 1; transform: rotate(0deg); }
-  30% { opacity: 1; transform: rotate(-14deg); }
-  100% { opacity: 0; transform: rotate(60deg) scale(0.6); }
+  0% {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+    transform: rotate(-14deg);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(60deg) scale(0.6);
+  }
 }
 @keyframes moni-coin {
-  0% { opacity: 0; transform: translateY(24px) scale(0.4, 0.4); }
-  30% { opacity: 1; transform: translateY(0) scale(1, 1); }
-  50% { transform: translateY(-8px) scale(0.2, 1); }
-  70% { opacity: 1; transform: translateY(-14px) scale(1, 1); }
-  100% { opacity: 0; transform: translateY(-24px) scale(1, 1); }
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.4, 0.4);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-8px) scale(0.2, 1);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-14px) scale(1, 1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(1, 1);
+  }
 }
 @keyframes moni-blink {
-  0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(0.12); }
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.12);
+  }
 }
 @keyframes moni-bye {
-  0% { transform: rotate(0deg); }
-  30% { transform: rotate(-5deg) translateY(-2px); }
-  60% { transform: rotate(4deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  30% {
+    transform: rotate(-5deg) translateY(-2px);
+  }
+  60% {
+    transform: rotate(4deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 @keyframes moni-blink-loop {
-  0%, 90%, 100% { transform: scaleY(1); }
-  94% { transform: scaleY(0.12); }
+  0%,
+  90%,
+  100% {
+    transform: scaleY(1);
+  }
+  94% {
+    transform: scaleY(0.12);
+  }
 }
 @keyframes moni-talk {
-  0% { transform: scaleY(1); }
-  40% { transform: scaleY(1.9); }
-  100% { transform: scaleY(1); }
+  0% {
+    transform: scaleY(1);
+  }
+  40% {
+    transform: scaleY(1.9);
+  }
+  100% {
+    transform: scaleY(1);
+  }
 }
 
 /*
@@ -434,16 +540,35 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
 }
 /* The forearm leans in a little; the hand folds forward at the wrist (it looks shorter and bigger as it comes closer). */
 @keyframes moni-beckon-arm {
-  0%, 100% { transform: rotate(0deg) scale(1, 1); }
-  45% { transform: rotate(-5deg) scale(1.02, 0.96); }
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1, 1);
+  }
+  45% {
+    transform: rotate(-5deg) scale(1.02, 0.96);
+  }
 }
 @keyframes moni-beckon-hand {
-  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1, 1); }
-  20% { transform: translate(0.5px, -1px) rotate(5deg) scale(0.97, 1.04); }
-  45% { transform: translate(-2px, 5px) rotate(-12deg) scale(1.08, 0.78); }
-  70% { transform: translate(0, 1px) rotate(-3deg) scale(1.02, 0.94); }
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1, 1);
+  }
+  20% {
+    transform: translate(0.5px, -1px) rotate(5deg) scale(0.97, 1.04);
+  }
+  45% {
+    transform: translate(-2px, 5px) rotate(-12deg) scale(1.08, 0.78);
+  }
+  70% {
+    transform: translate(0, 1px) rotate(-3deg) scale(1.02, 0.94);
+  }
 }
 @keyframes moni-sound {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
 }

@@ -23,9 +23,9 @@ interface DecisionSheetProps {
 }
 
 const TONES = {
-  primary: 'bg-lime text-forest',
+  primary: 'bg-forest text-cream dark:bg-lime dark:text-forest',
   danger: 'bg-expense text-cream',
-  outline: 'border-2 border-sand bg-card text-ink',
+  outline: 'border-2 border-line bg-card text-ink',
 }
 
 // Confirmation sheets of screens 088 / 092 / 107-118: icon + question, impact and stacked actions.
@@ -43,7 +43,7 @@ export function DecisionSheet({
   useModal(panelRef, onClose)
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="figma-scale fixed inset-0 z-50 flex items-end justify-center">
       <div
         aria-hidden="true"
         onClick={onClose}
@@ -55,7 +55,7 @@ export function DecisionSheet({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative max-h-[92dvh] w-full max-w-[430px] overflow-y-auto rounded-t-[28px] bg-canvas px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3 outline-none motion-safe:animate-[sheet-in_220ms_ease-out]"
+        className="relative max-h-[92dvh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-canvas px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3 outline-none motion-safe:animate-[sheet-in_220ms_ease-out]"
       >
         <div aria-hidden="true" className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-sand" />
         <div className="flex items-center gap-4">
@@ -74,7 +74,7 @@ export function DecisionSheet({
         </div>
         {children && <div className="mt-4 text-[17px] leading-6">{children}</div>}
         {changes && (
-          <ul className="mt-4 divide-y divide-sand rounded-[20px] border border-sand bg-card px-4">
+          <ul className="mt-4 divide-y divide-line rounded-[20px] border border-line bg-card px-4">
             {changes.map((c) => (
               <li key={c.label} className="flex items-center gap-2 py-3 text-[16px]">
                 <span className="flex-1 text-text-muted">{c.label}</span>

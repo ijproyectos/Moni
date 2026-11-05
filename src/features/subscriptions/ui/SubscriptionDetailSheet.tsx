@@ -138,7 +138,7 @@ export function SubscriptionDetailSheet({
         {own.length === 0 ? (
           <p className="text-[15px] text-text-muted">Todavía no hay cobros registrados.</p>
         ) : (
-          <ul className="-mx-4 divide-y divide-sand">
+          <ul className="-mx-4 divide-y divide-line">
             {own.map((c) => (
               <ChargeRow
                 key={c.id}

@@ -27,7 +27,7 @@ export function InviteCodeCard({
   const toast = useToast()
   const [sharing, setSharing] = useState(false)
   return (
-    <div className={embedded ? '' : 'rounded-[24px] border border-sand bg-card p-4'}>
+    <div className={embedded ? '' : 'rounded-[24px] border border-line bg-card p-4'}>
       <div className={embedded ? 'hidden' : 'flex items-start gap-3'}>
         <KeyRound
           aria-hidden="true"
@@ -57,7 +57,7 @@ export function InviteCodeCard({
         <button
           type="button"
           onClick={() => setSharing(true)}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-sand bg-card text-[16px] font-extrabold"
+          className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[16px] font-extrabold"
         >
           <Upload aria-hidden="true" className="size-5" />
           Compartir link

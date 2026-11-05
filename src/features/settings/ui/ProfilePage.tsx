@@ -1,22 +1,4 @@
-import {
-  Banknote,
-  CalendarX,
-  Bell,
-  Camera,
-  ChevronLeft,
-  CreditCard,
-  Images,
-  LifeBuoy,
-  LogOut,
-  Moon,
-  Gift,
-  Shapes,
-  ShoppingBasket,
-  Sparkles,
-  Target,
-  Trash2,
-  UsersRound,
-} from 'lucide-react'
+import { Camera, ChevronLeft, Images, ShoppingBasket, Sparkles, Trash2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
@@ -59,16 +41,7 @@ import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { AppVersion } from '@/shared/ui/AppVersion'
 import { Button } from '@/shared/ui/Button'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
-import {
-  CheckDot,
-  IconTile,
-  MoniGlyph,
-  MoniSays,
-  OptionRow,
-  Page,
-  SectionLabel,
-  Toggle,
-} from '@/shared/ui/kit'
+import { CheckDot, MoniSays, OptionRow, Page, SectionLabel, Toggle } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -101,7 +74,7 @@ function ProfilePhoto({
         initial={initial}
         alt="Tu foto de perfil"
         className={box}
-        fallbackClassName="bg-lime font-display font-extrabold text-forest"
+        fallbackClassName="bg-forest font-display font-extrabold text-lime ring-4 ring-lime/60 ring-offset-2 ring-offset-canvas"
       />
       <button
         type="button"
@@ -171,7 +144,7 @@ export function ProfilePage() {
   }
 
   return (
-    <Page className="pb-10">
+    <Page native className="pb-10">
       <PageHeader title="Perfil" backTo="/mas" />
 
       {isLoading ? (
@@ -213,11 +186,13 @@ export function ProfilePage() {
         </Link>
       )}
 
-      <SectionLabel className="mt-1">Mis datos</SectionLabel>
+      <SectionLabel plain className="mt-1">
+        Mis datos
+      </SectionLabel>
       <ProfileGroup>
         <OptionRow
           className="rounded-none border-0"
-          icon={<IconTile icon={UsersRound} bg="#e3f2cf" className="size-11" />}
+
           title="Datos personales"
           subtitle="Nombre, mail y foto"
           onClick={() => setSheet('edit')}
@@ -225,11 +200,7 @@ export function ProfilePage() {
         {FEATURES.monthlyIncome && (
           <OptionRow
             className="rounded-none border-0"
-            icon={
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gold/40">
-                <MoniGlyph className="size-5" />
-              </span>
-            }
+
             title="Mis ingresos"
             subtitle={`${formatArs(extras.monthlyIncomeCents)} por mes · solo los ves vos`}
             onClick={() => setSheet('income')}
@@ -237,30 +208,34 @@ export function ProfilePage() {
         )}
         <OptionRow
           className="rounded-none border-0"
-          icon={<IconTile icon={CreditCard} bg="#e3f2cf" className="size-11" />}
+
           title={FEATURES.accountAlias ? 'Medios de pago y alias' : 'Medios de pago'}
           subtitle={`${accountCount} ${accountCount === 1 ? 'medio' : 'medios'}`}
           to="/cuentas"
         />
         <OptionRow
           className="rounded-none border-0"
-          icon={<IconTile icon={Shapes} bg="#e3f2cf" className="size-11" />}
+
           title="Categorías"
           subtitle="Creá y editá las tuyas"
           to="/categorias"
         />
       </ProfileGroup>
 
-      <SectionLabel className="mt-1">Mis logros</SectionLabel>
+      <SectionLabel plain className="mt-1">
+        Mis logros
+      </SectionLabel>
       <ProfileGroup>
         <AchievementsRow />
       </ProfileGroup>
 
-      <SectionLabel className="mt-1">Preferencias</SectionLabel>
+      <SectionLabel plain className="mt-1">
+        Preferencias
+      </SectionLabel>
       <ProfileGroup>
         <OptionRow
           className="rounded-none border-0"
-          icon={<IconTile icon={Target} bg="#e3f2cf" className="size-11" />}
+
           title="Mis objetivos"
           subtitle={
             goalCount === 0
@@ -271,7 +246,7 @@ export function ProfilePage() {
         />
         <OptionRow
           className="rounded-none border-0"
-          icon={<IconTile icon={Banknote} bg="#d9ebe4" className="size-11" />}
+
           title="Moneda"
           subtitle={usesUsd ? 'Peso argentino (ARS) · también dólares' : 'Peso argentino (ARS)'}
           chevron={false}
@@ -280,7 +255,7 @@ export function ProfilePage() {
         {FEATURES.weeklyDigest && (
           <OptionRow
             className="rounded-none border-0"
-            icon={<IconTile icon={Bell} bg="#d9ebe4" className="size-11" />}
+
             title="Resumen semanal"
             subtitle={`Los ${weekly.day.toLowerCase()}s, con tus gastos hormiga`}
             chevron={false}
@@ -296,11 +271,13 @@ export function ProfilePage() {
         <PushNotificationsRow />
       </ProfileGroup>
 
-      <SectionLabel className="mt-1">Moni Plus</SectionLabel>
+      <SectionLabel plain className="mt-1">
+        Moni Plus
+      </SectionLabel>
       <ProfileGroup>
         <OptionRow
           className="rounded-none border-0"
-          icon={<IconTile icon={Sparkles} bg="#f6e7b4" className="size-11" />}
+
           title={plus.isPlus ? 'Moni Plus' : 'Pasar a Moni Plus'}
           subtitle={
             plus.isPlus && plus.expiresAt
@@ -312,7 +289,7 @@ export function ProfilePage() {
         {isCancellable(subscription.data) && (
           <OptionRow
             className="rounded-none border-0"
-            icon={<IconTile icon={CalendarX} bg="#fbdcd7" color="#b8321f" className="size-11" />}
+
             title="Cancelar suscripción"
             subtitle={
               plus.expiresAt
@@ -324,35 +301,39 @@ export function ProfilePage() {
         )}
         <OptionRow
           className="rounded-none border-0"
-          icon={<IconTile icon={Gift} bg="#e3f2cf" className="size-11" />}
+
           title="Recomendá a un amigo"
           subtitle="Compartí el link de Moni"
           onClick={recommend}
         />
       </ProfileGroup>
 
-      <SectionLabel className="mt-1">Ayuda</SectionLabel>
+      <SectionLabel plain className="mt-1">
+        Ayuda
+      </SectionLabel>
       <ProfileGroup>
         <OptionRow
           className="rounded-none border-0"
-          icon={<IconTile icon={LifeBuoy} bg="#e3f2cf" className="size-11" />}
+
           title="Contactar a soporte"
           subtitle="Escribinos y mirá tus consultas"
           to="/soporte"
         />
       </ProfileGroup>
 
-      <SectionLabel className="mt-1">Cuenta</SectionLabel>
+      <SectionLabel plain className="mt-1">
+        Cuenta
+      </SectionLabel>
       <ProfileGroup>
         <OptionRow
           className="rounded-none border-0"
-          icon={<IconTile icon={LogOut} bg="#f3e8d2" className="size-11" />}
+
           title="Cerrar sesión"
           onClick={() => setSheet('signout')}
         />
         <OptionRow
           className="rounded-none border-0 [&_span]:text-expense"
-          icon={<IconTile icon={Trash2} bg="#fbdcd7" color="#b8321f" className="size-11" />}
+
           title="Eliminar cuenta"
           onClick={() => setSheet('delete')}
         />
@@ -468,7 +449,7 @@ function GoalsSheet({ saved, onClose }: { saved: readonly string[]; onClose: () 
                 onClick={() => setDraft((d) => toggleGoal(d, goal.id))}
                 className={
                   'flex min-h-14 w-full items-center gap-3 rounded-[18px] border-2 bg-card px-4 py-2 text-left text-[16px] font-semibold leading-5 text-ink ' +
-                  (checked ? 'border-ink' : 'border-sand')
+                  (checked ? 'border-ink' : 'border-line')
                 }
               >
                 <span className="flex-1">{goal.label}</span>
@@ -496,7 +477,6 @@ function AppearanceRow() {
   return (
     <div className="flex flex-col gap-3 px-4 py-3">
       <span className="flex items-center gap-3">
-        <IconTile icon={Moon} bg="#d9ebe4" className="size-11" />
         <span className="flex-1">
           <span className="block text-[17px] font-extrabold leading-6">Apariencia</span>
           <span className="block text-[14px] leading-5 text-text-muted">
@@ -516,7 +496,7 @@ function AppearanceRow() {
 
 function ProfileGroup({ children }: { children: ReactNode }) {
   return (
-    <div className="divide-y divide-sand overflow-hidden rounded-[24px] border border-sand bg-card px-1">
+    <div className="divide-y divide-line overflow-hidden rounded-[24px] border border-line bg-card px-1">
       {children}
     </div>
   )
@@ -575,21 +555,21 @@ function EditProfileSheet({
           <button
             type="button"
             onClick={() => cameraRef.current?.click()}
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-sand bg-card text-[15px] font-extrabold"
+            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-line bg-card text-[15px] font-extrabold"
           >
             <Camera aria-hidden="true" className="size-4" /> Sacar foto
           </button>
           <button
             type="button"
             onClick={() => galleryRef.current?.click()}
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-sand bg-card text-[15px] font-extrabold"
+            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-line bg-card text-[15px] font-extrabold"
           >
             <Images aria-hidden="true" className="size-4" /> Galería
           </button>
           <button
             type="button"
             onClick={() => updateProfileExtras({ localPhotoUrl: null, photoRemoved: true })}
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-sand bg-card text-[15px] font-extrabold text-expense"
+            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-line bg-card text-[15px] font-extrabold text-expense"
           >
             <Trash2 aria-hidden="true" className="size-4" /> Quitar
           </button>
@@ -615,14 +595,14 @@ function EditProfileSheet({
           onChange={(e) => setDraft(e.target.value)}
           aria-label="Nombre"
           maxLength={60}
-          className="h-14 rounded-[18px] border border-sand bg-card px-4 text-[17px]"
+          className="h-14 rounded-[18px] border border-line bg-card px-4 text-[17px]"
         />
         <SectionLabel>Mail</SectionLabel>
         <input
           value={email}
           readOnly
           aria-label="Mail"
-          className="h-14 rounded-[18px] border border-sand bg-sand/40 px-4 text-[17px] text-text-muted"
+          className="h-14 rounded-[18px] border border-line bg-sand/40 px-4 text-[17px] text-text-muted"
         />
         <p className="text-[15px] leading-5 text-text-muted">
           Tus amigos y tu pareja te ven con este nombre y esta foto en los grupos. El mail es el de

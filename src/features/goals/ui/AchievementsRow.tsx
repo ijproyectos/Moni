@@ -1,5 +1,4 @@
-import { Award } from 'lucide-react'
-import { OptionRow, IconTile } from '@/shared/ui/kit'
+import { OptionRow } from '@/shared/ui/kit'
 import { useRewards } from '../api/useSavings'
 import { BADGES, earnedCount } from '../domain/badges'
 
@@ -10,7 +9,6 @@ export function AchievementsRow() {
   return (
     <OptionRow
       className="rounded-none border-0"
-      icon={<IconTile icon={Award} bg="#fbdcd7" className="size-11" />}
       title="Mis logros"
       subtitle={
         count === null

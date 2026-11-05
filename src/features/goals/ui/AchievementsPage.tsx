@@ -24,7 +24,7 @@ export function AchievementsPage() {
   const count = earnedCount(earned)
 
   return (
-    <Page>
+    <Page native>
       <PageHeader title="Mis logros" fallbackTo="/perfil" />
       {rewards.isLoading ? (
         <div role="status" aria-label="Cargando logros" className="grid grid-cols-2 gap-3">
@@ -78,7 +78,7 @@ export function AchievementsPage() {
                       'flex h-full w-full flex-col items-center gap-1.5 rounded-[20px] border px-1.5 pb-2.5 pt-2',
                       unlocked
                         ? 'border-lime bg-card shadow-[0_0_16px_-4px_rgba(184,236,124,0.95)] dark:border-lime/70 dark:shadow-[0_0_18px_-4px_rgba(184,236,124,0.55)]'
-                        : 'border-sand bg-card',
+                        : 'border-line bg-card',
                     )}
                   >
                     <span className="relative flex aspect-square w-full items-center justify-center">
@@ -87,7 +87,7 @@ export function AchievementsPage() {
                         locked={!unlocked}
                         className={cn(
                           'size-[88%]',
-                          unlocked && 'drop-shadow-[0_2px_6px_rgba(6,71,53,0.25)]',
+                          unlocked && 'drop-shadow-[0_2px_6px_rgb(16_48_30/0.25)]',
                         )}
                       />
                       {!unlocked && (
@@ -125,7 +125,7 @@ function BadgeDetailSheet({ item, onClose }: { item: CollectionItem; onClose: ()
         {earned ? (
           <>
             <p className="text-[18px] font-extrabold leading-6">{def.congrats}</p>
-            <dl className="w-full divide-y divide-sand rounded-[20px] border border-sand bg-card px-4 text-left">
+            <dl className="w-full divide-y divide-line rounded-[20px] border border-line bg-card px-4 text-left">
               {earned.goalName && (
                 <div className="flex justify-between gap-3 py-2.5">
                   <dt className="text-text-muted">Meta</dt>

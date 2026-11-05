@@ -1,3 +1,4 @@
+import { Plus, X } from 'lucide-react'
 import { useState, type ButtonHTMLAttributes, type Ref } from 'react'
 import { cn } from './cn'
 import { MoniCat } from './MoniCat'
@@ -30,15 +31,25 @@ export function MoniAddButton({
       aria-haspopup="menu"
       aria-expanded={open}
       className={cn(
-        'relative -my-3 h-[88px] w-[76px] shrink-0 select-none rounded-[32px] transition-transform active:scale-95',
+        'relative -mt-7 mb-0 size-[72px] shrink-0 select-none rounded-full bg-forest shadow-[0_8px_18px_rgba(16,48,30,0.28)] transition-transform active:scale-95 dark:ring-1 dark:ring-white/15',
         className,
       )}
       {...props}
     >
       <MoniCat
         phase={phase}
-        className="pointer-events-none absolute -top-4 left-1/2 w-[123px] -translate-x-1/2 drop-shadow-[0_3px_3px_rgba(0,0,0,0.25)]"
+        className="pointer-events-none absolute left-1/2 top-[14px] w-[68px] -translate-x-1/2"
       />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-7 items-center justify-center rounded-full border-2 border-card bg-lime text-ink"
+      >
+        {open ? (
+          <X className="size-3.5" strokeWidth={3} />
+        ) : (
+          <Plus className="size-3.5" strokeWidth={3} />
+        )}
+      </span>
     </button>
   )
 }

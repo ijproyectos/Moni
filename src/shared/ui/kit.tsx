@@ -13,17 +13,20 @@ export function SectionLabel({
   action,
   className,
   tone = 'muted',
+  plain = false,
 }: {
   children: ReactNode
   action?: ReactNode
   className?: string
   tone?: 'muted' | 'dark'
+  /** Sentence case, as the section titles of the list screens (Perfil); the caps look stays for forms. */
+  plain?: boolean
 }) {
   return (
     <div className={cn('flex items-center justify-between gap-3', className)}>
       <p
         className={cn(
-          'text-[13px] font-extrabold uppercase tracking-[0.1em]',
+          plain ? 'text-[16px] font-bold' : 'text-[13px] font-extrabold uppercase tracking-[0.1em]',
           tone === 'muted' ? 'text-text-muted' : 'text-ink',
         )}
       >
@@ -56,7 +59,7 @@ export function ProgressBar({
       aria-valuenow={Math.round(pct)}
       className={cn(
         'h-2.5 overflow-hidden rounded-full',
-        tone === 'dark' ? 'bg-surface' : 'bg-sand',
+        tone === 'dark' ? 'bg-surface' : 'bg-track',
         className,
       )}
     >
@@ -160,7 +163,7 @@ export function MoniCalcCard({
     <div
       className={cn(
         'flex items-center gap-4 rounded-[24px] p-3',
-        dark ? 'bg-forest text-cream' : 'border border-sand bg-card text-ink',
+        dark ? 'bg-forest text-cream' : 'border border-line bg-card text-ink',
         className,
       )}
     >
@@ -207,7 +210,7 @@ export function ChoiceChip({
       aria-pressed={selected}
       className={cn(
         'inline-flex min-h-12 items-center justify-center gap-2 rounded-full border-2 px-5 text-[17px] font-extrabold transition',
-        selected ? 'border-ink bg-forest text-cream' : 'border-sand bg-card text-ink',
+        selected ? 'border-ink bg-forest text-cream' : 'border-line bg-card text-ink',
         className,
       )}
       {...props}
@@ -274,8 +277,8 @@ export function Toggle({
 /** Square-ish tinted tile holding an icon. */
 export function IconTile({
   icon: Icon,
-  bg = '#e3f2cf',
-  color = '#064735',
+  bg = 'color-mix(in srgb, var(--color-lime) 35%, transparent)',
+  color = 'var(--color-ink)',
   shape = 'circle',
   className,
 }: {
@@ -369,7 +372,7 @@ export function OptionRow({
     </>
   )
   const cls = cn(
-    'flex min-h-[72px] w-full items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3',
+    'flex min-h-[72px] w-full items-center gap-3 rounded-[22px] border border-line bg-card px-4 py-3',
     className,
   )
   if (to) {
@@ -408,7 +411,7 @@ export function CheckDot({ checked, className }: { checked: boolean; className?:
 /** Plain white card with the design's border and radius. */
 export function Panel({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={cn('rounded-[24px] border border-sand bg-card p-4', className)}>{children}</div>
+    <div className={cn('rounded-[24px] border border-line bg-card p-4', className)}>{children}</div>
   )
 }
 
@@ -423,7 +426,7 @@ export function HeaderAddButton({
   to?: string
 }) {
   const cls =
-    'flex size-14 shrink-0 items-center justify-center rounded-full bg-lime text-forest shadow-sm'
+    'flex size-12 shrink-0 items-center justify-center rounded-full bg-forest text-cream shadow-sm dark:bg-lime dark:text-forest'
   const icon = (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="size-7">
       <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
@@ -441,6 +444,21 @@ export function HeaderAddButton({
 }
 
 /** Page body wrapper with the standard gutters for second-level screens. */
-export function Page({ children, className }: { children: ReactNode; className?: string }) {
-  return <section className={cn('flex flex-col gap-4 px-4 pt-14', className)}>{children}</section>
+export function Page({
+  children,
+  className,
+  native = false,
+}: {
+  children: ReactNode
+  className?: string
+  /** Already adapted to the Figma scale: native size and 20px margins (the others still follow the density lever). */
+  native?: boolean
+}) {
+  return (
+    <section
+      className={cn('flex flex-col gap-4 pt-14', native ? 'figma-scale px-5' : 'px-4', className)}
+    >
+      {children}
+    </section>
+  )
 }

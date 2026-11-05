@@ -34,7 +34,7 @@ export function CategoryChip({
       className={cn(
         'inline-flex min-h-11 max-w-full shrink-0 items-center gap-2 rounded-full border-2 px-4 py-1.5 font-display text-base font-semibold leading-5 transition',
         surface === 'light' &&
-          (selected ? 'border-transparent bg-forest text-cream' : 'border-cream bg-card text-ink'),
+          (selected ? 'border-transparent bg-forest text-cream' : 'border-line bg-card text-ink'),
         surface === 'dark' &&
           (selected
             ? 'border-transparent bg-cream text-forest'

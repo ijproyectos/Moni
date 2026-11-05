@@ -36,7 +36,7 @@ export function SoportePage() {
             setPage(0)
           }}
           aria-label="Estado de las consultas"
-          className="h-12 self-start rounded-full border border-sand bg-card px-4 text-[16px] text-ink"
+          className="h-12 self-start rounded-full border border-line bg-card px-4 text-[16px] text-ink"
         >
           {FILTERS.map((f) => (
             <option key={f.value} value={f.value}>

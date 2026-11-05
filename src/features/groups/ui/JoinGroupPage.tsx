@@ -57,7 +57,7 @@ export function JoinWithCodePage() {
   }
 
   return (
-    <Page className="pb-28">
+    <Page native className="pb-28">
       <PageHeader title="Entrar con un código" fallbackTo="/grupos" />
       <MascotTile />
       <h2 className="text-center font-display text-[26px] font-extrabold leading-8">
@@ -86,7 +86,7 @@ export function JoinWithCodePage() {
         aria-invalid={notFound || undefined}
         className={cn(
           'mx-auto h-[72px] w-full rounded-[22px] border-2 bg-card text-center font-display text-[28px] font-extrabold uppercase tracking-[0.12em] placeholder:text-placeholder',
-          notFound ? 'border-expense bg-blush/20 text-expense' : 'border-sand',
+          notFound ? 'border-expense bg-blush/20 text-expense' : 'border-line',
         )}
       />
       {notFound ? (
@@ -120,7 +120,7 @@ export function JoinWithCodePage() {
         <Button
           disabled={!valid}
           onClick={() => navigate(`/unirse/${code}`)}
-          className="disabled:bg-lime/40"
+          className="disabled:bg-tint-green"
         >
           <Search aria-hidden="true" className="mr-2 size-5" /> Buscar grupo
         </Button>
@@ -148,7 +148,7 @@ export function JoinGroupPage() {
 
   if (!validCode) {
     return (
-      <Page>
+      <Page native>
         <PageHeader title="Entrar al grupo" fallbackTo="/grupos" />
         <p role="alert" className="text-[16px] text-expense">
           Ese link no es válido. El código tiene 8 letras o números: pedí uno nuevo.
@@ -162,7 +162,7 @@ export function JoinGroupPage() {
 
   if (joined) {
     return (
-      <Page className="pb-28 pt-24">
+      <Page native className="pb-28 pt-24">
         <MascotTile size="lg" />
         <h1 className="text-center font-display text-[30px] font-extrabold">
           {joined.alreadyMember ? 'Ya sos parte de este grupo' : 'Ya estás en el grupo'}
@@ -175,7 +175,7 @@ export function JoinGroupPage() {
         {FEATURES.referral && (
           <Link
             to="/recomendar"
-            className="flex items-center gap-3 rounded-[22px] bg-lime/30 px-4 py-3"
+            className="flex items-center gap-3 rounded-[22px] bg-tint-green px-4 py-3"
           >
             <span className="flex size-12 items-center justify-center rounded-full bg-card">
               <Gift aria-hidden="true" className="size-5" />
@@ -198,7 +198,7 @@ export function JoinGroupPage() {
   // The server says this code is not valid right now (unknown, expired, revoked or used up): say it before asking anything.
   if (preview.data?.status === 'invalid') {
     return (
-      <Page>
+      <Page native>
         <PageHeader title="Entrar al grupo" fallbackTo="/grupos/unirse" />
         <p role="alert" className="flex gap-2 text-[16px] leading-6 text-expense">
           <Bell aria-hidden="true" className="mt-1 size-4 shrink-0" />
@@ -241,10 +241,10 @@ export function JoinGroupPage() {
   }
 
   return (
-    <Page className="pb-28">
+    <Page native className="pb-28">
       <PageHeader title="Entrar al grupo" fallbackTo="/grupos/unirse" />
       <section className="flex flex-col items-center rounded-[28px] bg-forest px-4 py-6 text-center text-cream">
-        <span className="flex size-16 items-center justify-center rounded-full bg-lime text-forest">
+        <span className="flex size-16 items-center justify-center rounded-full bg-tint-green text-ink">
           <UsersRound aria-hidden="true" className="size-7" />
         </span>
         <p className="mt-3 text-[16px] text-text-muted-on-dark">Te invitaron a:</p>
@@ -253,13 +253,13 @@ export function JoinGroupPage() {
         </p>
       </section>
       <SectionLabel>Vas a entrar como</SectionLabel>
-      <div className="flex items-center gap-3 rounded-[22px] border border-sand bg-card px-4 py-3">
+      <div className="flex items-center gap-3 rounded-[22px] border border-line bg-card px-4 py-3">
         <Avatar name={me} size="lg" />
         <span className="flex-1">
           <span className="block text-[18px] font-extrabold">{me}</span>
           <span className="block text-[15px] text-text-muted">Con tu cuenta de Moni</span>
         </span>
-        <span className="rounded-full bg-lime/40 px-3 py-0.5 text-[13px] font-extrabold">
+        <span className="rounded-full bg-tint-green px-3 py-0.5 text-[13px] font-extrabold">
           Tiene Moni
         </span>
       </div>
@@ -291,7 +291,7 @@ export function GroupLinkLandingPage() {
   const { code = '' } = useParams()
   return (
     <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center gap-4 bg-canvas px-6 pb-10 pt-10 text-center text-ink">
-      <span className="flex items-center gap-2 rounded-full border border-sand bg-card px-4 py-1.5 text-[15px]">
+      <span className="flex items-center gap-2 rounded-full border border-line bg-card px-4 py-1.5 text-[15px]">
         <Lock aria-hidden="true" className="size-4" /> moni.app
       </span>
       <img src={iconUrl} alt="Moni" className="mt-4 size-24" />
@@ -310,7 +310,7 @@ export function GroupLinkLandingPage() {
       </Link>
       <Link
         to={`/unirse/${code}`}
-        className="flex h-14 w-full items-center justify-center rounded-full border-2 border-sand bg-card text-[18px] font-extrabold"
+        className="flex h-14 w-full items-center justify-center rounded-full border-2 border-line bg-card text-[18px] font-extrabold"
       >
         Descargar para Android
       </Link>

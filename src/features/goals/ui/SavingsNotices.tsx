@@ -1,7 +1,6 @@
 import { BellRing } from 'lucide-react'
 import { useState } from 'react'
 import { toUserMessage } from '@/shared/lib/errors'
-import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { useToast } from '@/shared/ui/toastContext'
 import { useGoalReminders, useSavings, useSavingsAlerts, useSkipReminder } from '../api/useSavings'
@@ -44,39 +43,38 @@ export function SavingsNotices({ className }: { className?: string }) {
         <section
           key={r.goal.id}
           aria-label={`Recordatorio de ahorro: ${r.goal.name}`}
-          className="flex flex-col gap-3 rounded-[24px] border border-gold/60 bg-gold/25 p-4"
+          className="flex flex-col gap-3 rounded-[24px] border border-gold/40 bg-tint-gold p-4"
         >
           <p className="flex items-start gap-3 text-[17px] font-extrabold leading-6 text-ink">
             <BellRing aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
             {r.text}
           </p>
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="dark"
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <button
+              type="button"
               onClick={() => setAdding(r)}
               aria-label={`Agregar un aporte a ${r.goal.name}`}
+              className="min-h-12 rounded-full bg-forest px-6 font-display text-[17px] font-extrabold text-cream dark:bg-lime dark:text-forest"
             >
               Agregar un aporte
-            </Button>
-            <div className="flex gap-5">
-              <button
-                type="button"
-                onClick={() => setPostponing(r)}
-                aria-label={`Posponer el recordatorio de ${r.goal.name}`}
-                className="text-[15px] font-extrabold text-ink underline"
-              >
-                Posponer
-              </button>
-              <button
-                type="button"
-                disabled={skip.isPending}
-                onClick={() => void skipReminder(r)}
-                aria-label={`Omitir el recordatorio de ${r.goal.name}`}
-                className="text-[15px] font-extrabold text-ink underline disabled:opacity-50"
-              >
-                Omitir
-              </button>
-            </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPostponing(r)}
+              aria-label={`Posponer el recordatorio de ${r.goal.name}`}
+              className="min-h-11 text-[15px] font-extrabold text-ink underline"
+            >
+              Posponer
+            </button>
+            <button
+              type="button"
+              disabled={skip.isPending}
+              onClick={() => void skipReminder(r)}
+              aria-label={`Omitir el recordatorio de ${r.goal.name}`}
+              className="min-h-11 text-[15px] font-extrabold text-ink underline disabled:opacity-50"
+            >
+              Omitir
+            </button>
           </div>
         </section>
       ))}

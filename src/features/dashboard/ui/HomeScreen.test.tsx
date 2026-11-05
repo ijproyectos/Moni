@@ -1,13 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import { HomeScreen } from './HomeScreen'
 
 // HomeScreen is presentational; the budget and ants hooks need a query client, so stub them here.
-const budgetStatus = vi.hoisted(() => ({ data: [] as unknown[] }))
-vi.mock('@/features/budgets/api/useBudgets', () => ({
-  useBudgetStatus: () => ({ data: budgetStatus.data }),
-}))
 vi.mock('@/features/insights/api/useAnts', () => ({
   useAnts: () => ({ data: { monthTotalCents: 1_200_000 } }),
 }))
@@ -51,14 +48,13 @@ const withData: MonthSummary = {
 function renderHome(
   summary: MonthSummary,
   isPlus?: boolean,
-  overall?: { incomeCents: number; expenseCents: number },
   movements?: RecentMovement[],
+  extra: Partial<Parameters<typeof HomeScreen>[0]> = {},
 ) {
   render(
     <MemoryRouter>
       <HomeScreen
         summary={summary}
-        overall={overall}
         movements={movements}
         month="2026-10-01"
         latestMonth="2026-10-01"
@@ -66,24 +62,14 @@ function renderHome(
         initial="J"
         onAddMovement={vi.fn()}
         isPlus={isPlus}
+        {...extra}
       />
     </MemoryRouter>,
   )
 }
 
 describe('HomeScreen', () => {
-  afterEach(() => {
-    budgetStatus.data = []
-  })
-
-  it('shows the whole-history income and expenses in the header even when the picked month is empty', () => {
-    renderHome(empty, false, { incomeCents: 400_000_000, expenseCents: 44_028_789 })
-    const group = screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
-    expect(group).toHaveTextContent('-$440.287,89')
-    expect(group).toHaveTextContent('+$4.000.000')
-  })
-
-  it('lists movements of every month, grouped under month headings, even when the picked month is empty', () => {
+  it('lists the newest movements grouped by day, even when the picked month is empty', () => {
     const movement = (id: string, occurredOn: string, note: string): RecentMovement => ({
       id,
       kind: 'expense',
@@ -96,37 +82,39 @@ describe('HomeScreen', () => {
       categoryColor: '#E5533D',
       categoryIcon: 'Utensils',
     })
-    renderHome(empty, false, { incomeCents: 0, expenseCents: 2_000_00 }, [
+    renderHome(empty, false, [
       movement('m1', '2026-10-31', 'Cena'),
       movement('m2', '2026-09-30', 'Almuerzo'),
     ])
     expect(screen.queryByText('Todavía no hay movimientos')).not.toBeInTheDocument()
-    const october = screen.getByRole('region', { name: 'Octubre 2026' })
-    expect(october).toHaveTextContent('Cena')
-    expect(screen.getByRole('region', { name: 'Septiembre 2026' })).toHaveTextContent('Almuerzo')
+    const saturday = screen.getByRole('region', { name: 'Sábado, 31 de octubre' })
+    expect(saturday).toHaveTextContent('Cena')
+    expect(saturday).toHaveTextContent('Comida · Efectivo')
+    expect(screen.getByRole('region', { name: 'Miércoles, 30 de septiembre' })).toHaveTextContent(
+      'Almuerzo',
+    )
   })
 
-  it('falls back to the month totals while the whole-history totals are not loaded', () => {
+  it('shows the totals of the month it is given', () => {
     renderHome(withData)
     const group = screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
     expect(group).toHaveTextContent('-$119.500')
     expect(group).toHaveTextContent('+$970.000')
   })
 
-  it('shows a friendly insight and an empty state without data', () => {
+  it('shows an empty state without data', () => {
     renderHome(empty)
-    expect(screen.getByText(/todavía no cargaste gastos este mes/)).toBeInTheDocument()
     expect(screen.getByText('Todavía no hay movimientos')).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: 'Gastos por categoría' })).not.toBeInTheDocument()
   })
 
-  it('computes the insight and donut from real data', () => {
+  it('draws the spending of the month from real data', () => {
     renderHome(withData)
-    expect(
-      screen.getByText(/tu mayor gasto del mes es Súper, con el 32% del total/),
-    ).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Gastos por categoría' })).toBeInTheDocument()
-    expect(screen.getByText('32%')).toBeInTheDocument()
+    const list = screen.getByRole('list', { name: 'Categorías principales' })
+    expect(within(list).getByText('32%')).toBeInTheDocument()
+    expect(within(list).getByText('Súper')).toBeInTheDocument()
+    expect(within(list).getByText('-$38.240')).toBeInTheDocument()
   })
 
   it('renders virtual template categories from shared expenses without links', () => {
@@ -153,7 +141,8 @@ describe('HomeScreen', () => {
     })
     expect(screen.getAllByText('Restaurante').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Gastos compartidos').length).toBeGreaterThan(0)
-    expect(screen.getByText('60%')).toBeInTheDocument()
+    const list = screen.getByRole('list', { name: 'Categorías principales' })
+    expect(within(list).getByText('60%')).toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: /Restaurante|Gastos compartidos/ }),
     ).not.toBeInTheDocument()
@@ -175,27 +164,52 @@ describe('HomeScreen', () => {
     expect(screen.getByRole('link', { name: /Hormigas/ })).toHaveTextContent('este mes')
   })
 
-  it('warns about budgets at 80% or more and stays quiet otherwise', () => {
-    renderHome(withData)
-    expect(screen.queryByText('Ojo con tus límites')).not.toBeInTheDocument()
+  describe('Para hoy and the balance chart only show what is real', () => {
+    it('has no "Para hoy" without stories', () => {
+      renderHome(empty)
+      expect(screen.queryByRole('heading', { name: 'Para hoy' })).toBeNull()
+    })
 
-    budgetStatus.data = [
-      {
-        budgetId: 'b1',
-        categoryId: 'a',
-        name: 'Súper',
-        color: '#064735',
-        icon: 'ShoppingCart',
-        amountCents: 3_000_000,
-        spentCents: 3_824_000,
-        remainingCents: -824_000,
-        percent: 127.5,
-        state: 'over',
-      },
-    ]
-    renderHome(withData)
-    expect(screen.getByText('Ojo con tus límites')).toBeInTheDocument()
-    expect(screen.getByText('Te pasaste $8.240 en Súper')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ver límites' })).toHaveAttribute('href', '/categorias')
+    it('shows a bubble per story, in the order it is given, and opens the one tapped', async () => {
+      const story = (id: string, label: string, bubble: string) => ({
+        id,
+        signature: id,
+        label,
+        bubble,
+        tone: 'gold' as const,
+        priority: 1,
+        slides: [{ title: `Título ${label}`, body: `Cuerpo ${label}` }],
+      })
+      renderHome(withData, false, undefined, {
+        stories: [story('a', 'Cobros', '2'), story('b', 'Metas', '7%')],
+      })
+      const section = screen.getByRole('heading', { name: 'Para hoy' }).closest('section')
+      expect(section).toHaveTextContent('2Cobros')
+      expect(section).toHaveTextContent('7%Metas')
+      await userEvent.setup().click(screen.getByRole('button', { name: /^Metas/ }))
+      expect(screen.getByRole('dialog', { name: 'Historia: Metas' })).toHaveTextContent(
+        'Cuerpo Metas',
+      )
+    })
+
+    it('says there is not enough history instead of drawing a made-up line', () => {
+      renderHome(withData)
+      expect(screen.getByText(/Todavía no hay movimientos suficientes/)).toBeInTheDocument()
+      expect(screen.queryByRole('img', { name: /Evolución de tu dinero/ })).toBeNull()
+    })
+
+    it('draws the chart from the real series, ending on the current balance', () => {
+      renderHome(withData, false, undefined, {
+        balanceSeries: [
+          { date: '2026-10-01', cents: 1_000_00 },
+          { date: '2026-10-02', cents: 850_50 },
+        ],
+      })
+      expect(
+        screen.getByRole('img', {
+          name: 'Evolución de tu dinero disponible en los últimos 2 días: de $1.000 a $850,50',
+        }),
+      ).toBeInTheDocument()
+    })
   })
 })

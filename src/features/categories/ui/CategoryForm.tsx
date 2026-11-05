@@ -79,7 +79,7 @@ export function CategoryForm({
             placeholder="Nombre de la categoría"
             aria-label="Nombre"
             aria-invalid={Boolean(errors.name) || undefined}
-            className="h-14 w-full rounded-[18px] border border-sand bg-card px-4 text-[17px] text-ink placeholder:text-text-muted"
+            className="h-14 w-full rounded-[18px] border border-line bg-card px-4 text-[17px] text-ink placeholder:text-text-muted"
             {...register('name')}
           />
         </label>
@@ -108,7 +108,7 @@ export function CategoryForm({
                 onClick={() => setValue('icon', iconName)}
                 className={cn(
                   'flex aspect-square w-full max-w-12 items-center justify-center rounded-[16px] border-2',
-                  selected ? 'border-ink bg-forest text-lime' : 'border-sand bg-card text-ink',
+                  selected ? 'border-ink bg-forest text-lime' : 'border-line bg-card text-ink',
                 )}
               >
                 <Icon aria-hidden="true" className="size-5" strokeWidth={2} />

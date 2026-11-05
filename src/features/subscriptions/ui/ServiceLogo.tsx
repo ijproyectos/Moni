@@ -45,7 +45,7 @@ export function ServiceLogo({
   const service = findService(serviceId)
   const url = logoUrl(service?.logo)
   const base = cn(
-    'flex shrink-0 items-center justify-center border border-sand bg-white',
+    'flex shrink-0 items-center justify-center border border-line bg-white',
     SIZES[size],
     className,
   )
@@ -65,7 +65,7 @@ export function ServiceLogo({
   }
   const Icon = service ? GENERIC_ICONS[service.category] : Repeat
   return (
-    <span className={cn(base, 'bg-lime/30 text-ink')} aria-hidden="true">
+    <span className={cn(base, 'bg-tint-green text-ink')} aria-hidden="true">
       <Icon className="size-full" strokeWidth={2} />
     </span>
   )

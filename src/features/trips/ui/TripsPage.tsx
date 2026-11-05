@@ -1,4 +1,4 @@
-import { ChevronRight, Send } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import mascotUrl from '@/assets/mascot/personaje_carga-de-dinero.svg'
@@ -51,7 +51,7 @@ export function TripsPage() {
   }
 
   return (
-    <Page>
+    <Page native>
       <PageHeader
         title="Viajes"
         fallbackTo="/"
@@ -168,11 +168,8 @@ function TripCircle({ photoUrl }: { photoUrl: string | null }) {
       />
     )
   }
-  return (
-    <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-lime/40">
-      <Send aria-hidden="true" className="size-6" />
-    </span>
-  )
+  // Without a picture there is nothing to show: the card reads like the personal ones.
+  return null
 }
 
 function GroupTrips({ onNew }: { onNew: () => void }) {
@@ -216,10 +213,10 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
           <Link
             key={g.id}
             to={`/grupos/${g.id}`}
-            className="block rounded-[28px] border border-sand bg-card p-5"
+            className="block rounded-[28px] border border-line bg-card p-5"
           >
             <div className="flex items-center justify-between">
-              <span className="rounded-full bg-lime/40 px-3 py-1 text-[13px] font-extrabold uppercase tracking-[0.1em]">
+              <span className="rounded-full bg-tint-green px-3 py-1 text-[15px] font-bold">
                 En grupo
               </span>
               {info && (

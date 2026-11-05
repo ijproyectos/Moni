@@ -11,8 +11,6 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { GROUP_KIND_LABELS, type MyGroup } from '../domain/group'
 import { GroupKindTile } from './GroupKindIcon'
 
-const DEBTS_SUMMARY_CLASS = 'flex items-center rounded-[24px] bg-forest px-4 py-3 text-cream'
-
 /** A group as listed: real data plus the overlay (name, guests, simulated balance). */
 export interface ListedGroup extends MyGroup {
   peopleCount: number
@@ -37,6 +35,14 @@ function netLabel(group: ListedGroup): { text: string; tone: 'owed' | 'owes' | '
   return { text: group.peopleCount <= 1 ? 'Sin gastos' : 'Estás al día', tone: 'even' }
 }
 
+/** "en el grupo IJ", "entre Amores y Cena viernes", "en 4 grupos": where the amount comes from. */
+function whereLabel(prefix: 'en' | 'entre', names: readonly string[]): string {
+  if (names.length === 0) return ''
+  if (names.length === 1) return prefix === 'en' ? `en el grupo ${names[0]}` : `en ${names[0]}`
+  if (names.length === 2) return `entre ${names[0]} y ${names[1]}`
+  return `en ${names.length} grupos`
+}
+
 function subtitle(group: ListedGroup): string {
   const kind = GROUP_KIND_LABELS[group.kind]
   if (group.peopleCount <= 1) return `${kind} · Solo vos por ahora`
@@ -55,11 +61,26 @@ export function GroupsScreen({
 }: GroupsScreenProps) {
   const owe = (groups ?? []).reduce((s, g) => s + Math.max(0, -g.myNetCents), 0)
   const owed = (groups ?? []).reduce((s, g) => s + Math.max(0, g.myNetCents), 0)
+  const oweWhere = whereLabel(
+    'en',
+    (groups ?? []).filter((g) => g.myNetCents < 0).map((g) => g.name),
+  )
+  const owedWhere = whereLabel(
+    'entre',
+    (groups ?? []).filter((g) => g.myNetCents > 0).map((g) => g.name),
+  )
 
   return (
-    <section className="flex flex-col gap-3 px-4 pt-14">
-      <div className="mb-1 flex items-center justify-between gap-3">
-        <h1 className="font-display text-[34px] font-extrabold leading-[40px]">Grupos</h1>
+    <section className="figma-scale flex flex-col gap-4 px-5 pt-10">
+      <div className="mb-1 flex items-start justify-between gap-3">
+        <div>
+          <p className="font-display text-xl font-medium text-text-muted">
+            {groups ? `${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}` : '\u00a0'}
+          </p>
+          <h1 className="font-display text-[clamp(32px,10vw,40px)] font-extrabold leading-tight">
+            Grupos
+          </h1>
+        </div>
         <HeaderAddButton label="Nuevo grupo" onClick={onNewGroup} />
       </div>
 
@@ -78,7 +99,7 @@ export function GroupsScreen({
         />
       ) : groups.length === 0 ? (
         <>
-          <div className="rounded-[28px] border border-sand bg-card">
+          <div className="rounded-[28px] border border-line bg-card">
             <EmptyState
               mascotUrl={mascotGroup}
               title="Todavía no tenés grupos"
@@ -89,7 +110,7 @@ export function GroupsScreen({
           </div>
           <Link
             to="/grupos/unirse"
-            className="flex h-14 items-center justify-center gap-3 rounded-full border border-sand bg-card text-[17px] font-extrabold"
+            className="flex h-14 items-center justify-center gap-3 rounded-full border border-line bg-card text-[17px] font-extrabold"
           >
             <KeyRound aria-hidden="true" className="size-5 -scale-x-100" strokeWidth={2} />
             Entrar a un grupo con un código
@@ -97,43 +118,49 @@ export function GroupsScreen({
         </>
       ) : (
         <>
-          <div className={DEBTS_SUMMARY_CLASS}>
+          <div className="grid grid-cols-2 items-end gap-3">
             <button
               type="button"
               aria-label="Ver lo que debés"
               onClick={() => onOpenDebts?.('owe')}
-              className="min-h-11 flex-1 rounded-[16px] text-left"
+              className="flex min-h-[170px] min-w-0 flex-col justify-end rounded-[28px] bg-gradient-to-br from-[#c85a3e] to-[#e28a5c] p-5 text-left text-white"
             >
-              <span className="block text-[15px] text-text-muted-on-dark">Debés</span>
+              <span className="block text-[16px]">Debés</span>
               <AmountDisplay
                 cents={owe}
-                className="block font-display text-[24px] font-extrabold text-blush"
+                className="block font-display text-[clamp(24px,7.5vw,32px)] font-extrabold leading-tight"
               />
+              {oweWhere && <span className="mt-1 block text-[15px] leading-5">{oweWhere}</span>}
             </button>
-            <span aria-hidden="true" className="mx-3 h-10 w-px bg-white/15" />
             <button
               type="button"
               aria-label="Ver lo que te deben"
               onClick={() => onOpenDebts?.('owed')}
-              className="min-h-11 flex-1 rounded-[16px] text-left"
+              className="flex min-h-[150px] min-w-0 flex-col justify-center rounded-[28px] bg-gradient-to-br from-[#3a7a4a] to-[#5a9a64] p-5 text-left text-white"
             >
-              <span className="block text-[15px] text-text-muted-on-dark">Te deben</span>
+              <span className="block text-[16px]">Te deben</span>
               <AmountDisplay
                 cents={owed}
-                className="block font-display text-[24px] font-extrabold text-lime"
+                className="block font-display text-[clamp(24px,7.5vw,32px)] font-extrabold leading-tight"
               />
+              {owedWhere && <span className="mt-1 block text-[15px] leading-5">{owedWhere}</span>}
             </button>
           </div>
-          <ul className="flex flex-col gap-3">
+          <h2 className="mt-2 font-display text-[22px] font-extrabold">Tus grupos</h2>
+          <ul className="-mx-5 divide-y divide-line border-y border-line">
             {groups.map((group) => {
               const net = netLabel(group)
               return (
                 <li key={group.id}>
                   <Link
                     to={`/grupos/${group.id}`}
-                    className="flex min-h-[92px] items-center gap-4 rounded-[24px] border border-sand bg-card p-4"
+                    className="flex min-h-[84px] items-center gap-4 px-5 py-3"
                   >
-                    <GroupKindTile kind={group.kind} photoUrl={group.photoUrl} />
+                    <GroupKindTile
+                      kind={group.kind}
+                      photoUrl={group.photoUrl}
+                      className="rounded-full"
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[20px] font-extrabold leading-6">
                         {group.name}
@@ -147,14 +174,14 @@ export function GroupsScreen({
                         'max-w-[7.5rem] shrink-0 text-right text-[15px] font-extrabold leading-5',
                         net.tone === 'owed' && 'text-income',
                         net.tone === 'owes' && 'text-expense',
-                        net.tone === 'even' && 'text-text-muted',
+                        net.tone === 'even' && 'font-semibold text-text-muted',
                       )}
                     >
                       {net.text}
                       {group.myNetCents !== 0 && (
                         <AmountDisplay
                           cents={Math.abs(group.myNetCents)}
-                          className="block text-[16px]"
+                          className="block text-[18px]"
                         />
                       )}
                     </span>
@@ -165,7 +192,7 @@ export function GroupsScreen({
           </ul>
           <Link
             to="/grupos/unirse"
-            className="flex h-14 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-sand bg-card text-[16px] font-extrabold"
+            className="flex h-14 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-card text-[16px] font-extrabold"
           >
             <KeyRound aria-hidden="true" className="size-5 shrink-0 -scale-x-100" /> Entrar con un
             código

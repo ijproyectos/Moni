@@ -27,10 +27,10 @@ const MONTHS_BEFORE_TODAY = 2
 
 const STATUS_TONE: Record<ProgressStatus, string> = {
   empty: 'bg-sand',
-  done: 'bg-lime text-forest',
-  attention: 'bg-blush text-forest',
-  behind: 'bg-gold/60 text-forest',
-  on_track: 'bg-lime text-forest',
+  done: 'bg-tint-green text-ink',
+  attention: 'bg-tint-red text-ink',
+  behind: 'bg-tint-gold text-ink',
+  on_track: 'bg-tint-green text-ink',
   pending: 'bg-sand',
   no_plan: 'bg-sand',
 }
@@ -73,7 +73,7 @@ export function SavingsProgressCard({ overview }: { overview: SavingsOverview })
   }
   if (planData.isError || !input || !now) {
     return (
-      <section className="rounded-[28px] border border-sand bg-card p-5">
+      <section className="rounded-[28px] border border-line bg-card p-5">
         <h2 className="text-[22px] font-extrabold">Tu progreso en metas</h2>
         <p className="mt-2 text-[15px] leading-5 text-text-muted">
           No pudimos cargar el historial de tus metas. Probá de nuevo en un rato.
@@ -95,7 +95,7 @@ export function SavingsProgressCard({ overview }: { overview: SavingsOverview })
   return (
     <section
       aria-label="Tu progreso en metas"
-      className="flex flex-col gap-4 rounded-[28px] border border-sand bg-card p-5"
+      className="flex flex-col gap-4 rounded-[28px] border border-line bg-card p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <h2 className="text-[22px] font-extrabold leading-7">Tu progreso en metas</h2>

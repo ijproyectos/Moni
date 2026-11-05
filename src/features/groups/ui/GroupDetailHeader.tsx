@@ -29,7 +29,7 @@ export function GroupDetailHeader({
 }) {
   const compact = Boolean(photoUrl)
   const round = cn(
-    'flex shrink-0 items-center justify-center rounded-full border border-sand bg-card',
+    'flex shrink-0 items-center justify-center rounded-full bg-card shadow-sm',
     compact ? 'size-11' : 'size-12',
   )
   return (

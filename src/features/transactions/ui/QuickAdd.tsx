@@ -67,7 +67,7 @@ export function QuickAdd() {
       id: 'photo',
       label: 'Sacar foto',
       icon: Camera,
-      circle: 'bg-[#8a6bd1]',
+      circle: 'bg-[#bfd6b3] text-forest',
       disabled: !online,
       badge: isFree ? 'Plus' : undefined,
       onSelect: () => {
@@ -80,7 +80,7 @@ export function QuickAdd() {
       id: 'voice',
       label: 'Por voz',
       icon: Mic,
-      circle: 'bg-[#b8321f]',
+      circle: 'bg-[#eceed9] text-forest',
       disabled: !online,
       badge: isFree ? 'Plus' : undefined,
       onSelect: () => {
@@ -94,7 +94,7 @@ export function QuickAdd() {
       id: 'manual',
       label: 'Manual',
       icon: Plus,
-      circle: 'bg-forest',
+      circle: 'bg-[#2f7046] text-white',
       // Stays enabled offline: the sheet shows its own offline notice and blocks saving, as before.
       onSelect: () => {
         closeMenu()
@@ -110,7 +110,7 @@ export function QuickAdd() {
           aria-hidden="true"
           data-testid="add-menu-backdrop"
           onClick={dismissMenu}
-          className="pointer-events-auto fixed inset-0 -z-10 bg-forest/55 backdrop-blur-[3px] motion-safe:animate-[fade-in_180ms_ease-out]"
+          className="pointer-events-auto fixed inset-0 -z-10 bg-ink/50 backdrop-blur-[3px] motion-safe:animate-[fade-in_180ms_ease-out]"
         />
       )}
       {menuOpen && (

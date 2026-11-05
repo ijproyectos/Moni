@@ -49,9 +49,9 @@ const KIND_SUBTITLES: Record<AccountKind, string> = {
 /** Card colors, in stacking order (screen 063). */
 const CARD_TONES = [
   'bg-forest text-cream',
-  'bg-gold text-forest',
-  'bg-cream text-forest',
-  'bg-lime text-forest',
+  'bg-surface text-cream',
+  'bg-[#3f6b57] text-cream',
+  'bg-[#6f8f5a] text-white',
 ]
 
 /** The card that was opened (its detail grows from where the card was in the list). */
@@ -126,7 +126,7 @@ export function AccountsPage() {
   }
 
   return (
-    <section className="flex flex-col gap-4 px-4 pt-14">
+    <section className="figma-scale flex flex-col gap-4 px-5 pt-14">
       <PageHeader
         title="Medios de pago"
         backTo="/mas"
@@ -203,7 +203,7 @@ export function AccountsPage() {
                     <div
                       data-account-card
                       className={cn(
-                        'relative overflow-hidden rounded-[26px] shadow-[0_-6px_16px_rgba(6,71,53,0.12)]',
+                        'relative overflow-hidden rounded-[28px] shadow-[0_-6px_16px_rgb(16_48_30/0.14)]',
                         !skin && tone,
                       )}
                       style={skin ? skinStyle(skin) : undefined}
