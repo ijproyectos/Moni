@@ -19,7 +19,7 @@ function ShellBottomBar() {
   const { pathname: path } = useLocation()
   if (!TAB_PATHS.includes(path)) return null
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+    <div className="figma-scale pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[430px] pb-[env(safe-area-inset-bottom)]">
       <BottomNav center={<QuickAdd key={path} />} />
     </div>
   )

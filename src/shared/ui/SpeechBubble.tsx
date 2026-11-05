@@ -21,7 +21,10 @@ export function SpeechBubble({
   return (
     <div className={cn('relative w-full', className)}>
       <div
-        className={cn('rounded-[26px] px-4 py-3 text-[17px] leading-6 text-ink ring-1 ring-sand', fill)}
+        className={cn(
+          'rounded-[26px] px-4 py-3 text-[17px] leading-6 text-ink ring-1 ring-sand',
+          fill,
+        )}
         {...rest}
       >
         {children}

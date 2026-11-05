@@ -51,12 +51,14 @@ describe('AddActionMenu', () => {
 })
 
 describe('MoniAddButton', () => {
-  it('is the cat itself (no plus or cross) and announces the menu and its state', () => {
+  it('is the cat with a decorative plus badge and announces the menu and its state', () => {
     const { rerender } = render(<MoniAddButton aria-label="Agregar movimiento" />)
     const button = screen.getByRole('button', { name: 'Agregar movimiento' })
     expect(button).toHaveAttribute('aria-haspopup', 'menu')
     expect(button).toHaveAttribute('aria-expanded', 'false')
-    expect(button.querySelectorAll('svg')).toHaveLength(1)
+    // The cat plus the decorative "+" badge (hidden from assistive tech).
+    expect(button.querySelectorAll('svg')).toHaveLength(2)
+    expect(button.querySelector('span[aria-hidden="true"] svg')).not.toBeNull()
     // Nothing moves until it is touched.
     expect(button.querySelector('svg')).not.toHaveAttribute('data-phase')
 

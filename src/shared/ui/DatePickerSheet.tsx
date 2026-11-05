@@ -38,13 +38,13 @@ export function DatePickerSheet({
 
   return (
     <BottomSheet title={title} onClose={onClose}>
-      <div className="rounded-[24px] border border-sand bg-card p-3">
+      <div className="rounded-[24px] border border-line bg-card p-3">
         <div className="flex items-center justify-between">
           <button
             type="button"
             aria-label="Mes anterior"
             onClick={() => setMonth((mm) => shiftMonth(mm, -1))}
-            className="flex size-10 items-center justify-center rounded-full border border-sand"
+            className="flex size-10 items-center justify-center rounded-full border border-line"
           >
             <ChevronLeft aria-hidden="true" className="size-5" />
           </button>
@@ -53,7 +53,7 @@ export function DatePickerSheet({
             type="button"
             aria-label="Mes siguiente"
             onClick={() => setMonth((mm) => shiftMonth(mm, 1))}
-            className="flex size-10 items-center justify-center rounded-full border border-sand"
+            className="flex size-10 items-center justify-center rounded-full border border-line"
           >
             <ChevronRight aria-hidden="true" className="size-5" />
           </button>

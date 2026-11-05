@@ -65,8 +65,8 @@ export function AddActionMenu({
       role="menu"
       aria-label="Agregar movimiento"
       className={cn(
-        'pointer-events-auto absolute bottom-[calc(100%+32px)] left-1/2 w-[min(20.5rem,calc(100vw-2rem))] -translate-x-1/2 origin-bottom',
-        'rounded-[32px] bg-card px-3 pb-3 pt-4 shadow-[0_14px_40px_rgba(6,71,53,0.28)] ring-1 ring-sand',
+        'pointer-events-auto absolute bottom-[calc(100%+32px)] left-1/2 w-[min(20.5rem,calc(100vw-4rem))] -translate-x-1/2 origin-bottom',
+        'rounded-[32px] bg-forest px-3 pb-3 pt-4 text-cream shadow-[0_14px_40px_rgb(16_48_30/0.28)] dark:bg-[#1f3a28]',
         'motion-safe:animate-[menu-pop_240ms_cubic-bezier(0.2,0.9,0.3,1.15)]',
         className,
       )}
@@ -87,13 +87,13 @@ export function AddActionMenu({
               <span
                 aria-hidden="true"
                 className={cn(
-                  'flex size-14 items-center justify-center rounded-full text-white',
+                  'flex size-14 items-center justify-center rounded-full',
                   action.circle,
                 )}
               >
                 <action.icon className="size-7" strokeWidth={2.25} />
               </span>
-              <span className="text-[15px] font-extrabold leading-5 text-ink">
+              <span className="text-[15px] font-extrabold leading-5 text-cream">
                 {action.label}
               </span>
               {action.badge && (
@@ -110,7 +110,7 @@ export function AddActionMenu({
       )}
       <span
         aria-hidden="true"
-        className="absolute -bottom-2 left-1/2 size-5 -translate-x-1/2 rotate-45 rounded-[4px] bg-card ring-1 ring-sand [clip-path:polygon(100%_0,100%_100%,0_100%)]"
+        className="absolute -bottom-2 left-1/2 size-5 -translate-x-1/2 rotate-45 rounded-[4px] bg-forest dark:bg-[#1f3a28] [clip-path:polygon(100%_0,100%_100%,0_100%)]"
       />
     </div>
   )

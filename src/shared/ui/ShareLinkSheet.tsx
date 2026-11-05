@@ -54,7 +54,7 @@ export function ShareLinkSheet({
   ]
   return (
     <BottomSheet title={title} onClose={onClose}>
-      <div className="rounded-[22px] border border-sand bg-card p-4">
+      <div className="rounded-[22px] border border-line bg-card p-4">
         <SectionLabel>Así le llega</SectionLabel>
         <div className="mt-2 rounded-[16px] bg-sand px-4 py-3 text-[16px] leading-6">
           {message}

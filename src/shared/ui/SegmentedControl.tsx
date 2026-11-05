@@ -27,7 +27,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="group"
       aria-label={label}
-      className={cn('flex gap-1 rounded-full bg-sand p-1', className)}
+      className={cn('flex gap-1 rounded-full bg-tint-green p-1', className)}
     >
       {options.map((option) => {
         const active = option.value === value
@@ -40,7 +40,10 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               'min-h-12 min-w-0 flex-1 whitespace-nowrap rounded-full px-1 font-display text-[clamp(13px,4.2vw,16px)] font-extrabold transition disabled:cursor-default min-[360px]:px-2',
-              active ? (option.activeClassName ?? 'bg-forest text-cream') : 'text-text-muted',
+              active
+                ? (option.activeClassName ??
+                    'bg-card text-ink shadow-[0_1px_3px_rgb(16_48_30/0.18)] dark:bg-forest dark:text-cream')
+                : 'text-text-muted',
             )}
           >
             {option.label}

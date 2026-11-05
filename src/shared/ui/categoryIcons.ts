@@ -107,7 +107,23 @@ const BRAND_FOREST = '#064735'
  * to a theme token (identical in the light theme, a lighter green in the dark one); the rest pass through.
  */
 export function themedColor(color: string): string {
-  return color.toLowerCase() === BRAND_FOREST ? 'var(--color-category-groceries)' : color
+  if (color.toLowerCase() === BRAND_FOREST) return 'var(--color-category-groceries)'
+  if (!/^#[0-9A-Fa-f]{6}$/.test(color)) return color
+  // The chosen color stays the person's: only a color that would vanish on the surface of the theme is nudged
+  // (--cat-lift lightens dark ones in the dark theme, --cat-sink darkens pale ones in the light theme).
+  const lum = luminanceOf(color)
+  if (lum < 0.22) return `color-mix(in srgb, ${color} calc(100% - var(--cat-lift)), white)`
+  if (lum > 0.78) return `color-mix(in srgb, ${color} calc(100% - var(--cat-sink)), #10301e)`
+  return color
+}
+
+function luminanceOf(color: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16)) as [
+    number,
+    number,
+    number,
+  ]
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
 }
 
 /** Light tint of a category color for icon circles ("#E5533D" -> 15% alpha). */

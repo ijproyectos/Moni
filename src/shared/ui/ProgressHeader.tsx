@@ -1,4 +1,5 @@
 import { ChevronLeft } from 'lucide-react'
+import { cn } from './cn'
 
 interface ProgressHeaderProps {
   step: number
@@ -7,6 +8,7 @@ interface ProgressHeaderProps {
   onBack?: () => void
 }
 
+/** Back button and one segment per step (the finished ones are filled), as in the Figma onboarding. */
 export function ProgressHeader({ step, total, onBack }: ProgressHeaderProps) {
   return (
     <div className="flex items-center gap-4">
@@ -15,7 +17,7 @@ export function ProgressHeader({ step, total, onBack }: ProgressHeaderProps) {
           type="button"
           onClick={onBack}
           aria-label="Volver"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface text-cream"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-ink shadow-[0_1px_3px_rgb(16_48_30/0.12)]"
         >
           <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2} />
         </button>
@@ -28,12 +30,17 @@ export function ProgressHeader({ step, total, onBack }: ProgressHeaderProps) {
         aria-valuemin={1}
         aria-valuemax={total}
         aria-valuenow={step}
-        className="h-2 flex-1 overflow-hidden rounded-full bg-surface"
+        className="flex flex-1 gap-2"
       >
-        <div
-          className="h-full rounded-full bg-lime transition-[width]"
-          style={{ width: `${(step / total) * 100}%` }}
-        />
+        {Array.from({ length: total }, (_, i) => (
+          <span
+            key={i}
+            className={cn(
+              'h-1.5 flex-1 rounded-full transition-colors',
+              i < step ? 'bg-forest dark:bg-lime' : 'bg-forest/15 dark:bg-white/15',
+            )}
+          />
+        ))}
       </div>
     </div>
   )

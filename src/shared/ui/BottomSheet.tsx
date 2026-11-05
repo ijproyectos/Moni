@@ -18,7 +18,7 @@ export function BottomSheet({ title, subtitle, onClose, children }: BottomSheetP
   useModal(panelRef, onClose)
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="figma-scale fixed inset-0 z-50 flex items-end justify-center">
       <div
         aria-hidden="true"
         onClick={onClose}
@@ -30,7 +30,7 @@ export function BottomSheet({ title, subtitle, onClose, children }: BottomSheetP
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative max-h-[92dvh] w-full max-w-[430px] overflow-y-auto rounded-t-[28px] bg-canvas px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3 outline-none motion-safe:animate-[sheet-in_220ms_ease-out]"
+        className="relative max-h-[92dvh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-canvas px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3 outline-none motion-safe:animate-[sheet-in_220ms_ease-out]"
       >
         <div aria-hidden="true" className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-sand" />
         <div className="mb-4 flex items-center justify-between gap-3">

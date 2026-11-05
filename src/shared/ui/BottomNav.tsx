@@ -1,4 +1,3 @@
-import { House, LayoutGrid, ReceiptText, UsersRound, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
@@ -7,34 +6,31 @@ import { cn } from './cn'
 interface NavItem {
   to: string
   label: string
-  icon: LucideIcon
   end?: boolean
   /** Tab shown only when the person's goals include it. */
   feature?: 'groups'
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Inicio', icon: House, end: true },
-  { to: '/actividad', label: 'Actividad', icon: ReceiptText },
-  { to: '/grupos', label: 'Grupos', icon: UsersRound, feature: 'groups' },
-  { to: '/mas', label: 'Más', icon: LayoutGrid },
+  { to: '/', label: 'Inicio', end: true },
+  { to: '/actividad', label: 'Actividad' },
+  { to: '/grupos', label: 'Grupos', feature: 'groups' },
+  { to: '/mas', label: 'Más' },
 ]
 
-function NavTab({ to, label, icon: Icon, end }: NavItem) {
+function NavTab({ to, label, end }: NavItem) {
   return (
     <NavLink
       to={to}
       end={end}
-      aria-label={label}
-      title={label}
       className={({ isActive }) =>
         cn(
-          'flex size-11 items-center min-[380px]:size-12 justify-center rounded-full transition-colors',
-          isActive ? 'bg-lime text-forest' : 'text-text-muted-on-dark hover:text-cream',
+          'flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-full px-3 font-display text-[15px] font-bold transition-colors min-[380px]:px-3.5 min-[380px]:text-[16px]',
+          isActive ? 'bg-ink text-cream dark:bg-lime dark:text-forest' : 'text-text-muted',
         )
       }
     >
-      <Icon aria-hidden="true" className="size-6" strokeWidth={2} />
+      {label}
     </NavLink>
   )
 }
@@ -52,15 +48,15 @@ export function BottomNav({ center }: { center?: ReactNode }) {
   return (
     <nav
       aria-label="Navegación principal"
-      className="pointer-events-auto relative grid h-16 grid-cols-[1fr_auto_1fr] items-center rounded-full bg-forest px-2 shadow-lg dark:ring-1 dark:ring-white/15"
+      className="pointer-events-auto relative grid h-[68px] grid-cols-[1fr_auto_1fr] items-center border-t border-line bg-card px-1"
     >
-      <div className="flex items-center justify-around">
+      <div className="flex items-center justify-around gap-1">
         {left.map((item) => (
           <NavTab key={item.to} {...item} />
         ))}
       </div>
       <div className="relative flex w-[76px] justify-center">{center}</div>
-      <div className="flex items-center justify-around">
+      <div className="flex items-center justify-around gap-1">
         {right.map((item) => (
           <NavTab key={item.to} {...item} />
         ))}

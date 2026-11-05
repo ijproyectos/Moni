@@ -14,7 +14,7 @@ interface PageHeaderProps {
 }
 
 const BACK_CLASS =
-  'flex size-12 shrink-0 items-center justify-center rounded-full border border-sand bg-card text-ink'
+  'flex size-12 shrink-0 items-center justify-center rounded-full bg-card text-ink shadow-[0_1px_3px_rgb(16_48_30/0.12)]'
 
 /** Header for second-level pages: back button, title, optional action. */
 export function PageHeader({
@@ -42,7 +42,9 @@ export function PageHeader({
           <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2.25} />
         </button>
       )}
-      <h1 className="min-w-0 flex-1 font-display text-[28px] font-extrabold leading-8">{title}</h1>
+      <h1 className="min-w-0 flex-1 font-display text-[clamp(20px,6.2vw,28px)] font-extrabold leading-8">
+        {title}
+      </h1>
       {action}
     </div>
   )

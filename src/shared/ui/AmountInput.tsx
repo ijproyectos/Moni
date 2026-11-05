@@ -23,7 +23,7 @@ export function AmountInput({
     <div
       className={cn(
         'flex items-baseline gap-2 border-b-2 pb-1',
-        invalid ? 'border-expense' : 'border-sand',
+        invalid ? 'border-expense' : 'border-line',
         className,
       )}
     >
