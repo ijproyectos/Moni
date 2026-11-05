@@ -1,12 +1,12 @@
 import { Plus } from 'lucide-react'
 import { Button } from '@/shared/ui/Button'
 import { CategoryChip } from '@/shared/ui/CategoryChip'
-import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import type { CategoryTemplate } from '@/features/categories/domain/category'
 import { OnboardingTitle } from './OnboardingTitle'
+import { SkipAllLink } from './SkipAllLink'
 
-const EXPENSE_DOT = '#e5533d'
-const INCOME_DOT = '#6dbe3a'
+const EXPENSE_DOT = '#b23b2e'
+const INCOME_DOT = '#5fae4e'
 
 export interface CustomCategoryChip {
   name: string
@@ -25,8 +25,10 @@ interface OnboardingCategoriesStepProps {
   onCreate: () => void
   onRemoveCustom: (category: CustomCategoryChip) => void
   onContinue: () => void
-  /** Finishes the whole onboarding with defaults. */
+  /** Keeps the suggested categories and goes on. */
   onSkip: () => void
+  /** Asks to finish the whole onboarding with the defaults. */
+  onSkipAll: () => void
   isBusy?: boolean
 }
 
@@ -41,6 +43,7 @@ export function OnboardingCategoriesStep({
   onRemoveCustom,
   onContinue,
   onSkip,
+  onSkipAll,
   isBusy = false,
 }: OnboardingCategoriesStepProps) {
   const allSelected = templates.length > 0 && selected.length === templates.length
@@ -49,13 +52,13 @@ export function OnboardingCategoriesStep({
   return (
     <>
       <OnboardingTitle title="Elegí tus categorías" />
-      <p className="mt-3 text-center text-[16px] leading-6 text-text-muted-on-dark">
+      <p className="mt-3 text-center text-[15px] leading-[22px] text-text-muted">
         Podés crear las tuyas ahora o después desde <em>Más › Categorías</em>.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <ul
-          className="flex items-center gap-4 text-[15px] text-text-muted-on-dark"
+          className="flex items-center gap-4 text-[15px] font-bold text-text-muted"
           aria-label="Referencias"
         >
           <li className="flex items-center gap-2">
@@ -78,7 +81,7 @@ export function OnboardingCategoriesStep({
         <button
           type="button"
           onClick={onToggleAll}
-          className="min-h-11 whitespace-nowrap rounded-full border-2 border-lime/30 px-4 text-[15px] font-extrabold text-cream"
+          className="min-h-11 whitespace-nowrap rounded-full border-2 border-forest px-4 text-[15px] font-extrabold text-ink dark:border-lime"
         >
           {allSelected ? 'Quitar todas' : 'Seleccionar todas'}
         </button>
@@ -88,9 +91,8 @@ export function OnboardingCategoriesStep({
         {templates.map((template) => (
           <CategoryChip
             key={template.slug}
-            surface="dark"
+            surface="light"
             label={template.name}
-            icon={getCategoryIcon(template.icon)}
             dot={template.kind === 'expense' ? EXPENSE_DOT : INCOME_DOT}
             selected={selected.includes(template.slug)}
             onClick={() => onToggle(template.slug)}
@@ -99,9 +101,8 @@ export function OnboardingCategoriesStep({
         {custom.map((category) => (
           <CategoryChip
             key={`${category.kind}-${category.name}`}
-            surface="dark"
+            surface="light"
             label={category.name}
-            icon={getCategoryIcon(category.icon)}
             dot={category.kind === 'expense' ? EXPENSE_DOT : INCOME_DOT}
             selected
             aria-label={`${category.name} (creada por vos, tocá para quitarla)`}
@@ -111,7 +112,7 @@ export function OnboardingCategoriesStep({
         <button
           type="button"
           onClick={onCreate}
-          className="inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-dashed border-lime/40 px-4 font-display text-base font-extrabold text-cream"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border-2 border-dashed border-line px-4 font-display text-base font-extrabold text-text-muted"
         >
           <Plus aria-hidden="true" className="size-[18px]" strokeWidth={2.25} />
           Crear
@@ -120,21 +121,17 @@ export function OnboardingCategoriesStep({
 
       <div className="mt-auto flex flex-col items-center gap-1 pt-6">
         {count === 0 && (
-          <p role="alert" className="mb-3 w-full text-center text-sm text-blush">
+          <p role="alert" className="mb-3 w-full text-center text-sm font-bold text-expense">
             Elegí al menos una categoría para seguir.
           </p>
         )}
         <Button onClick={onContinue} disabled={count === 0}>
           {`Continuar · ${count} ${count === 1 ? 'elegida' : 'elegidas'}`}
         </Button>
-        <Button
-          variant="ghost"
-          disabled={isBusy}
-          onClick={onSkip}
-          className="text-text-muted-on-dark"
-        >
-          Omitir
+        <Button variant="ghost" disabled={isBusy} onClick={onSkip} className="text-text-muted">
+          Saltar
         </Button>
+        <SkipAllLink disabled={isBusy} onClick={onSkipAll} />
       </div>
     </>
   )

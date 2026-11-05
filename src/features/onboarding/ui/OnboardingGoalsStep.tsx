@@ -1,26 +1,8 @@
-import {
-  Check,
-  RefreshCw,
-  Search,
-  Send,
-  Sparkles,
-  Target,
-  UsersRound,
-  type LucideIcon,
-} from 'lucide-react'
+import { Check } from 'lucide-react'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { GOAL_OPTIONS } from '../domain/goals'
 import { OnboardingTitle } from './OnboardingTitle'
-
-const GOAL_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
-  track_spending: { icon: Search, color: '#b8ec7c' },
-  save_monthly: { icon: Target, color: '#ffc83d' },
-  split_expenses: { icon: UsersRound, color: '#f5b8b0' },
-  control_recurring: { icon: RefreshCw, color: '#7fd1c3' },
-  plan_trips: { icon: Send, color: '#7fd1c3' },
-  all: { icon: Sparkles, color: '#ffc83d' },
-}
 
 interface OnboardingGoalsStepProps {
   selected: readonly string[]
@@ -29,7 +11,7 @@ interface OnboardingGoalsStepProps {
   onSkip: () => void
 }
 
-// Screen 002 — Objetivos.
+// Screen 002 — Objetivos: a flat list with a check on the right (no cards, no icons).
 export function OnboardingGoalsStep({
   selected,
   onToggle,
@@ -43,34 +25,28 @@ export function OnboardingGoalsStep({
         subtitle="Elegí todas las que quieras. Así armamos la app a tu medida."
       />
 
-      <ul className="mt-6 flex flex-col gap-3">
+      <ul className="mt-6 flex flex-col border-b border-line">
         {GOAL_OPTIONS.map((goal) => {
           const checked = selected.includes(goal.id)
-          const { icon: Icon, color } = GOAL_ICONS[goal.id] ?? { icon: Sparkles, color: '#ffc83d' }
           return (
-            <li key={goal.id}>
+            <li key={goal.id} className="border-t border-line first:border-t-0">
               <button
                 type="button"
                 aria-pressed={checked}
                 onClick={() => onToggle(goal.id)}
                 className={cn(
-                  'flex min-h-[62px] w-full items-center gap-4 rounded-[20px] border-2 px-3 py-2 text-left text-[17px] font-semibold leading-[22px] text-cream transition',
-                  checked ? 'border-lime bg-surface' : 'border-white/5 bg-surface/70',
+                  'flex min-h-14 w-full items-center gap-4 rounded-[16px] px-3 py-3 text-left text-[17px] font-extrabold leading-[22px] text-ink transition-colors',
+                  checked && 'bg-[#e3ebd3] dark:bg-sand',
                 )}
               >
-                <span
-                  aria-hidden="true"
-                  className="flex size-11 shrink-0 items-center justify-center rounded-full bg-forest/60"
-                  style={{ color }}
-                >
-                  <Icon className="size-5" strokeWidth={2} />
-                </span>
                 <span className="flex-1">{goal.label}</span>
                 <span
                   aria-hidden="true"
                   className={cn(
                     'flex size-7 shrink-0 items-center justify-center rounded-full border-2',
-                    checked ? 'border-lime bg-lime text-forest' : 'border-text-muted-on-dark',
+                    checked
+                      ? 'border-forest bg-forest text-cream dark:border-lime dark:bg-lime dark:text-forest'
+                      : 'border-line',
                   )}
                 >
                   {checked && <Check className="size-4" strokeWidth={3} />}
@@ -81,9 +57,9 @@ export function OnboardingGoalsStep({
         })}
       </ul>
 
-      <div className="mt-auto flex flex-col items-center gap-1 pt-4">
+      <div className="mt-auto flex flex-col items-center gap-1 pt-6">
         <Button onClick={onContinue}>Continuar</Button>
-        <Button variant="ghost" onClick={onSkip} className="text-text-muted-on-dark">
+        <Button variant="ghost" onClick={onSkip} className="text-text-muted">
           Saltar
         </Button>
       </div>

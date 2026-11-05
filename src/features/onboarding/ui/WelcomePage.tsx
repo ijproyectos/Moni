@@ -4,7 +4,7 @@ import logoUrl from '@/assets/brand/logo_moni_lima.svg'
 import { signInWithGoogle } from '@/features/auth/api/authActions'
 import { clearSuspendedNotice, readSuspendedNotice } from '@/features/auth/domain/suspendedNotice'
 import { SUSPENDED_MESSAGE } from '@/features/support/domain/support'
-import { Button } from '@/shared/ui/Button'
+import { ArrowRight } from 'lucide-react'
 import { Coin } from '@/shared/ui/Coin'
 
 // Screen 01 — Bienvenida. Measurements follow the 390×844 design export.
@@ -27,14 +27,14 @@ export function WelcomePage() {
   }
 
   return (
-    <main className="min-h-dvh bg-forest text-cream">
+    <main className="figma-scale min-h-dvh bg-forest text-cream">
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[390px] flex-col px-6 pb-[max(env(safe-area-inset-bottom),38px)]">
         <img src={logoUrl} alt="moni" className="mx-auto mt-[65px] h-[52px] w-auto" />
 
         <div className="relative mx-auto mt-[57px] size-[314px]">
           <div
             aria-hidden="true"
-            className="absolute left-1/2 top-[38px] size-[258px] -translate-x-1/2 rounded-full bg-surface"
+            className="absolute left-1/2 top-[38px] size-[258px] -translate-x-1/2 rounded-full bg-surface/60"
           />
           <img src={mascotUrl} alt="" className="relative size-full" />
         </div>
@@ -54,17 +54,28 @@ export function WelcomePage() {
         </p>
 
         <div className="mt-auto flex flex-col items-center gap-[15px] pt-9">
-          <Button onClick={handleSignIn} disabled={isRedirecting}>
-            Registrarse
-          </Button>
-          <Button
-            variant="ghost"
+          <button
+            type="button"
             onClick={handleSignIn}
             disabled={isRedirecting}
-            className="text-cream"
+            className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-lime to-[#d6ecc8] font-display text-[17px] font-extrabold text-forest transition active:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Registrarse
+            <span
+              aria-hidden="true"
+              className="flex size-7 items-center justify-center rounded-full bg-forest text-lime"
+            >
+              <ArrowRight className="size-4" strokeWidth={2.5} />
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={handleSignIn}
+            disabled={isRedirecting}
+            className="min-h-11 px-4 text-[15px] font-bold text-text-muted-on-dark hover:underline disabled:opacity-60"
           >
             Ya tengo cuenta
-          </Button>
+          </button>
           {suspended && (
             <p role="alert" className="text-center text-sm text-blush">
               {SUSPENDED_MESSAGE}

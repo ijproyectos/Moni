@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
 import mascotUrl from '@/assets/mascot/personaje_notificaciones.svg'
 import { Button } from '@/shared/ui/Button'
+import { SkipAllLink } from './SkipAllLink'
 
 const REASONS = [
   'Acordarte de anotar tus gastos del día',
@@ -29,35 +30,39 @@ async function requestNotifications(): Promise<boolean> {
 // Screen 012 — Notificaciones.
 export function OnboardingNotificationsStep({
   onContinue,
-  onSkip,
+  onSkipAll,
   isBusy = false,
 }: {
   /** Receives the answer: true = activar, false = más tarde. */
   onContinue: (optIn: boolean) => void
-  /** Finishes the whole onboarding with defaults (notifications unanswered). */
-  onSkip: () => void
+  /** Asks to finish the whole onboarding with the defaults (notifications unanswered). */
+  onSkipAll: () => void
   isBusy?: boolean
 }) {
   return (
     <>
-      <div className="relative mx-auto mt-6 size-[200px]">
-        <div aria-hidden="true" className="absolute inset-0 rounded-full bg-surface" />
-        <img src={mascotUrl} alt="" className="relative size-full p-3" />
+      <div className="relative mx-auto mt-5 size-[176px]">
+        <div aria-hidden="true" className="absolute inset-0 rounded-full bg-lime/45 dark:bg-sand" />
+        <div aria-hidden="true" className="absolute inset-[16px] rounded-full bg-forest" />
+        <img src={mascotUrl} alt="" className="relative size-full p-5" />
       </div>
-      <p className="mt-4 text-center text-[17px] font-extrabold text-lime">¡Vas bárbaro!</p>
-      <h1 className="mt-1 text-center font-display text-[32px] font-extrabold leading-[38px] text-cream">
+      <p className="mt-3 text-center text-[15px] font-extrabold text-income">¡Vas bárbaro!</p>
+      <h1 className="mt-1 text-center font-display text-[30px] font-extrabold leading-9 text-ink">
         Que no se te escape nada
       </h1>
-      <p className="mt-3 text-center text-[16px] text-text-muted-on-dark">
+      <p className="mt-2 text-center text-[15px] text-text-muted">
         Activá las notificaciones para:
       </p>
-      <ul className="mt-4 flex flex-col gap-3">
+      <ul className="mt-4 flex flex-col border-b border-line">
         {REASONS.map((reason) => (
-          <li key={reason} className="flex gap-3 text-[17px] leading-[22px] text-cream">
+          <li
+            key={reason}
+            className="flex gap-3 border-t border-line py-3 text-[16px] font-bold leading-[22px] text-ink first:border-t-0"
+          >
             <Check
               aria-hidden="true"
-              className="mt-0.5 size-5 shrink-0 text-lime"
-              strokeWidth={3}
+              className="mt-0.5 size-5 shrink-0 text-income"
+              strokeWidth={2.5}
             />
             {reason}
           </li>
@@ -75,18 +80,11 @@ export function OnboardingNotificationsStep({
           variant="ghost"
           disabled={isBusy}
           onClick={() => onContinue(false)}
-          className="text-text-muted-on-dark"
+          className="text-text-muted"
         >
           Más tarde
         </Button>
-        <Button
-          variant="ghost"
-          disabled={isBusy}
-          onClick={onSkip}
-          className="text-text-muted-on-dark"
-        >
-          Omitir
-        </Button>
+        <SkipAllLink disabled={isBusy} onClick={onSkipAll} />
       </div>
     </>
   )

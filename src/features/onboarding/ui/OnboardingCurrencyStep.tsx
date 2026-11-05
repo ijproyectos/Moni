@@ -3,6 +3,7 @@ import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { formatArs } from '@/shared/lib/money'
 import { OnboardingTitle } from './OnboardingTitle'
+import { SkipAllLink } from './SkipAllLink'
 
 function ArgentinaFlag() {
   return (
@@ -14,19 +15,63 @@ function ArgentinaFlag() {
   )
 }
 
+function UsaBadge() {
+  return (
+    <span
+      aria-hidden="true"
+      className="flex h-[22px] w-9 items-center justify-center rounded-[4px] bg-[#3c3b6e] text-[9px] font-extrabold tracking-wide text-white"
+    >
+      USA
+    </span>
+  )
+}
+
+function CurrencyRow({
+  flag,
+  name,
+  code,
+  label,
+  dim = false,
+}: {
+  flag: React.ReactNode
+  name: string
+  code: string
+  label: string
+  dim?: boolean
+}) {
+  return (
+    <div
+      aria-label={label}
+      className={cn(
+        'flex min-h-14 items-center gap-3 rounded-[28px] border border-line bg-card px-5 text-ink transition-opacity',
+        dim && 'opacity-55',
+      )}
+    >
+      {flag}
+      <span className="flex-1 font-display text-[19px] font-extrabold">{name}</span>
+      <span className="rounded-full bg-[#dfe9cc] px-3 py-0.5 text-sm font-extrabold dark:bg-sand">
+        {code}
+      </span>
+    </div>
+  )
+}
+
 // Screen 010 — Moneda. Pesos are the main currency; dollars are an optional second one.
 export function OnboardingCurrencyStep({
   usesDollars,
   onUsesDollarsChange,
   onContinue,
   onSkip,
+  onSkipAll,
   isBusy = false,
 }: {
   usesDollars: boolean
   onUsesDollarsChange: (value: boolean) => void
   onContinue: () => void
-  /** Finishes the whole onboarding with defaults. */
+  /** Skips this step (pesos only) and goes on. */
   onSkip: () => void
+  /** Asks to finish the whole onboarding with the defaults. */
+  onSkipAll: () => void
   isBusy?: boolean
 }) {
   return (
@@ -36,19 +81,28 @@ export function OnboardingCurrencyStep({
         subtitle="Por ahora Moni funciona en pesos argentinos. Si también usás dólares, sumalos como segunda moneda."
       />
 
-      <div
-        aria-label="Moneda principal: Peso argentino, ARS"
-        className="mx-auto mt-8 flex min-h-[60px] w-fit items-center gap-3 rounded-full bg-canvas px-5 text-ink"
-      >
-        <ArgentinaFlag />
-        <span className="font-display text-[20px] font-extrabold">Peso argentino</span>
-        <span className="rounded-full bg-lime/60 px-3 py-0.5 text-sm font-extrabold">ARS</span>
+      <div className="mt-6 flex flex-col gap-3">
+        <CurrencyRow
+          flag={<ArgentinaFlag />}
+          name="Peso argentino"
+          code="ARS"
+          label="Moneda principal: Peso argentino, ARS"
+        />
+        <CurrencyRow
+          flag={<UsaBadge />}
+          name="Dólar"
+          code="USD"
+          label={
+            usesDollars ? 'Segunda moneda: Dólar, USD' : 'Segunda moneda disponible: Dólar, USD'
+          }
+          dim={!usesDollars}
+        />
       </div>
 
-      <p className="mt-8 text-center text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
+      <p className="mt-7 text-center text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
         Así vas a ver tus números
       </p>
-      <p className="mx-auto mt-3 w-fit rounded-[24px] border-2 border-dashed border-lime/30 px-5 py-3 font-display text-[38px] font-extrabold text-cream">
+      <p className="mx-auto mt-3 w-full rounded-[24px] border-2 border-dashed border-line px-5 py-4 text-center font-display text-[40px] font-extrabold leading-none text-ink">
         {formatArs(1_234_550)}
       </p>
 
@@ -57,25 +111,25 @@ export function OnboardingCurrencyStep({
         role="checkbox"
         aria-checked={usesDollars}
         onClick={() => onUsesDollarsChange(!usesDollars)}
-        className="mt-6 flex w-full items-center gap-4 rounded-[20px] bg-surface px-4 py-3 text-left"
+        className="mt-6 flex w-full items-center gap-4 border-y border-line px-1 py-4 text-left"
       >
         <span
           aria-hidden="true"
-          className="flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-forest/60 text-[15px] font-extrabold text-lime"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#dfe9cc] text-[14px] font-extrabold text-ink dark:bg-sand"
         >
           US$
         </span>
         <span className="flex-1">
-          <span className="block text-[17px] font-extrabold text-cream">También uso dólares</span>
-          <span className="block text-[14px] text-text-muted-on-dark">
-            Sumalos como segunda moneda
-          </span>
+          <span className="block text-[17px] font-extrabold text-ink">También uso dólares</span>
+          <span className="block text-[14px] text-text-muted">Sumalos como segunda moneda</span>
         </span>
         <span
           aria-hidden="true"
           className={cn(
             'flex size-8 shrink-0 items-center justify-center rounded-[8px] border-2',
-            usesDollars ? 'border-lime bg-lime text-forest' : 'border-text-muted-on-dark',
+            usesDollars
+              ? 'border-forest bg-forest text-cream dark:border-lime dark:bg-lime dark:text-forest'
+              : 'border-line',
           )}
         >
           {usesDollars && <Check className="size-5" strokeWidth={3} />}
@@ -84,14 +138,10 @@ export function OnboardingCurrencyStep({
 
       <div className="mt-auto flex flex-col items-center gap-1 pt-8">
         <Button onClick={onContinue}>Continuar</Button>
-        <Button
-          variant="ghost"
-          disabled={isBusy}
-          onClick={onSkip}
-          className="text-text-muted-on-dark"
-        >
-          Omitir
+        <Button variant="ghost" disabled={isBusy} onClick={onSkip} className="text-text-muted">
+          Saltar
         </Button>
+        <SkipAllLink disabled={isBusy} onClick={onSkipAll} />
       </div>
     </>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
@@ -11,6 +11,7 @@ import { FEATURES } from '@/shared/config/features'
 import type { CategoryKind } from '@/shared/lib/database.types'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { Button } from '@/shared/ui/Button'
 import { ProgressHeader } from '@/shared/ui/ProgressHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
@@ -28,7 +29,7 @@ import {
   type CustomCategory,
   type OnboardingInput,
 } from '../domain/onboarding'
-import { OnboardingBenefitsStep } from './OnboardingBenefitsStep'
+import { OnboardingBenefitsStep, type SlideTint } from './OnboardingBenefitsStep'
 import { OnboardingCategoriesStep } from './OnboardingCategoriesStep'
 import { OnboardingCurrencyStep } from './OnboardingCurrencyStep'
 import { OnboardingGoalsStep } from './OnboardingGoalsStep'
@@ -58,7 +59,12 @@ export function OnboardingPage() {
     draft?.notificationsOptIn ?? null,
   )
   const [creatingKind, setCreatingKind] = useState<CategoryKind | null>(null)
+  // "Omitir configuración" throws away the answers, so it asks first.
+  const [confirmingSkipAll, setConfirmingSkipAll] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // The benefits slides tint the whole screen; every other step uses the canvas.
+  const [tint, setTint] = useState<SlideTint | null>(null)
+  const onTint = useCallback((t: SlideTint | null) => setTint(t), [])
 
   const requested = parseStep(params.get('paso'))
   const templates = templatesQuery.data ?? []
@@ -110,7 +116,7 @@ export function OnboardingPage() {
     })
   }
 
-  // "Omitir" at any step: finish right away with the defaults, ignoring answers given so far.
+  // "Omitir configuración" (after confirming): finish right away with the defaults, ignoring the answers given so far.
   function skipAll() {
     const defaults = defaultTemplateSlugs(templates)
     if (defaults.length === 0) {
@@ -128,7 +134,7 @@ export function OnboardingPage() {
 
   if (step === PRO_STEP) {
     return (
-      <main className="min-h-dvh w-full bg-forest">
+      <main className="figma-scale min-h-dvh w-full bg-canvas">
         <ProPaywall
           onClose={() => void finish()}
           onStartTrial={() => void finish()}
@@ -142,7 +148,12 @@ export function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-forest text-cream">
+    <main
+      className="figma-scale min-h-dvh bg-[var(--ob-light,var(--color-canvas))] text-ink transition-colors duration-300 dark:bg-[var(--ob-dark,var(--color-canvas))]"
+      style={
+        tint ? ({ '--ob-light': tint.light, '--ob-dark': tint.dark } as CSSProperties) : undefined
+      }
+    >
       <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-6">
         <ProgressHeader step={step} total={ONBOARDING_STEPS} onBack={step > 1 ? back : undefined} />
 
@@ -161,7 +172,9 @@ export function OnboardingPage() {
           <OnboardingBenefitsStep
             name={firstName(profile?.display_name)}
             onContinue={() => goTo(3)}
-            onSkip={() => void skipAll()}
+            onSkip={() => goTo(3)}
+            onSkipAll={() => setConfirmingSkipAll(true)}
+            onTint={onTint}
             isBusy={complete.isPending}
           />
         )}
@@ -170,7 +183,12 @@ export function OnboardingPage() {
             usesDollars={usesDollars}
             onUsesDollarsChange={setUsesDollars}
             onContinue={() => goTo(4)}
-            onSkip={() => void skipAll()}
+            // Skipping the currency keeps pesos only.
+            onSkip={() => {
+              setUsesDollars(false)
+              goTo(4)
+            }}
+            onSkipAll={() => setConfirmingSkipAll(true)}
             isBusy={complete.isPending}
           />
         )}
@@ -181,12 +199,12 @@ export function OnboardingPage() {
               aria-label="Cargando categorías"
               className="mt-10 flex flex-col gap-3"
             >
-              <Skeleton className="h-9 bg-surface" />
-              <Skeleton className="h-40 bg-surface" />
+              <Skeleton className="h-9" />
+              <Skeleton className="h-40" />
             </div>
           ) : templatesQuery.isError ? (
             <div className="mt-16 flex flex-col items-center gap-4 text-center">
-              <p role="alert" className="text-blush">
+              <p role="alert" className="font-bold text-expense">
                 No pudimos cargar las categorías. Revisá tu conexión.
               </p>
               <Button onClick={() => void templatesQuery.refetch()} className="w-auto px-8">
@@ -209,7 +227,12 @@ export function OnboardingPage() {
                 setCustom((list) => list.filter((x) => !(x.kind === c.kind && x.name === c.name)))
               }
               onContinue={() => goTo(5)}
-              onSkip={() => void skipAll()}
+              // Skipping the categories keeps the suggested ones (and the ones the person created).
+              onSkip={() => {
+                setSlugs(defaultTemplateSlugs(templates))
+                goTo(5)
+              }}
+              onSkipAll={() => setConfirmingSkipAll(true)}
               isBusy={complete.isPending}
             />
           ))}
@@ -222,16 +245,30 @@ export function OnboardingPage() {
               if (FEATURES.pro) goTo(PRO_STEP)
               else void finish(optIn)
             }}
-            onSkip={() => void skipAll()}
+            onSkipAll={() => setConfirmingSkipAll(true)}
           />
         )}
         {error && (
-          <p role="alert" className="mt-3 text-center text-sm text-blush">
+          <p role="alert" className="mt-3 text-center text-sm font-bold text-expense">
             {error}
           </p>
         )}
       </div>
 
+      {confirmingSkipAll && (
+        <ConfirmDialog
+          title="¿Omitir la configuración?"
+          message="Terminamos ahora con los valores por defecto: todas las categorías sugeridas, solo pesos, sin objetivos y sin avisos. Lo que elegiste hasta acá no se guarda. Lo podés cambiar después desde Perfil."
+          confirmLabel="Omitir y terminar"
+          cancelLabel="Seguir configurando"
+          isBusy={complete.isPending}
+          onConfirm={() => {
+            setConfirmingSkipAll(false)
+            void skipAll()
+          }}
+          onCancel={() => setConfirmingSkipAll(false)}
+        />
+      )}
       {creatingKind && (
         <BottomSheet title="Nueva categoría" onClose={() => setCreatingKind(null)}>
           <SegmentedControl
