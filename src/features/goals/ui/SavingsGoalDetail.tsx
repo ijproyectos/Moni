@@ -85,7 +85,7 @@ export function SavingsGoalDetail({
   }
 
   return (
-    <Page native>
+    <Page>
       <PageHeader title={goal.name} backTo="/metas" />
       <SavingsHero
         label={

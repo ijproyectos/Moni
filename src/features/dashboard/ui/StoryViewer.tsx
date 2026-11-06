@@ -165,7 +165,7 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
       aria-label={`Historia: ${story.label}`}
       tabIndex={-1}
       data-autofocus
-      className="figma-scale fixed inset-0 z-40 mx-auto flex w-full max-w-[430px] flex-col overflow-hidden bg-[#10301e] text-[#f1f4e2] outline-none"
+      className="fixed inset-0 z-40 mx-auto flex w-full max-w-[430px] flex-col overflow-hidden bg-[#10301e] text-[#f1f4e2] outline-none"
     >
       <div
         aria-hidden="true"

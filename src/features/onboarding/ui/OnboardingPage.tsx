@@ -134,7 +134,7 @@ export function OnboardingPage() {
 
   if (step === PRO_STEP) {
     return (
-      <main className="figma-scale min-h-dvh w-full bg-canvas">
+      <main className="min-h-dvh w-full bg-canvas">
         <ProPaywall
           onClose={() => void finish()}
           onStartTrial={() => void finish()}
@@ -149,7 +149,7 @@ export function OnboardingPage() {
 
   return (
     <main
-      className="figma-scale min-h-dvh bg-[var(--ob-light,var(--color-canvas))] text-ink transition-colors duration-300 dark:bg-[var(--ob-dark,var(--color-canvas))]"
+      className="min-h-dvh bg-[var(--ob-light,var(--color-canvas))] text-ink transition-colors duration-300 dark:bg-[var(--ob-dark,var(--color-canvas))]"
       style={
         tint ? ({ '--ob-light': tint.light, '--ob-dark': tint.dark } as CSSProperties) : undefined
       }

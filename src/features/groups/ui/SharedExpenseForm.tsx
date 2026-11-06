@@ -417,7 +417,7 @@ export function SharedExpenseForm({
                   <Avatar name={person?.name ?? '?'} size="sm" />
                   <span className="flex-1 text-[17px] font-extrabold">{person?.name}</span>
                   <AmountField
-                    label={`Pagó ${person?.name}`}
+                    label={id === meId ? 'Pagaste' : `Pagó ${person?.name}`}
                     value={payers[id] ?? ''}
                     onChange={(v) => setPayers((cur) => ({ ...cur, [id]: v }))}
                   />

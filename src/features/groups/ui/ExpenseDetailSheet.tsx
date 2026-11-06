@@ -26,6 +26,9 @@ export function ExpenseDetailSheet({
   onDelete,
   onClose,
 }: ExpenseDetailSheetProps) {
+  const payerId = expense.payers[0]?.personId ?? ''
+  const payerIsMe =
+    expense.payers.length === 1 && people.find((p) => p.id === payerId)?.isMe === true
   const payer =
     expense.payers.length > 1 ? 'varios' : personName(people, expense.payers[0]?.personId ?? '')
   return (
@@ -37,19 +40,30 @@ export function ExpenseDetailSheet({
           </span>
           <p className="text-[16px] text-text-muted">{formatLongDay(expense.occurredOn)}</p>
         </div>
-        <p className="font-display text-[44px] font-extrabold leading-[50px]">
+        <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
           {formatArs(expense.amountCents)}
         </p>
         <p className="flex flex-wrap items-center gap-2 text-[16px]">
           {expense.payers.length === 1 && <Avatar name={payer} size="sm" />}
-          Pagó <strong className="font-extrabold">{payer}</strong> ·{' '}
+          {payerIsMe ? (
+            <strong className="font-extrabold">Pagaste</strong>
+          ) : (
+            <>
+              Pagó <strong className="font-extrabold">{payer}</strong>
+            </>
+          )}{' '}
+          ·{' '}
           {expense.methodLabel.startsWith('entre')
             ? `partes iguales ${expense.methodLabel}`
             : expense.methodLabel}
         </p>
         <p className="-mt-2 text-[14px] text-text-muted">
           Cargado por{' '}
-          {expense.createdBy ? personName(people, expense.createdBy) : 'alguien del grupo'}
+          {expense.createdBy
+            ? people.find((p) => p.id === expense.createdBy)?.isMe
+              ? 'vos'
+              : personName(people, expense.createdBy)
+            : 'alguien del grupo'}
         </p>
         <SectionLabel>Cómo se dividió</SectionLabel>
         <ul className="divide-y divide-line rounded-[22px] border border-line bg-card px-4">

@@ -29,7 +29,7 @@ export function GoalDetailPage() {
   if (!goal) {
     if (savings.isLoading) {
       return (
-        <Page native>
+        <Page>
           <Skeleton className="h-48" />
         </Page>
       )
@@ -70,7 +70,7 @@ function SharedGoalDetail({
     { name: info.partner, month: info.monthTheirsCents, due: theirs, total: info.theirsCents },
   ]
   return (
-    <Page native>
+    <Page>
       <PageHeader title="Meta compartida" backTo="/metas?tab=shared" />
       <SavingsHero
         label={`${info.space} · ${goal.name}`}

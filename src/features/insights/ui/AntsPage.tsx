@@ -32,7 +32,7 @@ export function AntsPage() {
   const previous = useAnts(shiftMonth(month, -1))
 
   return (
-    <Page native>
+    <Page>
       <PageHeader title="Gastos hormiga" />
       <SegmentedControl
         label="Período"
@@ -100,7 +100,7 @@ function AntsContent({
           {label} · {currentLabel}
         </p>
         <div className="mt-1 flex items-center justify-between">
-          <p className="font-display text-[44px] font-extrabold leading-[52px]">
+          <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
             {formatArs(data.monthTotalCents)}
           </p>
           {pct !== null && (

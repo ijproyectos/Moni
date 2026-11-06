@@ -128,9 +128,37 @@ describe('Personas del grupo (con y sin cuenta)', () => {
     expect(screen.getByText('Invitar con código')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Agregar por nombre/ }))
     await user.type(screen.getByLabelText('Nombre'), 'Martina')
-    await user.click(screen.getByRole('button', { name: 'Sumar a Martina' }))
+    await user.click(screen.getByRole('button', { name: 'Agregar 1 persona' }))
     expect(state.addGuest).toHaveBeenCalledWith({ groupId: 'g1', name: 'Martina', alias: '' })
     expect(await screen.findByText('Martina se sumó al grupo')).toBeInTheDocument()
+  })
+
+  it('adds several people from the same window and says how many joined', async () => {
+    const user = setup()
+    await user.click(screen.getByRole('button', { name: /Sumar persona/ }))
+    await user.click(screen.getByRole('button', { name: /Agregar por nombre/ }))
+    await user.type(screen.getByLabelText('Nombre'), 'Martina')
+    await user.click(screen.getByRole('button', { name: 'Agregar otra persona' }))
+    await user.type(screen.getByLabelText('Nombre'), 'Paula')
+    await user.type(screen.getByLabelText('Alias para cobrar'), 'paula.mp')
+    await user.click(screen.getByRole('button', { name: 'Agregar 2 personas' }))
+    expect(state.addGuest).toHaveBeenNthCalledWith(1, { groupId: 'g1', name: 'Martina', alias: '' })
+    expect(state.addGuest).toHaveBeenNthCalledWith(2, {
+      groupId: 'g1',
+      name: 'Paula',
+      alias: 'paula.mp',
+    })
+    expect(await screen.findByText('2 personas se sumaron al grupo')).toBeInTheDocument()
+  })
+
+  it('does not offer to add someone who is already in the group', async () => {
+    const user = setup()
+    await user.click(screen.getByRole('button', { name: /Sumar persona/ }))
+    await user.click(screen.getByRole('button', { name: /Agregar por nombre/ }))
+    await user.type(screen.getByLabelText('Nombre'), 'Fran')
+    await user.click(screen.getByRole('button', { name: 'Agregar 1 persona' }))
+    expect(screen.getByText('Ya hay alguien con ese nombre en el grupo.')).toBeInTheDocument()
+    expect(state.addGuest).not.toHaveBeenCalled()
   })
 
   it('keeps the form open and says why when the name is already taken', async () => {
@@ -138,8 +166,8 @@ describe('Personas del grupo (con y sin cuenta)', () => {
     const user = setup()
     await user.click(screen.getByRole('button', { name: /Sumar persona/ }))
     await user.click(screen.getByRole('button', { name: /Agregar por nombre/ }))
-    await user.type(screen.getByLabelText('Nombre'), 'Fran')
-    await user.click(screen.getByRole('button', { name: 'Sumar a Fran' }))
+    await user.type(screen.getByLabelText('Nombre'), 'Paula')
+    await user.click(screen.getByRole('button', { name: 'Agregar 1 persona' }))
     expect(
       await screen.findByText('Ya hay alguien con ese nombre en el grupo.'),
     ).toBeInTheDocument()

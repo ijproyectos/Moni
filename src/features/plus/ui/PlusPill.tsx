@@ -6,7 +6,7 @@ export function PlusPill({ className }: { className?: string }) {
     <span
       title="Moni Plus activo"
       className={cn(
-        'inline-block whitespace-nowrap rounded-full bg-gold px-3 py-1 text-[13px] font-extrabold leading-4 tracking-[0.08em] text-forest',
+        'inline-flex h-7 items-center justify-center whitespace-nowrap rounded-full bg-gold px-3 indent-[0.08em] text-[13px] font-extrabold leading-none tracking-[0.08em] text-forest',
         className,
       )}
     >

@@ -43,7 +43,7 @@ export function DecisionSheet({
   useModal(panelRef, onClose)
 
   return createPortal(
-    <div className="figma-scale fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div
         aria-hidden="true"
         onClick={onClose}

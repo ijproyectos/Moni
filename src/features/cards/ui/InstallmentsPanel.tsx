@@ -54,7 +54,7 @@ export function InstallmentsPanel() {
           Pagás en cuotas
         </p>
         <p className="flex items-baseline gap-2">
-          <span className="font-display text-[44px] font-extrabold leading-[52px]">
+          <span className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
             {formatArs(monthly)}
           </span>
           <span className="text-[17px] text-text-muted-on-dark">por mes</span>

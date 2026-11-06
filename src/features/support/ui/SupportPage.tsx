@@ -76,7 +76,7 @@ export function SupportPage() {
   }
 
   return (
-    <Page native className="pb-10">
+    <Page className="pb-10">
       <PageHeader title="Soporte" backTo="/perfil" />
 
       <Card className="flex flex-col gap-3">
@@ -136,7 +136,11 @@ export function SupportPage() {
           <p role="alert" className="text-[15px] text-expense">
             No pudimos cargar tus consultas.
           </p>
-          <Button variant="dark" className="h-11 w-auto px-6 text-base" onClick={() => void tickets.refetch()}>
+          <Button
+            variant="dark"
+            className="h-11 w-auto px-6 text-base"
+            onClick={() => void tickets.refetch()}
+          >
             Reintentar
           </Button>
         </div>

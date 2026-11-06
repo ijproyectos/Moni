@@ -146,7 +146,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
   }
 
   return (
-    <section className="figma-scale flex flex-col pb-4 pt-8">
+    <section className="flex flex-col pb-4 pt-6">
       <header className="px-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -156,7 +156,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
                   type="button"
                   onClick={props.onPrevMonth}
                   aria-label="Mes anterior"
-                  className="-ml-2 flex size-9 items-center justify-center rounded-full text-text-muted"
+                  className="flex size-11 items-center justify-center rounded-full text-text-muted"
                 >
                   <ChevronLeft aria-hidden="true" className="size-5" strokeWidth={2} />
                 </button>
@@ -170,13 +170,13 @@ export function ActivityScreen(props: ActivityScreenProps) {
                   onClick={props.onNextMonth}
                   disabled={!props.canGoNext}
                   aria-label="Mes siguiente"
-                  className="flex size-9 items-center justify-center rounded-full text-text-muted disabled:opacity-40"
+                  className="flex size-11 items-center justify-center rounded-full text-text-muted disabled:opacity-40"
                 >
                   <ChevronRight aria-hidden="true" className="size-5" strokeWidth={2} />
                 </button>
               )}
             </div>
-            <h1 className="font-display text-[clamp(32px,10vw,40px)] font-extrabold leading-tight">
+            <h1 className="font-display text-[clamp(28px,8.5vw,32px)] font-extrabold leading-tight">
               Actividad
             </h1>
             <p className="text-[15px] text-text-muted">{`${count} ${countLabel(kind, count)}`}</p>

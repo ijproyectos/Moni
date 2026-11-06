@@ -45,6 +45,22 @@ describe('Grupos: the green box "Debés / Te deben"', () => {
     expect(screen.getByRole('button', { name: 'Ver lo que te deben' })).toHaveTextContent('$30.000')
   })
 
+  it('both cards share the same box (height, padding, radius, alignment): only the color differs', () => {
+    renderScreen()
+    const owe = screen.getByRole('button', { name: 'Ver lo que debés' })
+    const owed = screen.getByRole('button', { name: 'Ver lo que te deben' })
+    const box = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter((c) => !c.startsWith('from-') && !c.startsWith('to-'))
+        .sort()
+        .join(' ')
+    expect(box(owe)).toBe(box(owed))
+    expect(owe.parentElement).toHaveClass('items-stretch')
+    expect(owe.className).toContain('from-[#c85a3e]')
+    expect(owed.className).toContain('from-[#3a7a4a]')
+  })
+
   it('tapping "Debés" opens the debts on the "Debo" tab', async () => {
     const { user, onOpenDebts } = renderScreen()
     await user.click(screen.getByRole('button', { name: 'Ver lo que debés' }))

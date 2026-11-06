@@ -36,14 +36,14 @@ export function DebtsPage() {
   const net = owed - owe
 
   return (
-    <Page native>
+    <Page>
       <PageHeader title="Deudas" />
       <section className="rounded-[28px] bg-forest p-5 text-cream">
         <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
           Tu saldo en grupos
         </p>
         <p
-          className={`font-display text-[44px] font-extrabold leading-[52px] ${net >= 0 ? 'text-lime' : 'text-blush'}`}
+          className={`font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight ${net >= 0 ? 'text-lime' : 'text-blush'}`}
         >
           {formatArs(net, { signed: true })}
         </p>

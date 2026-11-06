@@ -140,107 +140,15 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
   }
 }
 
-/*
- * Density: the whole UI is laid out in fixed px, so one global lever scales everything. CSS `zoom` on <html>
- * renders at ZOOM of the design size (0.85 = 15% smaller). Without `zoom` support the factor stays 1.
- * Viewport-based sizes and the 430px column are divided by the factor so they still fill the screen, and
- * tap targets are raised so they stay >= 44px after scaling.
- */
 :root {
   --cat-lift: 0%;
   --cat-sink: 35%;
-  --ui-zoom: 1;
-  --tap: 44px;
+  /* Where floating notices (update prompt, push prompt) rest: just above the safe area... */
+  --float-bottom: calc(env(safe-area-inset-bottom) + 1rem);
 }
-/* The global 85% is retired: every screen is laid out at the Figma scale. To bring it back, set the factor below
-   (and --ui-unzoom further down) to 0.85 and `zoom: var(--ui-zoom)` on html inside this @supports block. */
-@supports (zoom: 1) {
-  :root {
-    --ui-zoom: 1;
-    --tap: calc(44px / var(--ui-zoom));
-  }
-  html {
-    zoom: var(--ui-zoom);
-  }
-}
-.min-h-dvh {
-  min-height: calc(100dvh / var(--ui-zoom));
-}
-.max-h-\[92dvh\] {
-  max-height: calc(92dvh / var(--ui-zoom));
-}
-.max-w-\[430px\] {
-  max-width: calc(430px / var(--ui-zoom));
-}
-.max-w-\[398px\] {
-  max-width: calc(398px / var(--ui-zoom));
-}
-.max-w-\[390px\] {
-  max-width: calc(390px / var(--ui-zoom));
-}
-/*
- * Figma scale: screens redesigned from the Figma are measured at its native size (390pt wide), so they cancel the global
- * density lever: the zoom is undone for the subtree and the variables the rules above read go back to 1.
- */
-:root {
-  --ui-unzoom: 1;
-}
-@supports (zoom: 1) {
-  :root {
-    --ui-unzoom: calc(1 / var(--ui-zoom));
-  }
-}
-.figma-scale {
-  --ui-zoom: 1;
-  --tap: 44px;
-  zoom: var(--ui-unzoom);
-}
-
-/* Legibility floors: small text is scaled less so it stays >= 14px (body), 13px, 12.5px or 12px on screen. */
-.text-\[16px\],
-.text-base {
-  font-size: max(16px, calc(14px / var(--ui-zoom)));
-}
-.text-\[15px\] {
-  font-size: max(15px, calc(14px / var(--ui-zoom)));
-}
-.text-\[14px\],
-.text-sm {
-  font-size: max(14px, calc(13px / var(--ui-zoom)));
-}
-.text-\[13px\] {
-  font-size: max(13px, calc(12.5px / var(--ui-zoom)));
-}
-.text-\[12px\],
-.text-xs {
-  font-size: max(12px, calc(12px / var(--ui-zoom)));
-}
-.min-h-11,
-.h-11 {
-  min-height: var(--tap);
-}
-.h-11 {
-  height: var(--tap);
-}
-.size-11 {
-  width: var(--tap);
-  height: var(--tap);
-}
-.min-w-11 {
-  min-width: var(--tap);
-}
-.min-h-12 {
-  min-height: max(48px, var(--tap));
-}
-.h-12 {
-  height: max(48px, var(--tap));
-}
-.size-12 {
-  width: max(48px, var(--tap));
-  height: max(48px, var(--tap));
-}
-.min-w-12 {
-  min-width: max(48px, var(--tap));
+/* ...or above whatever is fixed at the bottom of the screen (the tab bar or a screen's action bar, `data-bottom-action`). */
+:root:has([data-bottom-action]) {
+  --float-bottom: calc(env(safe-area-inset-bottom) + 6.25rem);
 }
 
 /* The add menu leaves the cat: it grows from the button and settles with a small bounce. */
@@ -258,15 +166,19 @@ html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    /* Opening a sheet locks the scroll: keep the space of the scrollbar so the page does not shift sideways. */
+    scrollbar-gutter: stable;
   }
 
   body {
     margin: 0;
-    min-height: calc(100dvh / var(--ui-zoom));
+    min-height: 100dvh;
     background-color: var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    /* A long unbroken word (a name, a pasted code) breaks instead of widening its box, so no screen grows past the phone. */
+    overflow-wrap: anywhere;
   }
 
   :focus-visible {

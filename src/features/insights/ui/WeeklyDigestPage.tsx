@@ -49,7 +49,7 @@ export function WeeklyDigestPage() {
     .slice(0, TOP_CATEGORIES)
 
   return (
-    <main className="figma-scale min-h-dvh bg-canvas px-5 pb-8 pt-14 text-ink">
+    <main className="min-h-dvh bg-canvas px-5 pb-8 pt-14 text-ink">
       <div className="flex items-center justify-between">
         <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
           {formatDayMonth(week.from)} al {formatDayMonth(week.lastDay)}
@@ -89,7 +89,7 @@ export function WeeklyDigestPage() {
               Gastaste en la semana
             </p>
             <div className="mt-1 flex items-center justify-between gap-3">
-              <p className="font-display text-[40px] font-extrabold leading-[48px]">
+              <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
                 {formatArs(current.data.expenseCents)}
               </p>
               {comparison.deltaPercent !== null && comparison.direction !== 'same' && (

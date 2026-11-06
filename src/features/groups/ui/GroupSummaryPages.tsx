@@ -71,7 +71,7 @@ export function GroupSummaryPage() {
   const last = dates[dates.length - 1]
   const when = last ? formatLongDay(last) : ''
   return (
-    <Page native className="pb-28">
+    <Page>
       <PageHeader title="Resumen" fallbackTo={`/grupos/${groupId}`} />
       <article className="rounded-[24px] border border-line bg-card p-4 shadow-sm">
         <header className="flex items-center gap-3">
@@ -176,7 +176,7 @@ export function GroupSummaryPage() {
           Hecho con Moni
         </p>
       </article>
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button variant="dark" onClick={() => navigate(`/grupos/${groupId}/compartir`)}>
           <Upload aria-hidden="true" className="mr-2 size-5" /> Compartir resumen
         </Button>
@@ -292,7 +292,7 @@ export function ShareSummaryPage() {
   )
 
   return (
-    <Page native className="pb-28">
+    <Page>
       <PageHeader title="Compartir resumen" fallbackTo={`/grupos/${groupId}/resumen`} />
       <SegmentedControl
         label="Cómo compartir"
@@ -389,7 +389,7 @@ export function ShareSummaryPage() {
               todavía no tiene Moni: copiale el mensaje y mandalo por donde quieras.
             </p>
           )}
-          <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+          <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
             <Button
               variant="dark"
               disabled={involved.length === 0}
@@ -438,7 +438,7 @@ export function ShareSummaryPage() {
                 </li>
               ))}
           </ul>
-          <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+          <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
             <Button variant="dark" onClick={() => void copyText(groupText, toast, 'Texto copiado')}>
               <Copy aria-hidden="true" className="mr-2 size-5" /> Copiar texto del grupo
             </Button>
@@ -530,7 +530,7 @@ export function NoticesSentPage() {
     return `Te pasan ${formatArs(incoming.reduce((s, t) => s + t.amountCents, 0))}`
   }
   return (
-    <Page native className="pb-28 pt-20">
+    <Page className="pt-20">
       <span className="mx-auto flex size-24 items-center justify-center rounded-full bg-lime">
         <Check aria-hidden="true" className="size-12" strokeWidth={3} />
       </span>
@@ -580,7 +580,7 @@ export function NoticesSentPage() {
           notificaciones las ves en Avisos.
         </p>
       )}
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button onClick={() => navigate(`/grupos/${groupId}`, { replace: true })}>
           <Check aria-hidden="true" className="mr-2 size-5" /> Listo
         </Button>

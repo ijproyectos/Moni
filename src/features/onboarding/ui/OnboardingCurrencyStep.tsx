@@ -102,7 +102,7 @@ export function OnboardingCurrencyStep({
       <p className="mt-7 text-center text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
         Así vas a ver tus números
       </p>
-      <p className="mx-auto mt-3 w-full rounded-[24px] border-2 border-dashed border-line px-5 py-4 text-center font-display text-[40px] font-extrabold leading-none text-ink">
+      <p className="mx-auto mt-3 w-full rounded-[24px] border-2 border-dashed border-line px-5 py-4 text-center font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-none text-ink">
         {formatArs(1_234_550)}
       </p>
 

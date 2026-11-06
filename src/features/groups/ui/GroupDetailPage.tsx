@@ -45,6 +45,7 @@ import {
 import type { Settlement } from '../domain/group'
 import { canVoidExpense, canRecordReceipt, canVoidSettlement } from '../domain/groupView'
 import { personName, type LedgerExpense } from '../domain/ledger'
+import { debtPhrase, expensePaidPhrase, settlementPhrase } from '../domain/phrases'
 import { patchOverlay } from '../mock/overlayStore'
 import type { GuestExpenseInput } from '../api/guestsRepository'
 import {
@@ -59,6 +60,7 @@ import { InvitePanel } from './InvitePanel'
 import { ExpenseDetailSheet } from './ExpenseDetailSheet'
 import { expenseIcon } from './expenseIcon'
 import { AvatarStack } from './groupVisuals'
+import { PhraseText } from './PhraseText'
 import { ReceiptSheet } from './ReceiptSheet'
 import { SettleUpSheet } from './SettleUpSheet'
 import { SharedExpenseSheet } from './SharedExpenseSheet'
@@ -208,7 +210,7 @@ export function GroupDetailPage() {
   }
 
   return (
-    <section className="figma-scale flex flex-col gap-4 px-5 pb-6 pt-8">
+    <section className="flex flex-col gap-4 px-5 pb-6 pt-8">
       <GroupDetailHeader
         name={name}
         kind={kind}
@@ -226,11 +228,15 @@ export function GroupDetailPage() {
         >
           <div className="flex items-start justify-between gap-2">
             <p className="text-[16px] font-semibold text-text-muted">
-              {myNet > 0
-                ? `${partner?.name ?? 'Tu pareja'} te debe`
-                : myNet < 0
-                  ? `Le debés a ${partner?.name ?? 'tu pareja'}`
-                  : 'Están a mano'}
+              {myNet === 0 || !partner
+                ? myNet > 0
+                  ? 'Tu pareja te debe'
+                  : myNet < 0
+                    ? 'Le debés a tu pareja'
+                    : 'Están a mano'
+                : myNet > 0
+                  ? debtPhrase(partner, { id: meId, name: 'Vos' }, meId)
+                  : debtPhrase({ id: meId, name: 'Vos' }, partner, meId)}
             </p>
             <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold text-ink">
               {overlay.coupleSplit === 'income' ? 'Según ingresos' : 'Mitad y mitad'}
@@ -238,7 +244,7 @@ export function GroupDetailPage() {
           </div>
           <p
             className={cn(
-              'font-display text-[48px] font-extrabold leading-[56px]',
+              'font-display text-[clamp(32px,10vw,40px)] font-extrabold leading-tight',
               myNet >= 0 ? 'text-income' : 'text-expense',
             )}
           >
@@ -270,7 +276,7 @@ export function GroupDetailPage() {
             </span>
           </div>
           <p className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-display text-[44px] font-extrabold leading-[52px]">
+            <span className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
               {formatArs(ledger.totalCents)}
             </span>
             <span className="text-[16px] text-text-muted">
@@ -300,7 +306,7 @@ export function GroupDetailPage() {
                         {t.fromUserId === meId
                           ? `Vos le pasás a ${to}`
                           : t.toUserId === meId
-                            ? `${from} te pasa a vos`
+                            ? `${from} te pasa`
                             : `${from} le pasa a ${to}`}
                       </span>
                       <span className="text-[19px] font-extrabold text-ink">
@@ -399,8 +405,8 @@ export function GroupDetailPage() {
         </section>
       )}
 
-      <div className="flex items-center justify-between px-1">
-        <h2 className="whitespace-nowrap text-[21px] font-extrabold">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
+        <h2 className="text-[21px] font-extrabold">
           {kind === 'casa' ? `Gastos de ${formatMonthName(month).toLowerCase()}` : 'Gastos'}
         </h2>
         {kind === 'pareja' ? (
@@ -410,7 +416,7 @@ export function GroupDetailPage() {
         ) : (
           <Link
             to={`/grupos/${groupId}/personas`}
-            className="flex items-center gap-1.5 whitespace-nowrap text-[15px] font-extrabold"
+            className="flex min-h-11 items-center gap-1.5 whitespace-nowrap text-[15px] font-extrabold"
           >
             <AvatarStack people={ledger.people} />
             {ledger.people.length} {ledger.people.length === 1 ? 'persona' : 'personas'}
@@ -431,9 +437,7 @@ export function GroupDetailPage() {
             const payer =
               e.payers.length > 1
                 ? 'Pagaron varios'
-                : payerId === meId
-                  ? 'Pagaste vos'
-                  : `Pagó ${personName(ledger.people, payerId)}`
+                : expensePaidPhrase({ id: payerId, name: personName(ledger.people, payerId) }, meId)
             const myShare = e.shares.find((s) => s.personId === meId)?.cents ?? 0
             const myPaid = e.payers.find((p) => p.personId === meId)?.cents ?? 0
             const coupleDelta = myPaid - myShare
@@ -446,7 +450,7 @@ export function GroupDetailPage() {
                 >
                   <span
                     className={cn(
-                      'flex size-12 shrink-0 items-center justify-center rounded-full',
+                      'flex size-11 shrink-0 items-center justify-center rounded-full max-[339px]:hidden',
                       coupleDelta < 0 && kind === 'pareja'
                         ? 'bg-tint-red text-expense'
                         : 'bg-lime/35',
@@ -455,18 +459,18 @@ export function GroupDetailPage() {
                     <Icon className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[18px] font-extrabold">
+                    <span className="line-clamp-2 block text-[17px] font-extrabold leading-6">
                       {e.description}
                     </span>
                     <span
                       className={cn(
-                        'block truncate text-text-muted',
+                        'line-clamp-2 block text-text-muted',
                         kind === 'pareja' ? 'text-[14px]' : 'text-[15px]',
                       )}
                     >
                       {kind === 'pareja'
                         ? `${payer} · ${formatArs(e.amountCents)} · ${e.methodLabel.startsWith('entre') ? '50/50' : e.methodLabel}`
-                        : `${payer} · ${e.methodLabel}`}
+                        : `${payer} · ${e.methodLabel} · tu parte ${formatArs(myShare)}`}
                     </span>
                   </span>
                   {kind === 'pareja' ? (
@@ -484,13 +488,8 @@ export function GroupDetailPage() {
                       </span>
                     </span>
                   ) : (
-                    <span className="text-right">
-                      <span className="block text-[18px] font-extrabold">
-                        {formatArs(e.amountCents)}
-                      </span>
-                      <span className="block text-[14px] text-text-muted">
-                        tu parte {formatArs(myShare)}
-                      </span>
+                    <span className="shrink-0 text-right text-[17px] font-extrabold">
+                      {formatArs(e.amountCents)}
                     </span>
                   )}
                 </button>
@@ -508,56 +507,64 @@ export function GroupDetailPage() {
             {(settlements.data ?? [])
               .filter((s) => s.status === 'posted')
               .map((s) => (
-                <li key={s.id} className="flex items-center gap-3 px-4 py-3">
+                <li key={s.id} className="flex flex-wrap items-center gap-x-3 px-4 py-2">
                   <Avatar name={personName(ledger.people, s.fromUser)} size="sm" />
-                  <span className="flex-1 text-[16px]">
-                    <strong className="font-extrabold">
-                      {personName(ledger.people, s.fromUser)}
-                    </strong>{' '}
-                    le pagó a{' '}
-                    <strong className="font-extrabold">
-                      {personName(ledger.people, s.toUser)}
-                    </strong>
+                  <span className="min-w-[9rem] flex-1 text-[16px]">
+                    <PhraseText
+                      segments={settlementPhrase(
+                        { id: s.fromUser, name: personName(ledger.people, s.fromUser) },
+                        { id: s.toUser, name: personName(ledger.people, s.toUser) },
+                        meId,
+                      )}
+                    />
                   </span>
-                  <span className="text-[16px] font-extrabold">{formatArs(s.amountCents)}</span>
-                  {canRecordReceipt(s, meId) && (
-                    <button
-                      type="button"
-                      onClick={() => setSheet({ type: 'receipt', id: s.id })}
-                      className="text-[14px] font-extrabold underline"
-                    >
-                      Anotar
-                    </button>
-                  )}
-                  {canVoidSettlement(s, meId) && (
-                    <button
-                      type="button"
-                      aria-label="Anular pago"
-                      onClick={() => setSheet({ type: 'void-settlement', settlement: s })}
-                      className="p-1 text-text-muted"
-                    >
-                      <Trash2 aria-hidden="true" className="size-4" />
-                    </button>
-                  )}
+                  <span className="ml-auto flex items-center gap-2">
+                    <span className="text-[16px] font-extrabold">{formatArs(s.amountCents)}</span>
+                    {canRecordReceipt(s, meId) && (
+                      <button
+                        type="button"
+                        onClick={() => setSheet({ type: 'receipt', id: s.id })}
+                        className="inline-flex min-h-11 items-center text-[14px] font-extrabold underline"
+                      >
+                        Anotar
+                      </button>
+                    )}
+                    {canVoidSettlement(s, meId) && (
+                      <button
+                        type="button"
+                        aria-label="Anular pago"
+                        onClick={() => setSheet({ type: 'void-settlement', settlement: s })}
+                        className="flex size-11 shrink-0 items-center justify-center text-text-muted"
+                      >
+                        <Trash2 aria-hidden="true" className="size-4" />
+                      </button>
+                    )}
+                  </span>
                 </li>
               ))}
             {overlay.settlements.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 px-4 py-3">
+              <li key={s.id} className="flex flex-wrap items-center gap-x-3 px-4 py-2">
                 <Avatar name={personName(ledger.people, s.fromId)} size="sm" />
-                <span className="flex-1 text-[16px]">
-                  <strong className="font-extrabold">{personName(ledger.people, s.fromId)}</strong>{' '}
-                  le pagó a{' '}
-                  <strong className="font-extrabold">{personName(ledger.people, s.toId)}</strong>
+                <span className="min-w-[9rem] flex-1 text-[16px]">
+                  <PhraseText
+                    segments={settlementPhrase(
+                      { id: s.fromId, name: personName(ledger.people, s.fromId) },
+                      { id: s.toId, name: personName(ledger.people, s.toId) },
+                      meId,
+                    )}
+                  />
                 </span>
-                <span className="text-[16px] font-extrabold">{formatArs(s.cents)}</span>
-                <button
-                  type="button"
-                  aria-label="Anular pago"
-                  onClick={() => setSheet({ type: 'void-guest-settlement', id: s.id })}
-                  className="p-1 text-text-muted"
-                >
-                  <Trash2 aria-hidden="true" className="size-4" />
-                </button>
+                <span className="ml-auto flex items-center gap-2">
+                  <span className="text-[16px] font-extrabold">{formatArs(s.cents)}</span>
+                  <button
+                    type="button"
+                    aria-label="Anular pago"
+                    onClick={() => setSheet({ type: 'void-guest-settlement', id: s.id })}
+                    className="flex size-11 shrink-0 items-center justify-center text-text-muted"
+                  >
+                    <Trash2 aria-hidden="true" className="size-4" />
+                  </button>
+                </span>
               </li>
             ))}
           </ul>
@@ -586,14 +593,20 @@ export function GroupDetailPage() {
           </button>
         </div>
       )}
-      <div className="fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-[430px] gap-2 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-4 pb-[max(env(safe-area-inset-bottom),16px)] pt-4">
-        <Button className="flex-[1.3]" onClick={() => setSheet({ type: 'new' })}>
+      <div
+        data-bottom-action
+        className="fixed inset-x-0 bottom-0 z-30 mx-auto flex w-full max-w-[430px] gap-2 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-4 pb-[max(env(safe-area-inset-bottom),16px)] pt-4"
+      >
+        <Button
+          className="flex-[1.3] whitespace-nowrap px-3 max-[359px]:text-[16px]"
+          onClick={() => setSheet({ type: 'new' })}
+        >
           <Plus aria-hidden="true" className="mr-2 size-5" strokeWidth={2.5} /> Agregar gasto
         </Button>
         {kind === 'casa' ? (
           <Button
             variant="ghost"
-            className="h-14 flex-1 rounded-full border-2 border-line bg-card text-ink"
+            className="h-14 flex-1 whitespace-nowrap rounded-full border-2 border-line bg-card px-3 text-ink max-[359px]:text-[16px]"
             onClick={() => setSheet({ type: 'settle' })}
           >
             <Check aria-hidden="true" className="mr-2 size-5" /> Saldar

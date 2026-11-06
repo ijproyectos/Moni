@@ -57,7 +57,7 @@ export function JoinWithCodePage() {
   }
 
   return (
-    <Page native className="pb-28">
+    <Page>
       <PageHeader title="Entrar con un código" fallbackTo="/grupos" />
       <MascotTile />
       <h2 className="text-center font-display text-[26px] font-extrabold leading-8">
@@ -116,7 +116,7 @@ export function JoinWithCodePage() {
           <ClipboardPaste aria-hidden="true" className="size-5" /> Pegar código
         </button>
       )}
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button
           disabled={!valid}
           onClick={() => navigate(`/unirse/${code}`)}
@@ -148,7 +148,7 @@ export function JoinGroupPage() {
 
   if (!validCode) {
     return (
-      <Page native>
+      <Page>
         <PageHeader title="Entrar al grupo" fallbackTo="/grupos" />
         <p role="alert" className="text-[16px] text-expense">
           Ese link no es válido. El código tiene 8 letras o números: pedí uno nuevo.
@@ -162,7 +162,7 @@ export function JoinGroupPage() {
 
   if (joined) {
     return (
-      <Page native className="pb-28 pt-24">
+      <Page className="pt-24">
         <MascotTile size="lg" />
         <h1 className="text-center font-display text-[30px] font-extrabold">
           {joined.alreadyMember ? 'Ya sos parte de este grupo' : 'Ya estás en el grupo'}
@@ -186,7 +186,7 @@ export function JoinGroupPage() {
             </span>
           </Link>
         )}
-        <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+        <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
           <Button onClick={() => navigate(`/grupos/${joined.id}`, { replace: true })}>
             <UsersRound aria-hidden="true" className="mr-2 size-5" /> Ver el grupo
           </Button>
@@ -198,7 +198,7 @@ export function JoinGroupPage() {
   // The server says this code is not valid right now (unknown, expired, revoked or used up): say it before asking anything.
   if (preview.data?.status === 'invalid') {
     return (
-      <Page native>
+      <Page>
         <PageHeader title="Entrar al grupo" fallbackTo="/grupos/unirse" />
         <p role="alert" className="flex gap-2 text-[16px] leading-6 text-expense">
           <Bell aria-hidden="true" className="mt-1 size-4 shrink-0" />
@@ -241,7 +241,7 @@ export function JoinGroupPage() {
   }
 
   return (
-    <Page native className="pb-28">
+    <Page>
       <PageHeader title="Entrar al grupo" fallbackTo="/grupos/unirse" />
       <section className="flex flex-col items-center rounded-[28px] bg-forest px-4 py-6 text-center text-cream">
         <span className="flex size-16 items-center justify-center rounded-full bg-tint-green text-ink">
@@ -277,7 +277,7 @@ export function JoinGroupPage() {
           {error}
         </p>
       )}
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button onClick={() => void confirm()} disabled={join.isPending || preview.isLoading}>
           {join.isPending ? 'Sumándome…' : 'Sumarme al grupo'}
         </Button>

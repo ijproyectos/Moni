@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
 import { useState } from 'react'
 import { addsToBalance, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
-import { formatDayMonth, formatLongDay } from '@/shared/lib/dates'
+import { formatLongDate, formatLongDay, formatRelativeDay } from '@/shared/lib/dates'
+import { todayIso } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import type { RecentMovement } from '../domain/monthSummary'
@@ -30,21 +31,38 @@ function subtitleOf(m: RecentMovement): string {
   return `${m.categoryName ?? 'Sin categoría'} · ${m.accountName}`
 }
 
+/** How many movements Inicio lists before "Ver más movimientos". */
+const COLLAPSED_COUNT = 5
+
+/** "Hoy, 5 de noviembre", "Ayer, 4 de noviembre" or "1 de noviembre" (with the year when it is not this one). */
+function dayHeading(date: string, today: string): string {
+  const day = formatLongDate(date).replace(/ de \d{4}$/, '')
+  const label = formatRelativeDay(date, today)
+  const withYear = date.slice(0, 4) === today.slice(0, 4) ? day : formatLongDate(date)
+  return label === 'Hoy' || label === 'Ayer' ? `${label}, ${day}` : withYear
+}
+
 /** "Movimientos": the newest ones by day, as plain rows. Swiping a row to the left reveals edit and void. */
 export function RecentMovements({
   movements,
   total,
   actions,
+  today = todayIso(),
 }: {
   movements: readonly RecentMovement[]
   /** How many movements there are in all (the link to Actividad says it). */
   total?: number
   actions?: MovementActions
+  /** Today, to say "Hoy" and "Ayer" on the day headings (a prop so it can be tested). */
+  today?: string
 }) {
   const [pending, setPending] = useState<RecentMovement | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const days = groupMovementsByDay(movements)
+  const [expanded, setExpanded] = useState(false)
+  const shown = expanded ? movements : movements.slice(0, COLLAPSED_COUNT)
+  const canExpand = movements.length > COLLAPSED_COUNT
+  const days = groupMovementsByDay(shown)
   const anySwipe = actions ? movements.some((m) => actions.canEdit(m) || actions.canVoid(m)) : false
 
   async function confirmVoid() {
@@ -62,40 +80,33 @@ export function RecentMovements({
   }
 
   return (
-    <section aria-labelledby="recent-title" className="border-t border-line py-6">
-      <div className="mb-3 flex items-baseline justify-between px-5">
-        <h2 id="recent-title" className="font-display text-[28px] font-extrabold">
+    <section aria-labelledby="recent-title" className="border-t border-line py-5">
+      <div className="mb-2 flex items-baseline justify-between px-5">
+        <h2 id="recent-title" className="font-display text-[22px] font-extrabold">
           Movimientos
         </h2>
-        <Link to="/actividad" className="flex min-h-11 items-center text-[16px] text-text-muted">
+        <Link to="/actividad" className="flex min-h-11 items-center text-[15px] text-text-muted">
           {total ? `Ver los ${total}` : 'Ver todos'}
         </Link>
       </div>
       {days.map((day) => {
-        const net = day.movements.reduce(
-          (s, m) => s + (addsToBalance(m.kind) ? m.amountCents : -m.amountCents),
-          0,
-        )
         return (
           <section key={day.date} aria-label={formatLongDay(day.date)}>
-            <div className="flex items-baseline justify-between px-5 pb-2 pt-1 text-[17px] text-text-muted">
-              <h3 className="font-medium">
-                {formatLongDay(day.date).split(',')[0]} {formatDayMonth(day.date)}
-              </h3>
-              <AmountDisplay cents={net} signed />
-            </div>
+            <h3 className="px-5 pb-1 pt-2 text-[14px] font-semibold text-text-muted">
+              {dayHeading(day.date, today)}
+            </h3>
             <ul className="divide-y divide-line border-b border-line">
               {day.movements.map((m) => {
                 const isIncome = addsToBalance(m.kind)
                 const canEdit = actions?.canEdit(m) ?? false
                 const canVoid = actions?.canVoid(m) ?? false
                 const row = (
-                  <div className="flex min-h-[72px] items-center gap-3 px-5 py-3">
+                  <div className="flex min-h-[60px] items-center gap-3 px-5 py-2">
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[19px] font-semibold leading-6 text-ink">
+                      <span className="block truncate text-[16px] font-semibold leading-5 text-ink">
                         {titleOf(m)}
                       </span>
-                      <span className="block truncate text-[15px] leading-5 text-text-muted">
+                      <span className="block truncate text-[13px] leading-[18px] text-text-muted">
                         {subtitleOf(m)}
                       </span>
                     </span>
@@ -104,8 +115,8 @@ export function RecentMovements({
                       signed
                       className={
                         isAdjustment(m.kind) || isOpening(m.kind)
-                          ? 'text-[20px] font-bold text-ink'
-                          : `text-[20px] font-bold ${isIncome ? 'text-income' : 'text-expense'}`
+                          ? 'text-[16px] font-bold text-ink'
+                          : `text-[16px] font-bold ${isIncome ? 'text-income' : 'text-expense'}`
                       }
                     />
                   </div>
@@ -149,8 +160,18 @@ export function RecentMovements({
           </section>
         )
       })}
+      {canExpand && (
+        <button
+          type="button"
+          onClick={() => setExpanded((open) => !open)}
+          aria-expanded={expanded}
+          className="mx-auto mt-2 flex min-h-11 items-center px-4 text-[15px] font-semibold text-text-muted"
+        >
+          {expanded ? 'Ver menos' : 'Ver más movimientos'}
+        </button>
+      )}
       {anySwipe && (
-        <p className="px-5 pt-4 text-center text-[15px] text-text-muted">
+        <p className="px-5 pt-2 text-center text-[13px] text-text-muted">
           Deslizá un movimiento a la izquierda para editarlo.
         </p>
       )}

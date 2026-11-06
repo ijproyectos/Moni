@@ -111,7 +111,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
           Tenés
         </p>
         <p className="flex items-baseline gap-2 font-display font-extrabold">
-          <span className="text-[44px] leading-[50px]">{active.length}</span>
+          <span className="text-[clamp(30px,9vw,38px)] leading-tight">{active.length}</span>
           <span className="text-[22px]">
             {active.length === 1 ? 'suscripción activa' : 'suscripciones activas'}
           </span>

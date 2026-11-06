@@ -65,7 +65,7 @@ export function CreateGroupPage() {
   const [kind, setKind] = useState<GroupKind | null>(null)
 
   return (
-    <section className="figma-scale flex flex-col gap-3 px-5 pt-14">
+    <section className="flex flex-col gap-3 px-5 pt-14">
       <button
         type="button"
         aria-label="Cerrar"
@@ -231,9 +231,12 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
         groupName={name}
         feminine={couple}
         onClose={() => setAdding(false)}
-        onAddGuest={(n, a) =>
+        single={couple}
+        existingNames={couple ? [] : guests.map((g) => g.name)}
+        onAddGuest={(n, a) => {
           setGuests((list) => (couple ? [{ name: n, alias: a }] : [...list, { name: n, alias: a }]))
-        }
+          return true
+        }}
       />
     )
   }
