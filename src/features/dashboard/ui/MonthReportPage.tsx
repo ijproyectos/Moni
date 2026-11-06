@@ -32,7 +32,7 @@ export function MonthReportPage() {
   const accountList = accounts.data ?? []
 
   return (
-    <div className="figma-scale pb-6">
+    <div className="pb-6">
       <div className="px-5 pt-14">
         {/* Back to where the report was opened from (Inicio, Tu año, the assistant…); Inicio if there was nothing before. */}
         <PageHeader title="Informes" fallbackTo="/" />
@@ -52,7 +52,11 @@ export function MonthReportPage() {
         <p className="flex items-baseline gap-1 font-display font-extrabold">
           <span className="text-[32px] text-blush">-$</span>
           {data ? (
-            <AmountDisplay cents={data.expenseCents} bare className="text-[56px] leading-[64px]" />
+            <AmountDisplay
+              cents={data.expenseCents}
+              bare
+              className="text-[clamp(36px,11vw,48px)] leading-tight"
+            />
           ) : (
             <Skeleton className="h-14 w-48" />
           )}
@@ -117,7 +121,7 @@ export function MonthReportPage() {
           </div>
           <AmountDisplay
             cents={availableBalance(accountList)}
-            className="mt-1 block font-display text-[40px] font-extrabold"
+            className="mt-1 block font-display text-[clamp(30px,9vw,38px)] font-extrabold"
           />
           <p className="text-[15px] leading-5 text-text-muted-on-dark">
             Lo que tenés hoy en todos tus medios. No es lo mismo que el balance del mes.

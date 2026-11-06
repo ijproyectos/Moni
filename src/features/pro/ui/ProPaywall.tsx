@@ -163,7 +163,7 @@ export function ProPaywall({ onClose, onStartTrial, busy, error }: ProPaywallPro
         </button>
         <nav
           aria-label="Legales"
-          className="mt-1 flex flex-wrap justify-center gap-x-6 gap-y-1 text-[14px] text-text-muted underline [&>*]:whitespace-nowrap"
+          className="mt-1 flex flex-wrap justify-center gap-x-6 gap-y-1 text-[14px] text-text-muted underline [&>*]:inline-flex [&>*]:min-h-11 [&>*]:items-center [&>*]:whitespace-nowrap"
         >
           <button type="button">Restaurar compras</button>
           <a href="#terminos">Términos</a>

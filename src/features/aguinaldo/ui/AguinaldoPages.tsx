@@ -75,7 +75,7 @@ export function AguinaldoPage() {
   }
 
   return (
-    <Page native className="pb-28">
+    <Page>
       <PageHeader title="Tu aguinaldo" />
       <MoniCalcCard
         label="Moni te acompaña"
@@ -119,7 +119,7 @@ export function AguinaldoPage() {
           onChange={(remind) => updateAguinaldo({ remind })}
         />
       </div>
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button
           disabled={amount <= 0}
           onClick={() => {
@@ -159,7 +159,7 @@ export function AguinaldoSplitPage() {
   }
 
   return (
-    <Page native className="pb-28">
+    <Page>
       <PageHeader title="¿A dónde va?" />
       <section className="rounded-[28px] bg-forest p-5 text-cream">
         <div className="flex items-start justify-between">
@@ -174,7 +174,9 @@ export function AguinaldoSplitPage() {
                 : `Te pasaste ${formatArs(-left)}`}
           </span>
         </div>
-        <p className="font-display text-[40px] font-extrabold">{formatArs(plan.amountCents)}</p>
+        <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold">
+          {formatArs(plan.amountCents)}
+        </p>
         <div className="ml-auto mt-2 flex h-3 w-1/2 gap-1" aria-hidden="true">
           {plan.destinations.map((d) => (
             <span
@@ -232,7 +234,7 @@ export function AguinaldoSplitPage() {
           parte del viaje de marzo y la tarjeta. Cambiá cualquier monto.
         </p>
       </Panel>
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button
           disabled={left !== 0}
           onClick={() => {
@@ -339,7 +341,7 @@ export function AguinaldoDonePage() {
   const navigate = useNavigate()
   const plan = useAguinaldo()
   return (
-    <Page native className="pb-28 pt-12">
+    <Page className="pt-12">
       <button
         type="button"
         aria-label="Cerrar"
@@ -378,7 +380,7 @@ export function AguinaldoDonePage() {
           </strong>
         </div>
       </Panel>
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button variant="dark" onClick={() => navigate('/mas')}>
           Listo
         </Button>

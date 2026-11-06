@@ -444,21 +444,6 @@ export function HeaderAddButton({
 }
 
 /** Page body wrapper with the standard gutters for second-level screens. */
-export function Page({
-  children,
-  className,
-  native = false,
-}: {
-  children: ReactNode
-  className?: string
-  /** Already adapted to the Figma scale: native size and 20px margins (the others still follow the density lever). */
-  native?: boolean
-}) {
-  return (
-    <section
-      className={cn('flex flex-col gap-4 pt-14', native ? 'figma-scale px-5' : 'px-4', className)}
-    >
-      {children}
-    </section>
-  )
+export function Page({ children, className }: { children: ReactNode; className?: string }) {
+  return <section className={cn('flex flex-col gap-4 px-5 pt-14', className)}>{children}</section>
 }

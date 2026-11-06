@@ -186,7 +186,7 @@ export function AccountDetail({
       aria-modal="true"
       aria-label={account.name}
       tabIndex={-1}
-      className="figma-scale fixed inset-0 z-40 overflow-y-auto outline-none"
+      className="fixed inset-0 z-40 overflow-y-auto outline-none"
     >
       <div ref={backdropRef} aria-hidden="true" className="fixed inset-0 -z-10 bg-canvas" />
       <div
@@ -256,7 +256,7 @@ export function AccountDetail({
               </p>
               <AmountDisplay
                 cents={card ? Math.abs(account.balanceCents) : account.balanceCents}
-                className="block font-display text-[44px] font-extrabold leading-[50px]"
+                className="block font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight"
               />
               {card && credit !== null && (
                 <p className="text-[15px]">

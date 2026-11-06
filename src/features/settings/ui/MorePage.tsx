@@ -83,12 +83,14 @@ function MoreCard({
     <Link
       to={to}
       className={cn(
-        'flex h-full min-h-[150px] flex-col justify-between gap-3 rounded-[32px] p-5',
+        'flex h-full min-h-[150px] flex-col justify-between gap-3 rounded-[28px] p-4 min-[380px]:p-5',
         TONES[tone],
         className,
       )}
     >
-      <span className="font-display text-[22px] font-extrabold leading-7">{title}</span>
+      <span className="font-display text-[clamp(17px,5.4vw,21px)] font-extrabold leading-7">
+        {title}
+      </span>
       {children}
     </Link>
   )
@@ -157,7 +159,7 @@ export function MorePage() {
               })}
             </span>
             {media.length > 0 && (
-              <span className="whitespace-nowrap font-display text-[22px] font-extrabold">
+              <span className="whitespace-nowrap font-display text-[clamp(17px,5.4vw,21px)] font-extrabold">
                 {media.length} {media.length === 1 ? 'medio' : 'medios'}
               </span>
             )}
@@ -239,7 +241,7 @@ export function MorePage() {
         <MoreCard to="/viajes" title="Viajes" tone="sage">
           {trip && tripLabel ? (
             <span>
-              <span className="line-clamp-2 break-words font-display text-[22px] font-extrabold leading-7">
+              <span className="line-clamp-2 break-words font-display text-[clamp(17px,5.4vw,21px)] font-extrabold leading-7">
                 {trip.name}
               </span>
               <span className="block text-[15px] leading-5 text-text-muted">{tripLabel}</span>
@@ -260,13 +262,13 @@ export function MorePage() {
               <>
                 <AmountDisplay
                   cents={antsTotal}
-                  className="block font-display text-[22px] font-extrabold leading-7"
+                  className="block font-display text-[clamp(17px,5.4vw,21px)] font-extrabold leading-7"
                 />
                 <span className="block text-[15px] leading-5 text-text-muted">este mes</span>
               </>
             ) : (
               <>
-                <span className="block font-display text-[22px] font-extrabold leading-7">
+                <span className="block font-display text-[clamp(17px,5.4vw,21px)] font-extrabold leading-7">
                   Sin hormigas
                 </span>
                 <span className="block text-[15px] leading-5 text-text-muted">
@@ -343,11 +345,13 @@ export function MorePage() {
   const others = entries.filter((e) => e.feature && !has(e.feature))
 
   return (
-    <section className="figma-scale pb-4">
+    <section className="pb-4">
       <CompactHeader title="Más" subtitle={formatMonthName(monthStart(today))} visible={scrolled} />
-      <header className="px-5 pt-14">
-        <p className="text-[20px] text-text-muted">Tu cuenta</p>
-        <h1 className="font-display text-[48px] font-extrabold leading-tight">Más</h1>
+      <header className="px-5 pt-6">
+        <p className="text-[16px] text-text-muted">Tu cuenta</p>
+        <h1 className="font-display text-[clamp(28px,8.5vw,32px)] font-extrabold leading-tight">
+          Más
+        </h1>
       </header>
       <div ref={sentinel} aria-hidden="true" className="h-px" />
 
@@ -370,7 +374,7 @@ export function MorePage() {
             ) : isError ? (
               <p className="text-blush">No pudimos cargar tu perfil.</p>
             ) : (
-              <p className="truncate font-display text-[28px] font-extrabold leading-8">
+              <p className="truncate font-display text-[24px] font-extrabold leading-8">
                 {displayName}
               </p>
             )}

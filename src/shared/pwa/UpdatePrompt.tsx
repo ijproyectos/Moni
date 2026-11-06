@@ -36,7 +36,7 @@ export function UpdatePrompt() {
 
   if (!needsRefresh) return null
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-28 z-[60] mx-auto flex w-full max-w-[430px] justify-center px-4">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[var(--float-bottom)] z-[60] mx-auto flex w-full max-w-[430px] justify-center px-4">
       <div
         role="status"
         className="pointer-events-auto flex items-center gap-3 rounded-full bg-forest py-2 pl-4 pr-2 font-display text-base font-semibold text-cream shadow-lg"

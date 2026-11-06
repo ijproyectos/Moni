@@ -27,7 +27,7 @@ export function WelcomePage() {
   }
 
   return (
-    <main className="figma-scale min-h-dvh bg-forest text-cream">
+    <main className="min-h-dvh bg-forest text-cream">
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[390px] flex-col px-6 pb-[max(env(safe-area-inset-bottom),38px)]">
         <img src={logoUrl} alt="moni" className="mx-auto mt-[65px] h-[52px] w-auto" />
 

@@ -51,7 +51,7 @@ export function TripsPage() {
   }
 
   return (
-    <Page native>
+    <Page>
       <PageHeader
         title="Viajes"
         fallbackTo="/"

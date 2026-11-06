@@ -30,7 +30,7 @@ export function NotificationsPage() {
   useEffect(() => markAllRead(), [])
 
   return (
-    <Page native>
+    <Page>
       <PageHeader title="Avisos" backTo="/" />
       <SegmentedControl
         label="Tipo de aviso"
@@ -48,7 +48,10 @@ export function NotificationsPage() {
           <RecurringReminders />
           <SectionLabel
             action={
-              <Link to="/deudas" className="text-[14px] font-extrabold uppercase tracking-[0.1em]">
+              <Link
+                to="/deudas"
+                className="inline-flex min-h-11 items-center text-[14px] font-extrabold uppercase tracking-[0.1em]"
+              >
                 Ver todo
               </Link>
             }
@@ -97,7 +100,7 @@ export function NotificationsPage() {
             action={
               <Link
                 to="/deudas?tab=te-deben"
-                className="text-[14px] font-extrabold uppercase tracking-[0.1em]"
+                className="inline-flex min-h-11 items-center text-[14px] font-extrabold uppercase tracking-[0.1em]"
               >
                 Ver todo
               </Link>

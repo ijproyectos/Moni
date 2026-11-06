@@ -121,7 +121,7 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
             <Avatar name={to} size="lg" />
           </div>
           <p className="mt-2 text-[17px] text-text-muted-on-dark">{sentence}</p>
-          <p className="font-display text-[44px] font-extrabold leading-[50px] text-lime">
+          <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight text-lime">
             {formatArs(transfer.amountCents)}
           </p>
         </div>

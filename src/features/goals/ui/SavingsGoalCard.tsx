@@ -47,8 +47,8 @@ export function SavingsGoalCard({
       <div className="flex items-center gap-3">
         <IconTile icon={kind.icon} bg={kind.bg} color={kind.color} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[19px] font-extrabold">{goal.name}</span>
-          <span className="block truncate text-[15px] text-text-muted">
+          <span className="block truncate text-[18px] font-extrabold">{goal.name}</span>
+          <span className="line-clamp-2 block text-[14px] leading-5 text-text-muted">
             {goal.accountName}
             {goal.targetDate ? ` · para el ${formatShortDate(goal.targetDate)}` : ''}
           </span>

@@ -34,7 +34,7 @@ export function PersonalTripPage() {
 
   if (trips.isLoading) {
     return (
-      <Page native>
+      <Page>
         <PageHeader title="Viaje" fallbackTo="/viajes" />
         <div role="status" aria-label="Cargando el viaje" className="flex flex-col gap-3">
           <Skeleton className="h-52" />
@@ -46,7 +46,7 @@ export function PersonalTripPage() {
   const trip = trips.data?.find((t) => t.id === id)
   if (trips.isError || !trip) {
     return (
-      <Page native>
+      <Page>
         <PageHeader title="Viaje" fallbackTo="/viajes" />
         <EmptyState
           mascotUrl={mascotUrl}
@@ -72,7 +72,7 @@ export function PersonalTripPage() {
   const percent = Math.round(summary.progress * 100)
 
   return (
-    <Page native className="pb-28">
+    <Page>
       <PageHeader
         title={trip.name}
         fallbackTo="/viajes"
@@ -97,7 +97,7 @@ export function PersonalTripPage() {
         <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
           Presupuesto del viaje
         </p>
-        <p className="font-display text-[44px] font-extrabold leading-[52px]">
+        <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
           {formatArs(trip.budgetCents)}
         </p>
         <div className="mt-3 flex justify-between gap-3 text-[15px] font-extrabold text-text-muted-on-dark">
@@ -201,7 +201,7 @@ export function PersonalTripPage() {
           }}
         />
       )}
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-5 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-5 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button onClick={() => openNew('expense', { tripId: trip.id })}>
           <Plus aria-hidden="true" className="mr-2 size-5" /> Cargar gasto
         </Button>

@@ -55,7 +55,7 @@ export function GoalsPage() {
   const today = todayIso()
 
   return (
-    <Page native>
+    <Page>
       <PageHeader
         title="Metas"
         backTo="/mas"

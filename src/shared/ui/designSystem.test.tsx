@@ -29,7 +29,7 @@ describe('shared design system', () => {
     expect(onClick).not.toHaveBeenCalled()
   })
 
-  it('sheets render at the native Figma scale and close with the X and Escape', async () => {
+  it('sheets close with the X and Escape', async () => {
     const onClose = vi.fn()
     render(
       <BottomSheet title="Nuevo medio de pago" onClose={onClose}>
@@ -37,7 +37,7 @@ describe('shared design system', () => {
       </BottomSheet>,
     )
     const dialog = screen.getByRole('dialog', { name: 'Nuevo medio de pago' })
-    expect(dialog.parentElement).toHaveClass('figma-scale')
+    expect(dialog).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Cerrar' }))
     await userEvent.keyboard('{Escape}')
     expect(onClose).toHaveBeenCalledTimes(2)
@@ -62,12 +62,10 @@ describe('shared design system', () => {
     expect(document.querySelector('svg.lucide-plus')).toBeNull()
   })
 
-  it('Page keeps the density lever until a screen is adapted, then it is native with 20px margins', () => {
-    const { container, rerender } = render(<Page>hola</Page>)
-    expect(container.firstElementChild).toHaveClass('px-4')
-    expect(container.firstElementChild).not.toHaveClass('figma-scale')
-    rerender(<Page native>hola</Page>)
-    expect(container.firstElementChild).toHaveClass('figma-scale', 'px-5')
+  it('Page has the same 20px side margins on every screen', () => {
+    const { container } = render(<Page>hola</Page>)
+    expect(container.firstElementChild).toHaveClass('px-5')
+    expect(container.firstElementChild).not.toHaveClass('px-4')
   })
 
   it('the segmented control marks the active option with a light pill and still switches', async () => {

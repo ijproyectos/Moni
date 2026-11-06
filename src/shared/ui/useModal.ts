@@ -11,10 +11,9 @@ export function useModal(ref: RefObject<HTMLElement | null>, onClose: () => void
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    const first =
-      node?.querySelector<HTMLElement>('[data-autofocus]') ??
-      node?.querySelector<HTMLElement>(FOCUSABLE)
-    ;(first ?? node)?.focus()
+    // The panel itself takes focus (it is labelled and Tab moves on from there), unless a field asks for it: a ring on the
+    // close button every time a sheet opens is noise, and a keyboard popping up by itself is worse.
+    ;(node?.querySelector<HTMLElement>('[data-autofocus]') ?? node)?.focus()
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {

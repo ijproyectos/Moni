@@ -21,7 +21,7 @@ export function ReferralPage() {
   const link = useReferralLink()
   const [sharing, setSharing] = useState(false)
   return (
-    <Page native className="pb-28">
+    <Page>
       <PageHeader title="Recomendá Moni" backTo="/mas" />
       <MoniCalcCard label="Regalá y ganá" mascot={mascotGroup} title="2 meses de Moni Pro gratis" />
       <p className="text-[16px] leading-6">
@@ -85,7 +85,7 @@ export function ReferralPage() {
           ))}
         </ul>
       </Panel>
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
         <Button onClick={() => setSharing(true)}>
           <Upload aria-hidden="true" className="mr-2 size-5" /> Compartir mi link
         </Button>

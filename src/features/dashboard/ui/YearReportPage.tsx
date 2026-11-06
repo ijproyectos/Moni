@@ -34,7 +34,7 @@ export function YearReportPage() {
     average ? Math.round(((cents - average) / average) * 100) : 0
 
   return (
-    <Page native>
+    <Page>
       <PageHeader
         title="Tu año"
         fallbackTo="/"
@@ -80,7 +80,7 @@ export function YearReportPage() {
         <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
           Gastaste en {year}
         </p>
-        <p className="font-display text-[40px] font-extrabold">
+        <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold">
           {loading ? '…' : formatArs(total)}
         </p>
         <p className="text-[16px] text-text-muted-on-dark">

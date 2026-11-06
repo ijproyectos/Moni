@@ -78,7 +78,7 @@ export function InstallmentsPage() {
   const aguinaldoMonthly = roundUpSuggestion(Math.max(0, price - aguinaldo) / AGUINALDO_MONTHS)
 
   return (
-    <Page native className="pb-6">
+    <Page className="pb-6">
       <PageHeader title="¿Conviene en cuotas?" />
       <div className="rounded-[24px] border border-line bg-card p-4">
         <div className="flex justify-between text-[16px]">
@@ -98,7 +98,7 @@ export function InstallmentsPage() {
           />
         ) : (
           <div className="flex items-center justify-between">
-            <p className="font-display text-[44px] font-extrabold">
+            <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold">
               <span className="mr-1 text-[30px]">$</span>
               {formatArs(price).slice(1)}
             </p>
@@ -149,7 +149,7 @@ export function InstallmentsPage() {
             <button
               type="button"
               onClick={() => setEditing('aguinaldo')}
-              className="flex items-center gap-1 text-[15px] font-bold"
+              className="flex min-h-11 items-center gap-1 text-[15px] font-bold"
             >
               Aguinaldo est. {formatArs(aguinaldo)}
               <Pencil aria-hidden="true" className="size-4" />
@@ -368,7 +368,7 @@ function AddOptionSheet({
           ))}
         </div>
         <p className="flex items-baseline gap-3 border-b-2 border-line pb-1">
-          <span className="font-display text-[44px] font-extrabold">{count}</span>
+          <span className="font-display text-[clamp(30px,9vw,38px)] font-extrabold">{count}</span>
           <span className="text-[17px] text-text-muted">cuotas</span>
         </p>
         <SectionLabel className="mt-1">¿De cuánto es cada cuota?</SectionLabel>

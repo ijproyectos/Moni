@@ -132,7 +132,7 @@ export function CategoriesPage() {
   }
 
   return (
-    <section className="figma-scale flex flex-col gap-4 px-5 pt-14">
+    <section className="flex flex-col gap-4 px-5 pt-14">
       <PageHeader
         title="Categorías"
         backTo="/mas"

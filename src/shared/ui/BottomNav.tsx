@@ -25,7 +25,7 @@ function NavTab({ to, label, end }: NavItem) {
       end={end}
       className={({ isActive }) =>
         cn(
-          'flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-full px-3 font-display text-[15px] font-bold transition-colors min-[380px]:px-3.5 min-[380px]:text-[16px]',
+          'flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-full px-1.5 font-display text-[13px] font-bold transition-colors min-[340px]:px-2 min-[340px]:text-[14px] min-[380px]:px-3.5 min-[380px]:text-[16px]',
           isActive ? 'bg-ink text-cream dark:bg-lime dark:text-forest' : 'text-text-muted',
         )
       }
@@ -48,15 +48,17 @@ export function BottomNav({ center }: { center?: ReactNode }) {
   return (
     <nav
       aria-label="Navegación principal"
-      className="pointer-events-auto relative grid h-[68px] grid-cols-[1fr_auto_1fr] items-center border-t border-line bg-card px-1"
+      className="pointer-events-auto relative grid h-[68px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-t border-line bg-card px-1"
     >
-      <div className="flex items-center justify-around gap-1">
+      <div className="flex min-w-0 items-center justify-around gap-0.5 min-[380px]:gap-1">
         {left.map((item) => (
           <NavTab key={item.to} {...item} />
         ))}
       </div>
-      <div className="relative flex w-[76px] justify-center">{center}</div>
-      <div className="flex items-center justify-around gap-1">
+      <div className="relative flex w-[60px] justify-center min-[340px]:w-[68px] min-[380px]:w-[76px]">
+        {center}
+      </div>
+      <div className="flex min-w-0 items-center justify-around gap-0.5 min-[380px]:gap-1">
         {right.map((item) => (
           <NavTab key={item.to} {...item} />
         ))}

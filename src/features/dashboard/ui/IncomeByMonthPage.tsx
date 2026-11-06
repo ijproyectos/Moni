@@ -28,7 +28,7 @@ export function IncomeByMonthPage() {
   const total = annualIncomeCents(months)
 
   return (
-    <Page native>
+    <Page>
       <PageHeader title="Ingresos por mes" fallbackTo="/tu-anio" />
 
       <div className="flex items-center justify-between gap-3">
@@ -62,7 +62,10 @@ export function IncomeByMonthPage() {
         {summary.isLoading ? (
           <Skeleton className="mt-2 h-12" />
         ) : (
-          <p className="font-display text-[40px] font-extrabold" aria-label="Total anual">
+          <p
+            className="font-display text-[clamp(30px,9vw,38px)] font-extrabold"
+            aria-label="Total anual"
+          >
             {summary.isError ? '—' : formatArs(total)}
           </p>
         )}
@@ -77,7 +80,7 @@ export function IncomeByMonthPage() {
           <button
             type="button"
             onClick={() => void summary.refetch()}
-            className="font-extrabold underline"
+            className="inline-flex min-h-11 items-center font-extrabold underline"
           >
             Reintentar
           </button>

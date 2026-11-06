@@ -24,7 +24,7 @@ export function AchievementsPage() {
   const count = earnedCount(earned)
 
   return (
-    <Page native>
+    <Page>
       <PageHeader title="Mis logros" fallbackTo="/perfil" />
       {rewards.isLoading ? (
         <div role="status" aria-label="Cargando logros" className="grid grid-cols-2 gap-3">

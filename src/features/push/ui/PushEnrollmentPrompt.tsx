@@ -42,7 +42,7 @@ function Prompt() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-28 z-40 mx-auto w-full max-w-[430px] px-4">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[var(--float-bottom)] z-40 mx-auto w-full max-w-[430px] px-4">
       <section
         aria-label="Avisos de Moni"
         className="pointer-events-auto flex flex-col gap-3 rounded-[22px] bg-forest p-4 text-cream shadow-lg"

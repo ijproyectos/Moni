@@ -126,7 +126,7 @@ export function AccountsPage() {
   }
 
   return (
-    <section className="figma-scale flex flex-col gap-4 px-5 pt-14">
+    <section className="flex flex-col gap-4 px-5 pt-14">
       <PageHeader
         title="Medios de pago"
         backTo="/mas"
@@ -296,7 +296,7 @@ export function AccountsPage() {
                                 ? Math.abs(account.balanceCents)
                                 : account.balanceCents
                             }
-                            className="block font-display text-[40px] font-extrabold leading-[46px]"
+                            className="block font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight"
                           />
                           {isCreditCard(account) && availableCredit(account) !== null && (
                             <p className="text-[15px]">

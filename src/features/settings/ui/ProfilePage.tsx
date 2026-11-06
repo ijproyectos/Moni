@@ -144,7 +144,7 @@ export function ProfilePage() {
   }
 
   return (
-    <Page native className="pb-10">
+    <Page className="pb-10">
       <PageHeader title="Perfil" backTo="/mas" />
 
       {isLoading ? (
@@ -158,16 +158,16 @@ export function ProfilePage() {
           <ProfilePhoto url={photo} initial={initial} size="lg" onCamera={() => setSheet('edit')} />
           <h2 className="mt-3 font-display text-[30px] font-extrabold leading-9">{shortName}</h2>
           {user?.email && <p className="text-[16px] text-text-muted">{user.email}</p>}
-          <div className="mt-1 flex gap-2">
+          <div className="mt-1 flex items-center justify-center gap-2">
             {plus.isPlus ? (
               <PlusPill />
             ) : (
-              <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold">
+              <span className="inline-flex h-7 items-center rounded-full bg-sand px-3 text-[13px] font-extrabold leading-none">
                 Plan gratis
               </span>
             )}
             {since && (
-              <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold">
+              <span className="inline-flex h-7 items-center rounded-full bg-sand px-3 text-[13px] font-extrabold leading-none">
                 {since}
               </span>
             )}

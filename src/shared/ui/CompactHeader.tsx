@@ -7,7 +7,6 @@ interface CompactHeaderProps {
 }
 
 /**
- * Lives inside a `figma-scale` screen (the scale must not nest).
  * The small "Inicio · Noviembre" bar that fades in at the top when the big title has scrolled away. It is decoration
  * for orientation: it lets touches through (the content under it stays usable) and is hidden from screen readers.
  */
