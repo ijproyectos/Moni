@@ -2,6 +2,7 @@ import { KeyRound } from 'lucide-react'
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
+import { formatArs } from '@/shared/lib/money'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
@@ -50,6 +51,58 @@ function subtitle(group: ListedGroup): string {
   return `${kind} · ${group.peopleCount} personas`
 }
 
+/** Text size of both amounts: they shrink together with the longest one so it never leaves its card. */
+function debtAmountSize(...cents: number[]): string {
+  const longest = Math.max(...cents.map((c) => formatArs(c).length))
+  if (longest <= 8) return 'text-[clamp(22px,6.5vw,28px)]'
+  if (longest <= 10) return 'text-[clamp(17px,5vw,22px)]'
+  return 'text-[clamp(15px,4.2vw,19px)]'
+}
+
+const DEBT_CARD_TONE = {
+  owe: 'from-[#c85a3e] to-[#e28a5c]',
+  owed: 'from-[#3a7a4a] to-[#5a9a64]',
+} as const
+
+/**
+ * "Debés" / "Te deben": one component for both, so they cannot drift apart. The grid stretches them to the same height
+ * (the taller one sets it) and the content always starts at the top: title, amount, then the optional line.
+ */
+function DebtCard({
+  label,
+  ariaLabel,
+  cents,
+  where,
+  tone,
+  amountSize,
+  onOpen,
+}: {
+  label: string
+  ariaLabel: string
+  cents: number
+  where?: string | null
+  tone: keyof typeof DEBT_CARD_TONE
+  /** Same on both cards, so a long amount in one shrinks the pair together. */
+  amountSize: string
+  onOpen: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      onClick={onOpen}
+      className={`flex min-h-[112px] min-w-0 flex-col justify-start rounded-[24px] bg-gradient-to-br p-4 text-left text-white ${DEBT_CARD_TONE[tone]}`}
+    >
+      <span className="block text-[15px] leading-5">{label}</span>
+      <AmountDisplay
+        cents={cents}
+        className={`mt-0.5 block whitespace-nowrap font-display font-extrabold leading-tight ${amountSize}`}
+      />
+      {where && <span className="mt-1 block text-[13px] leading-[18px]">{where}</span>}
+    </button>
+  )
+}
+
 // Screens 016 / 017 / 112 — Grupos.
 export function GroupsScreen({
   groups,
@@ -61,6 +114,7 @@ export function GroupsScreen({
 }: GroupsScreenProps) {
   const owe = (groups ?? []).reduce((s, g) => s + Math.max(0, -g.myNetCents), 0)
   const owed = (groups ?? []).reduce((s, g) => s + Math.max(0, g.myNetCents), 0)
+  const amountSize = debtAmountSize(owe, owed)
   const oweWhere = whereLabel(
     'en',
     (groups ?? []).filter((g) => g.myNetCents < 0).map((g) => g.name),
@@ -71,13 +125,13 @@ export function GroupsScreen({
   )
 
   return (
-    <section className="figma-scale flex flex-col gap-4 px-5 pt-10">
+    <section className="flex flex-col gap-4 px-5 pt-6">
       <div className="mb-1 flex items-start justify-between gap-3">
         <div>
           <p className="font-display text-xl font-medium text-text-muted">
             {groups ? `${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}` : '\u00a0'}
           </p>
-          <h1 className="font-display text-[clamp(32px,10vw,40px)] font-extrabold leading-tight">
+          <h1 className="font-display text-[clamp(28px,8.5vw,32px)] font-extrabold leading-tight">
             Grupos
           </h1>
         </div>
@@ -118,33 +172,25 @@ export function GroupsScreen({
         </>
       ) : (
         <>
-          <div className="grid grid-cols-2 items-end gap-3">
-            <button
-              type="button"
-              aria-label="Ver lo que debés"
-              onClick={() => onOpenDebts?.('owe')}
-              className="flex min-h-[170px] min-w-0 flex-col justify-end rounded-[28px] bg-gradient-to-br from-[#c85a3e] to-[#e28a5c] p-5 text-left text-white"
-            >
-              <span className="block text-[16px]">Debés</span>
-              <AmountDisplay
-                cents={owe}
-                className="block font-display text-[clamp(24px,7.5vw,32px)] font-extrabold leading-tight"
-              />
-              {oweWhere && <span className="mt-1 block text-[15px] leading-5">{oweWhere}</span>}
-            </button>
-            <button
-              type="button"
-              aria-label="Ver lo que te deben"
-              onClick={() => onOpenDebts?.('owed')}
-              className="flex min-h-[150px] min-w-0 flex-col justify-center rounded-[28px] bg-gradient-to-br from-[#3a7a4a] to-[#5a9a64] p-5 text-left text-white"
-            >
-              <span className="block text-[16px]">Te deben</span>
-              <AmountDisplay
-                cents={owed}
-                className="block font-display text-[clamp(24px,7.5vw,32px)] font-extrabold leading-tight"
-              />
-              {owedWhere && <span className="mt-1 block text-[15px] leading-5">{owedWhere}</span>}
-            </button>
+          <div className="grid grid-cols-2 items-stretch gap-3">
+            <DebtCard
+              label="Debés"
+              ariaLabel="Ver lo que debés"
+              cents={owe}
+              where={oweWhere}
+              tone="owe"
+              amountSize={amountSize}
+              onOpen={() => onOpenDebts?.('owe')}
+            />
+            <DebtCard
+              label="Te deben"
+              ariaLabel="Ver lo que te deben"
+              cents={owed}
+              where={owedWhere}
+              tone="owed"
+              amountSize={amountSize}
+              onOpen={() => onOpenDebts?.('owed')}
+            />
           </div>
           <h2 className="mt-2 font-display text-[22px] font-extrabold">Tus grupos</h2>
           <ul className="-mx-5 divide-y divide-line border-y border-line">
