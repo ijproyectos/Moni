@@ -29,20 +29,17 @@ export function SpendingBreakdown({ slices }: { slices: readonly CategorySlice[]
         aria-label="Categorías principales"
       >
         {sorted.slice(0, LIST_SIZE).map((slice) => (
-          <li
-            key={slice.categoryId}
-            className="flex min-h-[52px] items-center gap-3 px-5 text-[19px]"
-          >
+          <li key={slice.categoryId} className="flex min-h-12 items-center gap-3 px-5 text-[16px]">
             <span
               aria-hidden="true"
               className="size-3.5 shrink-0 rounded-[4px]"
               style={{ backgroundColor: themedColor(slice.color) }}
             />
             <span className="min-w-0 flex-1 truncate text-ink">{slice.name}</span>
-            <span className="text-[17px] text-text-muted">{Math.round(slice.percent)}%</span>
+            <span className="text-[14px] text-text-muted">{Math.round(slice.percent)}%</span>
             <AmountDisplay
               cents={-slice.amountCents}
-              className="min-w-[96px] text-right font-display font-extrabold text-ink"
+              className="min-w-[84px] text-right font-display font-extrabold text-ink"
             />
           </li>
         ))}

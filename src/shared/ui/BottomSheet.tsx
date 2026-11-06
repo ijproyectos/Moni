@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { useId, useRef, type ReactNode } from 'react'
+import { useId, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useModal } from './useModal'
 
@@ -7,18 +7,42 @@ interface BottomSheetProps {
   title: string
   /** Small line under the title (e.g. the goal name). */
   subtitle?: string
+  /** Small picture before the title (e.g. Moni's cat). */
+  icon?: ReactNode
   onClose: () => void
   children: ReactNode
 }
 
-/** Modal sheet anchored to the bottom: focus trap, Escape/scrim/X to close, labelled by its title. */
-export function BottomSheet({ title, subtitle, onClose, children }: BottomSheetProps) {
+/** How far (px) the grabber has to be dragged down to close the sheet. */
+const SWIPE_CLOSE = 90
+
+/**
+ * Modal sheet anchored to the bottom: focus trap, Escape/scrim/X to close, labelled by its title. Dragging the grabber
+ * (or the title) down closes it too.
+ */
+export function BottomSheet({ title, subtitle, icon, onClose, children }: BottomSheetProps) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
+  const dragStart = useRef<number | null>(null)
+  const [drag, setDrag] = useState(0)
   useModal(panelRef, onClose)
 
+  function onDragStart(event: PointerEvent) {
+    dragStart.current = event.clientY
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+  function onDragMove(event: PointerEvent) {
+    if (dragStart.current !== null) setDrag(Math.max(0, event.clientY - dragStart.current))
+  }
+  function onDragEnd() {
+    if (dragStart.current === null) return
+    dragStart.current = null
+    if (drag >= SWIPE_CLOSE) onClose()
+    else setDrag(0)
+  }
+
   return createPortal(
-    <div className="figma-scale fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div
         aria-hidden="true"
         onClick={onClose}
@@ -30,15 +54,27 @@ export function BottomSheet({ title, subtitle, onClose, children }: BottomSheetP
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
+        style={drag > 0 ? { transform: `translateY(${drag}px)`, transition: 'none' } : undefined}
         className="relative max-h-[92dvh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-canvas px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3 outline-none motion-safe:animate-[sheet-in_220ms_ease-out]"
       >
-        <div aria-hidden="true" className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-sand" />
+        <div
+          data-sheet-grabber
+          aria-hidden="true"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          className="-mt-3 flex touch-none justify-center pb-3 pt-3"
+        >
+          <div className="h-1.5 w-12 rounded-full bg-sand" />
+        </div>
         <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h2 id={titleId} className="font-display text-[28px] font-extrabold leading-8 text-ink">
+          {icon}
+          <div className="min-w-0 flex-1">
+            <h2 id={titleId} className="font-display text-[22px] font-extrabold leading-7 text-ink">
               {title}
             </h2>
-            {subtitle && <p className="mt-0.5 text-[15px] text-text-muted">{subtitle}</p>}
+            {subtitle && <p className="mt-0.5 text-[14px] leading-5 text-text-muted">{subtitle}</p>}
           </div>
           <button
             type="button"

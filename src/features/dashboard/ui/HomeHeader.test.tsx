@@ -72,13 +72,13 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
 
     it('keeps the regular size for short amounts and shrinks BOTH chips together for long ones', () => {
       renderHeader({ expenseCents: 5_000_00, incomeCents: 10_000_00 })
-      expect(chips().expense).toHaveClass('text-[26px]')
-      expect(chips().income).toHaveClass('text-[26px]')
+      expect(chips().expense).toHaveClass('text-[22px]')
+      expect(chips().income).toHaveClass('text-[22px]')
       cleanup()
 
       renderHeader({ expenseCents: 123_456_789_00, incomeCents: 10_000_00 })
       const long = chips()
-      expect(long.expense).not.toHaveClass('text-[26px]')
+      expect(long.expense).not.toHaveClass('text-[22px]')
       // Same size on both so they read as a pair, even though only one amount is long.
       expect(long.income.className.match(/text-\[\d+px\]/)?.[0]).toBe(
         long.expense.className.match(/text-\[\d+px\]/)?.[0],

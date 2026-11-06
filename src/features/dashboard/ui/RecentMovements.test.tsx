@@ -18,7 +18,12 @@ const movement = (over: Partial<RecentMovement> = {}): RecentMovement => ({
   ...over,
 })
 
-function setup(movements: RecentMovement[], actions?: Partial<MovementActions>, total?: number) {
+function setup(
+  movements: RecentMovement[],
+  actions?: Partial<MovementActions>,
+  total?: number,
+  today = '2026-11-05',
+) {
   const full: MovementActions = {
     canEdit: () => true,
     canVoid: () => true,
@@ -29,7 +34,7 @@ function setup(movements: RecentMovement[], actions?: Partial<MovementActions>, 
   }
   render(
     <MemoryRouter>
-      <RecentMovements movements={movements} total={total} actions={full} />
+      <RecentMovements movements={movements} total={total} actions={full} today={today} />
     </MemoryRouter>,
   )
   return { full, user: userEvent.setup() }
@@ -60,13 +65,15 @@ describe('RecentMovements', () => {
       25,
     )
     const day = screen.getByRole('region', { name: 'Domingo, 1 de noviembre' })
-    expect(day).toHaveTextContent('Domingo 1 nov')
-    expect(day).toHaveTextContent('-$80.000')
+    expect(day).toHaveTextContent('1 de noviembre')
+    expect(day).toHaveTextContent('-$40.000')
     expect(day).toHaveTextContent('ChatGPT')
     expect(day).toHaveTextContent('Suscripciones · Mercado Pago')
     expect(screen.getByRole('region', { name: 'Sábado, 31 de octubre' })).toHaveTextContent(
       '+$1.000',
     )
+    // One heading per day: the date is not repeated on each movement.
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(2)
     expect(screen.getByRole('link', { name: 'Ver los 25' })).toHaveAttribute('href', '/actividad')
   })
 
@@ -138,5 +145,50 @@ describe('RecentMovements', () => {
     setup([movement()], { canEdit: () => false, canVoid: () => false })
     expect(screen.queryByText(/Deslizá/)).toBeNull()
     expect(screen.queryByRole('button', { name: 'Anular' })).toBeNull()
+  })
+})
+
+describe('RecentMovements: groups by day and expands', () => {
+  const many = (n: number) =>
+    Array.from({ length: n }, (_, i) =>
+      movement({
+        id: `m${i}`,
+        note: `Compra ${i}`,
+        occurredOn: i < 2 ? '2026-11-05' : '2026-11-04',
+      }),
+    )
+
+  it('heads each day once, with Hoy and Ayer in words and the date of the others', () => {
+    setup([
+      movement({ id: 'a', occurredOn: '2026-11-05' }),
+      movement({ id: 'b', occurredOn: '2026-11-04' }),
+      movement({ id: 'c', occurredOn: '2026-11-01' }),
+      movement({ id: 'd', occurredOn: '2026-11-01', note: 'Belleza' }),
+    ])
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    expect(headings).toEqual(['Hoy, 5 de noviembre', 'Ayer, 4 de noviembre', '1 de noviembre'])
+  })
+
+  it('shows the last 5 first, then all of them with Ver más movimientos and back with Ver menos', async () => {
+    const { user } = setup(many(8))
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+    await user.click(screen.getByRole('button', { name: 'Ver más movimientos' }))
+    expect(screen.getAllByRole('listitem')).toHaveLength(8)
+    expect(screen.getByRole('button', { name: 'Ver menos' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    await user.click(screen.getByRole('button', { name: 'Ver menos' }))
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+  })
+
+  it('has no expand button when 5 or fewer movements fit', () => {
+    setup(many(5))
+    expect(screen.queryByRole('button', { name: /Ver más movimientos/ })).toBeNull()
+  })
+
+  it('keeps the link to the full Movimientos screen', () => {
+    setup(many(8), undefined, 40)
+    expect(screen.getByRole('link', { name: 'Ver los 40' })).toHaveAttribute('href', '/actividad')
   })
 })

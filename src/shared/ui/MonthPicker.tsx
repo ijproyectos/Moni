@@ -35,7 +35,7 @@ export function MonthPicker({
         aria-controls={listId}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'flex min-h-11 items-center gap-2 font-display text-xl font-medium',
+          'flex min-h-11 items-center gap-1.5 whitespace-nowrap font-display text-[17px] font-medium',
           tone === 'dark' ? 'text-text-muted-on-dark' : 'text-ink',
         )}
       >

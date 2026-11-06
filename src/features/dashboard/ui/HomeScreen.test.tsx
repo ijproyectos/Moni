@@ -164,7 +164,7 @@ describe('HomeScreen', () => {
     expect(screen.getByRole('link', { name: /Hormigas/ })).toHaveTextContent('este mes')
   })
 
-  describe('Para hoy and the balance chart only show what is real', () => {
+  describe('Para hoy only shows what is real', () => {
     it('has no "Para hoy" without stories', () => {
       renderHome(empty)
       expect(screen.queryByRole('heading', { name: 'Para hoy' })).toBeNull()
@@ -192,24 +192,16 @@ describe('HomeScreen', () => {
       )
     })
 
-    it('says there is not enough history instead of drawing a made-up line', () => {
-      renderHome(withData)
-      expect(screen.getByText(/Todavía no hay movimientos suficientes/)).toBeInTheDocument()
-      expect(screen.queryByRole('img', { name: /Evolución de tu dinero/ })).toBeNull()
-    })
-
-    it('draws the chart from the real series, ending on the current balance', () => {
+    it('no longer draws the balance chart, even when a series is given', () => {
       renderHome(withData, false, undefined, {
         balanceSeries: [
           { date: '2026-10-01', cents: 1_000_00 },
           { date: '2026-10-02', cents: 850_50 },
         ],
       })
-      expect(
-        screen.getByRole('img', {
-          name: 'Evolución de tu dinero disponible en los últimos 2 días: de $1.000 a $850,50',
-        }),
-      ).toBeInTheDocument()
+      expect(screen.queryByRole('img', { name: /Evolución de tu dinero/ })).toBeNull()
+      expect(screen.queryByText(/Todavía no hay movimientos suficientes/)).toBeNull()
+      expect(screen.getByText('Dinero disponible')).toBeInTheDocument()
     })
   })
 })

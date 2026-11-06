@@ -26,6 +26,14 @@ export const SUGGESTIONS = [
   '¿Quién me debe en mis grupos?',
 ] as const
 
+/** The quick questions of the sheet that opens from the cat in Inicio. */
+export const SHEET_SUGGESTIONS = [
+  '¿En qué gasté más?',
+  '¿Cuánto pago de suscripciones?',
+  '¿Cuánto debo?',
+  '¿Cuánto tengo?',
+] as const
+
 export function normalizeQuestion(text: string): string {
   return text.trim()
 }
