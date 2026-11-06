@@ -1,19 +1,31 @@
-import { ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, Scale, Search } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  List,
+  Scale,
+  Search,
+} from 'lucide-react'
 import { useState } from 'react'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
 import type { Category } from '@/features/categories/domain/category'
+import { pairAmountSize } from '@/shared/lib/amountSize'
 import { formatLongDay, formatMonthYear, formatRelativeDay } from '@/shared/lib/dates'
 import type { Cents } from '@/shared/lib/money'
 import { formatArs } from '@/shared/lib/money'
 import { todayIso, type IsoDate } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { cn } from '@/shared/ui/cn'
+import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
 import { CategoryChip } from '@/shared/ui/CategoryChip'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { CategoryIconCircle, IconCircle } from '@/shared/ui/IconCircle'
 import { MovementRow } from '@/shared/ui/MovementRow'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
+import { SwipeRow } from '@/shared/ui/SwipeRow'
 import {
   countEntries,
   type ActivityDay,
@@ -96,6 +108,23 @@ export function ActivityScreen(props: ActivityScreenProps) {
   const gridOpen = calendarView && props.monthScoped && expanded
   const elapsed = Math.max(1, props.calendarDays.filter((d) => d.date <= today).length)
   const searching = searchOpen || props.search !== ''
+  const { hidden } = useHiddenAmounts()
+  // Both totals share one size, driven by the longer amount, so they always fit on a single line.
+  const totalsSize = pairAmountSize(
+    hidden
+      ? 0
+      : Math.max(
+          formatArs(props.totals.expenseCents).length,
+          formatArs(props.totals.incomeCents).length,
+        ),
+    'activity',
+  )
+
+  /** Switching to the calendar also unfolds the month grid; going back to the list folds it. */
+  function changeView(next: ActivityView) {
+    props.onViewChange(next)
+    setExpanded(next === 'calendar')
+  }
 
   function toggleKind(next: EntryKind) {
     props.onKindChange(kind === next ? 'all' : next)
@@ -132,14 +161,22 @@ export function ActivityScreen(props: ActivityScreenProps) {
             onDelete={() => setPendingVoid(entry)}
           />
         ) : (
-          <MovementRow
-            leading={<IconCircle icon={ArrowLeftRight} color="#1c5030" />}
-            title={entry.transfer.note?.trim() || 'Transferencia'}
-            subtitle={`${formatRelativeDay(entry.occurredOn, today)} · ${accountNamesById.get(entry.transfer.fromAccountId) ?? 'Cuenta'} → ${accountNamesById.get(entry.transfer.toAccountId) ?? 'Cuenta'}`}
-            trailing={<AmountDisplay cents={entry.transfer.amountCents} className="text-ink" />}
-            onDelete={() => setPendingVoid(entry)}
-            deleteLabel="Anular transferencia"
-          />
+          <SwipeRow
+            actions={[]}
+            leadingAction={{
+              label: 'Anular',
+              tone: 'danger',
+              ariaLabel: 'Anular transferencia',
+              onPress: () => setPendingVoid(entry),
+            }}
+          >
+            <MovementRow
+              leading={<IconCircle icon={ArrowLeftRight} color="#1c5030" />}
+              title={entry.transfer.note?.trim() || 'Transferencia'}
+              subtitle={`${formatRelativeDay(entry.occurredOn, today)} · ${accountNamesById.get(entry.transfer.fromAccountId) ?? 'Cuenta'} → ${accountNamesById.get(entry.transfer.toAccountId) ?? 'Cuenta'}`}
+              trailing={<AmountDisplay cents={entry.transfer.amountCents} className="text-ink" />}
+            />
+          </SwipeRow>
         )}
       </li>
     )
@@ -181,15 +218,29 @@ export function ActivityScreen(props: ActivityScreenProps) {
             </h1>
             <p className="text-[15px] text-text-muted">{`${count} ${countLabel(kind, count)}`}</p>
           </div>
-          <button
-            type="button"
-            aria-label="Buscar"
-            aria-expanded={searching}
-            onClick={() => setSearchOpen((open) => !open)}
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-card text-ink shadow-sm"
-          >
-            <Search aria-hidden="true" className="size-5" strokeWidth={2} />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              aria-label={calendarView ? 'Ver como lista' : 'Ver calendario'}
+              onClick={() => changeView(calendarView ? 'list' : 'calendar')}
+              className="flex size-12 items-center justify-center rounded-full bg-card text-ink shadow-sm"
+            >
+              {calendarView ? (
+                <List aria-hidden="true" className="size-5" strokeWidth={2} />
+              ) : (
+                <CalendarDays aria-hidden="true" className="size-5" strokeWidth={2} />
+              )}
+            </button>
+            <button
+              type="button"
+              aria-label="Buscar"
+              aria-expanded={searching}
+              onClick={() => setSearchOpen((open) => !open)}
+              className="flex size-12 items-center justify-center rounded-full bg-card text-ink shadow-sm"
+            >
+              <Search aria-hidden="true" className="size-5" strokeWidth={2} />
+            </button>
+          </div>
         </div>
 
         {searching && (
@@ -223,7 +274,10 @@ export function ActivityScreen(props: ActivityScreenProps) {
             <span className="text-[15px] text-text-muted">Gastos</span>
             <AmountDisplay
               cents={props.totals.expenseCents}
-              className="font-display text-[clamp(26px,8.5vw,34px)] font-extrabold leading-tight text-expense"
+              className={cn(
+                'whitespace-nowrap font-display font-extrabold leading-tight text-expense',
+                totalsSize,
+              )}
             />
           </button>
           <span aria-hidden="true" className="mx-2 w-px self-stretch bg-line" />
@@ -239,7 +293,10 @@ export function ActivityScreen(props: ActivityScreenProps) {
             <span className="text-[15px] text-text-muted">Ingresos</span>
             <AmountDisplay
               cents={props.totals.incomeCents}
-              className="font-display text-[clamp(26px,8.5vw,34px)] font-extrabold leading-tight text-income"
+              className={cn(
+                'whitespace-nowrap font-display font-extrabold leading-tight text-income',
+                totalsSize,
+              )}
             />
           </button>
         </div>
@@ -281,8 +338,8 @@ export function ActivityScreen(props: ActivityScreenProps) {
             />
           )
         )}
-        <div className="mt-2 flex items-center justify-between gap-3">
-          {calendarView && props.monthScoped ? (
+        {calendarView && props.monthScoped && (
+          <div className="mt-2 flex items-center justify-between gap-3">
             <button
               type="button"
               aria-expanded={expanded}
@@ -296,17 +353,8 @@ export function ActivityScreen(props: ActivityScreenProps) {
               />
               {expanded ? 'Ocultar el calendario' : 'Ver el mes completo'}
             </button>
-          ) : (
-            <span />
-          )}
-          <button
-            type="button"
-            onClick={() => props.onViewChange(calendarView ? 'list' : 'calendar')}
-            className="min-h-11 font-display text-[16px] font-extrabold text-text-muted"
-          >
-            {calendarView ? 'Agrupar por categoría' : 'Ver por día'}
-          </button>
-        </div>
+          </div>
+        )}
         <div className="mb-1 mt-2">
           <SegmentedControl
             label="Período"
@@ -403,6 +451,12 @@ export function ActivityScreen(props: ActivityScreenProps) {
         )}
       </div>
 
+      {count > 0 && (
+        <p className="px-5 text-center text-[13px] text-text-muted">
+          Deslizá un movimiento a la derecha para anularlo o a la izquierda para editarlo.
+        </p>
+      )}
+
       {pendingVoid && (
         <ConfirmDialog
           title={
@@ -470,48 +524,56 @@ function TransactionRow({
     transaction.installmentNumber !== null && transaction.installmentsTotal !== null
       ? `cuota ${transaction.installmentNumber}/${transaction.installmentsTotal}`
       : null
+  const name = transaction.note?.trim() || categoryName
   return (
-    <MovementRow
-      leading={
-        adjustment ? (
-          <IconCircle icon={Scale} color="#1c5030" />
-        ) : (
-          <CategoryIconCircle iconName={category?.icon} color={category?.color} />
-        )
-      }
-      title={
-        installment
-          ? `${transaction.note?.trim() || categoryName} · ${installment}`
-          : transaction.note?.trim() || categoryName
-      }
-      subtitle={
-        scheduled
-          ? `Programada · cierra el ${formatRelativeDay(transaction.occurredOn, today)} · ${categoryName}`
-          : adjustment
-            ? formatRelativeDay(transaction.occurredOn, today)
-            : `${formatRelativeDay(transaction.occurredOn, today)} · ${categoryName}`
-      }
-      trailing={
-        <AmountDisplay
-          cents={isIncome ? transaction.amountCents : -transaction.amountCents}
-          signed
-          className={
-            scheduled
-              ? 'text-text-muted'
-              : adjustment
-                ? 'text-ink'
-                : isIncome
-                  ? 'text-income'
-                  : 'text-expense'
-          }
-        />
-      }
+    <SwipeRow
       onPress={editable ? onEdit : undefined}
-      pressLabel={editable ? `Editar ${transaction.note?.trim() || categoryName}` : undefined}
+      // Swiping right voids (the same confirmation as before); swiping left edits. Both are real buttons too.
       // The starting balance is fixed history: a wrong balance is fixed with "Ajustar saldo".
-      onDelete={opening ? undefined : onDelete}
-      deleteLabel={`Anular ${transaction.note?.trim() || categoryName}`}
-    />
+      leadingAction={
+        opening
+          ? undefined
+          : { label: 'Anular', tone: 'danger', ariaLabel: `Anular ${name}`, onPress: onDelete }
+      }
+      actions={
+        editable
+          ? [{ label: 'Editar', tone: 'primary', ariaLabel: `Editar ${name}`, onPress: onEdit }]
+          : []
+      }
+    >
+      <MovementRow
+        leading={
+          adjustment ? (
+            <IconCircle icon={Scale} color="#1c5030" />
+          ) : (
+            <CategoryIconCircle iconName={category?.icon} color={category?.color} />
+          )
+        }
+        title={installment ? `${name} · ${installment}` : name}
+        subtitle={
+          scheduled
+            ? `Programada · cierra el ${formatRelativeDay(transaction.occurredOn, today)} · ${categoryName}`
+            : adjustment
+              ? formatRelativeDay(transaction.occurredOn, today)
+              : `${formatRelativeDay(transaction.occurredOn, today)} · ${categoryName}`
+        }
+        trailing={
+          <AmountDisplay
+            cents={isIncome ? transaction.amountCents : -transaction.amountCents}
+            signed
+            className={
+              scheduled
+                ? 'text-text-muted'
+                : adjustment
+                  ? 'text-ink'
+                  : isIncome
+                    ? 'text-income'
+                    : 'text-expense'
+            }
+          />
+        }
+      />
+    </SwipeRow>
   )
 }
 

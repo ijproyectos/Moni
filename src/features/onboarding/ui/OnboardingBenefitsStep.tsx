@@ -24,7 +24,7 @@ const SLIDES = [
     title: 'Mirá en qué se te va la plata',
     text: 'Gráficos por categoría y cómo venís contra el mes pasado.',
     image: mascotReport,
-    tagColor: '#2e6b3f',
+    tagColor: '#1f6b52',
     tint: { light: '#dce9c8', dark: '#1b2c1f' },
   },
   {

@@ -165,7 +165,7 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
       aria-label={`Historia: ${story.label}`}
       tabIndex={-1}
       data-autofocus
-      className="fixed inset-0 z-40 mx-auto flex w-full max-w-[430px] flex-col overflow-hidden bg-[#10301e] text-[#f1f4e2] outline-none"
+      className="fixed inset-0 z-40 mx-auto flex w-full max-w-[430px] flex-col overflow-hidden bg-[#051f20] text-[#daf1de] outline-none"
     >
       <div
         aria-hidden="true"
@@ -185,7 +185,7 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
           {story.slides.map((_, i) => (
             <span key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-white/25">
               <span
-                className="block h-full rounded-full bg-[#f1f4e2]"
+                className="block h-full rounded-full bg-[#daf1de]"
                 style={{
                   width:
                     i < slideIndex
@@ -281,7 +281,7 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
             to={slide.action.to}
             onClick={onClose}
             className={cn(
-              'pointer-events-auto mb-2 flex min-h-12 flex-1 items-center justify-center rounded-full bg-[#b3d99f] px-5 text-center font-display text-[17px] font-extrabold text-[#10301e]',
+              'pointer-events-auto mb-2 flex min-h-12 flex-1 items-center justify-center rounded-full bg-[#8eb69b] px-5 text-center font-display text-[17px] font-extrabold text-[#051f20]',
             )}
           >
             {slide.action.label}

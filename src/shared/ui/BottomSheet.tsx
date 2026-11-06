@@ -1,5 +1,13 @@
 import { X } from 'lucide-react'
-import { useId, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { useModal } from './useModal'
 
@@ -16,6 +24,35 @@ interface BottomSheetProps {
 /** How far (px) the grabber has to be dragged down to close the sheet. */
 const SWIPE_CLOSE = 90
 
+/** The keyboard hides more than this much of the layout viewport (px) when a field is focused. */
+const KEYBOARD_MIN_PX = 120
+
+/**
+ * While the on-screen keyboard is open, the box of the visible area (iOS keeps the layout viewport under the
+ * keyboard, so a bottom sheet would be covered). `undefined` when there is no keyboard or no visualViewport.
+ */
+function useKeyboardBox(): CSSProperties | undefined {
+  const [box, setBox] = useState<CSSProperties | undefined>(undefined)
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+    const update = () =>
+      setBox(
+        window.innerHeight - viewport.height > KEYBOARD_MIN_PX
+          ? { top: viewport.offsetTop, height: viewport.height, bottom: 'auto' }
+          : undefined,
+      )
+    update()
+    viewport.addEventListener('resize', update)
+    viewport.addEventListener('scroll', update)
+    return () => {
+      viewport.removeEventListener('resize', update)
+      viewport.removeEventListener('scroll', update)
+    }
+  }, [])
+  return box
+}
+
 /**
  * Modal sheet anchored to the bottom: focus trap, Escape/scrim/X to close, labelled by its title. Dragging the grabber
  * (or the title) down closes it too.
@@ -26,6 +63,7 @@ export function BottomSheet({ title, subtitle, icon, onClose, children }: Bottom
   const dragStart = useRef<number | null>(null)
   const [drag, setDrag] = useState(0)
   useModal(panelRef, onClose)
+  const keyboardBox = useKeyboardBox()
 
   function onDragStart(event: PointerEvent) {
     dragStart.current = event.clientY
@@ -42,7 +80,7 @@ export function BottomSheet({ title, subtitle, icon, onClose, children }: Bottom
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div style={keyboardBox} className="fixed inset-0 z-50 flex items-end justify-center">
       <div
         aria-hidden="true"
         onClick={onClose}
@@ -55,7 +93,7 @@ export function BottomSheet({ title, subtitle, icon, onClose, children }: Bottom
         aria-labelledby={titleId}
         tabIndex={-1}
         style={drag > 0 ? { transform: `translateY(${drag}px)`, transition: 'none' } : undefined}
-        className="relative max-h-[92dvh] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-canvas px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3 outline-none motion-safe:animate-[sheet-in_220ms_ease-out]"
+        className="relative max-h-[min(92dvh,100%)] w-full max-w-[430px] overflow-y-auto rounded-t-[32px] bg-canvas px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3 outline-none motion-safe:animate-[sheet-in_220ms_ease-out]"
       >
         <div
           data-sheet-grabber
@@ -68,7 +106,7 @@ export function BottomSheet({ title, subtitle, icon, onClose, children }: Bottom
         >
           <div className="h-1.5 w-12 rounded-full bg-sand" />
         </div>
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4 short:mb-2 flex items-center justify-between gap-3">
           {icon}
           <div className="min-w-0 flex-1">
             <h2 id={titleId} className="font-display text-[22px] font-extrabold leading-7 text-ink">

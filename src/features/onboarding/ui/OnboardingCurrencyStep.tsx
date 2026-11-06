@@ -49,7 +49,7 @@ function CurrencyRow({
     >
       {flag}
       <span className="flex-1 font-display text-[19px] font-extrabold">{name}</span>
-      <span className="rounded-full bg-[#dfe9cc] px-3 py-0.5 text-sm font-extrabold dark:bg-sand">
+      <span className="rounded-full bg-[#daf1de] px-3 py-0.5 text-sm font-extrabold dark:bg-sand">
         {code}
       </span>
     </div>
@@ -115,7 +115,7 @@ export function OnboardingCurrencyStep({
       >
         <span
           aria-hidden="true"
-          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#dfe9cc] text-[14px] font-extrabold text-ink dark:bg-sand"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#daf1de] text-[14px] font-extrabold text-ink dark:bg-sand"
         >
           US$
         </span>

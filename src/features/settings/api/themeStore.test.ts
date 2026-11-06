@@ -26,7 +26,7 @@ function memoryStorage(initial?: string) {
 
 beforeEach(() => {
   document.documentElement.className = ''
-  document.head.innerHTML = '<meta name="theme-color" content="#064735">'
+  document.head.innerHTML = '<meta name="theme-color" content="#163832">'
 })
 
 describe('theme store', () => {
@@ -61,7 +61,7 @@ describe('theme store', () => {
     store.setMode('dark')
     expect(storage.data.get(THEME_STORAGE_KEY)).toBe('dark')
     expect(document.documentElement).toHaveClass('dark')
-    expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute('content', '#0c1914')
+    expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute('content', '#051f20')
     expect(listener).toHaveBeenCalledTimes(1)
   })
 

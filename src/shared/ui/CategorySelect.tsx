@@ -66,7 +66,7 @@ export function CategorySelect({
           value={value}
           onChange={handleChange}
           aria-invalid={invalid || undefined}
-          className="h-14 w-full rounded-[18px] border border-line bg-card pl-14 pr-4 text-[17px] text-ink"
+          className="h-14 short:h-12 w-full rounded-[18px] border border-line bg-card pl-14 pr-4 text-[17px] text-ink"
         >
           <option value="" disabled>
             Elegí una categoría

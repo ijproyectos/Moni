@@ -13,9 +13,6 @@ function renderHeader(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
     <MemoryRouter>
       <HiddenAmountsProvider>
         <HomeHeader
-          month="2026-10-01"
-          latestMonth="2026-10-01"
-          onMonthChange={vi.fn()}
           initial="I"
           availableCents={568_000_00}
           incomeCents={100_000_00}
@@ -131,10 +128,10 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
     )
   })
 
-  it('sits on the page itself (no green card) and greets the person by name', () => {
+  it('is a green gradient card (lighter fills in the dark theme) and greets the person by name', () => {
     renderHeader({ name: 'Iara' })
     const header = screen.getByRole('banner')
-    expect(header).not.toHaveClass('bg-forest')
+    expect(header).toHaveClass('bg-gradient-to-br', 'from-forest', 'to-surface', 'dark:from-card')
     expect(screen.getByRole('heading', { level: 1, name: 'Hola, Iara' })).toBeInTheDocument()
   })
 
@@ -143,9 +140,8 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
     expect(screen.getByTestId('chart')).toBeInTheDocument()
   })
 
-  it('the available money does not depend on the month: it is what you have now', () => {
+  it('the available money is what you have now, whatever the month totals say', () => {
     renderHeader({
-      month: '2026-08-01',
       incomeCents: 5_000_00,
       expenseCents: 0,
     })

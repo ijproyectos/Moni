@@ -1,17 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
-import {
-  useSavings,
-  useSavingsNoticeCount,
-  useSavingsPlanData,
-} from '@/features/goals/api/useSavings'
-import { activeTotals } from '@/features/goals/domain/savings'
-import { planNow } from '@/features/goals/domain/savingsPlan'
+import { useSavingsNoticeCount } from '@/features/goals/api/useSavings'
 import { useUnreadNoticeCount } from '@/features/debts/api/useDebts'
 import { usePlus } from '@/features/plus/api/usePlus'
 import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
@@ -67,8 +61,8 @@ const EMPTY_SUMMARY = {
 const RECENT_LIMIT = 20
 
 export function HomePage() {
-  const latestMonth = monthStart(todayIso())
-  const [month, setMonth] = useState(latestMonth)
+  // Inicio always shows the current month.
+  const month = monthStart(todayIso())
   const { user } = useAuth()
   const { data: profile } = useProfile()
   const summary = useMonthSummary(month)
@@ -80,10 +74,8 @@ export function HomePage() {
   const toast = useToast()
   const voidTransaction = useVoidTransaction()
   const voidPlan = useVoidInstallmentPlan()
-  const planData = useSavingsPlanData()
   const features = useEnabledFeatures()
   const reminders = useRecurringReminders()
-  const savings = useSavings()
   const savingsNotices = useSavingsNoticeCount()
   const noticeCount = useUnreadNoticeCount()
   const plus = usePlus()
@@ -117,15 +109,7 @@ export function HomePage() {
         : null,
     [summary.data, transactions.data, transfers.data, accounts.data],
   )
-  const goalTotals = activeTotals(savings.data?.goals ?? [])
-  const plan = useMemo(
-    () =>
-      savings.data && planData.data
-        ? planNow({ today: savings.data.today, goals: savings.data.goals, data: planData.data })
-        : null,
-    [savings.data, planData.data],
-  )
-  const stories = useHomeStories(month, summary.data ?? EMPTY_SUMMARY, latestMonth)
+  const stories = useHomeStories(month, summary.data ?? EMPTY_SUMMARY)
 
   // What the swipe on a row can do comes from the real transaction, with the same rules as Actividad.
   const movementActions = useMemo<MovementActions>(() => {
@@ -173,9 +157,6 @@ export function HomePage() {
       summary={summary.data}
       // While the full history loads, the month's own latest movements stand in.
       movements={transactions.data ? movements : undefined}
-      month={month}
-      latestMonth={latestMonth}
-      onMonthChange={setMonth}
       initial={initialOf(profile?.display_name, user?.email ?? '')}
       isPlus={plus.isPlus}
       photoUrl={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
@@ -186,13 +167,6 @@ export function HomePage() {
       shortcuts={{ ants: features.has('ants') }}
       reminderCount={reminders.length + savingsNotices}
       noticeCount={noticeCount}
-      goals={{
-        reservedCents: goalTotals.reservedCents,
-        targetCents: goalTotals.targetCents,
-        count: goalTotals.count,
-        missingCents: plan ? plan.missingCents : null,
-        requiredCents: plan ? plan.requiredCents : null,
-      }}
       stories={stories}
       movementActions={movementActions}
       movementsTotal={transactions.data?.length}

@@ -293,7 +293,7 @@ export function MovementSheet({
 
   return (
     <BottomSheet title={title} onClose={() => (pendingRef.current ? setPending(null) : onClose())}>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 short:gap-3">
         {mode !== 'transfer' && (
           <SegmentedControl
             label="Tipo de movimiento"

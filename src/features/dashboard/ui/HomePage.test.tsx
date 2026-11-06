@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import type { MonthSummary } from '../domain/monthSummary'
@@ -6,8 +6,8 @@ import { HomePage } from './HomePage'
 
 const AVAILABLE = 500_000_00
 
-// What the server answers per month: the selected month's own income and expenses, and the same available money
-// (today's balance of the accounts) whatever the month.
+// What the server answers for the current month: its own income and expenses, and the available money (today's
+// balance of the accounts).
 const summary = (over: Partial<MonthSummary> = {}): MonthSummary => ({
   incomeCents: 0,
   expenseCents: 0,
@@ -20,10 +20,6 @@ const summary = (over: Partial<MonthSummary> = {}): MonthSummary => ({
 })
 const SUMMARIES: Record<string, MonthSummary> = {
   '2026-11-01': summary({ incomeCents: 1_000_000_00, expenseCents: 300_000_00 }),
-  '2026-10-01': summary({ incomeCents: 900_000_00, expenseCents: 70_000_00 }),
-  '2026-01-01': summary({ incomeCents: 50_000_00, expenseCents: 12_345_67 }),
-  '2025-12-01': summary({ incomeCents: 0, expenseCents: 15_000_00 }),
-  // 2026-09 has no movements at all.
 }
 const asked = vi.hoisted(() => ({ months: [] as string[] }))
 
@@ -87,13 +83,6 @@ function setup() {
 const header = () => screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
 const available = () => screen.getByText('Dinero disponible').parentElement as HTMLElement
 
-async function pick(user: ReturnType<typeof userEvent.setup>, label: RegExp) {
-  await user.click(screen.getByRole('button', { name: /(\w+) de? ?\d{4}|\w+ \d{4}/ }))
-  await user.click(
-    within(screen.getByRole('listbox', { name: 'Mes' })).getByRole('option', { name: label }),
-  )
-}
-
 describe('Inicio: importes de la tarjeta principal', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
@@ -109,29 +98,13 @@ describe('Inicio: importes de la tarjeta principal', () => {
     expect(available()).toHaveTextContent('$500.000')
   })
 
-  it('totals follow the month picked, while the available money stays the current balance', async () => {
-    const user = setup()
-    await pick(user, /octubre/i)
-    expect(asked.months).toContain('2026-10-01')
-    expect(header()).toHaveTextContent('-$70.000')
-    expect(header()).toHaveTextContent('+$900.000')
-    expect(header()).not.toHaveTextContent('300.000')
-    expect(available()).toHaveTextContent('$500.000')
-  })
-
-  it('a month with no movements reads as $0 in both totals', async () => {
-    const user = setup()
-    await pick(user, /septiembre/i)
-    expect(header()).toHaveTextContent(/Gastos\$0/)
-    expect(header()).toHaveTextContent(/Ingresos\+?\$0/)
-    expect(available()).toHaveTextContent('$500.000')
-  })
-
-  it("a month of the previous year shows that year's own totals", async () => {
-    const user = setup()
-    await pick(user, /diciembre.*2025/i)
-    expect(asked.months).toContain('2025-12-01')
-    expect(header()).toHaveTextContent('-$15.000')
-    expect(header()).not.toHaveTextContent('1.000.000')
+  it('always uses the current month: there is no month picker, label or arrows', () => {
+    setup()
+    expect(asked.months).toContain('2026-11-01')
+    expect(asked.months).not.toContain('2026-10-01')
+    expect(screen.queryByRole('listbox', { name: 'Mes' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /noviembre/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Mes (anterior|siguiente)/ })).toBeNull()
+    expect(screen.getByRole('banner')).not.toHaveTextContent(/noviembre/i)
   })
 })

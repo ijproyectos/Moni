@@ -3,9 +3,8 @@ import { Link } from 'react-router'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
 import { useAnts } from '@/features/insights/api/useAnts'
-import { formatMonthName } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
-import { todayIso, type IsoDate } from '@/shared/lib/month'
+import { todayIso } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { AntIcon } from '@/shared/ui/AntIcon'
 import { Button } from '@/shared/ui/Button'
@@ -16,7 +15,6 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import type { BalancePoint } from '../domain/balanceSeries'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import type { Story } from '../domain/stories'
-import { GoalsSummary, type GoalsOverview } from './GoalsSummary'
 import { HomeHeader } from './HomeHeader'
 import { RecentMovements, type MovementActions } from './RecentMovements'
 import { SpendingBreakdown } from './SpendingBreakdown'
@@ -25,17 +23,14 @@ import { StoryViewer } from './StoryViewer'
 import { useStorySeen } from './storySeen'
 
 interface HomeScreenProps {
-  /** Everything about the picked month: totals, categories. */
+  /** Everything about the current month: totals, categories. */
   summary: MonthSummary
-  /** Newest movements across the whole history; they show whatever month is picked. Defaults to the month's own. */
+  /** Newest movements across the whole history. Defaults to the month's own. */
   movements?: readonly RecentMovement[]
   /** How many movements there are in all (for "Ver los N"). */
   movementsTotal?: number
   /** Edit and void from the list; without it the rows are plain. */
   movementActions?: MovementActions
-  month: IsoDate
-  latestMonth: IsoDate
-  onMonthChange: (month: IsoDate) => void
   initial: string
   /** First name for the greeting. */
   name?: string | null
@@ -51,8 +46,6 @@ interface HomeScreenProps {
   reminderCount?: number
   /** Unread notices of groups (debt reminders, payments to confirm). */
   noticeCount?: number
-  /** What the active savings goals reserve and aim for, and what is left this month (real data, from the page). */
-  goals?: GoalsOverview
   /** Daily available money (the series behind the old sparkline). Inicio no longer draws it, but the data stays available. */
   balanceSeries?: readonly BalancePoint[] | null
   /** "Para hoy": what Moni has to tell, from the person's real data. */
@@ -64,9 +57,6 @@ export function HomeScreen({
   movements,
   movementsTotal,
   movementActions,
-  month,
-  latestMonth,
-  onMonthChange,
   initial,
   name = null,
   userId = 'anonymous',
@@ -76,7 +66,6 @@ export function HomeScreen({
   shortcuts = { ants: true },
   reminderCount = 0,
   noticeCount = 0,
-  goals = { reservedCents: 0, targetCents: 0, count: 0 },
   stories = [],
 }: HomeScreenProps) {
   const { isSeen, markSeen } = useStorySeen(userId)
@@ -87,21 +76,12 @@ export function HomeScreen({
     recent.length > 0 ||
     summary.incomeCents > 0 ||
     summary.expenseCents > 0
-  const monthName = formatMonthName(month)
   const [balanceRef, scrolled] = useScrolledPast<HTMLDivElement>()
-  const sameYear = month.slice(0, 4) === latestMonth.slice(0, 4)
 
   return (
     <div>
-      <CompactHeader
-        title="Inicio"
-        subtitle={sameYear ? monthName : `${monthName} ${month.slice(0, 4)}`}
-        visible={scrolled}
-      />
+      <CompactHeader title="Inicio" visible={scrolled} />
       <HomeHeader
-        month={month}
-        latestMonth={latestMonth}
-        onMonthChange={onMonthChange}
         initial={initial}
         photoUrl={photoUrl}
         isPlus={isPlus}
@@ -138,7 +118,7 @@ export function HomeScreen({
             <EmptyState
               mascotUrl={mascotAssistant}
               title="Todavía no hay movimientos"
-              description={`Cargá tu primer gasto o ingreso de ${monthName.toLowerCase()} y Moni arma el resumen.`}
+              description="Cargá tu primer gasto o ingreso y Moni arma el resumen."
               action={<Button onClick={onAddMovement}>Cargar movimiento</Button>}
             />
           </Card>
@@ -179,7 +159,6 @@ export function HomeScreen({
             </Link>
           </section>
 
-          <GoalsSummary goals={goals} />
           <HomeAnts enabled={shortcuts.ants} />
 
           {recent.length > 0 && (

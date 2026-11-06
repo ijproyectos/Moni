@@ -1,22 +1,16 @@
 import { Bell, Eye, EyeOff } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
-import { AssistantSheet } from '@/features/assistant/ui/AssistantSheet'
 import { useNotifications } from '@/features/notifications/mock/notificationsStore'
 import { FEATURES } from '@/shared/config/features'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { cn } from '@/shared/ui/cn'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
-import { MonthPicker } from '@/shared/ui/MonthPicker'
 import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
+import { pairAmountSize } from '@/shared/lib/amountSize'
 import { formatArs, type Cents } from '@/shared/lib/money'
-import type { IsoDate } from '@/shared/lib/month'
 
 interface HomeHeaderProps {
-  month: IsoDate
-  latestMonth: IsoDate
-  onMonthChange: (month: IsoDate) => void
   initial: string
   /** Money on hand right now: cash, banks and wallets (no cards, archived accounts or savings goals). */
   availableCents: Cents
@@ -36,10 +30,6 @@ interface HomeHeaderProps {
   chart?: ReactNode
 }
 
-/**
- * Text size of the Gastos / Ingresos chips. Both chips share it, so a long amount in one shrinks the pair together
- * (they read as a set) instead of squeezing or overlapping the text.
- */
 /** Size of the big balance: it shrinks with the number of digits so a long amount never leaves the screen. */
 function balanceSize(digits: number): string {
   if (digits <= 7) return 'text-[42px]'
@@ -48,17 +38,7 @@ function balanceSize(digits: number): string {
   return 'text-[26px]'
 }
 
-function chipTextSize(longestAmount: number): string {
-  if (longestAmount <= 11) return 'text-[22px]'
-  if (longestAmount <= 13) return 'text-[18px]'
-  if (longestAmount <= 16) return 'text-[16px]'
-  return 'text-[14px]'
-}
-
 export function HomeHeader({
-  month,
-  latestMonth,
-  onMonthChange,
   initial,
   availableCents,
   incomeCents,
@@ -71,23 +51,22 @@ export function HomeHeader({
   chart,
 }: HomeHeaderProps) {
   const { hidden, toggle } = useHiddenAmounts()
-  const [askOpen, setAskOpen] = useState(false)
   const { unread: unreadNotices } = useNotifications()
   const unread = FEATURES.notifications ? unreadNotices + reminderCount + noticeCount : noticeCount
   const showBell = FEATURES.notifications || noticeCount > 0
   // Hidden amounts must not give away that the balance is in the red.
   const negative = availableCents < 0 && !hidden
   const bigSize = balanceSize(hidden ? 4 : formatArs(Math.abs(availableCents)).length - 1)
-  const chipText = chipTextSize(
+  const chipText = pairAmountSize(
     hidden
       ? 0
       : Math.max(formatArs(-expenseCents).length, formatArs(incomeCents, { signed: true }).length),
+    'home',
   )
   return (
-    <header className="px-5 pb-1 pt-6 text-ink">
+    <header className="mx-3 mt-3 overflow-hidden rounded-[28px] bg-gradient-to-br from-forest to-surface px-5 pb-3 pt-6 text-ink [--color-expense:var(--color-expense-on-dark)] [--color-income:var(--color-income-on-dark)] [--color-ink:var(--color-cream)] [--color-line:color-mix(in_srgb,var(--color-lime)_40%,transparent)] [--color-sand:var(--color-surface)] [--color-text-muted:var(--color-text-muted-on-dark)] dark:from-card dark:to-sand dark:ring-1 dark:ring-line">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <MonthPicker value={month} latest={latestMonth} onChange={onMonthChange} tone="light" />
           <h1 className="font-display text-[28px] font-extrabold leading-tight">
             {name ? `Hola, ${name}` : 'Hola'}
           </h1>
@@ -107,15 +86,6 @@ export function HomeHeader({
               )}
             </Link>
           )}
-          <button
-            type="button"
-            onClick={() => setAskOpen(true)}
-            aria-label="Preguntale a Moni"
-            aria-haspopup="dialog"
-            className="flex size-11 items-center justify-center overflow-hidden rounded-full bg-[#e3ebd3] dark:bg-sand"
-          >
-            <img src={mascotHappy} alt="" className="size-9 object-contain" />
-          </button>
           <Link
             to="/perfil"
             aria-label={isPlus ? 'Perfil, Moni Plus activo' : 'Perfil'}
@@ -125,7 +95,7 @@ export function HomeHeader({
               <span
                 data-plus-badge
                 aria-hidden="true"
-                className="pointer-events-none absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-gold px-1.5 indent-[0.08em] text-[10px] font-extrabold leading-4 tracking-[0.08em] text-forest shadow-sm ring-2 ring-canvas"
+                className="pointer-events-none absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-gold px-1.5 indent-[0.08em] text-[10px] font-extrabold leading-4 tracking-[0.08em] text-forest shadow-sm ring-2 ring-forest"
               >
                 ✦ PLUS
               </span>
@@ -135,7 +105,7 @@ export function HomeHeader({
               initial={initial}
               alt="Tu foto de perfil"
               className="size-11"
-              fallbackClassName="bg-forest font-display text-lg font-extrabold text-cream dark:bg-lime dark:text-forest"
+              fallbackClassName="bg-lime font-display text-lg font-extrabold text-forest"
             />
           </Link>
         </div>
@@ -224,7 +194,6 @@ export function HomeHeader({
           </Link>
         </div>
       </section>
-      {askOpen && <AssistantSheet name={name} onClose={() => setAskOpen(false)} />}
     </header>
   )
 }

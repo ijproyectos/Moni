@@ -1,6 +1,6 @@
 import { makeTransaction } from '@/features/transactions/domain/testing'
 import type { Category } from '@/features/categories/domain/category'
-import { buildRecentMovements, groupMovementsByMonth } from './recentMovements'
+import { buildRecentMovements } from './recentMovements'
 
 const FOOD: Category = {
   id: 'cat-food',
@@ -66,22 +66,5 @@ describe('buildRecentMovements', () => {
       makeTransaction({ id: 'ok' }),
     ])
     expect(result.map((m) => m.id)).toEqual(['ok'])
-  })
-})
-
-describe('groupMovementsByMonth', () => {
-  it('starts a new group each time the month changes, keeping the order', () => {
-    const movements = build([
-      makeTransaction({ id: 'n1', occurredOn: '2026-11-01' }),
-      makeTransaction({ id: 'o1', occurredOn: '2026-10-31' }),
-      makeTransaction({ id: 'o2', occurredOn: '2026-10-02' }),
-    ])
-    const groups = groupMovementsByMonth(movements)
-    expect(groups.map((g) => g.month)).toEqual(['2026-11-01', '2026-10-01'])
-    expect(groups[1]?.movements.map((m) => m.id)).toEqual(['o1', 'o2'])
-  })
-
-  it('returns no groups for no movements', () => {
-    expect(groupMovementsByMonth([])).toEqual([])
   })
 })

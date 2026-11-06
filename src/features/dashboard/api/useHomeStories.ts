@@ -16,17 +16,14 @@ import { readDismissal, reminderSignature } from '@/features/recurring/domain/re
 import { useSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
 import { FEATURES } from '@/shared/config/features'
 import { formatMonthName } from '@/shared/lib/dates'
-import { daysInMonth, shiftMonth, todayIso, type IsoDate } from '@/shared/lib/month'
+import { daysInMonth, monthStart, shiftMonth, todayIso, type IsoDate } from '@/shared/lib/month'
 import { buildStories, type Story } from '../domain/stories'
 import type { MonthSummary } from '../domain/monthSummary'
 import { useMonthSummary } from './useMonthSummary'
 
-/** The stories of Inicio for the picked month, from the person's real data (see `buildStories`). */
-export function useHomeStories(
-  month: IsoDate,
-  summary: MonthSummary,
-  latestMonth: IsoDate,
-): Story[] {
+/** The stories of Inicio for a month (the current one), from the person's real data (see `buildStories`). */
+export function useHomeStories(month: IsoDate, summary: MonthSummary): Story[] {
+  const latestMonth = monthStart(todayIso())
   const userId = useContext(AuthContext)?.user?.id ?? 'anonymous'
   const today = todayIso()
   const previousMonth = shiftMonth(month, -1)

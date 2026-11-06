@@ -14,7 +14,7 @@ function readableText(hex: string): string {
     return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
   }
   const luminance = 0.2126 * channel(0) + 0.7152 * channel(1) + 0.0722 * channel(2)
-  return luminance > 0.4 ? '#10301e' : '#ffffff'
+  return luminance > 0.4 ? '#051f20' : '#ffffff'
 }
 
 /**

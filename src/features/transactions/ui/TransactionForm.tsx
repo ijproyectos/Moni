@@ -11,6 +11,7 @@ import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { Button } from '@/shared/ui/Button'
 import { CategorySelect } from '@/shared/ui/CategorySelect'
 import { FIELD_CLASS } from '@/shared/ui/fieldStyles'
+import { StickyActions } from '@/shared/ui/StickyActions'
 import {
   transactionFormSchema,
   type EntryKind,
@@ -105,7 +106,7 @@ export function TransactionForm({
   }, [watch, onDraftChange])
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4 short:gap-3">
       <div>
         <AmountInput
           prefix={kind === 'expense' ? '-$' : '+$'}
@@ -194,9 +195,11 @@ export function TransactionForm({
           {OFFLINE_MESSAGE}
         </p>
       )}
-      <Button type="submit" variant="dark" disabled={isSubmitting || !online}>
-        {isSubmitting ? 'Guardando…' : 'Guardar'}
-      </Button>
+      <StickyActions>
+        <Button type="submit" variant="dark" disabled={isSubmitting || !online}>
+          {isSubmitting ? 'Guardando…' : 'Guardar'}
+        </Button>
+      </StickyActions>
     </form>
   )
 }

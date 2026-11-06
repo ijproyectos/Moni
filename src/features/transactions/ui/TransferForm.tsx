@@ -8,6 +8,7 @@ import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { Button } from '@/shared/ui/Button'
 import { FIELD_CLASS } from '@/shared/ui/fieldStyles'
+import { StickyActions } from '@/shared/ui/StickyActions'
 import {
   transferFormSchema,
   type TransferFormInput,
@@ -60,7 +61,7 @@ export function TransferForm({
   })
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4 short:gap-3">
       <div>
         <AmountInput
           prefix="$"
@@ -128,9 +129,11 @@ export function TransferForm({
           {OFFLINE_MESSAGE}
         </p>
       )}
-      <Button type="submit" variant="dark" disabled={isSubmitting || !online}>
-        {isSubmitting ? 'Guardando…' : 'Guardar'}
-      </Button>
+      <StickyActions>
+        <Button type="submit" variant="dark" disabled={isSubmitting || !online}>
+          {isSubmitting ? 'Guardando…' : 'Guardar'}
+        </Button>
+      </StickyActions>
     </form>
   )
 }

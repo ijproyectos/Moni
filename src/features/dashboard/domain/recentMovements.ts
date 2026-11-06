@@ -38,24 +38,6 @@ export function buildRecentMovements(input: {
     })
 }
 
-export interface MovementMonthGroup {
-  /** First day of the month, `YYYY-MM-01`. */
-  month: IsoDate
-  movements: RecentMovement[]
-}
-
-/** Splits movements (already newest first) into one group per month, keeping their order. */
-export function groupMovementsByMonth(movements: readonly RecentMovement[]): MovementMonthGroup[] {
-  const groups: MovementMonthGroup[] = []
-  for (const movement of movements) {
-    const month = `${movement.occurredOn.slice(0, 7)}-01`
-    const last = groups[groups.length - 1]
-    if (last && last.month === month) last.movements.push(movement)
-    else groups.push({ month, movements: [movement] })
-  }
-  return groups
-}
-
 export interface MovementDayGroup {
   date: IsoDate
   movements: RecentMovement[]

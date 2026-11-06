@@ -7,7 +7,7 @@ import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import type { RecentMovement } from '../domain/monthSummary'
 import { groupMovementsByDay } from '../domain/recentMovements'
-import { SwipeRow } from './SwipeRow'
+import { SwipeRow } from '@/shared/ui/SwipeRow'
 
 /** What can be done with a movement from Inicio; the page decides it from the real transaction. */
 export interface MovementActions {
@@ -42,7 +42,7 @@ function dayHeading(date: string, today: string): string {
   return label === 'Hoy' || label === 'Ayer' ? `${label}, ${day}` : withYear
 }
 
-/** "Movimientos": the newest ones by day, as plain rows. Swiping a row to the left reveals edit and void. */
+/** "Movimientos": the newest ones by day, as plain rows. Swiping a row right reveals void, left reveals edit. */
 export function RecentMovements({
   movements,
   total,
@@ -126,27 +126,29 @@ export function RecentMovements({
                     {actions && (canEdit || canVoid) ? (
                       <SwipeRow
                         onPress={canEdit ? () => actions.onEdit(m) : undefined}
-                        pressLabel={canEdit ? `Editar ${titleOf(m)}` : undefined}
-                        actions={[
-                          ...(canEdit
+                        // Swiping right voids (with its confirmation); swiping left edits. Both are real buttons too.
+                        leadingAction={
+                          canVoid
+                            ? {
+                                label: 'Anular',
+                                tone: 'danger' as const,
+                                ariaLabel: `Anular ${titleOf(m)}`,
+                                onPress: () => setPending(m),
+                              }
+                            : undefined
+                        }
+                        actions={
+                          canEdit
                             ? [
                                 {
                                   label: 'Editar',
                                   tone: 'primary' as const,
+                                  ariaLabel: `Editar ${titleOf(m)}`,
                                   onPress: () => actions.onEdit(m),
                                 },
                               ]
-                            : []),
-                          ...(canVoid
-                            ? [
-                                {
-                                  label: 'Anular',
-                                  tone: 'danger' as const,
-                                  onPress: () => setPending(m),
-                                },
-                              ]
-                            : []),
-                        ]}
+                            : []
+                        }
                       >
                         {row}
                       </SwipeRow>
@@ -172,7 +174,7 @@ export function RecentMovements({
       )}
       {anySwipe && (
         <p className="px-5 pt-2 text-center text-[13px] text-text-muted">
-          Deslizá un movimiento a la izquierda para editarlo.
+          Deslizá un movimiento a la derecha para anularlo o a la izquierda para editarlo.
         </p>
       )}
       {pending && actions && (

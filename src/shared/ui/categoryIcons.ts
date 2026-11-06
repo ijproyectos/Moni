@@ -113,7 +113,7 @@ export function themedColor(color: string): string {
   // (--cat-lift lightens dark ones in the dark theme, --cat-sink darkens pale ones in the light theme).
   const lum = luminanceOf(color)
   if (lum < 0.22) return `color-mix(in srgb, ${color} calc(100% - var(--cat-lift)), white)`
-  if (lum > 0.78) return `color-mix(in srgb, ${color} calc(100% - var(--cat-sink)), #10301e)`
+  if (lum > 0.78) return `color-mix(in srgb, ${color} calc(100% - var(--cat-sink)), #051f20)`
   return color
 }
 

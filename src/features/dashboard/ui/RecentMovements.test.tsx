@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import type { RecentMovement } from '../domain/monthSummary'
@@ -103,18 +103,22 @@ describe('RecentMovements', () => {
 
   it('has the hint and the swipe actions behind each row, reachable without a gesture', async () => {
     const { user, full } = setup([movement()])
-    expect(screen.getByText(/Deslizá un movimiento a la izquierda/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Editar' }))
+    expect(
+      screen.getByText(
+        /Deslizá un movimiento a la derecha para anularlo o a la izquierda para editarlo/,
+      ),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Editar ChatGPT' }))
     expect(full.onEdit).toHaveBeenCalledTimes(1)
   })
 
   it('voiding asks first and then voids; cancelling keeps the movement', async () => {
     const { user, full } = setup([movement()])
-    await user.click(screen.getByRole('button', { name: 'Anular' }))
+    await user.click(screen.getByRole('button', { name: 'Anular ChatGPT' }))
     const dialog = screen.getByRole('dialog', { name: '¿Anular este movimiento?' })
     await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
     expect(full.onVoid).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Anular' }))
+    await user.click(screen.getByRole('button', { name: 'Anular ChatGPT' }))
     await user.click(
       within(screen.getByRole('dialog', { name: '¿Anular este movimiento?' })).getByRole('button', {
         name: 'Anular',
@@ -123,20 +127,35 @@ describe('RecentMovements', () => {
     expect(full.onVoid).toHaveBeenCalledWith(expect.objectContaining({ id: 'm1' }))
   })
 
+  it('swiping right reveals Anular and swiping left reveals Editar, like Actividad', () => {
+    setup([movement()])
+    const row = screen.getByText('ChatGPT').closest('button')?.parentElement as HTMLElement
+    const swipe = (from: number, to: number) => {
+      fireEvent.pointerDown(row, { clientX: from, clientY: 10, pointerId: 1 })
+      fireEvent.pointerMove(row, { clientX: to, clientY: 10, pointerId: 1 })
+      fireEvent.pointerUp(row, { clientX: to, clientY: 10, pointerId: 1 })
+    }
+    swipe(100, 190)
+    expect(row.style.transform).toBe('translateX(76px)')
+    swipe(190, 100)
+    swipe(200, 100)
+    expect(row.style.transform).toBe('translateX(-76px)')
+  })
+
   it('an installment warns that the whole purchase is voided', async () => {
     const { user } = setup([movement()], { isInstallment: () => true, canEdit: () => false })
-    await user.click(screen.getByRole('button', { name: 'Anular' }))
+    await user.click(screen.getByRole('button', { name: 'Anular ChatGPT' }))
     expect(screen.getByRole('dialog', { name: '¿Anular la compra en cuotas?' })).toHaveTextContent(
       'Se anulan todas las cuotas',
     )
-    expect(screen.queryByRole('button', { name: 'Editar' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Editar ChatGPT' })).toBeNull()
   })
 
   it('shows the reason when voiding fails', async () => {
     const { user } = setup([movement()], {
       onVoid: vi.fn().mockRejectedValue(new Error('Sin conexión')),
     })
-    await user.click(screen.getByRole('button', { name: 'Anular' }))
+    await user.click(screen.getByRole('button', { name: 'Anular ChatGPT' }))
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Anular' }))
     expect(await screen.findByText('Sin conexión')).toBeInTheDocument()
   })
@@ -144,7 +163,7 @@ describe('RecentMovements', () => {
   it('rows that cannot be edited or voided are plain and there is no hint', () => {
     setup([movement()], { canEdit: () => false, canVoid: () => false })
     expect(screen.queryByText(/Deslizá/)).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Anular' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Anular/ })).toBeNull()
   })
 })
 

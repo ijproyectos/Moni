@@ -2,40 +2,45 @@
 
 /* Brand tokens — source of truth: Moni brand manual v1.0 (Oct 2026). */
 @custom-variant dark (&:where(.dark, .dark *));
+/* Short screens (small phones, landscape): sheets and forms tighten their spacing. */
+@custom-variant short (@media (max-height: 760px));
 
 @theme {
   --color-*: initial;
 
   /* Primary palette */
-  --color-forest: #1e5233;
-  --color-lime: #b3d99f;
-  --color-cream: #f1f4e2;
+  --color-forest: #163832;
+  --color-lime: #8eb69b;
+  --color-cream: #daf1de;
   --color-gold: #f0b43c;
 
   /* Secondary & interface */
   --color-blush: #f2c3b8;
   --color-lacquer: #e5533d;
-  --color-canvas: #edefdd;
-  --color-surface: #2c7044;
-  --color-text-muted: #4f6354;
-  --color-text-muted-on-dark: #b5cbb0;
+  --color-canvas: #eef7f0;
+  --color-surface: #235347;
+  --color-text-muted: #44655a;
+  --color-text-muted-on-dark: #b7d4bf;
   --color-white: #ffffff;
-  --color-sand: #e2e5d3;
+  --color-sand: #ddede1;
   /* Semantic roles that flip in the dark theme. `forest`, `lime`, `gold`, `blush`, `cream` are fixed brand
      fills; use `ink` for text/borders on neutral surfaces and `card` for raised white surfaces. */
-  --color-ink: #10301e;
-  --color-card: #f8f8ec;
-  --color-line: #d3dbbf;
-  --color-track: #c9d6b5;
-  --color-placeholder: #97a588;
+  --color-ink: #051f20;
+  --color-card: #f7fbf8;
+  --color-line: #c6dece;
+  --color-track: #bdd7c5;
+  --color-placeholder: #7f9d8d;
   --color-expense: #b23b2e;
-  --color-income: #2e6b3f;
-  --color-scrim: rgb(16 48 28 / 0.55);
+  --color-income: #1f6b52;
+  /* Expense and income on the dark green fills (header card): same hues the dark theme uses on neutral surfaces. */
+  --color-expense-on-dark: #ff8f7e;
+  --color-income-on-dark: #9be0b5;
+  --color-scrim: rgb(5 31 32 / 0.55);
   /* Soft fills for icon tiles, tags and callouts; they flip with the theme. */
-  --color-tint-green: #dfe9cc;
+  --color-tint-green: #daf1de;
   --color-tint-gold: #f5e9c8;
   --color-tint-red: #f6dcd0;
-  --color-tint-teal: #d3eadf;
+  --color-tint-teal: #cde6da;
   --color-tint-blue: #d8e5f1;
   --color-tint-violet: #eae0f4;
   --color-transparent: transparent;
@@ -43,7 +48,7 @@
 
   /* Category data colors */
   --color-category-food: #e5533d;
-  --color-category-groceries: #1e5233;
+  --color-category-groceries: #235347;
   --color-category-transport: #2f9e8f;
   --color-category-outings: #f0aa2a;
   --color-category-subscriptions: #8a6bd1;
@@ -67,33 +72,33 @@
  */
 html.dark {
   color-scheme: dark;
-  --color-canvas: #0e1811;
-  --color-card: #172619;
-  --color-sand: #223626;
-  --color-ink: #e9f0e3;
-  --color-line: #37503b;
-  --color-track: #314635;
-  --color-placeholder: #7c9180;
-  --color-text-muted: #a4b8a0;
+  --color-canvas: #051f20;
+  --color-card: #0b2b26;
+  --color-sand: #163832;
+  --color-ink: #daf1de;
+  --color-line: #235347;
+  --color-track: #1d4a3f;
+  --color-placeholder: #6f9484;
+  --color-text-muted: #8eb69b;
   --color-expense: #ff8f7e;
-  --color-income: #94d98a;
+  --color-income: #9be0b5;
   --color-scrim: rgb(0 0 0 / 0.65);
-  --color-tint-green: #223626;
+  --color-tint-green: #163832;
   --color-tint-gold: #2b2616;
   --color-tint-red: #2d1d19;
-  --color-tint-teal: #16281f;
+  --color-tint-teal: #0f3330;
   --color-tint-blue: #17232d;
   --color-tint-violet: #231d2e;
-  --color-category-groceries: #7fcf9a;
+  --color-category-groceries: #8eb69b;
   --cat-lift: 45%;
   --cat-sink: 0%;
 }
 
 /* Bright brand fills keep dark text in both themes, including descendants that use the neutral tokens. */
 html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
-  --color-ink: #10301c;
-  --color-text-muted: #56694f;
-  color: #10301c;
+  --color-ink: #051f20;
+  --color-text-muted: #3e5f55;
+  color: #051f20;
 }
 
 @keyframes sheet-in {

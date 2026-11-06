@@ -56,9 +56,6 @@ function renderHome(
       <HomeScreen
         summary={summary}
         movements={movements}
-        month="2026-10-01"
-        latestMonth="2026-10-01"
-        onMonthChange={vi.fn()}
         initial="J"
         onAddMovement={vi.fn()}
         isPlus={isPlus}

@@ -119,7 +119,7 @@ describe('ActivityPage', () => {
 
   it('list view without a month filter summarises everything and has no month navigation', async () => {
     const user = setup()
-    await user.click(screen.getByRole('button', { name: 'Agrupar por categoría' }))
+    await user.click(screen.getByRole('button', { name: 'Ver como lista' }))
     expect(screen.getByText('Todo el historial')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Mes anterior' })).not.toBeInTheDocument()
   })
@@ -144,6 +144,25 @@ describe('ActivityPage', () => {
     expect(screen.getByRole('button', { name: /^Ingresos/ })).toHaveTextContent('$97.000')
   })
 
+  it('keeps each total on one line, both at the same size', () => {
+    setup()
+    const amounts = [/^Gastos/, /^Ingresos/].map((name) => {
+      const button = screen.getByRole('button', { name })
+      return button.querySelector('span.whitespace-nowrap, .whitespace-nowrap') as HTMLElement
+    })
+    for (const amount of amounts) expect(amount).toHaveClass('whitespace-nowrap')
+    expect(amounts[0]?.className.match(/text-\[\d+px\]/)?.[0]).toBe(
+      amounts[1]?.className.match(/text-\[\d+px\]/)?.[0],
+    )
+  })
+
+  it('every movement has a real button for what the swipe does (right voids, left edits)', async () => {
+    const user = setup()
+    expect(screen.getByRole('button', { name: 'Editar Cena' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Anular Cena' }))
+    expect(screen.getByRole('dialog', { name: '¿Anular este movimiento?' })).toBeInTheDocument()
+  })
+
   it('asks for confirmation before voiding a movement', async () => {
     const user = setup()
     await user.click(screen.getByRole('button', { name: 'Anular Cena' }))
@@ -162,8 +181,8 @@ describe('ActivityPage', () => {
   })
 
   describe('calendar and grouping', () => {
-    const groupByCategory = () => screen.getByRole('button', { name: 'Agrupar por categoría' })
-    const groupByDay = () => screen.getByRole('button', { name: 'Ver por día' })
+    const groupByCategory = () => screen.getByRole('button', { name: 'Ver como lista' })
+    const groupByDay = () => screen.getByRole('button', { name: 'Ver calendario' })
     const openMonth = (user: ReturnType<typeof userEvent.setup>) =>
       user.click(screen.getByRole('button', { name: 'Ver el mes completo' }))
 
@@ -176,6 +195,16 @@ describe('ActivityPage', () => {
       expect(screen.queryByRole('group', { name: 'Últimos días del mes' })).not.toBeInTheDocument()
       await user.click(screen.getByRole('button', { name: 'Ocultar el calendario' }))
       expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
+    })
+
+    it('one icon switches between calendar and list, and the calendar opens unfolded', async () => {
+      const user = setup()
+      await user.click(screen.getByRole('button', { name: 'Ver como lista' }))
+      expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Ver como lista' })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Ver calendario' }))
+      expect(screen.getByRole('region', { name: 'Calendario del mes' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Ver como lista' })).toBeInTheDocument()
     })
 
     it('the open calendar keeps its own month navigation', async () => {

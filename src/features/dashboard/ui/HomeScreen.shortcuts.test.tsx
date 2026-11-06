@@ -34,9 +34,6 @@ function renderHome(props: { antsOn?: boolean } = {}) {
     <MemoryRouter>
       <HomeScreen
         summary={summary}
-        month="2026-10-01"
-        latestMonth="2026-10-01"
-        onMonthChange={vi.fn()}
         initial="J"
         onAddMovement={vi.fn()}
         shortcuts={{ ants: props.antsOn ?? true }}
