@@ -1,12 +1,10 @@
-import { Plus, Sparkles, UserPlus } from 'lucide-react'
+import { Plus, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
-import { Button } from '@/shared/ui/Button'
 import { InviteCodeCard } from '@/shared/ui/InviteCodeCard'
-import { MoniSays, SectionLabel } from '@/shared/ui/kit'
 import { inviteLink } from '../domain/groupView'
 import { prettyCode } from '../domain/inviteCode'
-import { fieldClass } from './styles'
+import { GuestsFormSheet, type AddGuestResult } from './GuestsFormSheet'
 
 interface AddPersonSheetProps {
   title?: string
@@ -14,8 +12,14 @@ interface AddPersonSheetProps {
   code: string | null
   groupName: string
   onClose: () => void
-  /** Stores the person; resolves false when it failed (the sheet then stays open). */
-  onAddGuest: (name: string, alias: string) => unknown
+  /** Stores one person: `true`, or the reason it could not be added (shown next to that person). */
+  onAddGuest: (name: string, alias: string) => Promise<AddGuestResult> | AddGuestResult
+  /** Names the group already has, so nobody is added twice. */
+  existingNames?: readonly string[]
+  /** Called once with the people that were stored. */
+  onAdded?: (names: string[]) => void
+  /** Only one person can be added (the partner of a couple). */
+  single?: boolean
   /** Pronoun for the guest copy ("La sumás" vs "Lo sumás"). */
   feminine?: boolean
 }
@@ -27,16 +31,21 @@ export function AddPersonSheet({
   groupName,
   onClose,
   onAddGuest,
+  existingNames,
+  onAdded,
+  single,
   feminine,
 }: AddPersonSheetProps) {
   const [guest, setGuest] = useState(false)
   if (guest) {
     return (
-      <GuestFormSheet
+      <GuestsFormSheet
         onClose={() => setGuest(false)}
-        onSubmit={async (name, alias) => {
-          if ((await onAddGuest(name, alias)) !== false) onClose()
-        }}
+        onDone={onClose}
+        onSubmit={onAddGuest}
+        existingNames={existingNames}
+        onAdded={onAdded}
+        single={single}
       />
     )
   }
@@ -88,68 +97,6 @@ export function AddPersonSheet({
           </span>
         </button>
       </div>
-    </BottomSheet>
-  )
-}
-
-// Screens 081 / 085 / 095 / 098 / 101 — Sumar sin Moni.
-export function GuestFormSheet({
-  onClose,
-  onSubmit,
-  initial,
-}: {
-  onClose: () => void
-  onSubmit: (name: string, alias: string) => void | Promise<void>
-  initial?: { name: string; alias: string }
-}) {
-  const [name, setName] = useState(initial?.name ?? '')
-  const [alias, setAlias] = useState(initial?.alias ?? '')
-  const display = name.trim() || 'Esta persona'
-  return (
-    <BottomSheet title="Agregar por nombre" onClose={onClose}>
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (name.trim()) onSubmit(name.trim(), alias.trim())
-        }}
-      >
-        <SectionLabel>Nombre</SectionLabel>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          aria-label="Nombre"
-          maxLength={40}
-          placeholder="Ej: Fran"
-          className={fieldClass}
-          data-autofocus
-        />
-        <SectionLabel>
-          Alias para cobrar{' '}
-          <span className="font-bold normal-case tracking-normal">· opcional</span>
-        </SectionLabel>
-        <input
-          value={alias}
-          onChange={(e) => setAlias(e.target.value)}
-          aria-label="Alias para cobrar"
-          maxLength={40}
-          placeholder="Ej: fran.mp"
-          className={fieldClass}
-        />
-        <MoniSays
-          lead={`${display} cuenta igual.`}
-          icon={<Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
-        >
-          Aparece como «Sin cuenta» en los gastos, aportes, deudas y resúmenes. No ve el grupo ni
-          recibe avisos: cargás vos cuánto puso o cuánto debe.
-        </MoniSays>
-        <p className="text-[15px] leading-5 text-text-muted">
-          Si después se hace una cuenta de Moni, la vinculás y se queda con todo lo cargado.
-        </p>
-        <Button type="submit" disabled={!name.trim()}>
-          Sumar a {name.trim() || 'la persona'}
-        </Button>
-      </form>
     </BottomSheet>
   )
 }

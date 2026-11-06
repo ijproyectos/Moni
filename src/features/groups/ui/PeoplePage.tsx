@@ -79,7 +79,7 @@ export function PeoplePage() {
     }
   }
   return (
-    <Page native className="pb-28">
+    <Page>
       <PageHeader title="Personas" fallbackTo={`/grupos/${groupId}`} />
       <p className="-mt-2 text-[16px] text-text-muted">
         {name} · {ledger.people.length} {ledger.people.length === 1 ? 'persona' : 'personas'}
@@ -154,7 +154,10 @@ export function PeoplePage() {
         </button>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <div
+        data-bottom-action
+        className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-4 pb-[max(env(safe-area-inset-bottom),16px)]"
+      >
         <Button onClick={() => setSheet({ type: 'add' })}>
           <UserPlus aria-hidden="true" className="mr-2 size-5" /> Sumar persona
         </Button>
@@ -165,8 +168,21 @@ export function PeoplePage() {
           code={code}
           groupName={name}
           onClose={() => setSheet(null)}
-          onAddGuest={(n, a) =>
-            run(() => addGuest.mutateAsync({ groupId, name: n, alias: a }), `${n} se sumó al grupo`)
+          existingNames={ledger.people.map((p) => p.name)}
+          onAddGuest={async (n, a) => {
+            try {
+              await addGuest.mutateAsync({ groupId, name: n, alias: a })
+              return true
+            } catch (e) {
+              return toUserMessage(e)
+            }
+          }}
+          onAdded={(names) =>
+            toast.show(
+              names.length === 1
+                ? `${names[0]} se sumó al grupo`
+                : `${names.length} personas se sumaron al grupo`,
+            )
           }
         />
       )}
