@@ -14,15 +14,15 @@ import { OfflineBanner } from '@/shared/ui/OfflineBanner'
 import { useKeyboardOpen } from '@/shared/ui/useKeyboardOpen'
 
 /** The bottom bar only lives on the four main tabs; inner screens are full height (designs/). */
-const TAB_PATHS = ['/', '/actividad', '/grupos', '/mas']
+const TAB_PATHS = ['/', '/actividad', '/grupos', '/perfil']
 
-function ShellBottomBar() {
+export function ShellBottomBar() {
   const { pathname: path } = useLocation()
   const keyboardOpen = useKeyboardOpen()
   if (!TAB_PATHS.includes(path) || keyboardOpen) return null
   return (
-    <div data-bottom-action className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[430px] pb-[env(safe-area-inset-bottom)]">
-      <BottomNav center={<QuickAdd key={path} />} />
+    <div data-bottom-action className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[430px] pb-[calc(env(safe-area-inset-bottom)+18px)]">
+      <BottomNav assistant={<QuickAdd key={path} />} />
     </div>
   )
 }
@@ -33,7 +33,7 @@ export function AppShell() {
   const initial = initialOf(profile?.display_name, user?.email ?? '') || 'V'
   const { pathname } = useLocation()
   // Room for the fixed bottom bar only where there is one; inner screens just keep a small margin.
-  const bottomRoom = TAB_PATHS.includes(pathname) ? 'pb-32' : 'pb-10'
+  const bottomRoom = TAB_PATHS.includes(pathname) ? 'pb-[calc(env(safe-area-inset-bottom)+7.5rem)]' : 'pb-10'
   // Safety net for the server job: register what is already due for this person when the app opens.
   useSyncDueSubscriptions()
   // Due fixed expenses become pending bills (nothing is charged or registered by itself).

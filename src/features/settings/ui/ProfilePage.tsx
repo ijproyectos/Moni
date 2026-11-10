@@ -2,7 +2,6 @@ import { Camera, ChevronLeft, Images, ShoppingBasket, Sparkles, Trash2 } from 'l
 import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { signOut } from '@/features/auth/api/authActions'
 import { useAuth } from '@/features/auth/api/authContext'
 import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
@@ -42,7 +41,6 @@ import { AppVersion } from '@/shared/ui/AppVersion'
 import { Button } from '@/shared/ui/Button'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import { CheckDot, MoniSays, OptionRow, Page, SectionLabel, Toggle } from '@/shared/ui/kit'
-import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
@@ -50,6 +48,7 @@ import { FEATURES } from '@/shared/config/features'
 import { useTheme } from '../api/useTheme'
 import { THEME_LABELS, THEME_MODES } from '../domain/theme'
 import { updateProfileExtras, useProfileExtras } from '../mock/profileExtrasStore'
+import { ProfileShortcuts } from './ProfileShortcuts'
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
@@ -92,7 +91,6 @@ function ProfilePhoto({
 export function ProfilePage() {
   const { user } = useAuth()
   const { data: profile, isLoading, isError } = useProfile()
-  const accounts = useAccounts()
   const extras = useProfileExtras()
   const weekly = useWeeklyDigestSettings()
   const toast = useToast()
@@ -117,7 +115,6 @@ export function ProfilePage() {
   const since = createdAt
     ? `Desde ${MONTHS[Number(createdAt.slice(5, 7)) - 1]} ${createdAt.slice(0, 4)}`
     : null
-  const accountCount = accounts.data?.length ?? 0
   const localPrefs = user ? loadLocalPreferences(user.id) : null
   const usesUsd = (profile?.secondary_currency ?? localPrefs?.secondaryCurrency) === 'USD'
   const goalCount = sanitizeGoals(profile?.goals).length
@@ -145,7 +142,9 @@ export function ProfilePage() {
 
   return (
     <Page className="pb-10">
-      <PageHeader title="Perfil" backTo="/mas" />
+      <h1 className="font-display text-[clamp(28px,8.5vw,32px)] font-extrabold leading-tight">
+        Perfil
+      </h1>
 
       {isLoading ? (
         <Skeleton className="h-48" />
@@ -186,6 +185,8 @@ export function ProfilePage() {
         </Link>
       )}
 
+      <ProfileShortcuts />
+
       <SectionLabel plain className="mt-1">
         Mis datos
       </SectionLabel>
@@ -206,20 +207,6 @@ export function ProfilePage() {
             onClick={() => setSheet('income')}
           />
         )}
-        <OptionRow
-          className="rounded-none border-0"
-
-          title={FEATURES.accountAlias ? 'Medios de pago y alias' : 'Medios de pago'}
-          subtitle={`${accountCount} ${accountCount === 1 ? 'medio' : 'medios'}`}
-          to="/cuentas"
-        />
-        <OptionRow
-          className="rounded-none border-0"
-
-          title="Categorías"
-          subtitle="Creá y editá las tuyas"
-          to="/categorias"
-        />
       </ProfileGroup>
 
       <SectionLabel plain className="mt-1">
@@ -435,7 +422,7 @@ function GoalsSheet({ saved, onClose }: { saved: readonly string[]; onClose: () 
   return (
     <BottomSheet title="Mis objetivos" onClose={onClose}>
       <p className="-mt-1 mb-3 text-[15px] leading-5 text-text-muted">
-        Según lo que elijas, Moni te muestra primero esas herramientas. Las demás siguen en Más ›
+        Según lo que elijas, Moni te muestra primero esas herramientas. Las demás siguen en Perfil ›
         Más herramientas.
       </p>
       <ul className="flex flex-col gap-2">

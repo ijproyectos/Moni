@@ -59,12 +59,11 @@ describe('shared design system', () => {
     expect(KIND_ACTIVE.income).toContain('bg-income')
   })
 
-  it('the cat button shows a plus when closed and a cross when its menu is open', () => {
+  it('the cat button is the assistant circle: mint border while its menu is open', () => {
     const { rerender } = render(<MoniAddButton aria-label="Nuevo movimiento" />)
-    expect(document.querySelector('svg.lucide-plus')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Nuevo movimiento' })).toHaveClass('border-white')
     rerender(<MoniAddButton aria-label="Cerrar" open />)
-    expect(document.querySelector('svg.lucide-x')).not.toBeNull()
-    expect(document.querySelector('svg.lucide-plus')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toHaveClass('border-mint-ink')
   })
 
   it('Page has the same 20px side margins on every screen', () => {

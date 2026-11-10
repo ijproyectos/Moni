@@ -51,20 +51,20 @@ describe('AddActionMenu', () => {
 })
 
 describe('MoniAddButton', () => {
-  it('is the cat with a decorative plus badge and announces the menu and its state', () => {
+  it('is the cat in a lilac circle and announces the menu and its state', () => {
     const { rerender } = render(<MoniAddButton aria-label="Agregar movimiento" />)
     const button = screen.getByRole('button', { name: 'Agregar movimiento' })
     expect(button).toHaveAttribute('aria-haspopup', 'menu')
     expect(button).toHaveAttribute('aria-expanded', 'false')
-    // The cat plus the decorative "+" badge (hidden from assistive tech).
-    expect(button.querySelectorAll('svg')).toHaveLength(2)
-    expect(button.querySelector('span[aria-hidden="true"] svg')).not.toBeNull()
+    expect(button.querySelectorAll('svg')).toHaveLength(1)
+    expect(button).toHaveClass('bg-lilac', 'size-[74px]', 'border-white')
     // Nothing moves until it is touched.
     expect(button.querySelector('svg')).not.toHaveAttribute('data-phase')
 
     rerender(<MoniAddButton aria-label="Agregar movimiento" open />)
     expect(button).toHaveAttribute('aria-expanded', 'true')
     expect(button.querySelector('svg')).toHaveAttribute('data-phase', 'open')
+    expect(button).toHaveClass('border-mint-ink')
 
     rerender(<MoniAddButton aria-label="Agregar movimiento" />)
     expect(button.querySelector('svg')).toHaveAttribute('data-phase', 'close')

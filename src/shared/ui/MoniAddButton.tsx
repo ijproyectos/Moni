@@ -1,17 +1,16 @@
-import { Plus, X } from 'lucide-react'
 import { useState, type ButtonHTMLAttributes, type Ref } from 'react'
 import { cn } from './cn'
 import { MoniCat } from './MoniCat'
 
 interface MoniAddButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
-  /** The menu is open: the cat raises its paw and a coin pops up. */
+  /** The menu is open: the button takes the mint border and the cat raises its paw and a coin pops up. */
   open?: boolean
   ref?: Ref<HTMLButtonElement>
 }
 
 /**
- * The center button of the bottom bar: Moni's cat, and nothing else. It is the whole button (no circle, no plus), so
- * tapping the cat opens and closes the menu. It only moves when it is touched.
+ * The assistant button of the bottom bar: a lilac circle (74px, white 3px border) with Moni's cat. Tapping it opens
+ * and closes the add menu. It only moves when it is touched.
  */
 export function MoniAddButton({
   open = false,
@@ -31,25 +30,15 @@ export function MoniAddButton({
       aria-haspopup="menu"
       aria-expanded={open}
       className={cn(
-        'relative -mt-7 mb-0 size-[72px] shrink-0 select-none rounded-full bg-forest shadow-[0_8px_18px_rgba(16,48,30,0.28)] transition-transform active:scale-95 dark:ring-1 dark:ring-white/15',
+        'relative flex size-[74px] shrink-0 select-none items-center justify-center rounded-full border-[3px] bg-lilac outline-none',
+        open ? 'border-mint-ink' : 'border-white',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink',
+        'motion-safe:transition motion-safe:active:scale-[0.97] active:brightness-95',
         className,
       )}
       {...props}
     >
-      <MoniCat
-        phase={phase}
-        className="pointer-events-none absolute left-1/2 top-[14px] w-[68px] -translate-x-1/2"
-      />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-7 items-center justify-center rounded-full border-2 border-card bg-lime text-ink"
-      >
-        {open ? (
-          <X className="size-3.5" strokeWidth={3} />
-        ) : (
-          <Plus className="size-3.5" strokeWidth={3} />
-        )}
-      </span>
+      <MoniCat phase={phase} className="pointer-events-none w-[56px]" />
     </button>
   )
 }
