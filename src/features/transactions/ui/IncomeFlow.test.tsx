@@ -24,7 +24,7 @@ vi.mock('@/shared/lib/supabase', () => {
     const filters: ((r: Row) => boolean)[] = []
     const builder = {
       insert(row: Row) {
-        db[name].push({
+        const created = {
           id: `row-${db[name].length + 1}`,
           status: 'posted',
           voided_at: null,
@@ -32,8 +32,12 @@ vi.mock('@/shared/lib/supabase', () => {
           created_at: new Date().toISOString(),
           note: null,
           ...row,
-        })
-        return Promise.resolve({ error: null })
+        }
+        db[name].push(created)
+        // `.select('id…').single()` after the insert answers with the created row.
+        return {
+          select: () => ({ single: () => Promise.resolve({ data: created, error: null }) }),
+        }
       },
       select: () => builder,
       order: () => builder,
@@ -85,6 +89,9 @@ vi.mock('@/features/categories/api/useCategories', () => ({
     ],
   }),
 }))
+vi.mock('@/features/dashboard/api/useDailyAllowance', () => ({
+  useDailyAllowance: () => ({ isLoading: false, allowance: { kind: 'sin-datos' }, status: null, pace: null }),
+}))
 vi.mock('@/features/cards/api/useCards', () => ({
   useVoidInstallmentPlan: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
@@ -131,8 +138,8 @@ async function saveIncome(
   await user.selectOptions(screen.getByLabelText('Cuenta'), accountName)
   await user.type(screen.getByLabelText('Monto'), amount)
   await user.type(screen.getByLabelText('Nota'), note)
-  await user.selectOptions(screen.getByLabelText('Categoría'), 'Sueldo')
-  await user.click(screen.getByRole('button', { name: 'Guardar' }))
+  await user.click(screen.getByRole('button', { name: 'Sueldo' }))
+  await user.click(screen.getByRole('button', { name: /^Guardar/ }))
   await waitFor(() => expect(onClose).toHaveBeenCalled())
   unmount()
 }

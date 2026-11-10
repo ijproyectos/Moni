@@ -3,7 +3,7 @@ import { createTransaction, updateTransaction } from './transactionsRepository'
 const sb = vi.hoisted(() => {
   const calls: { method: string; args: unknown[] }[] = []
   const builder: Record<string, unknown> = {}
-  for (const m of ['insert', 'update', 'eq']) {
+  for (const m of ['insert', 'update', 'eq', 'select', 'single']) {
     builder[m] = (...args: unknown[]) => {
       calls.push({ method: m, args })
       return builder

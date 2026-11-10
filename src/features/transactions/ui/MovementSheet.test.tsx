@@ -83,7 +83,24 @@ vi.mock('@/features/trips/api/useTrips', () => ({
 vi.mock('@/features/goals/api/useSavings', () => ({
   useFreshSavings: () => () => Promise.resolve(savingsData.current),
 }))
+const allowanceData = vi.hoisted(() => ({
+  current: { kind: 'sin-datos' } as { kind: 'sin-datos' } | { kind: 'ok'; dailyCents: number },
+}))
+vi.mock('@/features/dashboard/api/useDailyAllowance', () => ({
+  useDailyAllowance: () => ({
+    isLoading: false,
+    allowance: allowanceData.current,
+    status: null,
+    pace: null,
+  }),
+}))
+const voidTx = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const voidPlan = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+vi.mock('@/features/cards/api/useCards', () => ({
+  useVoidInstallmentPlan: () => ({ mutateAsync: voidPlan, isPending: false }),
+}))
 vi.mock('../api/useTransactions', () => ({
+  useVoidTransaction: () => ({ mutateAsync: voidTx, isPending: false }),
   useCreateTransaction: () => ({ mutateAsync: createTx, isPending: false }),
   useUpdateTransaction: () => ({ mutateAsync: updateTx, isPending: false }),
   useCreateTransfer: () => ({ mutateAsync: createTr, isPending: false }),
@@ -101,8 +118,8 @@ function renderSheet(props: Partial<Parameters<typeof MovementSheet>[0]> = {}) {
 
 async function fillExpense(user: ReturnType<typeof userEvent.setup>, amount: string) {
   await user.type(screen.getByLabelText('Monto'), amount)
-  await user.selectOptions(screen.getByLabelText('Categoría'), 'Comida')
-  await user.click(screen.getByRole('button', { name: 'Guardar' }))
+  await user.click(screen.getByRole('button', { name: 'Comida' }))
+  await user.click(screen.getByRole('button', { name: /^Guardar/ }))
 }
 
 describe('MovementSheet overdraft warning', () => {
@@ -116,11 +133,11 @@ describe('MovementSheet overdraft warning', () => {
   })
 
   it('saves straight away when the account covers the expense', async () => {
-    const { user, onClose } = renderSheet()
+    const { user } = renderSheet()
     await fillExpense(user, '4000')
     await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
     expect(screen.queryByRole('alertdialog')).toBeNull()
-    expect(onClose).toHaveBeenCalled()
+    expect(await screen.findByText('Listo, guardado')).toBeInTheDocument()
   })
 
   it('warns with balance, amount and negative result, and does not save yet', async () => {
@@ -146,10 +163,10 @@ describe('MovementSheet overdraft warning', () => {
   })
 
   it('continuing records the expense exactly once', async () => {
-    const { user, onClose } = renderSheet()
+    const { user } = renderSheet()
     await fillExpense(user, '25000')
     await user.dblClick(await screen.findByRole('button', { name: 'Continuar igual' }))
-    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    await screen.findByText('Listo, guardado')
     expect(createTx).toHaveBeenCalledTimes(1)
     expect(createTx.mock.calls[0]?.[0]).toMatchObject({
       kind: 'expense',
@@ -180,8 +197,8 @@ describe('MovementSheet overdraft warning', () => {
     accountsData.current = [account(CASH, 'Efectivo', 0)]
     const { user } = renderSheet({ initialMode: 'income' })
     await user.type(screen.getByLabelText('Monto'), '500')
-    await user.selectOptions(screen.getByLabelText('Categoría'), 'Sueldo')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: 'Sueldo' }))
+    await user.click(screen.getByRole('button', { name: /^Guardar/ }))
     await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })
@@ -199,7 +216,7 @@ describe('MovementSheet overdraft warning', () => {
     const amount = screen.getByLabelText('Monto')
     await user.clear(amount)
     await user.type(amount, '9000')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: /^Guardar/ }))
     await waitFor(() => expect(updateTx).toHaveBeenCalledTimes(1))
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })
@@ -248,7 +265,7 @@ describe('MovementSheet overdraft warning', () => {
     it('linking saves the SAME movement with the trip (an update, never a new charge)', async () => {
       const { user } = renderSheet({ transaction: expense() })
       await user.selectOptions(screen.getByLabelText('Viaje'), 'Salta · 10 al 17 de dic')
-      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+      await user.click(screen.getByRole('button', { name: /^Guardar/ }))
       await waitFor(() => expect(updateTx).toHaveBeenCalledTimes(1))
       expect(createTx).not.toHaveBeenCalled()
       expect(updateTx.mock.calls[0]?.[0]).toMatchObject({ id: 'e1', tripId: 'trip-salta' })
@@ -258,7 +275,7 @@ describe('MovementSheet overdraft warning', () => {
       const { user } = renderSheet({ transaction: expense('trip-salta') })
       expect(screen.getByLabelText('Viaje')).toHaveDisplayValue('Salta · 10 al 17 de dic')
       await user.selectOptions(screen.getByLabelText('Viaje'), 'Sin viaje')
-      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+      await user.click(screen.getByRole('button', { name: /^Guardar/ }))
       await waitFor(() => expect(updateTx).toHaveBeenCalledTimes(1))
       expect(updateTx.mock.calls[0]?.[0]).toMatchObject({ id: 'e1', tripId: null })
     })
@@ -266,7 +283,7 @@ describe('MovementSheet overdraft warning', () => {
     it('editing something else leaves the trip alone (nothing about trips is sent)', async () => {
       const { user } = renderSheet({ transaction: expense('trip-salta') })
       await user.type(screen.getByLabelText('Nota'), ' extra')
-      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+      await user.click(screen.getByRole('button', { name: /^Guardar/ }))
       await waitFor(() => expect(updateTx).toHaveBeenCalledTimes(1))
       expect(updateTx.mock.calls[0]?.[0]).not.toHaveProperty('tripId')
     })
@@ -303,7 +320,7 @@ describe('MovementSheet overdraft warning', () => {
   it('warns on a transfer larger than the origin balance', async () => {
     const { user } = renderSheet({ initialMode: 'transfer' })
     await user.type(screen.getByLabelText('Monto'), '30000')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: /^Guardar/ }))
     const dialog = await screen.findByRole('alertdialog')
     expect(dialog).toHaveTextContent('Esta transferencia')
     expect(dialog).toHaveTextContent('-$20.000')
@@ -318,10 +335,10 @@ describe('MovementSheet overdraft warning', () => {
       account(CARD, 'Visa', -80_000_00, 'credit_card'),
       account(CASH, 'Efectivo', 1_000_00),
     ]
-    const { user, onClose } = renderSheet()
+    const { user } = renderSheet()
     await user.selectOptions(screen.getByLabelText('Cuenta'), CARD)
     await fillExpense(user, '50000')
-    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    await screen.findByText('Listo, guardado')
     expect(screen.queryByRole('alertdialog')).toBeNull()
     expect(createTx.mock.calls[0]?.[0]).toMatchObject({ accountId: CARD, amount: 50_000_00 })
   })
@@ -333,7 +350,7 @@ describe('MovementSheet overdraft warning', () => {
     ]
     const { user, onClose } = renderSheet({ initialMode: 'transfer', transferTo: CARD })
     await user.type(screen.getByLabelText('Monto'), '30000')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: /^Guardar/ }))
     await waitFor(() => expect(onClose).toHaveBeenCalled())
     expect(createTr).toHaveBeenCalledTimes(1)
     expect(createTr.mock.calls[0]?.[0]).toMatchObject({
@@ -351,7 +368,7 @@ describe('MovementSheet overdraft warning', () => {
     ]
     const { user } = renderSheet({ initialMode: 'transfer', transferTo: CARD })
     await user.type(screen.getByLabelText('Monto'), '30000')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: /^Guardar/ }))
     expect(await screen.findByRole('alertdialog')).toHaveTextContent('-$20.000')
     expect(createTr).not.toHaveBeenCalled()
   })
@@ -360,7 +377,7 @@ describe('MovementSheet overdraft warning', () => {
     accountsData.current = [
       account(CARD, 'Visa', -450_000_00, 'credit_card', { creditLimitCents: 500_000_00 }),
     ]
-    const { user, onClose } = renderSheet()
+    const { user } = renderSheet()
     await fillExpense(user, '100000')
     const dialog = await screen.findByRole('alertdialog')
     expect(dialog).toHaveTextContent('Te pasás del límite')
@@ -368,7 +385,7 @@ describe('MovementSheet overdraft warning', () => {
     expect(dialog).not.toHaveTextContent('Te falta saldo')
     expect(createTx).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Continuar igual' }))
-    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    await screen.findByText('Listo, guardado')
     expect(createTx).toHaveBeenCalledTimes(1)
   })
 
@@ -376,9 +393,9 @@ describe('MovementSheet overdraft warning', () => {
     accountsData.current = [
       account(CARD, 'Visa', -100_000_00, 'credit_card', { creditLimitCents: 500_000_00 }),
     ]
-    const { user, onClose } = renderSheet()
+    const { user } = renderSheet()
     await fillExpense(user, '100000')
-    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    await screen.findByText('Listo, guardado')
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 })
@@ -416,15 +433,15 @@ describe('MovementSheet: spending money reserved for savings goals', () => {
   })
 
   it('cancelling saves nothing; continuing records the expense exactly once and never blocks', async () => {
-    const { user, onClose } = renderSheet()
+    const { user } = renderSheet()
     await pickBank(user)
     await fillExpense(user, '130000')
     await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
     expect(createTx).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: /^Guardar/ }))
     await user.click(await screen.findByRole('button', { name: 'Continuar igual' }))
     await waitFor(() => expect(createTx).toHaveBeenCalledTimes(1))
-    expect(onClose).toHaveBeenCalled()
+    expect(await screen.findByText('Listo, guardado')).toBeInTheDocument()
   })
 
   it('does not warn while the reserves stay covered', async () => {
@@ -450,7 +467,7 @@ describe('MovementSheet: spending money reserved for savings goals', () => {
     ]
     const { user } = renderSheet({ initialMode: 'transfer' })
     await user.type(screen.getByLabelText('Monto'), '140000')
-    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await user.click(screen.getByRole('button', { name: /^Guardar/ }))
     expect(await screen.findByRole('alertdialog')).toHaveTextContent('Ojo con tus ahorros')
     expect(createTr).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Continuar igual' }))
@@ -474,7 +491,7 @@ describe('MovementSheet offline', () => {
     accountsData.current = [account(CASH, 'Efectivo', 100_000)]
     onlineManager.setOnline(false)
     renderSheet()
-    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Guardar/ })).toBeDisabled()
     expect(screen.getByText('Sin conexión. Conectate para guardar cambios.')).toBeInTheDocument()
     // Voice and text entry moved to the global "+" menu: the sheet is manual only.
     expect(
@@ -488,7 +505,148 @@ describe('MovementSheet offline', () => {
     onlineManager.setOnline(false)
     renderSheet()
     act(() => onlineManager.setOnline(true))
-    expect(screen.getByRole('button', { name: 'Guardar' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /^Guardar/ })).toBeEnabled()
     expect(screen.queryByText(/Conectate para guardar/)).not.toBeInTheDocument()
+  })
+})
+
+describe('MovementSheet: screen 19 (manual load)', () => {
+  beforeEach(() => {
+    createTx.mockClear()
+    createTx.mockResolvedValue({ id: 'new-1', installmentPlanId: null })
+    accountsData.current = [account(CASH, 'Efectivo', 10_000_00), account(BANK, 'Banco', 50_000_00)]
+    savingsData.current = null
+    tripsData.current = []
+    allowanceData.current = { kind: 'sin-datos' }
+  })
+
+  it('has the Menta layout: header, Gasto/Ingreso, big amount, category chips, rows and keypad', () => {
+    renderSheet()
+    expect(screen.getByRole('dialog', { name: 'Nuevo gasto' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Tipo de movimiento' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gasto' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Monto')).toHaveAttribute('inputmode', 'none')
+    expect(screen.getByRole('group', { name: 'Categoría' })).toBeInTheDocument()
+    expect(screen.getByText('Medio de pago')).toBeInTheDocument()
+    expect(screen.getByText('Fecha')).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'Dividir con un grupo' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    )
+    expect(screen.getByRole('group', { name: 'Teclado numérico' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar gasto' })).toBeInTheDocument()
+  })
+
+  it('the on-screen keypad types the amount with es-AR formatting', async () => {
+    const { user } = renderSheet()
+    const keypad = within(screen.getByRole('group', { name: 'Teclado numérico' }))
+    for (const key of ['1', '2', '3', '4']) await user.click(keypad.getByRole('button', { name: key }))
+    expect(screen.getByLabelText('Monto')).toHaveValue('1.234')
+    await user.click(keypad.getByRole('button', { name: 'Coma decimal' }))
+    await user.click(keypad.getByRole('button', { name: '5' }))
+    expect(screen.getByLabelText('Monto')).toHaveValue('1.234,5')
+    await user.click(keypad.getByRole('button', { name: 'Borrar' }))
+    await user.click(keypad.getByRole('button', { name: 'Borrar' }))
+    await user.click(keypad.getByRole('button', { name: 'Borrar' }))
+    expect(screen.getByLabelText('Monto')).toHaveValue('123')
+  })
+
+  it('shows "Te quedan $X para hoy" live and omits it without data', async () => {
+    allowanceData.current = { kind: 'ok', dailyCents: 24_300_00 }
+    const { user } = renderSheet()
+    expect(screen.getByText(/Te quedan/)).toHaveTextContent('Te quedan $24.300 para hoy')
+    await user.type(screen.getByLabelText('Monto'), '4800')
+    expect(screen.getByText(/Te quedan/)).toHaveTextContent('Te quedan $19.500 para hoy')
+    // Not for an income.
+    await user.click(screen.getByRole('button', { name: 'Ingreso' }))
+    expect(screen.queryByText(/Te quedan/)).toBeNull()
+  })
+
+  it('without allowance data there is no "Te quedan" line', () => {
+    renderSheet()
+    expect(screen.queryByText(/Te quedan/)).toBeNull()
+  })
+
+  it('saving an expense shows screen 20 with what is left for today (no toast, sheet stays)', async () => {
+    allowanceData.current = { kind: 'ok', dailyCents: 24_300_00 }
+    const { user, onClose } = renderSheet()
+    await fillExpense(user, '4800')
+    expect(await screen.findByText('Listo, guardado')).toBeInTheDocument()
+    expect(screen.getByText('Hoy te quedan')).toBeInTheDocument()
+    expect(screen.getByText('Vas bien')).toBeInTheDocument()
+    expect(screen.getByText('$19.500')).toBeInTheDocument()
+    expect(screen.getByText('Usaste el 20% de lo de hoy')).toBeInTheDocument()
+    expect(screen.getByText(/Comida · Efectivo · hoy/)).toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('screen 20 without allowance data omits the "Hoy te quedan" card', async () => {
+    const { user } = renderSheet()
+    await fillExpense(user, '4800')
+    expect(await screen.findByText('Listo, guardado')).toBeInTheDocument()
+    expect(screen.queryByText('Hoy te quedan')).toBeNull()
+    expect(screen.queryByText(/Usaste el/)).toBeNull()
+  })
+
+  it('Deshacer voids the created expense and closes', async () => {
+    const { user, onClose } = renderSheet()
+    await fillExpense(user, '4800')
+    await user.click(await screen.findByRole('button', { name: 'Deshacer' }))
+    await waitFor(() => expect(voidTx).toHaveBeenCalledWith('new-1'))
+    expect(voidPlan).not.toHaveBeenCalled()
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
+
+  it('Deshacer voids the whole installment plan when the new row belongs to one', async () => {
+    voidTx.mockClear()
+    voidPlan.mockClear()
+    createTx.mockResolvedValue({ id: 'new-2', installmentPlanId: 'plan-9' })
+    const { user } = renderSheet()
+    await fillExpense(user, '4800')
+    await user.click(await screen.findByRole('button', { name: 'Deshacer' }))
+    await waitFor(() => expect(voidPlan).toHaveBeenCalledWith('plan-9'))
+    expect(voidTx).not.toHaveBeenCalled()
+  })
+
+  it('without the created id there is no Deshacer', async () => {
+    createTx.mockResolvedValue(null)
+    const { user } = renderSheet()
+    await fillExpense(user, '4800')
+    await screen.findByText('Listo, guardado')
+    expect(screen.queryByRole('button', { name: 'Deshacer' })).toBeNull()
+  })
+
+  it('Cargar otro goes back to an empty form', async () => {
+    const { user, onClose } = renderSheet()
+    await fillExpense(user, '4800')
+    await user.click(await screen.findByRole('button', { name: 'Cargar otro' }))
+    expect(screen.getByLabelText('Monto')).toHaveValue('')
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('Volver a Hoy closes the sheet and goes home', async () => {
+    const { user, onClose } = renderSheet()
+    await fillExpense(user, '4800')
+    await user.click(await screen.findByRole('button', { name: 'Volver a Hoy' }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('an income keeps the toast flow: the sheet closes without screen 20', async () => {
+    const { user, onClose } = renderSheet({ initialMode: 'income' })
+    await user.type(screen.getByLabelText('Monto'), '500')
+    await user.click(screen.getByRole('button', { name: 'Sueldo' }))
+    await user.click(screen.getByRole('button', { name: /^Guardar/ }))
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(screen.queryByText('Listo, guardado')).toBeNull()
+  })
+
+  it('starts from the prefilled values of "Repetir uno reciente"', () => {
+    renderSheet({
+      initialValues: { amountCents: 4_800_00, categoryId: FOOD, accountId: BANK, note: 'Café' },
+    })
+    expect(screen.getByLabelText('Monto')).toHaveValue('4.800')
+    expect(screen.getByLabelText('Nota')).toHaveValue('Café')
+    expect(screen.getByRole('button', { name: 'Comida' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Cuenta')).toHaveDisplayValue('Banco')
   })
 })

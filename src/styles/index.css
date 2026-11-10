@@ -186,6 +186,16 @@ html.dark .bg-lime {
   }
 }
 
+@keyframes wave-bar {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

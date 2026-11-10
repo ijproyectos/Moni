@@ -1,4 +1,5 @@
 import {
+  applyAmountKey,
   caretAfterAmountChars,
   countAmountChars,
   formatAmountInput,
@@ -73,5 +74,18 @@ describe('caret helpers', () => {
     expect(caretAfterAmountChars('1.234', 1)).toBe(1)
     expect(caretAfterAmountChars('1.234', 0)).toBe(0)
     expect(caretAfterAmountChars('12', 9)).toBe(2)
+  })
+})
+
+describe('applyAmountKey (on-screen keypad)', () => {
+  it('appends digits with thousands, handles the comma once and deletes', () => {
+    expect(applyAmountKey('', '4')).toBe('4')
+    expect(applyAmountKey('1.234', '5')).toBe('12.345')
+    expect(applyAmountKey('', ',')).toBe('0,')
+    expect(applyAmountKey('12,5', ',')).toBe('12,5')
+    expect(applyAmountKey('1.234,56', '7')).toBe('1.234,56')
+    expect(applyAmountKey('1.234', 'back')).toBe('123')
+    expect(applyAmountKey('5', 'back')).toBe('')
+    expect(applyAmountKey('', 'back')).toBe('')
   })
 })

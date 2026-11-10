@@ -76,8 +76,14 @@ export async function listTransactions(
 /** A new movement; an expense may also belong to one of the person's trips (`tripId`). */
 export type NewTransaction = TransactionFormValues & { tripId?: string | null }
 
-export async function createTransaction(values: NewTransaction): Promise<void> {
-  const { error } = await getSupabase()
+/** What the database says about the row it just created: enough to undo it later (and its installment plan). */
+export interface CreatedTransaction {
+  id: string
+  installmentPlanId: string | null
+}
+
+export async function createTransaction(values: NewTransaction): Promise<CreatedTransaction | null> {
+  const { data, error } = await getSupabase()
     .from('transactions')
     .insert({
       account_id: values.accountId,
@@ -89,7 +95,10 @@ export async function createTransaction(values: NewTransaction): Promise<void> {
       // Only sent when set, so everything else keeps working on a database without trips.
       ...(values.tripId ? { trip_id: values.tripId } : {}),
     })
+    .select('id, installment_plan_id')
+    .single()
   if (error) throw error
+  return data ? { id: data.id, installmentPlanId: data.installment_plan_id ?? null } : null
 }
 
 /** In-place edit. The kind cannot change: switch by voiding and creating a new movement. */

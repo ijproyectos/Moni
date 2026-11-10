@@ -54,7 +54,7 @@ describe('MoniAddButton', () => {
   it('is the cat in a lilac circle and announces the menu and its state', () => {
     const { rerender } = render(<MoniAddButton aria-label="Agregar movimiento" />)
     const button = screen.getByRole('button', { name: 'Agregar movimiento' })
-    expect(button).toHaveAttribute('aria-haspopup', 'menu')
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog')
     expect(button).toHaveAttribute('aria-expanded', 'false')
     expect(button.querySelectorAll('svg')).toHaveLength(1)
     expect(button).toHaveClass('bg-lilac', 'size-[60px]', 'border-white')

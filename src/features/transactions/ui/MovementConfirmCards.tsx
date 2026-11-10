@@ -1,13 +1,14 @@
-import { ChevronDown, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Calendar, CreditCard, Tag, Trash2, type LucideIcon } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import type { Account } from '@/features/accounts/domain/account'
 import type { DraftMovement } from '@/features/ai/domain/draft'
 import type { Category } from '@/features/categories/domain/category'
 import { parseAmountInput } from '@/shared/lib/amountInput'
 import { formatRelativeDay } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
+import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import { cn } from '@/shared/ui/cn'
-import { KIND_ACTIVE } from '@/shared/ui/fieldStyles'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { formatAmountEvent } from '@/shared/ui/amountField'
 
 interface MovementConfirmCardsProps {
@@ -20,6 +21,8 @@ interface MovementConfirmCardsProps {
   disabled?: boolean
   onChange: (key: string, patch: Partial<DraftMovement>) => void
   onRemove: (key: string) => void
+  /** Line inside the card of a single movement (e.g. "Con este gasto, hoy te quedan $X"). */
+  cardFooter?: ReactNode
 }
 
 /** Text that turns into a small input when tapped, and back when it loses focus or on Enter. */
@@ -85,10 +88,15 @@ function InlineEdit({
   )
 }
 
-/** A compact dropdown (the native one: small, accessible and good on phones) shown as a pill with a chevron. */
+/**
+ * A chip (Menta) that is a native dropdown underneath: the select lies invisible over the chip, so the native picker
+ * opens on tap and the keyboard and screen readers keep a real <select>.
+ */
 function PillSelect({
   label,
   value,
+  text,
+  icon: Icon,
   disabled,
   onChange,
   children,
@@ -96,29 +104,33 @@ function PillSelect({
 }: {
   label: string
   value: string
+  /** What the chip says: the selected option. */
+  text: string
+  icon: LucideIcon
   disabled?: boolean
   onChange: (value: string) => void
-  children: React.ReactNode
+  children: ReactNode
   warn?: boolean
 }) {
   return (
-    <span className="relative inline-flex min-w-0 max-w-full">
+    <span
+      className={cn(
+        'relative inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full px-3 py-[7px] text-[13.5px] font-medium text-ink',
+        'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-mint-ink',
+        warn ? 'bg-warn-bg ring-1 ring-gold' : 'bg-canvas',
+      )}
+    >
+      <Icon aria-hidden="true" className="size-[15px] shrink-0" strokeWidth={1.9} />
+      <span className="truncate">{text}</span>
       <select
         aria-label={label}
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          'h-9 w-full min-w-0 appearance-none truncate rounded-full py-0 pl-3 pr-8 text-[14px] font-bold text-ink',
-          warn ? 'bg-gold/30 ring-1 ring-gold' : 'bg-sand',
-        )}
+        className="absolute inset-0 size-full cursor-pointer opacity-0 outline-none"
       >
         {children}
       </select>
-      <ChevronDown
-        aria-hidden="true"
-        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-ink"
-      />
     </span>
   )
 }
@@ -136,11 +148,12 @@ export function MovementConfirmCards({
   disabled = false,
   onChange,
   onRemove,
+  cardFooter,
 }: MovementConfirmCardsProps) {
   // With several movements the cards get tighter, so the list stays short.
   const dense = drafts.length > 1
   return (
-    <ul className="flex flex-col gap-2.5">
+    <ul className="flex flex-col gap-3">
       {drafts.map((draft, index) => {
         const n = index + 1
         const cents = parseAmountInput(draft.amount)
@@ -160,46 +173,35 @@ export function MovementConfirmCards({
           <li
             key={draft.key}
             aria-label={`Movimiento ${n}`}
-            className={cn('rounded-[24px] bg-card ring-1 ring-line', dense ? 'p-3' : 'p-3.5')}
+            className={cn(
+              'flex flex-col rounded-[28px] bg-card px-4 text-ink',
+              dense ? 'gap-2 py-3' : 'gap-2.5 py-3.5',
+            )}
           >
             <div className="flex items-center justify-between gap-2">
-              <div role="group" aria-label={`Tipo del movimiento ${n}`} className="flex gap-1">
-                {(['expense', 'income'] as const).map((kind) => (
+              <span className="text-[11.5px] font-medium uppercase tracking-[0.12em] text-text-muted">
+                Moni entendió
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="text-[13px] font-medium text-mint-ink">Tocá para corregir</span>
+                {drafts.length > 1 && (
                   <button
-                    key={kind}
                     type="button"
-                    aria-pressed={draft.kind === kind}
+                    aria-label={`Quitar movimiento ${n}`}
                     disabled={disabled}
-                    onClick={() =>
-                      draft.kind !== kind && onChange(draft.key, { kind, categoryId: '' })
-                    }
+                    onClick={() => onRemove(draft.key)}
                     className={cn(
-                      'min-h-8 rounded-full px-3 font-display text-[13px] font-extrabold',
-                      draft.kind === kind
-                        ? kind === 'expense'
-                          ? KIND_ACTIVE.expense
-                          : KIND_ACTIVE.income
-                        : 'bg-transparent text-text-muted',
+                      'flex size-9 items-center justify-center rounded-full text-text-muted',
+                      FOCUS_RING,
                     )}
                   >
-                    {kind === 'expense' ? 'Gasto' : 'Ingreso'}
+                    <Trash2 aria-hidden="true" className="size-4" />
                   </button>
-                ))}
-              </div>
-              {drafts.length > 1 && (
-                <button
-                  type="button"
-                  aria-label={`Quitar movimiento ${n}`}
-                  disabled={disabled}
-                  onClick={() => onRemove(draft.key)}
-                  className="flex size-9 items-center justify-center rounded-full text-text-muted"
-                >
-                  <Trash2 aria-hidden="true" className="size-4" />
-                </button>
-              )}
+                )}
+              </span>
             </div>
 
-            <div className="mt-1">
+            <div>
               <InlineEdit
                 label={`Monto del movimiento ${n}`}
                 value={draft.amount}
@@ -208,9 +210,8 @@ export function MovementConfirmCards({
                 disabled={disabled}
                 onChange={(amount) => onChange(draft.key, { amount })}
                 className={cn(
-                  dense
-                    ? 'font-display text-[26px] font-extrabold leading-8'
-                    : 'font-display text-[34px] font-extrabold leading-10',
+                  'font-display font-bold leading-none tracking-[-0.04em]',
+                  dense ? 'py-1 text-[30px]' : 'py-1 text-[40px]',
                   draft.kind === 'expense' ? 'text-ink' : 'text-income',
                   cents === null || cents <= 0 ? '!text-text-muted !text-[24px]' : '',
                 )}
@@ -223,16 +224,44 @@ export function MovementConfirmCards({
                 disabled={disabled}
                 onChange={(note) => onChange(draft.key, { note })}
                 className={cn(
-                  dense ? 'text-[15px] leading-5' : 'text-[17px] leading-6',
+                  dense ? 'text-[14px] leading-5' : 'text-[15px] leading-6',
                   draft.note.trim() === '' ? 'text-text-muted' : 'text-ink',
                 )}
               />
             </div>
 
-            <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <div role="group" aria-label={`Tipo del movimiento ${n}`} className="flex gap-1">
+                {(['expense', 'income'] as const).map((kind) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    aria-pressed={draft.kind === kind}
+                    disabled={disabled}
+                    onClick={() =>
+                      draft.kind !== kind && onChange(draft.key, { kind, categoryId: '' })
+                    }
+                    className={cn(
+                      'rounded-full px-3 py-[7px] text-[13.5px] font-medium',
+                      FOCUS_RING,
+                      draft.kind === kind ? 'bg-mint text-white' : 'bg-canvas text-ink',
+                    )}
+                  >
+                    {kind === 'expense' ? 'Gasto' : 'Ingreso'}
+                  </button>
+                ))}
+              </div>
               <PillSelect
                 label={`Categoría del movimiento ${n}`}
                 value={draft.categoryId}
+                text={
+                  options.find((c) => c.id === draft.categoryId)?.name ?? 'Elegir categoría'
+                }
+                icon={
+                  draft.categoryId
+                    ? getCategoryIcon(options.find((c) => c.id === draft.categoryId)?.icon)
+                    : Tag
+                }
                 disabled={disabled}
                 warn={draft.categoryId === ''}
                 onChange={(categoryId) => onChange(draft.key, { categoryId })}
@@ -251,6 +280,8 @@ export function MovementConfirmCards({
               <PillSelect
                 label={`Cuenta del movimiento ${n}`}
                 value={draft.accountId}
+                text={accounts.find((a) => a.id === draft.accountId)?.name ?? 'Elegir cuenta'}
+                icon={CreditCard}
                 disabled={disabled}
                 warn={draft.accountId === '' || draft.accountUnmatched}
                 onChange={(accountId) =>
@@ -268,7 +299,8 @@ export function MovementConfirmCards({
                   </option>
                 ))}
               </PillSelect>
-              <span className="relative inline-flex h-9 items-center px-2 text-[14px] font-bold text-text-muted">
+              <span className="relative inline-flex items-center gap-1.5 rounded-full bg-canvas px-3 py-[7px] text-[13.5px] font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-mint-ink">
+                <Calendar aria-hidden="true" className="size-[15px]" strokeWidth={1.9} />
                 {formatRelativeDay(draft.occurredOn, today)}
                 <input
                   type="date"
@@ -279,21 +311,20 @@ export function MovementConfirmCards({
                   onChange={(e) =>
                     e.target.value && onChange(draft.key, { occurredOn: e.target.value })
                   }
-                  className="absolute inset-0 size-full cursor-pointer opacity-0"
+                  className="absolute inset-0 size-full cursor-pointer opacity-0 outline-none"
                 />
               </span>
             </div>
 
             {hint && !error && (
-              <p className="mt-1.5 text-[13px] font-semibold text-[#8a5a00] dark:text-gold">
-                {hint}
-              </p>
+              <p className="text-[13px] font-semibold text-[#8a5a00] dark:text-gold">{hint}</p>
             )}
             {error && (
-              <p role="alert" className="mt-1.5 text-[13px] font-semibold text-expense">
+              <p role="alert" className="text-[13px] font-semibold text-expense">
                 {error}
               </p>
             )}
+            {drafts.length === 1 && cardFooter}
           </li>
         )
       })}

@@ -27,7 +27,7 @@ export function MoniAddButton({
   return (
     <button
       type={type}
-      aria-haspopup="menu"
+      aria-haspopup="dialog"
       aria-expanded={open}
       className={cn(
         'relative flex size-[60px] shrink-0 select-none items-center justify-center rounded-full border-[3px] bg-lilac outline-none',

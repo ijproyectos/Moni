@@ -1,5 +1,6 @@
-import { Mic, Pencil, RotateCcw, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Check, Mic, Pencil, RotateCcw, Trash2 } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { useParseMovements } from '@/features/ai/api/useParseMovements'
 import { warningsNotice, type DraftMovement } from '@/features/ai/domain/draft'
@@ -14,12 +15,12 @@ import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
-import { BottomSheet } from '@/shared/ui/BottomSheet'
-import { Button } from '@/shared/ui/Button'
-import { MoniFortuneCat } from '@/shared/ui/MoniFortuneCat'
-import { SpeechBubble } from '@/shared/ui/SpeechBubble'
+import { AudioWave } from '@/shared/ui/AudioWave'
+import { cn } from '@/shared/ui/cn'
+import { MINT_PILL, WHITE_PILL } from '@/shared/ui/mentaStyles'
 import { prepareDrafts } from '../domain/prepareDrafts'
 import { DraftConfirmation } from './DraftConfirmation'
+import { VoiceFrame } from './VoiceFrame'
 
 /** What the cat says when the microphone does not work: it stays in the conversation, and offers to type. */
 const SPEECH_MESSAGES: Record<SpeechError, string> = {
@@ -31,8 +32,32 @@ const SPEECH_MESSAGES: Record<SpeechError, string> = {
 /** Waits this long without new words before it stops by itself: room to think between expenses. */
 const PAUSE_MS = 4500
 
-const smallButton =
-  'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-sand px-2.5 font-display text-[14px] font-extrabold text-ink transition hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-60'
+const smallButton = cn(WHITE_PILL, 'min-h-11 px-4 text-[14px] font-semibold')
+const mainButton = cn(MINT_PILL, 'h-[52px] text-[16px] font-semibold')
+const labelClass = 'text-[13px] font-medium uppercase tracking-[0.12em] text-mint-ink'
+const transcriptClass =
+  'max-w-[300px] break-words text-center text-[24px] font-medium leading-[1.25] tracking-[-0.02em]'
+
+/** Moni's cat of the voice screens (72px, with its soft shadow). */
+function Mascot() {
+  return (
+    <img
+      src={mascotHappy}
+      alt=""
+      className="size-[72px] rounded-full bg-lilac shadow-[0_8px_20px_rgba(20,50,30,0.3)]"
+    />
+  )
+}
+
+/** The centered block (cat, label, transcript, wave) and, below, the buttons pinned to the bottom. */
+function VoiceLayout({ top, bottom }: { top: ReactNode; bottom: ReactNode }) {
+  return (
+    <>
+      <div className="flex flex-col items-center gap-3.5 pt-3.5">{top}</div>
+      <div className="mt-auto flex flex-col gap-2.5">{bottom}</div>
+    </>
+  )
+}
 
 /** idle: first screen (or dictating, when the microphone is on) · review: the transcript · editing: the text box. */
 type Step = 'idle' | 'review' | 'editing' | 'confirm'
@@ -174,8 +199,8 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
       <DraftConfirmation
         initialDrafts={drafts}
         notice={notice}
-        // "Descartar": nothing is saved and the transcript stays to try again.
-        onBack={() => setStep(text.trim() === '' ? 'idle' : 'review')}
+        // The lilac microphone: nothing is saved and Moni listens again.
+        onRerecord={speech.supported ? startListening : undefined}
         onClose={onClose}
       />
     )
@@ -183,197 +208,199 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
 
   if (step === 'editing') {
     return (
-      <BottomSheet title="Carga por voz" onClose={onClose}>
-        <MoniFortuneCat
-          mode={parse.isPending ? 'thinking' : undefined}
-          className="mx-auto w-[clamp(130px,40vw,170px)]"
+      <VoiceFrame title="Carga por voz" onClose={onClose}>
+        <VoiceLayout
+          top={
+            <>
+              <Mascot />
+              <div className="w-full rounded-[28px] bg-card px-4 py-3.5">
+                <label>
+                  <span className="text-[14px] font-semibold text-text-muted">
+                    {speech.supported
+                      ? 'Escribilo como te salga:'
+                      : 'Escribime lo que gastaste o cobraste:'}
+                  </span>
+                  <textarea
+                    value={text}
+                    maxLength={500}
+                    rows={3}
+                    disabled={parse.isPending}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Gasté $8.000 en el súper"
+                    aria-label="Lo que gastaste o cobraste"
+                    className="mt-1 w-full resize-none bg-transparent text-[17px] leading-6 text-ink outline-none placeholder:text-text-muted"
+                  />
+                </label>
+              </div>
+              {parseError && (
+                <p role="alert" className="text-center text-[15px] font-semibold text-expense">
+                  {parseError}
+                </p>
+              )}
+              <p aria-live="polite" className="min-h-5 text-center text-[15px] text-text-muted">
+                {parse.isPending ? 'Entendiendo…' : online ? '' : OFFLINE_MESSAGE}
+              </p>
+            </>
+          }
+          bottom={
+            <>
+              <button
+                type="button"
+                className={mainButton}
+                disabled={text.trim() === '' || busy || dataLoading || !online}
+                onClick={submitText}
+              >
+                {parse.isPending ? 'Entendiendo…' : 'Listo'}
+              </button>
+              <button
+                type="button"
+                className={smallButton}
+                disabled={parse.isPending}
+                onClick={cancelEditing}
+              >
+                Cancelar
+              </button>
+            </>
+          }
         />
-        <SpeechBubble tip="up" from="you" className="mt-3">
-          <label>
-            <span className="text-[14px] font-bold text-text-muted">
-              {speech.supported
-                ? 'Escribilo como te salga:'
-                : 'Escribime lo que gastaste o cobraste:'}
-            </span>
-            <textarea
-              value={text}
-              maxLength={500}
-              rows={3}
-              disabled={parse.isPending}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Gasté $8.000 en el súper"
-              aria-label="Lo que gastaste o cobraste"
-              className="mt-1 w-full resize-none bg-transparent text-[17px] leading-6 text-ink outline-none placeholder:text-text-muted"
-            />
-          </label>
-        </SpeechBubble>
-        {parseError && (
-          <p role="alert" className="mt-2 text-center text-[15px] font-semibold text-expense">
-            {parseError}
-          </p>
-        )}
-        <p aria-live="polite" className="mt-2 min-h-5 text-center text-[15px] text-text-muted">
-          {parse.isPending ? 'Entendiendo…' : online ? '' : OFFLINE_MESSAGE}
-        </p>
-        <div className="mt-1 flex justify-center">
-          <Button
-            variant="dark"
-            className="!h-12 !w-full max-w-[260px]"
-            disabled={text.trim() === '' || busy || dataLoading || !online}
-            onClick={submitText}
-          >
-            {parse.isPending ? 'Entendiendo…' : 'Listo'}
-          </Button>
-        </div>
-        <div className="mt-2 flex justify-center">
-          <button
-            type="button"
-            className={smallButton}
-            disabled={parse.isPending}
-            onClick={cancelEditing}
-          >
-            Cancelar
-          </button>
-        </div>
-      </BottomSheet>
+      </VoiceFrame>
     )
   }
 
   if (step === 'review') {
     return (
-      <BottomSheet title="Carga por voz" onClose={onClose}>
-        <MoniFortuneCat
-          mode={parse.isPending ? 'thinking' : undefined}
-          className="mx-auto w-[clamp(130px,40vw,170px)]"
+      <VoiceFrame title="Carga por voz" onClose={onClose}>
+        <VoiceLayout
+          top={
+            <>
+              <Mascot />
+              <p className={labelClass}>Te escuché decir:</p>
+              <p aria-label="Lo que dijiste" className={transcriptClass}>
+                “{text}”
+              </p>
+              {parseError && (
+                <p role="alert" className="text-center text-[15px] font-semibold text-expense">
+                  {parseError}
+                </p>
+              )}
+              <p aria-live="polite" className="min-h-5 text-center text-[15px] text-text-muted">
+                {parse.isPending ? 'Entendiendo…' : online ? '' : OFFLINE_MESSAGE}
+              </p>
+            </>
+          }
+          bottom={
+            <>
+              <button
+                type="button"
+                className={mainButton}
+                disabled={busy || dataLoading}
+                onClick={submitText}
+              >
+                {!parse.isPending && <Check aria-hidden="true" className="size-5" strokeWidth={2.6} />}
+                {parse.isPending ? 'Entendiendo…' : 'Listo'}
+              </button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  className={smallButton}
+                  disabled={parse.isPending}
+                  onClick={() => startEditing('review')}
+                >
+                  <Pencil aria-hidden="true" className="size-3.5" /> Editar
+                </button>
+                {speech.supported && (
+                  <button
+                    type="button"
+                    className={smallButton}
+                    disabled={parse.isPending}
+                    onClick={startListening}
+                  >
+                    <RotateCcw aria-hidden="true" className="size-3.5" /> Volver a grabar
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={smallButton}
+                  disabled={parse.isPending}
+                  onClick={discard}
+                >
+                  <Trash2 aria-hidden="true" className="size-3.5" /> Eliminar
+                </button>
+              </div>
+            </>
+          }
         />
-        <SpeechBubble tip="up" from="you" className="mt-3" aria-label="Lo que dijiste">
-          <p className="text-[14px] font-bold text-text-muted">Te escuché decir:</p>
-          <p className="mt-0.5 break-words">“{text}”</p>
-        </SpeechBubble>
-        {parseError && (
-          <p role="alert" className="mt-2 text-center text-[15px] font-semibold text-expense">
-            {parseError}
-          </p>
-        )}
-        <p aria-live="polite" className="mt-2 min-h-5 text-center text-[15px] text-text-muted">
-          {parse.isPending ? 'Entendiendo…' : online ? '' : OFFLINE_MESSAGE}
-        </p>
-        <div className="mt-1 flex justify-center">
-          <Button
-            variant="dark"
-            className="!h-12 !w-full max-w-[260px]"
-            disabled={busy || dataLoading}
-            onClick={submitText}
-          >
-            {parse.isPending ? 'Entendiendo…' : 'Listo'}
-          </Button>
-        </div>
-        <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-          <button
-            type="button"
-            className={smallButton}
-            disabled={parse.isPending}
-            onClick={() => startEditing('review')}
-          >
-            <Pencil aria-hidden="true" className="size-3.5" /> Editar
-          </button>
-          {speech.supported && (
-            <button
-              type="button"
-              className={smallButton}
-              disabled={parse.isPending}
-              onClick={startListening}
-            >
-              <RotateCcw aria-hidden="true" className="size-3.5" /> Volver a grabar
-            </button>
-          )}
-          <button
-            type="button"
-            className={smallButton}
-            disabled={parse.isPending}
-            onClick={discard}
-          >
-            <Trash2 aria-hidden="true" className="size-3.5" /> Eliminar
-          </button>
-        </div>
-      </BottomSheet>
+      </VoiceFrame>
     )
   }
 
-  // idle: the cat greets, or listens while the microphone is on.
+  // idle: Moni greets, or listens while the microphone is on (screen 10).
   const failed = speech.error !== null
   return (
-    <BottomSheet title="Carga por voz" onClose={onClose}>
-      <div className="flex flex-col items-center">
-        {listening ? (
-          <SpeechBubble
-            tip="down"
-            from="you"
-            aria-live="polite"
-            aria-label="Lo que se va entendiendo"
-            className="max-h-36 [&>div]:max-h-36 [&>div]:overflow-y-auto"
-          >
-            <p className="break-words">
-              {text !== '' ? text : <span className="text-text-muted">Te escucho…</span>}
-            </p>
-          </SpeechBubble>
-        ) : (
-          <SpeechBubble tip="down" role="status" aria-live="polite">
-            {speech.error
-              ? SPEECH_MESSAGES[speech.error]
-              : notHeard
-                ? SPEECH_MESSAGES.no_speech
-                : '¡Hola! Contame qué gastaste o cobraste'}
-          </SpeechBubble>
-        )}
-        <MoniFortuneCat
-          mode={listening ? 'listening' : undefined}
-          pulse={text.length}
-          className="mt-3 w-[clamp(170px,56vw,230px)]"
-        />
-        {listening && (
-          <p className="flex items-center gap-2 text-[15px] font-bold text-text-muted">
-            <span
-              aria-hidden="true"
-              className="size-2.5 rounded-full bg-expense motion-safe:animate-pulse"
-            />
-            Escuchando…
-          </p>
-        )}
-      </div>
-
-      {listening ? (
-        <div className="mt-3 flex flex-col items-center gap-2">
-          {/* Ends the dictation now: no need to wait for the pause. What was heard shows up to review. */}
-          <Button
-            variant="dark"
-            className="!h-12 !w-full max-w-[260px]"
-            disabled={text.trim() === ''}
-            onClick={speech.stop}
-          >
-            Listo
-          </Button>
-          <button
-            type="button"
-            className={smallButton}
-            aria-label="Cancelar escucha"
-            onClick={discard}
-          >
-            Cancelar
-          </button>
-        </div>
-      ) : (
-        !checkingMic && (
-          <div className="mt-3 flex flex-wrap justify-center gap-2">
-            {failed || notHeard ? (
+    <VoiceFrame title="Carga por voz" onClose={onClose}>
+      <VoiceLayout
+        top={
+          <>
+            <Mascot />
+            {listening ? (
               <>
-                <Button
-                  variant="dark"
-                  className="!h-11 !w-auto px-5 text-[16px]"
-                  onClick={() => startEditing('idle')}
-                >
+                <p aria-live="polite" className={labelClass}>
+                  Te escucho…
+                </p>
+                {text !== '' && (
+                  <p
+                    aria-live="polite"
+                    aria-label="Lo que se va entendiendo"
+                    className={cn(transcriptClass, 'max-h-36 overflow-y-auto')}
+                  >
+                    “{text}”
+                  </p>
+                )}
+                <AudioWave />
+              </>
+            ) : (
+              <p
+                role="status"
+                aria-live="polite"
+                className="max-w-[300px] text-center text-[20px] font-medium leading-[1.25] tracking-[-0.02em]"
+              >
+                {speech.error
+                  ? SPEECH_MESSAGES[speech.error]
+                  : notHeard
+                    ? SPEECH_MESSAGES.no_speech
+                    : '¡Hola! Contame qué gastaste o cobraste'}
+              </p>
+            )}
+          </>
+        }
+        bottom={
+          listening ? (
+            <>
+              {/* Ends the dictation now: no need to wait for the pause. What was heard shows up to review. */}
+              <button
+                type="button"
+                className={mainButton}
+                disabled={text.trim() === ''}
+                onClick={speech.stop}
+              >
+                Listo
+              </button>
+              <button
+                type="button"
+                className={smallButton}
+                aria-label="Cancelar escucha"
+                onClick={discard}
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            !checkingMic &&
+            (failed || notHeard ? (
+              <>
+                <button type="button" className={mainButton} onClick={() => startEditing('idle')}>
                   Escribir
-                </Button>
+                </button>
                 {speech.supported && speech.error !== 'denied' && (
                   <button type="button" className={smallButton} onClick={startListening}>
                     <Mic aria-hidden="true" className="size-4" /> Probar de nuevo
@@ -382,21 +409,17 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
               </>
             ) : (
               <>
-                <Button
-                  variant="dark"
-                  className="!h-11 !w-auto px-5 text-[16px]"
-                  onClick={startListening}
-                >
-                  <Mic aria-hidden="true" className="mr-2 size-5" /> Activar micrófono
-                </Button>
+                <button type="button" className={mainButton} onClick={startListening}>
+                  <Mic aria-hidden="true" className="size-5" /> Activar micrófono
+                </button>
                 <button type="button" className={smallButton} onClick={() => startEditing('idle')}>
                   <Pencil aria-hidden="true" className="size-3.5" /> Prefiero escribir
                 </button>
               </>
-            )}
-          </div>
-        )
-      )}
-    </BottomSheet>
+            ))
+          )
+        }
+      />
+    </VoiceFrame>
   )
 }
