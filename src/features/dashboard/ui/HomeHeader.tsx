@@ -95,7 +95,7 @@ export function HomeHeader({
               <span
                 data-plus-badge
                 aria-hidden="true"
-                className="pointer-events-none absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-gold px-1.5 indent-[0.08em] text-[10px] font-extrabold leading-4 tracking-[0.08em] text-forest shadow-sm ring-2 ring-forest"
+                className="pointer-events-none absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-gold px-1.5 indent-[0.08em] text-[10px] font-extrabold leading-4 tracking-[0.08em] text-on-bright shadow-sm ring-2 ring-forest"
               >
                 ✦ PLUS
               </span>
@@ -105,7 +105,7 @@ export function HomeHeader({
               initial={initial}
               alt="Tu foto de perfil"
               className="size-11"
-              fallbackClassName="bg-lime font-display text-lg font-extrabold text-forest"
+              fallbackClassName="bg-lime font-display text-lg font-extrabold text-on-bright"
             />
           </Link>
         </div>

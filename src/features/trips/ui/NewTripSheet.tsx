@@ -100,7 +100,7 @@ function KindOptions({ onChoose }: { onChoose: (kind: 'personal' | 'grupo') => v
           onClick={() => onChoose(o.kind)}
           className="flex items-center gap-4 rounded-[24px] border-2 border-line bg-card p-4 text-left transition active:scale-[0.99]"
         >
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-forest text-cream dark:bg-lime dark:text-forest">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-forest text-cream dark:bg-lime dark:text-on-bright">
             <o.icon aria-hidden="true" className="size-6" />
           </span>
           <span>

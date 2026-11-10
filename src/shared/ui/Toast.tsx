@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={toast.id}
             className={cn(
               'pointer-events-auto flex items-center gap-3 rounded-full px-4 py-2 font-display text-base font-semibold shadow-lg motion-safe:animate-[fade-in_150ms_ease-out]',
-              toast.tone === 'error' ? 'bg-blush text-forest' : 'bg-forest text-cream',
+              toast.tone === 'error' ? 'bg-blush text-on-bright' : 'bg-forest text-cream',
             )}
           >
             {toast.mascotUrl && (

@@ -68,10 +68,10 @@ export function SinDatos({ note }: { note?: string }) {
 }
 
 const CHIP_TONES: Record<InactivityTone | 'neutral' | 'bad', string> = {
-  active: 'bg-lime text-forest',
+  active: 'bg-lime text-on-bright',
   recent: 'bg-sand text-ink',
-  idle: 'bg-gold text-forest',
-  inactive: 'bg-blush text-forest',
+  idle: 'bg-gold text-on-bright',
+  inactive: 'bg-blush text-on-bright',
   neutral: 'bg-sand text-ink',
   bad: 'bg-lacquer text-white',
 }

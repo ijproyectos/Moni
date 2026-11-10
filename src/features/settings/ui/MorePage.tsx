@@ -366,13 +366,13 @@ export function MorePage() {
             initial={initial}
             alt="Tu foto de perfil"
             className="size-[72px] shrink-0"
-            fallbackClassName="bg-[#f4f3e4] font-display text-3xl font-extrabold text-forest"
+            fallbackClassName="bg-[#f4f3e4] font-display text-3xl font-extrabold text-on-bright"
           />
           <div className="min-w-0 flex-1">
             {isLoading ? (
               <p className="text-text-muted-on-dark">Cargando perfil…</p>
             ) : isError ? (
-              <p className="text-blush">No pudimos cargar tu perfil.</p>
+              <p className="text-expense-on-dark">No pudimos cargar tu perfil.</p>
             ) : (
               <p className="truncate font-display text-[24px] font-extrabold leading-8">
                 {displayName}
@@ -476,7 +476,7 @@ function PlainCard({
       <span>
         <Icon
           aria-hidden="true"
-          className="mb-2 size-7 text-forest dark:text-lime"
+          className="mb-2 size-7 text-mint-ink dark:text-lime"
           strokeWidth={2}
         />
         <span className="block text-[15px] leading-5 text-text-muted">{subtitle}</span>

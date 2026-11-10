@@ -104,7 +104,7 @@ function AntsContent({
             {formatArs(data.monthTotalCents)}
           </p>
           {pct !== null && (
-            <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[15px] font-extrabold text-forest">
+            <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[15px] font-extrabold text-on-bright">
               {pct >= 0 ? (
                 <ArrowUp aria-hidden="true" className="size-4" />
               ) : (

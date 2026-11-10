@@ -97,7 +97,7 @@ export function AddActionMenu({
                 {action.label}
               </span>
               {action.badge && (
-                <span className="-mt-1.5 rounded-full bg-gold px-2 py-0.5 text-[12px] font-extrabold leading-4 text-forest">
+                <span className="-mt-1.5 rounded-full bg-gold px-2 py-0.5 text-[12px] font-extrabold leading-4 text-on-bright">
                   {action.badge}
                 </span>
               )}

@@ -202,7 +202,7 @@ describe('HomeHeader: Dinero disponible + Gastos e Ingresos', () => {
       expect(profile).toHaveAttribute('href', '/perfil')
       const badge = profile.querySelector('[data-plus-badge]')
       expect(badge).toHaveTextContent('✦ PLUS')
-      expect(badge).toHaveClass('bg-gold', 'text-forest', 'pointer-events-none')
+      expect(badge).toHaveClass('bg-gold', 'text-on-bright', 'pointer-events-none')
       // The photo or initial is still there, not replaced by the badge.
       expect(profile).toHaveTextContent('I')
     })

@@ -113,7 +113,7 @@ export function PersonalTripPage() {
         <p
           className={
             summary.overBudget
-              ? 'mt-3 text-[17px] font-extrabold text-blush'
+              ? 'mt-3 text-[17px] font-extrabold text-expense-on-dark'
               : 'mt-3 text-[17px] font-extrabold'
           }
         >
@@ -123,7 +123,7 @@ export function PersonalTripPage() {
         </p>
         {summary.perDayCents > 0 && (
           <div className="mt-3 flex gap-3 rounded-[18px] bg-surface p-4 text-[16px] leading-6">
-            <MoniGlyph className="mt-0.5 shrink-0 text-lime" />
+            <MoniGlyph className="mt-0.5 shrink-0 text-cream" />
             <p>
               {summary.status === 'upcoming' ? 'Para cada uno de los ' : 'Podés gastar unos '}
               <strong className="font-extrabold">

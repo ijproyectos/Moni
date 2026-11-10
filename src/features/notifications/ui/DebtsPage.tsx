@@ -43,18 +43,18 @@ export function DebtsPage() {
           Tu saldo en grupos
         </p>
         <p
-          className={`font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight ${net >= 0 ? 'text-lime' : 'text-blush'}`}
+          className={`font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight ${net >= 0 ? 'text-cream' : 'text-expense-on-dark'}`}
         >
           {formatArs(net, { signed: true })}
         </p>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div className="rounded-[16px] bg-surface px-3 py-2">
             <p className="text-[14px] text-text-muted-on-dark">Debés</p>
-            <p className="text-[19px] font-extrabold text-blush">{formatArs(owe)}</p>
+            <p className="text-[19px] font-extrabold text-expense-on-dark">{formatArs(owe)}</p>
           </div>
           <div className="rounded-[16px] bg-surface px-3 py-2">
             <p className="text-[14px] text-text-muted-on-dark">Te deben</p>
-            <p className="text-[19px] font-extrabold text-lime">{formatArs(owed)}</p>
+            <p className="text-[19px] font-extrabold text-cream">{formatArs(owed)}</p>
           </div>
         </div>
       </section>

@@ -155,7 +155,7 @@ export function AssistantConversation({
               type="submit"
               aria-label="Enviar"
               disabled={chat.isPending || !isSendable(draft)}
-              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-forest text-cream disabled:opacity-60 dark:bg-lime dark:text-forest"
+              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-forest text-cream disabled:opacity-60 dark:bg-lime dark:text-on-bright"
             >
               <Send aria-hidden="true" className="size-5" />
             </button>

@@ -213,7 +213,7 @@ export function InstallmentsPage() {
         </p>
         {analysis ? (
           <>
-            <p className="mt-2 font-display text-[26px] font-extrabold leading-8 text-lime">
+            <p className="mt-2 font-display text-[26px] font-extrabold leading-8 text-cream">
               {VERDICT_TITLE[analysis.verdict]}
             </p>
             <div className="mt-2 flex flex-col gap-2 text-[16px] leading-6 text-text-muted-on-dark">
@@ -224,7 +224,7 @@ export function InstallmentsPage() {
           </>
         ) : selected?.kind === 'aguinaldo' ? (
           <>
-            <p className="mt-2 font-display text-[26px] font-extrabold leading-8 text-lime">
+            <p className="mt-2 font-display text-[26px] font-extrabold leading-8 text-cream">
               Con el aguinaldo ahorrás {formatArs(saving)}
             </p>
             <p className="mt-2 text-[16px] leading-6 text-text-muted-on-dark">
@@ -388,7 +388,7 @@ function AddOptionSheet({
             </p>
             <p className="flex justify-between text-[17px]">
               <span>Pagás de más</span>
-              <strong className="font-extrabold text-lime">{formatArs(Math.max(0, extra))}</strong>
+              <strong className="font-extrabold text-cream">{formatArs(Math.max(0, extra))}</strong>
             </p>
             <p className="mt-1 text-[14px] text-text-muted-on-dark">
               {Math.round((extra / price) * 100)}% más que de contado · unos{' '}

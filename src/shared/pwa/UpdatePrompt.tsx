@@ -45,7 +45,7 @@ export function UpdatePrompt() {
         <button
           type="button"
           onClick={() => void applyUpdate.current?.()}
-          className="min-h-9 rounded-full bg-lime px-4 font-extrabold text-forest"
+          className="min-h-9 rounded-full bg-lime px-4 font-extrabold text-on-bright"
         >
           Actualizar
         </button>

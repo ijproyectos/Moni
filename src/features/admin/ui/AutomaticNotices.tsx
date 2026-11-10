@@ -22,7 +22,7 @@ export function AutomaticNotices() {
   return (
     <PanelCard title="Avisos automáticos">
       {!state.cron_configured && (
-        <p role="alert" className="rounded-2xl bg-gold p-3 text-[14px] font-semibold text-forest">
+        <p role="alert" className="rounded-2xl bg-gold p-3 text-[14px] font-semibold text-on-bright">
           Falta cargar el secreto del cron: hasta entonces los avisos automáticos no salen. Los
           pasos están en docs/PUSH.md.
         </p>

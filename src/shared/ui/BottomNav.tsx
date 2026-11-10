@@ -26,7 +26,7 @@ function NavTab({ to, label, end }: NavItem) {
       className={({ isActive }) =>
         cn(
           'flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-full px-1.5 font-display text-[13px] font-bold transition-colors min-[340px]:px-2 min-[340px]:text-[14px] min-[380px]:px-3.5 min-[380px]:text-[16px]',
-          isActive ? 'bg-ink text-cream dark:bg-lime dark:text-forest' : 'text-text-muted',
+          isActive ? 'bg-ink text-cream dark:bg-lime dark:text-on-bright' : 'text-text-muted',
         )
       }
     >

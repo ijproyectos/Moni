@@ -462,7 +462,7 @@ export function SharedExpenseForm({
                     aria-hidden="true"
                     className={cn(
                       'flex size-7 shrink-0 items-center justify-center rounded-[8px] border-2 peer-focus-visible:ring-2 peer-focus-visible:ring-gold',
-                      checked ? 'border-ink bg-forest text-lime' : 'border-line bg-card',
+                      checked ? 'border-ink bg-forest text-cream' : 'border-line bg-card',
                     )}
                   >
                     {checked && <Check className="size-4" strokeWidth={3} />}

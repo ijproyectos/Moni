@@ -63,7 +63,7 @@ export function PersonalTripCard({
         label={`Gastado del presupuesto de ${trip.name}`}
       />
       {summary.overBudget && (
-        <p className={`mt-2 text-[14px] font-extrabold ${ended ? 'text-expense' : 'text-blush'}`}>
+        <p className={`mt-2 text-[14px] font-extrabold ${ended ? 'text-expense' : 'text-expense-on-dark'}`}>
           Te pasaste {formatArs(-summary.remainingCents)} del presupuesto
         </p>
       )}

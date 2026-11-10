@@ -321,7 +321,7 @@ export function GroupDetailPage() {
                 <button
                   type="button"
                   onClick={() => setSheet({ type: 'settle' })}
-                  className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-forest text-[17px] font-extrabold text-cream dark:bg-lime dark:text-forest"
+                  className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-forest text-[17px] font-extrabold text-cream dark:bg-lime dark:text-on-bright"
                 >
                   <Check aria-hidden="true" className="size-5" /> Registrar un pago
                 </button>
@@ -574,7 +574,7 @@ export function GroupDetailPage() {
       <div className="h-20" aria-hidden="true" />
       {undo && (
         <div className="fixed inset-x-0 bottom-24 z-40 mx-auto flex w-full max-w-[398px] items-center gap-3 rounded-full bg-forest py-2 pl-5 pr-2 text-cream shadow-lg">
-          <Check aria-hidden="true" className="size-5 text-lime" />
+          <Check aria-hidden="true" className="size-5 text-cream" />
           <span className="flex-1 text-[16px] font-extrabold">Gasto eliminado</span>
           <button
             type="button"
@@ -587,7 +587,7 @@ export function GroupDetailPage() {
                   toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert }),
                 )
             }}
-            className="rounded-full bg-forest px-4 py-2 text-[15px] font-extrabold text-cream dark:bg-lime dark:text-forest"
+            className="rounded-full bg-forest px-4 py-2 text-[15px] font-extrabold text-cream dark:bg-lime dark:text-on-bright"
           >
             Deshacer
           </button>

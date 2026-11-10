@@ -74,7 +74,7 @@ function ProfilePhoto({
         initial={initial}
         alt="Tu foto de perfil"
         className={box}
-        fallbackClassName="bg-forest font-display font-extrabold text-lime ring-4 ring-lime/60 ring-offset-2 ring-offset-canvas"
+        fallbackClassName="bg-forest font-display font-extrabold text-cream ring-4 ring-lime/60 ring-offset-2 ring-offset-canvas"
       />
       <button
         type="button"

@@ -67,7 +67,7 @@ export function QuickAdd() {
       id: 'photo',
       label: 'Sacar foto',
       icon: Camera,
-      circle: 'bg-[#bfd6b3] text-forest',
+      circle: 'bg-[#bfd6b3] text-on-bright',
       disabled: !online,
       badge: isFree ? 'Plus' : undefined,
       onSelect: () => {
@@ -80,7 +80,7 @@ export function QuickAdd() {
       id: 'voice',
       label: 'Por voz',
       icon: Mic,
-      circle: 'bg-[#eceed9] text-forest',
+      circle: 'bg-[#eceed9] text-on-bright',
       disabled: !online,
       badge: isFree ? 'Plus' : undefined,
       onSelect: () => {

@@ -50,7 +50,7 @@ export function MonthReportPage() {
         </div>
         <p className="mt-4 text-[17px] text-text-muted-on-dark">Gastaste en el mes</p>
         <p className="flex items-baseline gap-1 font-display font-extrabold">
-          <span className="text-[32px] text-blush">-$</span>
+          <span className="text-[32px] text-expense-on-dark">-$</span>
           {data ? (
             <AmountDisplay
               cents={data.expenseCents}
@@ -131,7 +131,7 @@ export function MonthReportPage() {
               const Icon = ACCOUNT_ICONS[a.kind] ?? CreditCard
               return (
                 <li key={a.id} className="flex items-center gap-3 py-2.5 text-[17px]">
-                  <Icon aria-hidden="true" className="size-5 text-lime" />
+                  <Icon aria-hidden="true" className="size-5 text-cream" />
                   <span className="flex-1 font-extrabold">{a.name}</span>
                   <AmountDisplay cents={a.balanceCents} className="font-extrabold" />
                 </li>

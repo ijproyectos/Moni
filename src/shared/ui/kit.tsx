@@ -174,7 +174,7 @@ export function MoniCalcCard({
         <p
           className={cn(
             'text-[13px] font-extrabold uppercase tracking-[0.1em]',
-            dark ? 'text-lime' : 'text-text-muted',
+            dark ? 'text-cream' : 'text-text-muted',
           )}
         >
           {label}
@@ -399,7 +399,7 @@ export function CheckDot({ checked, className }: { checked: boolean; className?:
       aria-hidden="true"
       className={cn(
         'flex size-7 shrink-0 items-center justify-center rounded-full border-2',
-        checked ? 'border-ink bg-forest text-lime' : 'border-line bg-card',
+        checked ? 'border-ink bg-forest text-cream' : 'border-line bg-card',
         className,
       )}
     >
@@ -426,7 +426,7 @@ export function HeaderAddButton({
   to?: string
 }) {
   const cls =
-    'flex size-12 shrink-0 items-center justify-center rounded-full bg-forest text-cream shadow-sm dark:bg-lime dark:text-forest'
+    'flex size-12 shrink-0 items-center justify-center rounded-full bg-forest text-cream shadow-sm dark:bg-lime dark:text-on-bright'
   const icon = (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="size-7">
       <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />

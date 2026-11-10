@@ -44,12 +44,12 @@ export function WelcomePage() {
         <Coin variant="hole" className="absolute left-[337px] top-[284px] size-5" />
         <Coin className="absolute left-[29px] top-[402px] size-[34px]" />
 
-        <h1 className="mt-[24px] text-center font-display text-[38px] font-extrabold uppercase leading-[40px] text-lime">
+        <h1 className="mt-[24px] text-center font-display text-[38px] font-extrabold uppercase leading-[40px] text-cream">
           Tu plata,
           <br />
           bajo control
         </h1>
-        <p className="mx-auto mt-[16px] -rotate-3 bg-gold px-4 py-2 font-display text-xl font-extrabold uppercase leading-none text-forest">
+        <p className="mx-auto mt-[16px] -rotate-3 bg-gold px-4 py-2 font-display text-xl font-extrabold uppercase leading-none text-on-bright">
           Sin vueltas
         </p>
 
@@ -58,12 +58,12 @@ export function WelcomePage() {
             type="button"
             onClick={handleSignIn}
             disabled={isRedirecting}
-            className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-lime to-[#d6ecc8] font-display text-[17px] font-extrabold text-forest transition active:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-lime to-[#d6ecc8] font-display text-[17px] font-extrabold text-on-bright transition active:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Registrarse
             <span
               aria-hidden="true"
-              className="flex size-7 items-center justify-center rounded-full bg-forest text-lime"
+              className="flex size-7 items-center justify-center rounded-full bg-forest text-cream"
             >
               <ArrowRight className="size-4" strokeWidth={2.5} />
             </span>
@@ -77,12 +77,12 @@ export function WelcomePage() {
             Ya tengo cuenta
           </button>
           {suspended && (
-            <p role="alert" className="text-center text-sm text-blush">
+            <p role="alert" className="text-center text-sm text-expense-on-dark">
               {SUSPENDED_MESSAGE}
             </p>
           )}
           {error && (
-            <p role="alert" className="text-center text-sm text-blush">
+            <p role="alert" className="text-center text-sm text-expense-on-dark">
               {error}
             </p>
           )}

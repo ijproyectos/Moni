@@ -9,7 +9,7 @@ export function AssistantPage() {
   return (
     <Page>
       <PageHeader title="Asistente" fallbackTo="/este-mes" />
-      <section className="flex items-center gap-3 rounded-[24px] bg-cream p-4 text-forest">
+      <section className="flex items-center gap-3 rounded-[24px] bg-cream p-4 text-on-bright">
         <MoniCat className="w-20 shrink-0" />
         <div className="flex-1">
           <h2 className="text-[20px] font-extrabold">Preguntale a Moni</h2>

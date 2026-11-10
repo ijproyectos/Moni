@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#163832" />
+    <meta name="theme-color" content="#1b7f53" />
     <meta name="color-scheme" content="light dark" />
     <script>
       // Applies the saved appearance before the first paint (no light flash in dark mode).
@@ -21,7 +21,7 @@
               window.matchMedia('(prefers-color-scheme: dark)').matches)
           if (dark) document.documentElement.classList.add('dark')
           var meta = document.querySelector('meta[name="theme-color"]')
-          if (meta) meta.setAttribute('content', dark ? '#051f20' : '#163832')
+          if (meta) meta.setAttribute('content', dark ? '#0e1a13' : '#1b7f53')
         } catch (e) {}
       })()
     </script>

@@ -13,7 +13,7 @@ const C = {
   income: '#2f7d1f',
   expense: '#b8321f',
 }
-const FONT = 'Nunito, ui-rounded, system-ui, sans-serif'
+const FONT = "'Bricolage Grotesque Variable', system-ui, sans-serif"
 const W = 1080
 const PAD = 56
 const INNER = W - PAD * 2
@@ -50,8 +50,8 @@ interface Block {
 
 /** A neat PNG of the whole summary, drawn straight on a canvas (no extra libraries). */
 export async function renderSummaryImage(model: SummaryModel): Promise<Blob> {
-  await document.fonts?.load(`800 36px Nunito`).catch(() => undefined)
-  await document.fonts?.load(`400 30px Nunito`).catch(() => undefined)
+  await document.fonts?.load(`800 36px 'Bricolage Grotesque Variable'`).catch(() => undefined)
+  await document.fonts?.load(`400 30px 'Bricolage Grotesque Variable'`).catch(() => undefined)
   const mascot = await loadImage(mascotUrl)
   const measure = document.createElement('canvas').getContext('2d')
   if (!measure) throw new Error('canvas_unavailable')

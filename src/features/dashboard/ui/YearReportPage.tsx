@@ -107,7 +107,7 @@ export function YearReportPage() {
                 className="relative flex h-full flex-1 flex-col items-center justify-end"
               >
                 {isTop && (
-                  <span className="absolute -top-6 whitespace-nowrap text-[14px] font-extrabold text-gold">
+                  <span className="absolute -top-6 whitespace-nowrap text-[14px] font-extrabold text-cream">
                     {formatArs(t.cents)}
                   </span>
                 )}

@@ -79,7 +79,7 @@ export function DeniedScreen({
       <p className="text-[15px]">
         Sesión iniciada como <strong>{email ?? 'una cuenta sin email'}</strong>.
       </p>
-      <p role="alert" className="rounded-xl bg-blush px-4 py-3 text-[15px] font-bold text-forest">
+      <p role="alert" className="rounded-xl bg-blush px-4 py-3 text-[15px] font-bold text-on-bright">
         {REASONS[reason]}
       </p>
       <Button

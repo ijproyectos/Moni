@@ -8,43 +8,74 @@
 @theme {
   --color-*: initial;
 
+  /*
+   * "Menta pop" identity (design handoff, Design Tokens). Existing token names keep their ROLE and only change value:
+   * `forest`/`surface` are the mint fills (hero card, primary button), `canvas` the app background, `card` white.
+   * Contrast notes (WCAG 2.x): the handoff mint #1f8a5b gives 4.33:1 with white, below AA for small text, so the
+   * fills that carry text use #1b7f53 (white 4.99:1) and #17734b (white 5.85:1); #1f8a5b stays available as `mint`
+   * for large/decorative use (3.91:1 on canvas, fine for non-text and large text).
+   */
+
   /* Primary palette */
-  --color-forest: #163832;
-  --color-lime: #8eb69b;
-  --color-cream: #daf1de;
-  --color-gold: #f0b43c;
+  --color-forest: #1b7f53;
+  /* Light accent for fills (avatars, tracks, chips) with dark text. Text on mint fills uses `cream` (see below). */
+  --color-lime: #9addb6;
+  /* Text on the mint fills (white-ish: 4.75:1 on forest, 5.56:1 on surface). */
+  --color-cream: #f4fbf6;
+  --color-gold: #ffe58a;
 
   /* Secondary & interface */
   --color-blush: #f2c3b8;
   --color-lacquer: #e5533d;
-  --color-canvas: #eef7f0;
-  --color-surface: #235347;
-  --color-text-muted: #44655a;
-  --color-text-muted-on-dark: #b7d4bf;
+  --color-canvas: #eef5ef;
+  --color-surface: #17734b;
+  --color-text-muted: #5d6e63;
+  /* On the mint fills: 4.56:1 on forest. */
+  --color-text-muted-on-dark: #eaf8ef;
   --color-white: #ffffff;
-  --color-sand: #ddede1;
+  --color-sand: #e6ede8;
   /* Semantic roles that flip in the dark theme. `forest`, `lime`, `gold`, `blush`, `cream` are fixed brand
      fills; use `ink` for text/borders on neutral surfaces and `card` for raised white surfaces. */
-  --color-ink: #051f20;
-  --color-card: #f7fbf8;
-  --color-line: #c6dece;
-  --color-track: #bdd7c5;
-  --color-placeholder: #7f9d8d;
-  --color-expense: #b23b2e;
-  --color-income: #1f6b52;
-  /* Expense and income on the dark green fills (header card): same hues the dark theme uses on neutral surfaces. */
-  --color-expense-on-dark: #ff8f7e;
-  --color-income-on-dark: #9be0b5;
-  --color-scrim: rgb(5 31 32 / 0.55);
+  --color-ink: #112218;
+  /* Dark text that stays dark in both themes, for text on the bright fills (gold, blush, lime, cream). */
+  --color-on-bright: #0e1a13;
+  --color-card: #ffffff;
+  --color-line: #e7efe9;
+  --color-track: #e1ebe4;
+  --color-placeholder: #647369;
+  --color-expense: #9e2f24;
+  --color-income: #17734b;
+  /* Expense and income on the mint fills (hero card): 4.53:1 and 4.53:1 on forest. */
+  --color-expense-on-dark: #fff1ee;
+  --color-income-on-dark: #ddfbe8;
+  --color-scrim: rgb(17 34 24 / 0.55);
   /* Soft fills for icon tiles, tags and callouts; they flip with the theme. */
-  --color-tint-green: #daf1de;
-  --color-tint-gold: #f5e9c8;
-  --color-tint-red: #f6dcd0;
-  --color-tint-teal: #cde6da;
-  --color-tint-blue: #d8e5f1;
-  --color-tint-violet: #eae0f4;
+  --color-tint-green: #d3efdf;
+  --color-tint-gold: #fff0b8;
+  --color-tint-red: #f6deda;
+  --color-tint-teal: #d5ebe2;
+  --color-tint-blue: #e0ecf7;
+  --color-tint-violet: #ece8fa;
   --color-transparent: transparent;
   --color-current: currentColor;
+
+  /* Menta pop additions (purely additive) */
+  --color-mint: #1f8a5b;
+  --color-mint-ink: #17734b;
+  --color-mint-soft: #d3efdf;
+  --color-lilac: #c9bdf7;
+  --color-lilac-ink: #211a4a;
+  --color-lilac-soft: #ece8fa;
+  --color-sun: #ffe58a;
+  --color-sun-soft: #fff0b8;
+  --color-chip: #e6ede8;
+  --color-seg-track: #e1ebe4;
+  --color-ok-bg: #cff3dc;
+  --color-ok-ink: #0f5a36;
+  --color-warn-bg: #fff0b8;
+  --color-warn-ink: #5a4300;
+  --color-bad-bg: #f6deda;
+  --color-bad-ink: #9e2f24;
 
   /* Category data colors */
   --color-category-food: #e5533d;
@@ -54,9 +85,9 @@
   --color-category-subscriptions: #8a6bd1;
   --color-category-home: #6dbe3a;
 
-  /* Typography */
-  --font-display: 'Nunito', ui-rounded, system-ui, sans-serif;
-  --font-body: 'Nunito', ui-sans-serif, system-ui, sans-serif;
+  /* Typography: Bricolage Grotesque for everything (variable font, imported in main.tsx). */
+  --font-display: 'Bricolage Grotesque Variable', system-ui, sans-serif;
+  --font-body: 'Bricolage Grotesque Variable', system-ui, sans-serif;
 
   /* Radii */
   --radius-sm: 12px;
@@ -64,41 +95,60 @@
   --radius-lg: 20px;
   --radius-xl: 24px;
   --radius-2xl: 28px;
+  --radius-card: 26px;
+  --radius-hero: 30px;
 }
 
 /*
- * Dark theme: only the semantic tokens are redefined. The class is set on <html> by the inline script in
- * index.html (before first paint) and kept in sync by src/features/settings/ui/useTheme.
+ * Dark theme ("Menta oscura"): only the semantic tokens are redefined. The class is set on <html> by the inline script
+ * in index.html (before first paint) and kept in sync by src/features/settings/ui/useTheme.
  */
 html.dark {
   color-scheme: dark;
-  --color-canvas: #051f20;
-  --color-card: #0b2b26;
-  --color-sand: #163832;
-  --color-ink: #daf1de;
-  --color-line: #235347;
-  --color-track: #1d4a3f;
-  --color-placeholder: #6f9484;
-  --color-text-muted: #8eb69b;
-  --color-expense: #ff8f7e;
-  --color-income: #9be0b5;
+  --color-canvas: #0e1a13;
+  --color-card: #16261c;
+  --color-sand: #1d3226;
+  --color-ink: #e6f2ea;
+  --color-line: #24382b;
+  --color-track: #2a4132;
+  --color-placeholder: #7f9487;
+  --color-text-muted: #9bb0a3;
+  --color-expense: #ff9a8a;
+  --color-income: #6fd3a0;
   --color-scrim: rgb(0 0 0 / 0.65);
-  --color-tint-green: #163832;
+  --color-tint-green: #1b3a2a;
   --color-tint-gold: #2b2616;
   --color-tint-red: #2d1d19;
-  --color-tint-teal: #0f3330;
+  --color-tint-teal: #12322c;
   --color-tint-blue: #17232d;
   --color-tint-violet: #231d2e;
+  --color-mint-ink: #6fd3a0;
+  --color-mint-soft: #1b3a2a;
+  --color-lilac-soft: #231d2e;
+  --color-chip: #1d3226;
+  --color-seg-track: #1a2c20;
+  --color-ok-bg: #123a27;
+  --color-ok-ink: #8fe0b4;
+  --color-warn-bg: #3a2f10;
+  --color-warn-ink: #ffe58a;
+  --color-bad-bg: #3a1d19;
+  --color-bad-ink: #ff9a8a;
   --color-category-groceries: #8eb69b;
   --cat-lift: 45%;
   --cat-sink: 0%;
 }
 
-/* Bright brand fills keep dark text in both themes, including descendants that use the neutral tokens. */
+/*
+ * Bright brand fills keep dark text in both themes, including descendants that use the neutral tokens. In the dark theme the
+ * solid lime fill is the Menta oscura mint (#2fb27a, 6.61:1 with #0e1a13); opacity variants (bg-lime/30) are unaffected.
+ */
 html.dark :is(.bg-lime, .bg-gold, .bg-blush, .bg-cream, .bg-lacquer) {
-  --color-ink: #051f20;
-  --color-text-muted: #3e5f55;
-  color: #051f20;
+  --color-ink: #0e1a13;
+  --color-text-muted: #1c3326;
+  color: #0e1a13;
+}
+html.dark .bg-lime {
+  background-color: #2fb27a;
 }
 
 @keyframes sheet-in {

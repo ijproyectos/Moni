@@ -54,8 +54,8 @@ export default defineConfig({
         display: 'standalone',
         // Brand forest for the install UI and the splash (the manifest cannot vary by theme; the page itself
         // updates <meta name="theme-color"> at runtime, see src/features/settings/domain/theme.ts).
-        theme_color: '#163832',
-        background_color: '#163832',
+        theme_color: '#1b7f53',
+        background_color: '#1b7f53',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

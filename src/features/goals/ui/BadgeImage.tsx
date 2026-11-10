@@ -23,7 +23,7 @@ export function BadgeImage({
       <span
         aria-hidden="true"
         className={cn(
-          'flex items-center justify-center rounded-full border-4 border-forest bg-lime/60 text-forest',
+          'flex items-center justify-center rounded-full border-4 border-forest bg-lime/60 text-on-bright',
           locked && 'border-line bg-sand text-text-muted',
           className,
         )}

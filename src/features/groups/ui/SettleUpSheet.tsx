@@ -117,11 +117,11 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
         <div className="flex flex-col items-center rounded-[24px] bg-forest px-4 py-5 text-cream">
           <div className="flex items-center gap-3">
             <Avatar name={from} size="lg" />
-            <ChevronRight aria-hidden="true" className="size-6 text-lime" />
+            <ChevronRight aria-hidden="true" className="size-6 text-cream" />
             <Avatar name={to} size="lg" />
           </div>
           <p className="mt-2 text-[17px] text-text-muted-on-dark">{sentence}</p>
-          <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight text-lime">
+          <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight text-cream">
             {formatArs(transfer.amountCents)}
           </p>
         </div>

@@ -111,7 +111,7 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
           <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
             Pagado en {monthName}
           </p>
-          <p className="font-display text-[28px] font-extrabold leading-9 text-lime">
+          <p className="font-display text-[28px] font-extrabold leading-9 text-cream">
             {formatArs(paidInMonthCents(payments, today))}
           </p>
           <p className="text-[13px] text-text-muted-on-dark">

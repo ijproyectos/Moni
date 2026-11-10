@@ -45,7 +45,7 @@ export function OnboardingGoalsStep({
                   className={cn(
                     'flex size-7 shrink-0 items-center justify-center rounded-full border-2',
                     checked
-                      ? 'border-forest bg-forest text-cream dark:border-lime dark:bg-lime dark:text-forest'
+                      ? 'border-forest bg-forest text-cream dark:border-lime dark:bg-lime dark:text-on-bright'
                       : 'border-line',
                   )}
                 >

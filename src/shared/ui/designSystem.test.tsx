@@ -18,6 +18,11 @@ describe('shared design system', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
+  it('the secondary button is white and 48px tall', () => {
+    render(<Button variant="secondary">Cancelar</Button>)
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveClass('bg-white', 'h-12')
+  })
+
   it('a disabled button does not fire', async () => {
     const onClick = vi.fn()
     render(

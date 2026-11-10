@@ -47,7 +47,7 @@ export function ProPaywall({ onClose, onStartTrial, busy, error }: ProPaywallPro
               onClick={onClose}
               disabled={busy}
               aria-label="Cerrar"
-              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-cream text-forest"
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-cream text-on-bright"
             >
               <X aria-hidden="true" className="size-6" strokeWidth={2} />
             </button>
@@ -83,7 +83,7 @@ export function ProPaywall({ onClose, onStartTrial, busy, error }: ProPaywallPro
                   <span className="flex-1">{feature}</span>
                   <span
                     aria-hidden="true"
-                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-forest text-cream dark:bg-lime dark:text-forest"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-forest text-cream dark:bg-lime dark:text-on-bright"
                   >
                     <Check className="size-4" strokeWidth={3} />
                   </span>
@@ -115,7 +115,7 @@ export function ProPaywall({ onClose, onStartTrial, busy, error }: ProPaywallPro
                 )}
               >
                 {p.badge && (
-                  <span className="absolute -top-3 left-1/2 max-w-[calc(100%+4px)] -translate-x-1/2 truncate whitespace-nowrap rounded-full bg-gold px-1.5 py-0.5 text-[clamp(9px,2.9vw,11px)] font-extrabold uppercase text-forest min-[360px]:px-2">
+                  <span className="absolute -top-3 left-1/2 max-w-[calc(100%+4px)] -translate-x-1/2 truncate whitespace-nowrap rounded-full bg-gold px-1.5 py-0.5 text-[clamp(9px,2.9vw,11px)] font-extrabold uppercase text-on-bright min-[360px]:px-2">
                     {p.badge}
                   </span>
                 )}
@@ -146,7 +146,7 @@ export function ProPaywall({ onClose, onStartTrial, busy, error }: ProPaywallPro
           type="button"
           onClick={onStartTrial}
           disabled={busy}
-          className="mt-4 flex min-h-16 w-full flex-col items-center justify-center rounded-full bg-gradient-to-r from-forest to-surface py-2 text-cream disabled:opacity-60 dark:from-lime dark:to-[#c7f199] dark:text-forest"
+          className="mt-4 flex min-h-16 w-full flex-col items-center justify-center rounded-full bg-gradient-to-r from-forest to-surface py-2 text-cream disabled:opacity-60 dark:from-lime dark:to-[#c7f199] dark:text-on-bright"
         >
           <span className="text-[clamp(17px,5.2vw,19px)] font-extrabold leading-6">
             {plan.id === 'lifetime' ? 'Comprar Pro' : 'Empezar prueba gratis'}

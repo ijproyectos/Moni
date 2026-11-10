@@ -54,7 +54,7 @@ export function SavingsNotices({ className }: { className?: string }) {
               type="button"
               onClick={() => setAdding(r)}
               aria-label={`Agregar un aporte a ${r.goal.name}`}
-              className="min-h-12 rounded-full bg-forest px-6 font-display text-[17px] font-extrabold text-cream dark:bg-lime dark:text-forest"
+              className="min-h-12 rounded-full bg-forest px-6 font-display text-[17px] font-extrabold text-cream dark:bg-lime dark:text-on-bright"
             >
               Agregar un aporte
             </button>
