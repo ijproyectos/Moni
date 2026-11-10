@@ -1,0 +1,62 @@
+import { Link } from 'react-router'
+import { AmountDisplay } from '@/shared/ui/AmountDisplay'
+import { cn } from '@/shared/ui/cn'
+import { Kicker } from '@/shared/ui/Kicker'
+import type { Cents } from '@/shared/lib/money'
+
+export interface SharedBalance {
+  /** What the groups owe the person, in all. */
+  owedCents: Cents
+  /** What the person owes the groups, in all. */
+  oweCents: Cents
+}
+
+interface SharedExpensesCardProps {
+  shared: SharedBalance
+  /** Where "Dividir gasto" leads (the groups). */
+  to: string
+}
+
+/** Compact card of group expenses: what they owe the person (real balances only) and the way to split a new one. */
+export function SharedExpensesCard({ shared, to }: SharedExpensesCardProps) {
+  const { owedCents, oweCents } = shared
+  return (
+    <section
+      aria-label="Gastos compartidos"
+      className="mx-[18px] flex items-center gap-3 rounded-[26px] bg-card p-4"
+    >
+      <div className="min-w-0 flex-1">
+        <Kicker>Gastos compartidos</Kicker>
+        {owedCents > 0 ? (
+          <p className="mt-1 text-[13px] text-text-muted">
+            Te deben{' '}
+            <AmountDisplay
+              cents={owedCents}
+              signed
+              className="block font-display text-[19px] font-bold text-mint-ink"
+            />
+          </p>
+        ) : oweCents > 0 ? (
+          <p className="mt-1 text-[13px] text-text-muted">
+            Debés{' '}
+            <AmountDisplay
+              cents={oweCents}
+              className="block font-display text-[19px] font-bold text-ink"
+            />
+          </p>
+        ) : (
+          <p className="mt-1 text-[14px] text-text-muted">Sin saldos pendientes en tus grupos.</p>
+        )}
+      </div>
+      <Link
+        to={to}
+        className={cn(
+          'flex h-[38px] shrink-0 items-center rounded-full bg-mint px-4 text-[13.5px] font-semibold text-white',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink',
+        )}
+      >
+        Dividir gasto
+      </Link>
+    </section>
+  )
+}

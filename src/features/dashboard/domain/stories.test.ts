@@ -204,4 +204,65 @@ describe('buildStories', () => {
     expect(story?.slides[0]?.title).toBe('Tus límites van bien')
     expect(story?.slides[0]?.body).toContain('Comida')
   })
+
+  describe('tip ("Qué podés mejorar")', () => {
+    const slidesOf = (input: Partial<StoryInput>, id: string) =>
+      buildStories({ ...base, ...input }).find((s) => s.id === id)?.slides ?? []
+
+    it('stories with embedded actions have no tip', () => {
+      const all = buildStories({
+        ...base,
+        reminders: [{ key: 'r1', text: 'Alquiler', to: '/recurrentes' }],
+        savingsNoticeCount: 2,
+      })
+      expect(all.length).toBe(2)
+      for (const story of all) for (const slide of story.slides) expect(slide.tip).toBeUndefined()
+    })
+
+    it('a debt owed to the person suggests a friendly reminder; one the person owes, paying it', () => {
+      const cobros = slidesOf({ debts: [debt({ direction: 'owed' })] }, 'cobros')
+      expect(cobros[0]?.tip).toMatch(/recordatorio/i)
+      const deudas = slidesOf({ debts: [debt()] }, 'deudas')
+      expect(deudas[0]?.tip).toMatch(/pago/i)
+    })
+
+    it('a limit that was passed suggests easing off that category by name; a near one asks to check', () => {
+      const budget = (state: 'over' | 'warning', remainingCents: number) => ({
+        budgetId: 'b1',
+        name: 'Comida',
+        state,
+        percent: state === 'over' ? 120 : 85,
+        remainingCents,
+      })
+      expect(slidesOf({ budgets: [budget('over', -5_000_00)] }, 'limites')[0]?.tip).toContain(
+        'Comida',
+      )
+      expect(slidesOf({ budgets: [budget('warning', 5_000_00)] }, 'limites')[0]?.tip).toContain(
+        'Comida',
+      )
+    })
+
+    it('spending tips follow the data: the top category, and the direction of the comparison', () => {
+      const spending = (previousExpenseCents: number) => ({
+        expenseCents: 100_000_00,
+        byCategory: [{ name: 'Súper', amountCents: 100_000_00, percent: 100 }],
+        previousExpenseCents,
+        previousMonthName: 'octubre',
+        daysCounted: 10,
+      })
+      const up = slidesOf({ spending: spending(50_000_00) }, 'gastos')
+      expect(up[0]?.tip).toContain('Súper')
+      expect(up.find((s) => s.title.startsWith('Comparado'))?.tip).toMatch(/subió/)
+      const down = slidesOf({ spending: spending(200_000_00) }, 'gastos')
+      expect(down.find((s) => s.title.startsWith('Comparado'))?.tip).toMatch(/Buen ritmo/)
+    })
+
+    it('slides with nothing useful to add carry no tip (no filler)', () => {
+      const logros = slidesOf(
+        { badges: [{ key: 'k', name: 'Constante', earnedOn: '2026-11-03' }] },
+        'logros',
+      )
+      expect(logros[0]?.tip).toBeUndefined()
+    })
+  })
 })

@@ -15,7 +15,12 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import type { BalancePoint } from '../domain/balanceSeries'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import type { Story } from '../domain/stories'
+import type { DailyAllowanceView } from '../api/useDailyAllowance'
+import { HomeCapture } from './HomeCapture'
 import { HomeHeader } from './HomeHeader'
+import { HomeHero } from './HomeHero'
+import { MonthTotalsCard } from './MonthTotalsCard'
+import { SharedExpensesCard, type SharedBalance } from './SharedExpensesCard'
 import { RecentMovements, type MovementActions } from './RecentMovements'
 import { SpendingBreakdown } from './SpendingBreakdown'
 import { StoriesRow } from './StoriesRow'
@@ -48,8 +53,20 @@ interface HomeScreenProps {
   noticeCount?: number
   /** Daily available money (the series behind the old sparkline). Inicio no longer draws it, but the data stays available. */
   balanceSeries?: readonly BalancePoint[] | null
-  /** "Para hoy": what Moni has to tell, from the person's real data. */
+  /** "Tu resumen de hoy": what Moni has to tell, from the person's real data. */
   stories?: readonly Story[]
+  /** "Hoy podés gastar": the daily allowance of the month. Without it the hero is not drawn. */
+  allowance?: DailyAllowanceView
+  /** What the groups owe the person and vice versa; without it the shared expenses card is not drawn. */
+  shared?: SharedBalance | null
+  /** The microphone: opens the voice flow (Plus gate included). Without it the microphone is not offered. */
+  onVoice?: () => void
+  /** Voice needs a connection. */
+  offline?: boolean
+  /** Free plan: the microphone wears the Plus badge. */
+  voicePlusBadge?: boolean
+  /** Empty hero action: starts loading an income. */
+  onAddIncome?: () => void
 }
 
 export function HomeScreen({
@@ -67,6 +84,12 @@ export function HomeScreen({
   reminderCount = 0,
   noticeCount = 0,
   stories = [],
+  allowance,
+  shared = null,
+  onVoice,
+  offline = false,
+  voicePlusBadge = false,
+  onAddIncome,
 }: HomeScreenProps) {
   const { isSeen, markSeen } = useStorySeen(userId)
   const [openStory, setOpenStory] = useState<number | null>(null)
@@ -86,23 +109,39 @@ export function HomeScreen({
         photoUrl={photoUrl}
         isPlus={isPlus}
         name={name}
-        availableCents={summary.availableBalanceCents}
-        incomeCents={summary.incomeCents}
-        expenseCents={summary.expenseCents}
         reminderCount={reminderCount}
         noticeCount={noticeCount}
       />
-      {/* Marks the end of the big header: once it leaves the screen the compact one shows. */}
+      {/* Marks the end of the greeting: once it leaves the screen the compact header shows. */}
       <div ref={balanceRef} aria-hidden="true" className="h-px" />
 
-      {stories.length > 0 && (
-        <section aria-labelledby="today-title" className="border-t border-line px-5 py-4">
-          <h2 id="today-title" className="mb-3 font-display text-[22px] font-extrabold">
-            Para hoy
-          </h2>
-          <StoriesRow stories={stories} isSeen={isSeen} onOpen={setOpenStory} />
-        </section>
-      )}
+      <div className="flex flex-col gap-3 pb-6 pt-2">
+        {allowance && <HomeHero view={allowance} onAddIncome={onAddIncome ?? onAddMovement} />}
+        <MonthTotalsCard
+          availableCents={summary.availableBalanceCents}
+          incomeCents={summary.incomeCents}
+          expenseCents={summary.expenseCents}
+        />
+        <HomeCapture
+          onVoice={onVoice}
+          onManual={onAddMovement}
+          offline={offline}
+          voicePlusBadge={voicePlusBadge}
+        />
+
+        {stories.length > 0 && (
+          <section aria-labelledby="today-title" className="mt-2 px-[18px]">
+            <h2
+              id="today-title"
+              className="mb-3 font-display text-[17px] font-bold tracking-[-0.02em]"
+            >
+              Tu resumen de hoy
+            </h2>
+            <StoriesRow stories={stories} isSeen={isSeen} onOpen={setOpenStory} />
+          </section>
+        )}
+        {shared && <SharedExpensesCard shared={shared} to="/grupos" />}
+      </div>
       {openStory !== null && (
         <StoryViewer
           stories={stories}
@@ -125,6 +164,10 @@ export function HomeScreen({
         </div>
       ) : (
         <>
+          {recent.length > 0 && (
+            <RecentMovements movements={recent} total={movementsTotal} actions={movementActions} />
+          )}
+
           <section aria-labelledby="spent-title" className="border-t border-line py-5">
             <div className="mb-3 flex items-baseline justify-between gap-3 px-5">
               <h2
@@ -160,10 +203,6 @@ export function HomeScreen({
           </section>
 
           <HomeAnts enabled={shortcuts.ants} />
-
-          {recent.length > 0 && (
-            <RecentMovements movements={recent} total={movementsTotal} actions={movementActions} />
-          )}
         </>
       )}
     </div>

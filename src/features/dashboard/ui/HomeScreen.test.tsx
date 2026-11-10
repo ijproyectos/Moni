@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
@@ -161,10 +161,10 @@ describe('HomeScreen', () => {
     expect(screen.getByRole('link', { name: /Hormigas/ })).toHaveTextContent('este mes')
   })
 
-  describe('Para hoy only shows what is real', () => {
-    it('has no "Para hoy" without stories', () => {
+  describe('Tu resumen de hoy only shows what is real', () => {
+    it('has no "Tu resumen de hoy" without stories', () => {
       renderHome(empty)
-      expect(screen.queryByRole('heading', { name: 'Para hoy' })).toBeNull()
+      expect(screen.queryByRole('heading', { name: 'Tu resumen de hoy' })).toBeNull()
     })
 
     it('shows a bubble per story, in the order it is given, and opens the one tapped', async () => {
@@ -180,7 +180,7 @@ describe('HomeScreen', () => {
       renderHome(withData, false, undefined, {
         stories: [story('a', 'Cobros', '2'), story('b', 'Metas', '7%')],
       })
-      const section = screen.getByRole('heading', { name: 'Para hoy' }).closest('section')
+      const section = screen.getByRole('heading', { name: 'Tu resumen de hoy' }).closest('section')
       expect(section).toHaveTextContent('2Cobros')
       expect(section).toHaveTextContent('7%Metas')
       await userEvent.setup().click(screen.getByRole('button', { name: /^Metas/ }))
@@ -199,6 +199,71 @@ describe('HomeScreen', () => {
       expect(screen.queryByRole('img', { name: /Evolución de tu dinero/ })).toBeNull()
       expect(screen.queryByText(/Todavía no hay movimientos suficientes/)).toBeNull()
       expect(screen.getByText('Dinero disponible')).toBeInTheDocument()
+    })
+  })
+
+  describe('Hoy: hero, captura y gastos compartidos', () => {
+    const allowance = {
+      isLoading: false,
+      allowance: { kind: 'sin-datos' as const },
+      status: null,
+      pace: null,
+    }
+
+    it('draws the hero only when the allowance is given, and keeps the money of the month under it', () => {
+      renderHome(withData, false, undefined, { allowance })
+      expect(screen.getByRole('region', { name: 'Hoy podés gastar' })).toBeInTheDocument()
+      expect(screen.getByText('Dinero disponible')).toBeInTheDocument()
+      expect(screen.getByRole('group', { name: 'Gastos e ingresos del mes' })).toBeInTheDocument()
+    })
+
+    it('the empty hero sends to load income through onAddIncome', async () => {
+      const onAddIncome = vi.fn()
+      renderHome(withData, false, undefined, { allowance, onAddIncome })
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Cargar ingresos' }))
+      expect(onAddIncome).toHaveBeenCalled()
+    })
+
+    it('the microphone calls onVoice and the keyboard opens the manual sheet', async () => {
+      const onVoice = vi.fn()
+      const onAddMovement = vi.fn()
+      renderHome(withData, false, undefined, { onVoice, onAddMovement })
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: 'Cargar con la voz' }))
+      expect(onVoice).toHaveBeenCalledTimes(1)
+      await user.click(screen.getByRole('button', { name: 'Cargar a mano' }))
+      expect(onAddMovement).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows the shared expenses card only with real balances to report', () => {
+      renderHome(withData)
+      expect(screen.queryByRole('region', { name: 'Gastos compartidos' })).toBeNull()
+      cleanup()
+      renderHome(withData, false, undefined, { shared: { owedCents: 15_000_00, oweCents: 0 } })
+      expect(screen.getByRole('region', { name: 'Gastos compartidos' })).toHaveTextContent(
+        '+$15.000',
+      )
+    })
+
+    it('keeps the older sections below: the last movements, the spending breakdown and Hormigas', () => {
+      renderHome(withData, false, [
+        {
+          id: 'm1',
+          kind: 'expense',
+          amountCents: 1_000_00,
+          occurredOn: '2026-10-31',
+          note: 'Cena',
+          accountId: 'a',
+          accountName: 'Efectivo',
+          categoryName: 'Comida',
+          categoryColor: '#E5533D',
+          categoryIcon: 'Utensils',
+        },
+      ])
+      const recent = screen.getByRole('heading', { name: 'Movimientos' })
+      const spent = screen.getByRole('heading', { name: 'En qué se fue' })
+      expect(recent.compareDocumentPosition(spent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(screen.getByRole('link', { name: /Hormigas/ })).toBeInTheDocument()
     })
   })
 })

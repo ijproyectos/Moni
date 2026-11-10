@@ -80,9 +80,9 @@ export function RecentMovements({
   }
 
   return (
-    <section aria-labelledby="recent-title" className="border-t border-line py-5">
-      <div className="mb-2 flex items-baseline justify-between px-5">
-        <h2 id="recent-title" className="font-display text-[22px] font-extrabold">
+    <section aria-labelledby="recent-title" className="py-3">
+      <div className="mb-1 flex items-baseline justify-between px-[18px]">
+        <h2 id="recent-title" className="font-display text-[17px] font-bold tracking-[-0.02em]">
           Movimientos
         </h2>
         <Link to="/actividad" className="flex min-h-11 items-center text-[15px] text-text-muted">

@@ -7,14 +7,7 @@ function setup(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
   render(
     <MemoryRouter>
       <HiddenAmountsProvider>
-        <HomeHeader
-          initial="I"
-          name="Iara"
-          availableCents={568_000_00}
-          incomeCents={100_000_00}
-          expenseCents={112_500_00}
-          {...over}
-        />
+        <HomeHeader initial="I" name="Iara" {...over} />
       </HiddenAmountsProvider>
     </MemoryRouter>,
   )

@@ -1,4 +1,4 @@
-import { Pause, Play, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Lightbulb, Pause, Play, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
@@ -13,12 +13,16 @@ import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
 import { cn } from '@/shared/ui/cn'
 import { useModal } from '@/shared/ui/useModal'
 import type { Story, StorySlide } from '../domain/stories'
-import { STORY_TONES } from './storyTones'
+import { STORY_VIEW } from './storyTones'
 
 /** Reading time of a slide: a base plus a little more for every supporting line. */
 const BASE_MS = 7000
 const LINE_MS = 1500
 const HOLD_MS = 250
+/** A downward drag longer than this (and more vertical than sideways) closes the viewer. */
+const SWIPE_CLOSE_PX = 80
+/** Moves under this many pixels still count as a tap. */
+const TAP_SLOP_PX = 10
 
 function mascotFor(story: Story): string {
   if (story.id === 'metas') return mascotGoals
@@ -70,6 +74,7 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
   const reduced = usePrefersReducedMotion()
   const panelRef = useRef<HTMLDivElement>(null)
   const pressedAt = useRef(0)
+  const pressedFrom = useRef({ x: 0, y: 0 })
   const closeOnce = useCallback(() => {
     // A sheet opened from a slide is a dialog of its own: Escape belongs to it first.
     if (document.querySelectorAll('[role="dialog"]').length > 1) return
@@ -138,24 +143,31 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
   }, [next, previous])
 
   if (!story || !slide) return null
-  const tone = STORY_TONES[story.tone]
+  const view = STORY_VIEW[story.tone]
+  const isFirst = index === 0 && slideIndex === 0
 
+  /** Pointer handling of a tap area: a quick tap navigates, a hold pauses, a long drag down closes. */
   const holdProps = (action: () => void) => ({
-    onPointerDown: () => {
+    onPointerDown: (event: React.PointerEvent) => {
       pressedAt.current = performance.now()
+      pressedFrom.current = { x: event.clientX, y: event.clientY }
       setHolding(true)
     },
-    onPointerUp: () => {
+    onPointerUp: (event: React.PointerEvent) => {
       setHolding(false)
-      if (performance.now() - pressedAt.current < HOLD_MS) action()
+      const dx = event.clientX - pressedFrom.current.x
+      const dy = event.clientY - pressedFrom.current.y
+      if (dy > SWIPE_CLOSE_PX && dy > Math.abs(dx)) return closeOnce()
+      const moved = Math.hypot(dx, dy) > TAP_SLOP_PX
+      if (!moved && performance.now() - pressedAt.current < HOLD_MS) action()
     },
     onPointerLeave: () => setHolding(false),
     onPointerCancel: () => setHolding(false),
-    // The keyboard and assistive technologies click: pointer taps are handled above.
-    onClick: (event: React.MouseEvent) => {
-      if (event.detail === 0) action()
-    },
   })
+
+  const roundButton =
+    'flex size-[54px] items-center justify-center rounded-full disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current'
+  const cardStyle = { backgroundColor: view.card, color: view.cardInk }
 
   return createPortal(
     <div
@@ -165,57 +177,72 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
       aria-label={`Historia: ${story.label}`}
       tabIndex={-1}
       data-autofocus
-      className="fixed inset-0 z-40 mx-auto flex w-full max-w-[430px] flex-col overflow-hidden bg-[#051f20] text-[#daf1de] outline-none"
+      className="fixed inset-0 z-40 mx-auto flex w-full max-w-[430px] flex-col overflow-hidden outline-none"
+      style={{ backgroundColor: view.bg, color: view.ink }}
     >
+      {/* Tap areas: the left third goes back, the rest goes on. The content sits above them and only its controls catch taps.
+          The buttons of the bottom row are the accessible way to move. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-24 -top-24 size-[360px] rounded-full opacity-30 blur-3xl"
-        style={{ backgroundColor: tone.ring }}
+        data-testid="story-tap-prev"
+        className="absolute inset-y-0 left-0 z-0 w-1/3"
+        {...holdProps(previous)}
+      />
+      <div
+        aria-hidden="true"
+        data-testid="story-tap-next"
+        className="absolute inset-y-0 right-0 z-0 w-2/3"
+        {...holdProps(next)}
       />
 
-      <div className="relative z-10 px-4 pt-[max(env(safe-area-inset-top),14px)]">
+      <div className="pointer-events-none relative z-10 px-[18px] pt-[max(env(safe-area-inset-top),14px)]">
         <div
           role="progressbar"
           aria-label="Avance de la historia"
           aria-valuemin={1}
-          aria-valuemax={story.slides.length}
-          aria-valuenow={slideIndex + 1}
-          className="flex gap-1.5"
+          aria-valuemax={stories.length}
+          aria-valuenow={index + 1}
+          aria-valuetext={`Historia ${index + 1} de ${stories.length}`}
+          className="flex gap-1"
         >
-          {story.slides.map((_, i) => (
-            <span key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-white/25">
+          {stories.map((s, i) => {
+            const fraction = reduced || interactive ? 1 : Math.min(1, elapsed / duration)
+            const current = ((slideIndex + fraction) / story.slides.length) * 100
+            return (
               <span
-                className="block h-full rounded-full bg-[#daf1de]"
-                style={{
-                  width:
-                    i < slideIndex
-                      ? '100%'
-                      : i > slideIndex
-                        ? '0%'
-                        : reduced || interactive
-                          ? '100%'
-                          : `${Math.min(100, (elapsed / duration) * 100)}%`,
-                }}
-              />
-            </span>
-          ))}
+                key={s.id}
+                className="h-1 flex-1 overflow-hidden rounded-full"
+                style={{ backgroundColor: `color-mix(in srgb, ${view.ink} 25%, transparent)` }}
+              >
+                <span
+                  className="block h-full rounded-full"
+                  style={{
+                    backgroundColor: view.ink,
+                    width: i < index ? '100%' : i > index ? '0%' : `${current}%`,
+                  }}
+                />
+              </span>
+            )
+          })}
         </div>
-        <div className="mt-3 flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="flex size-9 items-center justify-center rounded-full border-2 font-display text-[13px] font-extrabold"
-            style={{ borderColor: tone.ring, backgroundColor: tone.fill, color: tone.ink }}
-          >
-            {story.bubble.length > 3 ? '' : story.bubble}
-          </span>
-          <p className="flex-1 truncate font-display text-[17px] font-extrabold">{story.label}</p>
+        <div className="mt-3 flex items-center gap-2.5">
+          <img
+            src={mascotFor(story)}
+            alt=""
+            className="size-9 shrink-0 rounded-full object-contain"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-[14.5px] font-bold leading-tight">Moni</p>
+            <p className="truncate text-[12px] opacity-80">Tu resumen de hoy</p>
+          </div>
           {!reduced && !interactive && (
             <button
               type="button"
               onClick={() => setPaused((p) => !p)}
               aria-label={paused ? 'Reanudar' : 'Pausar'}
               aria-pressed={paused}
-              className="flex size-11 items-center justify-center rounded-full bg-white/10"
+              className="pointer-events-auto flex size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+              style={cardStyle}
             >
               {paused ? (
                 <Play aria-hidden="true" className="size-5" fill="currentColor" />
@@ -228,44 +255,49 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
             type="button"
             onClick={onClose}
             aria-label="Cerrar historia"
-            className="flex size-11 items-center justify-center rounded-full bg-white/10"
+            className="pointer-events-auto flex size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+            style={cardStyle}
           >
-            <X aria-hidden="true" className="size-5" strokeWidth={2.25} />
+            <X aria-hidden="true" className="size-5" strokeWidth={2.4} />
           </button>
         </div>
       </div>
 
-      {/* Tap areas: the left third goes back, the rest goes on. The content sits above them and only its controls catch taps. */}
-      <button
-        type="button"
-        aria-label="Anterior"
-        className="absolute inset-y-0 left-0 z-0 w-1/3"
-        {...holdProps(previous)}
-      />
-      <button
-        type="button"
-        aria-label="Siguiente"
-        className="absolute inset-y-0 right-0 z-0 w-2/3"
-        {...holdProps(next)}
-      />
-
-      <div className="pointer-events-none relative z-10 flex flex-1 flex-col justify-center gap-4 overflow-y-auto px-6 py-6">
-        <h2 className="font-display text-[26px] font-extrabold leading-8">{slide.title}</h2>
-        {slide.figure && (
-          <p
-            className="break-words font-display text-[clamp(40px,14vw,60px)] font-extrabold leading-none"
-            style={{ color: tone.ring }}
-          >
-            {slide.figure}
+      <div className="pointer-events-none relative z-10 flex flex-1 flex-col gap-3.5 overflow-y-auto px-[18px] pb-4 pt-6">
+        <div className="flex flex-col gap-2">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] opacity-85">
+            {story.label}
           </p>
-        )}
-        <p className="text-[19px] leading-7">{slide.body}</p>
-        {slide.lines && (
-          <ul className="flex flex-col gap-2 text-[16px] text-[#b5cbb0]">
-            {slide.lines.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
+          <h2 className="text-balance font-display text-[34px] font-bold leading-[1.05] tracking-[-0.03em]">
+            {slide.title}
+          </h2>
+          {slide.figure && (
+            <p className="break-words font-display text-[clamp(38px,13vw,46px)] font-bold leading-none tracking-[-0.04em] tabular-nums">
+              {slide.figure}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-1.5 rounded-[26px] p-4" style={cardStyle}>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] opacity-75">
+            Qué pasó
+          </p>
+          <p className="text-[16px] leading-[1.35]">{slide.body}</p>
+          {slide.lines && (
+            <ul className="mt-1 flex flex-col gap-1 text-[14.5px] opacity-85">
+              {slide.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {slide.tip && (
+          <div className="flex flex-col gap-1.5 rounded-[26px] bg-white p-4 text-[#112218]">
+            <p className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#17734B]">
+              <Lightbulb aria-hidden="true" className="size-[15px]" strokeWidth={2.2} />
+              Qué podés mejorar
+            </p>
+            <p className="text-[16px] font-medium leading-[1.35]">{slide.tip}</p>
+          </div>
         )}
         {slide.embed && (
           <div className="pointer-events-auto rounded-[24px] bg-canvas p-3 text-ink">
@@ -274,19 +306,38 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
         )}
       </div>
 
-      <div className="pointer-events-none relative z-10 flex items-end gap-3 px-6 pb-[max(env(safe-area-inset-bottom),22px)]">
-        <img src={mascotFor(story)} alt="" className="size-24 shrink-0 object-contain" />
-        {slide.action && (
+      <div className="pointer-events-none relative z-10 grid grid-cols-[54px_1fr_54px] items-center gap-2.5 px-[18px] pb-[max(env(safe-area-inset-bottom),22px)]">
+        <button
+          type="button"
+          onClick={previous}
+          disabled={isFirst}
+          aria-label="Anterior"
+          className={cn(roundButton, 'pointer-events-auto')}
+          style={cardStyle}
+        >
+          <ChevronLeft aria-hidden="true" className="size-5" strokeWidth={2.4} />
+        </button>
+        {slide.action ? (
           <Link
             to={slide.action.to}
             onClick={onClose}
-            className={cn(
-              'pointer-events-auto mb-2 flex min-h-12 flex-1 items-center justify-center rounded-full bg-[#8eb69b] px-5 text-center font-display text-[17px] font-extrabold text-[#051f20]',
-            )}
+            className="pointer-events-auto flex h-[54px] items-center justify-center rounded-full px-5 text-center text-[16px] font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+            style={{ backgroundColor: view.button, color: view.buttonInk }}
           >
             {slide.action.label}
           </Link>
+        ) : (
+          <span aria-hidden="true" />
         )}
+        <button
+          type="button"
+          onClick={next}
+          aria-label="Siguiente"
+          className={cn(roundButton, 'pointer-events-auto')}
+          style={cardStyle}
+        >
+          <ChevronRight aria-hidden="true" className="size-5" strokeWidth={2.4} />
+        </button>
       </div>
     </div>,
     document.body,

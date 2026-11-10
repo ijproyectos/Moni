@@ -1,6 +1,6 @@
 import { cn } from '@/shared/ui/cn'
 import type { Story } from '../domain/stories'
-import { STORY_TONES } from './storyTones'
+import { RING_SEEN, RING_UNSEEN, STORY_TONES } from './storyTones'
 
 interface StoriesRowProps {
   stories: readonly Story[]
@@ -8,10 +8,10 @@ interface StoriesRowProps {
   onOpen: (index: number) => void
 }
 
-/** "Para hoy": one bubble per story, side by side; the row scrolls sideways when there are more than fit. */
+/** "Tu resumen de hoy": one 64px bubble per story; unseen ones wear the Menta ring, seen ones a grey one. */
 export function StoriesRow({ stories, isSeen, onOpen }: StoriesRowProps) {
   return (
-    <ul className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
+    <ul className="no-scrollbar -mx-[18px] flex gap-3.5 overflow-x-auto px-[18px] pb-1">
       {stories.map((story, index) => {
         const tone = STORY_TONES[story.tone]
         const seen = isSeen(story)
@@ -21,24 +21,22 @@ export function StoriesRow({ stories, isSeen, onOpen }: StoriesRowProps) {
               type="button"
               onClick={() => onOpen(index)}
               aria-label={`${story.label}${seen ? ', ya vista' : ', nueva'}`}
-              className="flex min-h-11 w-[58px] flex-col items-center gap-1.5"
+              className="flex min-h-11 w-16 flex-col items-center gap-1.5 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
             >
               <span
                 aria-hidden="true"
-                className={cn(
-                  'flex size-[54px] items-center justify-center rounded-full border-[2.5px] p-[2.5px] transition-opacity',
-                  seen && 'opacity-50',
-                )}
-                style={{ borderColor: tone.ring }}
+                data-ring={seen ? 'seen' : 'unseen'}
+                className="box-border flex size-16 rounded-full p-[3px]"
+                style={{ background: seen ? RING_SEEN : RING_UNSEEN }}
               >
                 <span
                   className={cn(
-                    'flex size-full items-center justify-center rounded-full font-display font-extrabold leading-none',
+                    'box-border flex size-full items-center justify-center rounded-full border-[3px] border-canvas font-display font-bold leading-none',
                     story.bubble.length <= 3
-                      ? 'text-[16px]'
+                      ? 'text-[17px]'
                       : story.bubble.length <= 5
-                        ? 'text-[12px]'
-                        : 'text-[10.5px]',
+                        ? 'text-[13px]'
+                        : 'text-[11px]',
                   )}
                   style={{ backgroundColor: tone.fill, color: tone.ink }}
                 >

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
@@ -6,7 +6,7 @@ import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
 import { useSavingsNoticeCount } from '@/features/goals/api/useSavings'
-import { useUnreadNoticeCount } from '@/features/debts/api/useDebts'
+import { usePendingDebts, useUnreadNoticeCount } from '@/features/debts/api/useDebts'
 import { usePlus } from '@/features/plus/api/usePlus'
 import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
@@ -19,12 +19,15 @@ import {
   useVoidTransaction,
 } from '@/features/transactions/api/useTransactions'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
+import { VoiceSheet } from '@/features/transactions/ui/VoiceSheet'
+import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { toUserMessage } from '@/shared/lib/errors'
 import { useToast } from '@/shared/ui/toastContext'
 import { monthStart, todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { Skeleton } from '@/shared/ui/Skeleton'
+import { useDailyAllowance } from '../api/useDailyAllowance'
 import { useMonthSummary } from '../api/useMonthSummary'
 import { buildBalanceSeries } from '../domain/balanceSeries'
 import { buildRecentMovements } from '../domain/recentMovements'
@@ -79,6 +82,17 @@ export function HomePage() {
   const savingsNotices = useSavingsNoticeCount()
   const noticeCount = useUnreadNoticeCount()
   const plus = usePlus()
+  const online = useOnlineStatus()
+  const allowance = useDailyAllowance()
+  const { debts } = usePendingDebts()
+  // Remount the voice sheet per opening so its state starts clean (the sheet itself shows the Plus upsell on Free).
+  const [voiceCount, setVoiceCount] = useState(0)
+  const [voiceOpen, setVoiceOpen] = useState(false)
+  const shared = useMemo(() => {
+    const total = (direction: 'owed' | 'owe') =>
+      debts.filter((d) => d.direction === direction).reduce((sum, d) => sum + d.amountCents, 0)
+    return { owedCents: total('owed'), oweCents: total('owe') }
+  }, [debts])
   const movements = useMemo(
     () =>
       buildRecentMovements({
@@ -153,23 +167,35 @@ export function HomePage() {
   }
 
   return (
-    <HomeScreen
-      summary={summary.data}
-      // While the full history loads, the month's own latest movements stand in.
-      movements={transactions.data ? movements : undefined}
-      initial={initialOf(profile?.display_name, user?.email ?? '')}
-      isPlus={plus.isPlus}
-      photoUrl={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
-      userId={user?.id}
-      name={profile?.display_name?.trim().split(/\s+/)[0] || null}
-      balanceSeries={balanceSeries}
-      onAddMovement={() => openNew()}
-      shortcuts={{ ants: features.has('ants') }}
-      reminderCount={reminders.length + savingsNotices}
-      noticeCount={noticeCount}
-      stories={stories}
-      movementActions={movementActions}
-      movementsTotal={transactions.data?.length}
-    />
+    <>
+      <HomeScreen
+        summary={summary.data}
+        // While the full history loads, the month's own latest movements stand in.
+        movements={transactions.data ? movements : undefined}
+        initial={initialOf(profile?.display_name, user?.email ?? '')}
+        isPlus={plus.isPlus}
+        photoUrl={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
+        userId={user?.id}
+        name={profile?.display_name?.trim().split(/\s+/)[0] || null}
+        balanceSeries={balanceSeries}
+        onAddMovement={() => openNew()}
+        shortcuts={{ ants: features.has('ants') }}
+        reminderCount={reminders.length + savingsNotices}
+        noticeCount={noticeCount}
+        stories={stories}
+        movementActions={movementActions}
+        movementsTotal={transactions.data?.length}
+        allowance={allowance}
+        shared={shared}
+        offline={!online}
+        voicePlusBadge={Boolean(plus.isFree)}
+        onVoice={() => {
+          setVoiceCount((n) => n + 1)
+          setVoiceOpen(true)
+        }}
+        onAddIncome={() => openNew('income')}
+      />
+      {voiceOpen && <VoiceSheet key={voiceCount} onClose={() => setVoiceOpen(false)} />}
+    </>
   )
 }
