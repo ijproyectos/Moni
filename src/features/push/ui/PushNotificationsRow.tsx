@@ -1,5 +1,6 @@
 import { Button } from '@/shared/ui/Button'
-import { OptionRow } from '@/shared/ui/kit'
+import { Bell } from 'lucide-react'
+import { SettingRow } from '@/shared/ui/SettingRow'
 import { useToast } from '@/shared/ui/toastContext'
 import { getVapidPublicKey, usePushSubscription } from '../api/usePushSubscription'
 
@@ -40,11 +41,10 @@ function PushRow() {
   }
 
   return (
-    <OptionRow
-      className="rounded-none border-0"
-      title="Avisos de Moni"
+    <SettingRow
+      icon={<Bell className="size-[17px]" strokeWidth={1.9} />}
+      title="Notificaciones"
       subtitle={subtitle}
-      chevron={false}
       trailing={
         state === 'on' ? (
           <span className="rounded-full bg-tint-green px-3 py-1 text-[13px] font-extrabold text-ink">

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { FEATURES } from '@/shared/config/features'
 import { HomeHeader } from './HomeHeader'
@@ -12,9 +12,24 @@ function renderHeader(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
 }
 
 describe('HomeHeader: greeting, bell and avatar', () => {
-  it('greets the person by name, and just "Hola" without one', () => {
-    renderHeader({ name: 'Iara' })
-    expect(screen.getByRole('heading', { level: 1, name: 'Hola, Iara' })).toBeInTheDocument()
+  it('greets by time of day with the name, and the date below', () => {
+    renderHeader({ name: 'Iara', now: new Date(2026, 10, 10, 9, 41) })
+    expect(screen.getByRole('heading', { level: 1, name: 'Buen día, Iara' })).toBeInTheDocument()
+    expect(screen.getByText(/^\S+ \d{1,2} de \S+$/)).toBeInTheDocument()
+    cleanup()
+    renderHeader({ name: 'Iara', now: new Date(2026, 10, 10, 15) })
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Buenas tardes, Iara')
+    cleanup()
+    renderHeader({ now: new Date(2026, 10, 10, 22) })
+    expect(screen.getByRole('heading', { level: 1, name: 'Buenas noches' })).toBeInTheDocument()
+  })
+
+  it('has the privacy eye next to the bell', () => {
+    renderHeader()
+    expect(screen.getByRole('button', { name: 'Ocultar montos' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
   })
 
   it('is a plain greeting row: the money moved to the hero and the totals card', () => {
@@ -22,10 +37,10 @@ describe('HomeHeader: greeting, bell and avatar', () => {
     expect(screen.getByRole('banner')).not.toHaveTextContent(/\$|disponible|Gastos|Ingresos/)
   })
 
-  it('has no bell nor "Avisos" badge while notifications have no backend, even with reminders', () => {
+  it('always has the bell, without a badge while notifications have no backend, even with reminders', () => {
     renderHeader({ reminderCount: 4 })
-    expect(screen.queryByRole('link', { name: /Avisos/ })).toBeNull()
-    expect(screen.queryByText('3')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Avisos' })).toHaveAttribute('href', '/grupos/avisos')
+    expect(screen.queryByText('4')).toBeNull()
     expect(screen.getByRole('link', { name: 'Perfil' })).toBeInTheDocument()
   })
 
@@ -46,11 +61,6 @@ describe('HomeHeader: greeting, bell and avatar', () => {
     renderHeader({ noticeCount: 3 })
     const bell = screen.getByRole('link', { name: 'Avisos, 3 sin leer' })
     expect(bell).toHaveAttribute('href', '/grupos/avisos')
-  })
-
-  it('has no bell without notices', () => {
-    renderHeader({ noticeCount: 0 })
-    expect(screen.queryByRole('link', { name: /Avisos/ })).toBeNull()
   })
 
   describe('Moni Plus badge on the avatar', () => {

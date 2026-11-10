@@ -4,7 +4,6 @@ import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
 import { initialOf } from '@/features/auth/domain/profile'
-import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
 import { useSavingsNoticeCount } from '@/features/goals/api/useSavings'
 import { usePendingDebts, useUnreadNoticeCount } from '@/features/debts/api/useDebts'
 import { usePlus } from '@/features/plus/api/usePlus'
@@ -15,7 +14,6 @@ import { indexCategories } from '@/features/categories/domain/category'
 import { useVoidInstallmentPlan } from '@/features/cards/api/useCards'
 import {
   useTransactions,
-  useTransfers,
   useVoidTransaction,
 } from '@/features/transactions/api/useTransactions'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
@@ -29,7 +27,6 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useDailyAllowance } from '../api/useDailyAllowance'
 import { useMonthSummary } from '../api/useMonthSummary'
-import { buildBalanceSeries } from '../domain/balanceSeries'
 import { buildRecentMovements } from '../domain/recentMovements'
 import { useHomeStories } from '../api/useHomeStories'
 import type { RecentMovement } from '../domain/monthSummary'
@@ -49,8 +46,6 @@ function HomeSkeleton() {
   )
 }
 
-/** The most rows Supabase returns in one request. */
-const ROW_CAP = 1000
 const EMPTY_SUMMARY = {
   incomeCents: 0,
   expenseCents: 0,
@@ -72,12 +67,10 @@ export function HomePage() {
   const transactions = useTransactions()
   const categories = useCategories(undefined, { includeArchived: true })
   const accounts = useAccounts({ includeArchived: true })
-  const transfers = useTransfers()
   const { openNew, openEdit } = useMovementSheet()
   const toast = useToast()
   const voidTransaction = useVoidTransaction()
   const voidPlan = useVoidInstallmentPlan()
-  const features = useEnabledFeatures()
   const reminders = useRecurringReminders()
   const savingsNotices = useSavingsNoticeCount()
   const noticeCount = useUnreadNoticeCount()
@@ -103,25 +96,6 @@ export function HomePage() {
         limit: RECENT_LIMIT,
       }),
     [transactions.data, categories.data, accounts.data],
-  )
-  // The chart is rebuilt from the real movements; until they all load it stays empty rather than guessing.
-  const balanceSeries = useMemo(
-    () =>
-      summary.data && transactions.data && transfers.data && accounts.data
-        ? buildBalanceSeries({
-            currentCents: summary.data.availableBalanceCents,
-            accounts: accounts.data,
-            transactions: transactions.data,
-            transfers: transfers.data,
-            today: todayIso(),
-            // Supabase returns at most 1000 rows per request: a full page may be cut short.
-            truncated: {
-              transactions: transactions.data.length >= ROW_CAP,
-              transfers: transfers.data.length >= ROW_CAP,
-            },
-          })
-        : null,
-    [summary.data, transactions.data, transfers.data, accounts.data],
   )
   const stories = useHomeStories(month, summary.data ?? EMPTY_SUMMARY)
 
@@ -177,14 +151,11 @@ export function HomePage() {
         photoUrl={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
         userId={user?.id}
         name={profile?.display_name?.trim().split(/\s+/)[0] || null}
-        balanceSeries={balanceSeries}
         onAddMovement={() => openNew()}
-        shortcuts={{ ants: features.has('ants') }}
         reminderCount={reminders.length + savingsNotices}
         noticeCount={noticeCount}
         stories={stories}
         movementActions={movementActions}
-        movementsTotal={transactions.data?.length}
         allowance={allowance}
         shared={shared}
         offline={!online}

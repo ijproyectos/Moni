@@ -47,6 +47,12 @@ describe('HomeHero', () => {
     expect(screen.getByTestId('pace-marker')).toHaveStyle({ left: `${(11 / 30) * 100}%` })
   })
 
+  it('the pace bar says how much was spent of the budget and which day of the month it is', () => {
+    const { hero } = setup(view(100_000_00))
+    expect(hero).toHaveTextContent('Gastado $100.000 de $800.000')
+    expect(hero).toHaveTextContent('Ritmo · día 11 de 30')
+  })
+
   it('ajustado: the warn chip and a context line that names the allowance', () => {
     // Spent 640.000 -> 160.000 / 20 = 8.000, under 70% of an even split (26.666).
     const { hero } = setup(view(640_000_00))

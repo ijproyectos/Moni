@@ -27,7 +27,7 @@ export function StatusChip({ tone, children, className }: StatusChipProps) {
         className,
       )}
     >
-      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
+      <span aria-hidden="true" className="size-[7px] rounded-full bg-current" />
       {children}
     </span>
   )

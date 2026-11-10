@@ -11,17 +11,17 @@ interface StoriesRowProps {
 /** "Tu resumen de hoy": one 64px bubble per story; unseen ones wear the Menta ring, seen ones a grey one. */
 export function StoriesRow({ stories, isSeen, onOpen }: StoriesRowProps) {
   return (
-    <ul className="no-scrollbar -mx-[18px] flex gap-3.5 overflow-x-auto px-[18px] pb-1">
+    <ul className="grid grid-cols-4 gap-2">
       {stories.map((story, index) => {
         const tone = STORY_TONES[story.tone]
         const seen = isSeen(story)
         return (
-          <li key={story.id} className="shrink-0">
+          <li key={story.id} className="flex justify-center">
             <button
               type="button"
               onClick={() => onOpen(index)}
               aria-label={`${story.label}${seen ? ', ya vista' : ', nueva'}`}
-              className="flex min-h-11 w-16 flex-col items-center gap-1.5 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
+              className="flex min-h-11 w-full flex-col items-center gap-[5px] rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
             >
               <span
                 aria-hidden="true"
@@ -43,7 +43,7 @@ export function StoriesRow({ stories, isSeen, onOpen }: StoriesRowProps) {
                   {story.bubble}
                 </span>
               </span>
-              <span className="w-full truncate text-center text-[12px] text-ink">
+              <span className="w-full truncate text-center text-[11.5px] font-semibold text-ink">
                 {story.label}
               </span>
             </button>

@@ -91,10 +91,8 @@ function setup() {
   )
   return userEvent.setup()
 }
-const header = () => screen.getByRole('group', { name: 'Gastos e ingresos del mes' })
-const available = () => screen.getByText('Dinero disponible').parentElement as HTMLElement
 
-describe('Inicio: importes de la tarjeta principal', () => {
+describe('Hoy: estructura del diseño', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-11-15T15:00:00-03:00'))
@@ -102,11 +100,12 @@ describe('Inicio: importes de la tarjeta principal', () => {
   })
   afterEach(() => vi.useRealTimers())
 
-  it('shows the income and expenses of the current month and the available money', () => {
+  it('does not show the month totals, "En qué se fue" nor Hormigas: they live elsewhere', () => {
     setup()
-    expect(header()).toHaveTextContent('-$300.000')
-    expect(header()).toHaveTextContent('+$1.000.000')
-    expect(available()).toHaveTextContent('$500.000')
+    expect(screen.queryByRole('group', { name: 'Gastos e ingresos del mes' })).toBeNull()
+    expect(screen.queryByText('Dinero disponible')).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'En qué se fue' })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Hormigas/ })).toBeNull()
   })
 
   it('always uses the current month: there is no month picker, label or arrows', () => {
@@ -116,7 +115,6 @@ describe('Inicio: importes de la tarjeta principal', () => {
     expect(screen.queryByRole('listbox', { name: 'Mes' })).toBeNull()
     expect(screen.queryByRole('button', { name: /noviembre/i })).toBeNull()
     expect(screen.queryByRole('button', { name: /Mes (anterior|siguiente)/ })).toBeNull()
-    expect(screen.getByRole('banner')).not.toHaveTextContent(/noviembre/i)
   })
 
   it('draws the hero (empty without income data), the voice and keyboard buttons and the shared card', () => {

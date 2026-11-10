@@ -32,16 +32,28 @@ export function HomeCapture({
             disabled={offline}
             aria-label={voicePlusBadge ? 'Cargar con la voz, Plus' : 'Cargar con la voz'}
             className={cn(
-              'flex h-14 min-w-0 flex-1 items-center justify-center gap-2.5 rounded-full bg-lilac px-5 text-[16px] font-bold text-lilac-ink disabled:opacity-60',
+              'flex h-14 min-w-0 flex-1 items-center gap-3 rounded-full bg-lilac px-[9px] text-left text-lilac-ink disabled:opacity-60',
               RING,
             )}
           >
-            <Mic aria-hidden="true" className="size-5" strokeWidth={2.2} />
-            <span className="truncate">Contale a Moni</span>
+            <span
+              aria-hidden="true"
+              className="flex size-[42px] shrink-0 items-center justify-center rounded-full bg-lilac-ink text-lilac"
+            >
+              <Mic className="size-[22px]" strokeWidth={2.2} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[16px] font-semibold leading-tight">
+                Contale a Moni un gasto
+              </span>
+              <span className="block truncate text-[12.5px] leading-tight text-[#4A4180]">
+                “Café 4.800 con Visa”
+              </span>
+            </span>
             {voicePlusBadge && (
               <span
                 aria-hidden="true"
-                className="rounded-full bg-lilac-ink px-2 py-0.5 text-[11px] font-bold text-lilac"
+                className="mr-2 rounded-full bg-lilac-ink px-2 py-0.5 text-[11px] font-bold text-lilac"
               >
                 Plus
               </span>
@@ -58,7 +70,7 @@ export function HomeCapture({
             RING,
           )}
         >
-          <Keyboard aria-hidden="true" className="size-5" strokeWidth={2.2} />
+          <Keyboard aria-hidden="true" className="size-[22px]" strokeWidth={1.8} />
           {!onVoice && <span>Cargar a mano</span>}
         </button>
       </div>
