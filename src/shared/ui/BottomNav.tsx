@@ -53,7 +53,11 @@ export function BottomNav({ assistant }: { assistant?: ReactNode }) {
           <NavTab key={item.to} {...item} />
         ))}
       </nav>
-      {assistant && <div className="relative size-[74px] shrink-0">{assistant}</div>}
+      {assistant && (
+        <div data-testid="assistant-slot" className="pointer-events-auto relative size-[74px] shrink-0">
+          {assistant}
+        </div>
+      )}
     </div>
   )
 }

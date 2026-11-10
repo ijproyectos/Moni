@@ -50,6 +50,12 @@ describe('BottomNav', () => {
     const nav = screen.getByRole('navigation', { name: 'Navegación principal' })
     expect(nav).not.toContainElement(screen.getByRole('button', { name: 'Asistente' }))
   })
+
+  it('keeps the assistant slot clickable: the bar container ignores pointer events', () => {
+    renderNav()
+    // ShellBottomBar's wrapper is pointer-events-none, so every interactive child must opt back in.
+    expect(screen.getByTestId('assistant-slot')).toHaveClass('pointer-events-auto')
+  })
 })
 
 describe('ShellBottomBar', () => {
