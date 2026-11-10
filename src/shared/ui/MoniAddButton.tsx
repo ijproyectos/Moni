@@ -9,7 +9,7 @@ interface MoniAddButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 }
 
 /**
- * The assistant button of the bottom bar: a lilac circle (74px, white 3px border) with Moni's cat. Tapping it opens
+ * The assistant button of the bottom bar: a lilac circle (60px, white 3px border) with Moni's cat. Tapping it opens
  * and closes the add menu. It only moves when it is touched.
  */
 export function MoniAddButton({
@@ -30,7 +30,7 @@ export function MoniAddButton({
       aria-haspopup="menu"
       aria-expanded={open}
       className={cn(
-        'relative flex size-[74px] shrink-0 select-none items-center justify-center rounded-full border-[3px] bg-lilac outline-none',
+        'relative flex size-[60px] shrink-0 select-none items-center justify-center rounded-full border-[3px] bg-lilac outline-none',
         open ? 'border-mint-ink' : 'border-white',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink',
         'motion-safe:transition motion-safe:active:scale-[0.97] active:brightness-95',
@@ -38,7 +38,7 @@ export function MoniAddButton({
       )}
       {...props}
     >
-      <MoniCat phase={phase} className="pointer-events-none w-[56px]" />
+      <MoniCat phase={phase} className="pointer-events-none w-[46px]" />
     </button>
   )
 }

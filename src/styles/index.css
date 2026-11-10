@@ -203,7 +203,7 @@ html.dark .bg-lime {
 }
 /* ...or above whatever is fixed at the bottom of the screen (the tab bar or a screen's action bar, `data-bottom-action`). */
 :root:has([data-bottom-action]) {
-  --float-bottom: calc(env(safe-area-inset-bottom) + 7.25rem);
+  --float-bottom: calc(env(safe-area-inset-bottom) + 5.75rem);
 }
 
 /* The add menu leaves the cat: it grows from the button and settles with a small bounce. */

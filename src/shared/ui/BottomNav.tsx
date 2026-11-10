@@ -25,14 +25,14 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
       end={end}
       className={({ isActive }) =>
         cn(
-          'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full text-[10.5px] leading-none outline-none',
+          'flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10.5px] leading-none outline-none',
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink',
           'motion-safe:transition motion-safe:active:scale-[0.97] active:brightness-95',
           isActive ? 'bg-mint-soft font-bold text-mint-ink' : 'font-semibold text-text-muted',
         )
       }
     >
-      <Icon aria-hidden="true" className="size-[21px]" strokeWidth={2.1} />
+      <Icon aria-hidden="true" className="size-[20px]" strokeWidth={2.1} />
       <span className="max-w-full truncate">{label}</span>
     </NavLink>
   )
@@ -44,7 +44,7 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
  */
 export function BottomNav({ assistant }: { assistant?: ReactNode }) {
   return (
-    <div className="flex h-[74px] items-center gap-2 px-3">
+    <div className="flex h-[60px] items-center gap-2 px-3">
       <nav
         aria-label="Navegación principal"
         className="pointer-events-auto flex h-full min-w-0 flex-1 items-stretch gap-0.5 rounded-full bg-card p-1.5 shadow-[0_12px_36px_rgba(17,34,24,0.14)]"
@@ -54,7 +54,7 @@ export function BottomNav({ assistant }: { assistant?: ReactNode }) {
         ))}
       </nav>
       {assistant && (
-        <div data-testid="assistant-slot" className="pointer-events-auto relative size-[74px] shrink-0">
+        <div data-testid="assistant-slot" className="pointer-events-auto relative size-[60px] shrink-0">
           {assistant}
         </div>
       )}

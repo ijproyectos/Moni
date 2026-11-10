@@ -110,7 +110,7 @@ export function AddActionMenu({
       )}
       <span
         aria-hidden="true"
-        className="absolute -bottom-2 right-[35px] size-5 rotate-45 rounded-[4px] bg-forest dark:bg-[#1f3a28] [clip-path:polygon(100%_0,100%_100%,0_100%)]"
+        className="absolute -bottom-2 right-[28px] size-5 rotate-45 rounded-[4px] bg-forest dark:bg-[#1f3a28] [clip-path:polygon(100%_0,100%_100%,0_100%)]"
       />
     </div>
   )

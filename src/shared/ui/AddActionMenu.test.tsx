@@ -57,7 +57,7 @@ describe('MoniAddButton', () => {
     expect(button).toHaveAttribute('aria-haspopup', 'menu')
     expect(button).toHaveAttribute('aria-expanded', 'false')
     expect(button.querySelectorAll('svg')).toHaveLength(1)
-    expect(button).toHaveClass('bg-lilac', 'size-[74px]', 'border-white')
+    expect(button).toHaveClass('bg-lilac', 'size-[60px]', 'border-white')
     // Nothing moves until it is touched.
     expect(button.querySelector('svg')).not.toHaveAttribute('data-phase')
 
