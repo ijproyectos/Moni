@@ -23,7 +23,7 @@ interface DecisionSheetProps {
 }
 
 const TONES = {
-  primary: 'bg-forest text-cream dark:bg-lime dark:text-forest',
+  primary: 'bg-forest text-cream dark:bg-lime dark:text-on-bright',
   danger: 'bg-expense text-cream',
   outline: 'border-2 border-line bg-card text-ink',
 }

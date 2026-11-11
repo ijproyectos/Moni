@@ -1,7 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import type { Transaction } from '../domain/transaction'
 import { MovementSheet } from './MovementSheet'
-import { MovementSheetContext, type SheetMode } from './movementSheetContext'
+import {
+  MovementSheetContext,
+  type MovementPrefill,
+  type NewMovementOptions,
+  type SheetMode,
+} from './movementSheetContext'
 
 type SheetState = {
   mode: SheetMode
@@ -9,6 +14,8 @@ type SheetState = {
   toAccountId?: string
   amountCents?: number
   tripId?: string
+  initial?: MovementPrefill
+  shared?: boolean
 } | null
 
 /** Owns the "Nuevo movimiento" sheet so the FAB, Actividad and Cuentas can open it from anywhere. */
@@ -19,16 +26,15 @@ export function MovementSheetProvider({ children }: { children: ReactNode }) {
 
   const api = useMemo(
     () => ({
-      openNew: (
-        mode: SheetMode = 'expense',
-        options?: { toAccountId?: string; amountCents?: number; tripId?: string },
-      ) => {
+      openNew: (mode: SheetMode = 'expense', options?: NewMovementOptions) => {
         setOpenCount((n) => n + 1)
         setState({
           mode,
           toAccountId: options?.toAccountId,
           amountCents: options?.amountCents,
           tripId: options?.tripId,
+          initial: options?.initial,
+          shared: options?.shared,
         })
       },
       openEdit: (transaction: Transaction) => {
@@ -50,6 +56,8 @@ export function MovementSheetProvider({ children }: { children: ReactNode }) {
           transferTo={state.toAccountId}
           transferAmountCents={state.amountCents}
           tripId={state.tripId}
+          initialValues={state.initial}
+          initialShared={state.shared}
           onClose={() => setState(null)}
         />
       )}

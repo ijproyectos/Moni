@@ -5,6 +5,10 @@ import type { CustomCategory } from './onboarding'
 export interface LocalPreferences {
   secondaryCurrency: 'USD' | null
   notificationsOptIn: boolean | null
+  /** Monthly income typed in the onboarding (client only: there is no column for it). */
+  monthlyIncomeCents?: number
+  /** Day of the month the person gets paid. */
+  payDay?: number | null
 }
 
 export interface OnboardingDraft {
@@ -13,6 +17,7 @@ export interface OnboardingDraft {
   custom: CustomCategory[]
   usesDollars: boolean
   notificationsOptIn: boolean | null
+  income?: { incomeCents: number; payDay: number | null } | null
 }
 
 const prefsKey = (userId: string) => `moni:prefs:${userId}`
@@ -40,6 +45,15 @@ const session = () => (typeof window === 'undefined' ? undefined : window.sessio
 
 export function saveLocalPreferences(userId: string, prefs: LocalPreferences) {
   write(local(), prefsKey(userId), prefs)
+}
+
+/** Adds fields to the stored preferences without losing the ones already there. */
+export function mergeLocalPreferences(userId: string, patch: Partial<LocalPreferences>) {
+  const current = read<LocalPreferences>(local(), prefsKey(userId)) ?? {
+    secondaryCurrency: null,
+    notificationsOptIn: null,
+  }
+  write(local(), prefsKey(userId), { ...current, ...patch })
 }
 
 export function loadLocalPreferences(userId: string): LocalPreferences | null {

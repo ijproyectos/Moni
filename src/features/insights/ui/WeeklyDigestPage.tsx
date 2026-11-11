@@ -93,7 +93,7 @@ export function WeeklyDigestPage() {
                 {formatArs(current.data.expenseCents)}
               </p>
               {comparison.deltaPercent !== null && comparison.direction !== 'same' && (
-                <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[15px] font-extrabold text-forest">
+                <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[15px] font-extrabold text-on-bright">
                   {comparison.direction === 'up' ? (
                     <ArrowUp aria-hidden="true" className="size-4" />
                   ) : (

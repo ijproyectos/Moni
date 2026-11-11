@@ -210,4 +210,21 @@ describe('RecentMovements: groups by day and expands', () => {
     setup(many(8), undefined, 40)
     expect(screen.getByRole('link', { name: 'Ver los 40' })).toHaveAttribute('href', '/actividad')
   })
+
+  it('the "latest" variant (Hoy) shows only the newest movement in a card, no day headings', () => {
+    render(
+      <MemoryRouter>
+        <RecentMovements
+          variant="latest"
+          today="2026-11-05"
+          movements={[movement(), movement({ id: 'm2', note: 'Belleza' })]}
+        />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('heading', { name: 'Últimos movimientos' })).toBeInTheDocument()
+    expect(screen.getByText('ChatGPT')).toBeInTheDocument()
+    expect(screen.queryByText('Belleza')).toBeNull()
+    expect(screen.queryByRole('heading', { level: 3 })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Ver todos →' })).toHaveAttribute('href', '/actividad')
+  })
 })

@@ -107,7 +107,12 @@ export function SharedExpenseSheet({
   }
 
   return (
-    <BottomSheet title={editing ? 'Editar gasto' : 'Nuevo gasto'} onClose={onClose}>
+    <BottomSheet
+      title={editing ? 'Editar gasto' : 'Dividir gasto'}
+      subtitle={overlay.name ?? group.data?.name}
+      variant="screen"
+      onClose={onClose}
+    >
       {isLoading ? (
         <div role="status" aria-label="Cargando" className="flex flex-col gap-3">
           <Skeleton className="h-16" />
@@ -134,7 +139,7 @@ export function SharedExpenseSheet({
           onSubmitSimulated={(expense) => void submitSimulated(expense)}
           initial={editing}
           defaults={{ payerAccountId: paymentOf?.accountId ?? null }}
-          submitLabel={editing ? 'Guardar cambios' : 'Guardar gasto'}
+          submitLabel={editing ? 'Guardar cambios' : 'Guardar en el grupo'}
           onDelete={onDelete}
         />
       )}

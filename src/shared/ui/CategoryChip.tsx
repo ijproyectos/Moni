@@ -37,7 +37,7 @@ export function CategoryChip({
           (selected ? 'border-transparent bg-forest text-cream' : 'border-line bg-card text-ink'),
         surface === 'dark' &&
           (selected
-            ? 'border-transparent bg-cream text-forest'
+            ? 'border-transparent bg-cream text-on-bright'
             : 'border-lime/30 bg-transparent text-cream'),
         className,
       )}

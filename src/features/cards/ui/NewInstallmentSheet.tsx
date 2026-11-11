@@ -226,7 +226,7 @@ export function NewInstallmentSheet({
         )}
         {per > 0 && last && (
           <div className="rounded-[22px] bg-forest p-4 text-cream">
-            <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-lime">
+            <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-cream">
               Moni calcula
             </p>
             <p className="font-display text-[24px] font-extrabold">{formatArs(per)} por mes</p>

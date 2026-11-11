@@ -1,4 +1,4 @@
-import { CreditCard, Plus } from 'lucide-react'
+import { Banknote, CreditCard, Landmark, Plus, WalletCards, type LucideIcon } from 'lucide-react'
 import { useState, type MouseEvent } from 'react'
 import { useSearchParams } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
@@ -14,18 +14,22 @@ import { toUserMessage } from '@/shared/lib/errors'
 import type { AccountKind } from '@/shared/lib/database.types'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { cn } from '@/shared/ui/cn'
-import { DashedButton, HeaderAddButton } from '@/shared/ui/kit'
+import { DashedButton } from '@/shared/ui/kit'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
+import { Kicker } from '@/shared/ui/Kicker'
+import { MentaHeader } from '@/shared/ui/MentaHeader'
+import { MENTA_CIRCLE } from '@/shared/ui/mentaStyles'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
-import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { useAccounts, useArchiveAccount, useCreateAccount } from '../api/useAccounts'
 import {
   ACCOUNT_KIND_LABELS,
+  availableBalance,
   availableCredit,
   isCreditCard,
   type Account,
@@ -33,10 +37,10 @@ import {
 } from '../domain/account'
 import type { OpeningOrigin } from '../domain/openingOrigin'
 import { brandForAccountName } from '../domain/bankCatalog'
-import { skinForAccountName, skinStyle } from '../domain/cardSkins'
+import { skinForAccountName } from '../domain/cardSkins'
 import { AccountDetail } from './AccountDetail'
 import { AccountForm } from './AccountForm'
-import { BrandBadge, BrandCardArt } from './BrandCardArt'
+import { BrandBadge } from './BrandCardArt'
 import { BrandLogo } from './BrandLogo'
 
 const KIND_SUBTITLES: Record<AccountKind, string> = {
@@ -53,6 +57,82 @@ const CARD_TONES = [
   'bg-[#3f6b57] text-cream',
   'bg-[#6f8f5a] text-white',
 ]
+
+const KIND_ICONS: Record<AccountKind, { icon: LucideIcon; tile: string }> = {
+  bank: { icon: Landmark, tile: 'bg-tint-green text-mint-ink' },
+  wallet: { icon: WalletCards, tile: 'bg-tint-blue text-[#285A86] dark:text-ink' },
+  cash: { icon: Banknote, tile: 'bg-tint-gold text-[#5A4300] dark:text-ink' },
+  credit_card: { icon: CreditCard, tile: 'bg-tint-violet text-[#4A3F96] dark:text-ink' },
+}
+
+/** Row of Medios de pago: tinted icon (or the entity's logo), name, subtitle and balance / card debt. */
+function AccountRow({
+  account,
+  last,
+  reserve,
+  onOpen,
+}: {
+  account: Account
+  last: boolean
+  reserve: { reservedCents: number; freeCents: number } | undefined
+  onOpen: (card: HTMLElement | null) => void
+}) {
+  const brand = brandForAccountName(account.name)
+  // Banks and wallets of the catalog wear their own identity; cash and custom media keep the tinted icon.
+  const skin = skinForAccountName(account.name)
+  const { icon: Icon, tile } = KIND_ICONS[account.kind] ?? KIND_ICONS.bank
+  const card = isCreditCard(account)
+  const credit = card ? availableCredit(account) : null
+  return (
+    <li data-account-card className={cn('border-line', !last && 'border-b')}>
+      <button
+        type="button"
+        onClick={(e: MouseEvent<HTMLElement>) => onOpen(e.currentTarget.closest('[data-account-card]'))}
+        aria-label={`Abrir ${account.name}`}
+        className={cn('grid w-full grid-cols-[40px_1fr_auto] items-center gap-3 py-[9px] text-left', FOCUS_RING)}
+      >
+        {brand ? (
+          <span
+            aria-hidden="true"
+            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white"
+          >
+            {skin ? <BrandBadge brand={brand} skin={skin} size="sm" /> : <BrandLogo brand={brand} size="sm" />}
+          </span>
+        ) : (
+          <span aria-hidden="true" className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', tile)}>
+            <Icon className="size-[18px]" strokeWidth={2} />
+          </span>
+        )}
+        <span className="min-w-0">
+          <span className="block truncate text-[15px] font-semibold">{account.name}</span>
+          <span className="block text-[12px] text-text-muted">
+            {KIND_SUBTITLES[account.kind] ?? ACCOUNT_KIND_LABELS[account.kind]}
+            {card && account.closingDay && account.dueDay ? ` · cierra el ${account.closingDay}` : ''}
+          </span>
+          {!card && (reserve?.reservedCents ?? 0) > 0 && (
+            <span className="block text-[12px] font-semibold text-text-muted">
+              Reservado para metas <AmountDisplay cents={reserve?.reservedCents ?? 0} /> ·{' '}
+              {(reserve?.freeCents ?? 0) < 0 ? '⚠ ' : ''}libre <AmountDisplay cents={reserve?.freeCents ?? 0} />
+            </span>
+          )}
+        </span>
+        {card ? (
+          <span className="text-right">
+            <span className="block text-[12px] text-text-muted">{account.balanceCents > 0 ? 'A favor' : 'Deuda'}</span>
+            <AmountDisplay cents={Math.abs(account.balanceCents)} className="whitespace-nowrap text-[15px] font-semibold" />
+            {credit !== null && (
+              <span className="block text-[12px] text-text-muted">
+                Disponible <AmountDisplay cents={credit} />
+              </span>
+            )}
+          </span>
+        ) : (
+          <AmountDisplay cents={account.balanceCents} className="whitespace-nowrap text-[15px] font-semibold" />
+        )}
+      </button>
+    </li>
+  )
+}
 
 /** The card that was opened (its detail grows from where the card was in the list). */
 type Opened = { id: string; tone: string; origin: { top: number; height: number } } | null
@@ -88,8 +168,7 @@ export function AccountsPage() {
 
   const list = accounts.data ?? []
   const openedAccount = opened ? list.find((a) => a.id === opened.id) : undefined
-  const featuredId = list[list.length - 1]?.id
-  const hasCards = list.some(isCreditCard)
+    const hasCards = list.some(isCreditCard)
 
   function startCreating() {
     setSubmitError(null)
@@ -126,24 +205,32 @@ export function AccountsPage() {
   }
 
   return (
-    <section className="flex flex-col gap-4 px-5 pt-14">
-      <PageHeader
+    <section className="flex flex-col gap-3 px-[18px] pb-4 pt-1">
+      <MentaHeader
         title="Medios de pago"
-        backTo="/mas"
+        subtitle={accounts.data ? `${list.length} ${list.length === 1 ? 'medio' : 'medios'}` : undefined}
+        backTo="/perfil"
         action={
-          tab === 'cuotas' ? (
-            <HeaderAddButton label="Nueva compra en cuotas" onClick={() => setNewPurchase(true)} />
-          ) : (
-            <HeaderAddButton
-              label={tab === 'tarjetas' ? 'Agregar tarjeta' : 'Nuevo medio de pago'}
-              onClick={startCreating}
-            />
-          )
+          <button
+            type="button"
+            onClick={tab === 'cuotas' ? () => setNewPurchase(true) : startCreating}
+            aria-label={
+              tab === 'cuotas'
+                ? 'Nueva compra en cuotas'
+                : tab === 'tarjetas'
+                  ? 'Agregar tarjeta'
+                  : 'Nuevo medio de pago'
+            }
+            className={MENTA_CIRCLE}
+          >
+            <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />
+          </button>
         }
       />
       {(hasCards || tab !== 'medios') && (
         <SegmentedControl
           label="Medios, tarjetas o cuotas"
+          variant="menta"
           value={tab}
           onChange={(t) => setParams(t === 'medios' ? {} : { tab: t }, { replace: true })}
           options={[
@@ -153,10 +240,6 @@ export function AccountsPage() {
           ]}
         />
       )}
-      {tab === 'medios' && (
-        <p className="-mt-1 text-[16px] text-text-muted">Tocá un medio para ver su detalle.</p>
-      )}
-
       {tab === 'cuotas' ? (
         <InstallmentsPanel />
       ) : tab === 'tarjetas' ? (
@@ -186,138 +269,43 @@ export function AccountsPage() {
               description="Creá uno para empezar a cargar movimientos."
             />
           ) : (
-            <ul aria-label="Medios de pago" className="flex flex-col">
-              {list.map((account, i) => {
-                const featured = account.id === featuredId
-                const brand = brandForAccountName(account.name)
-                // Banks and wallets of the catalog wear their own identity; cash and custom media keep Moni's colors.
-                const skin = skinForAccountName(account.name)
-                const tone =
-                  (featured ? CARD_TONES[3] : CARD_TONES[i % 3]) ?? 'bg-forest text-cream'
-                return (
-                  <li
-                    key={account.id}
-                    className={cn(i > 0 && '-mt-5', 'relative')}
-                    style={{ zIndex: i }}
-                  >
-                    <div
-                      data-account-card
-                      className={cn(
-                        'relative overflow-hidden rounded-[28px] shadow-[0_-6px_16px_rgb(16_48_30/0.14)]',
-                        !skin && tone,
-                      )}
-                      style={skin ? skinStyle(skin) : undefined}
-                    >
-                      {skin && <BrandCardArt skin={skin} />}
-                      <button
-                        type="button"
-                        onClick={(e: MouseEvent<HTMLElement>) =>
-                          openDetail(account, tone, e.currentTarget.closest('[data-account-card]'))
-                        }
-                        aria-label={`Abrir ${account.name}`}
-                        className="relative flex w-full items-start justify-between gap-3 px-5 pb-8 pt-4 text-left"
-                      >
-                        <span className="flex items-start gap-3">
-                          {brand &&
-                            (skin ? (
-                              <BrandBadge brand={brand} skin={skin} className="mt-0.5" />
-                            ) : (
-                              <BrandLogo brand={brand} className="mt-0.5" />
-                            ))}
-                          <span>
-                            <span className="block text-[20px] font-extrabold leading-6">
-                              {account.name}
-                            </span>
-                            <span className="block text-[15px] opacity-80">
-                              {KIND_SUBTITLES[account.kind] ?? ACCOUNT_KIND_LABELS[account.kind]}
-                              {account.closingDay && account.dueDay
-                                ? ` · cierra el ${account.closingDay}`
-                                : ''}
-                            </span>
-                            {!isCreditCard(account) &&
-                              (reserve.get(account.id)?.reservedCents ?? 0) > 0 && (
-                                <span className="mt-0.5 block text-[14px] font-extrabold">
-                                  Reservado para metas{' '}
-                                  <AmountDisplay
-                                    cents={reserve.get(account.id)?.reservedCents ?? 0}
-                                  />{' '}
-                                  · {(reserve.get(account.id)?.freeCents ?? 0) < 0 ? '⚠ ' : ''}libre{' '}
-                                  <AmountDisplay cents={reserve.get(account.id)?.freeCents ?? 0} />
-                                </span>
-                              )}
-                          </span>
-                        </span>
-                        {featured ? null : isCreditCard(account) ? (
-                          <span className="text-right">
-                            <span className="block text-[13px] opacity-80">
-                              {account.balanceCents > 0 ? 'A favor' : 'Deuda'}
-                            </span>
-                            <AmountDisplay
-                              cents={Math.abs(account.balanceCents)}
-                              className="text-[19px] font-extrabold"
-                            />
-                            {availableCredit(account) !== null && (
-                              <span className="block text-[13px] opacity-80">
-                                Disponible <AmountDisplay cents={availableCredit(account) ?? 0} />
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          <AmountDisplay
-                            cents={account.balanceCents}
-                            className="text-[19px] font-extrabold"
+            <>
+              <section aria-label="Saldo en cuentas" className="flex flex-col gap-1.5 rounded-[30px] bg-mint px-[18px] py-4 text-white">
+                <Kicker as="h2" className="font-medium text-[#CBEBD9]">
+                  Saldo en cuentas
+                </Kicker>
+                <AmountDisplay
+                  cents={availableBalance(list)}
+                  className="text-[42px] font-bold leading-none tracking-[-0.04em]"
+                />
+                <p className="text-[13.5px] text-[#DDF3E6]">Sin contar tarjetas de crédito</p>
+              </section>
+              {[
+                { title: 'Cuentas y billeteras', items: list.filter((a) => !isCreditCard(a)) },
+                { title: 'Tarjetas de crédito', items: list.filter(isCreditCard) },
+              ]
+                .filter((group) => group.items.length > 0)
+                .map((group) => (
+                  <div key={group.title} className="flex flex-col gap-2">
+                    <Kicker as="h2">{group.title}</Kicker>
+                    <ul aria-label={group.title} className="rounded-[26px] bg-card px-4 py-0.5">
+                      {group.items.map((account, i) => {
+                        const index = list.indexOf(account)
+                        const tone = CARD_TONES[index % 3] ?? 'bg-forest text-cream'
+                        return (
+                          <AccountRow
+                            key={account.id}
+                            account={account}
+                            last={i === group.items.length - 1}
+                            reserve={reserve.get(account.id)}
+                            onOpen={(card) => openDetail(account, tone, card)}
                           />
-                        )}
-                      </button>
-                      {featured && (
-                        <div className="relative px-5 pb-5">
-                          {!skin && (
-                            <>
-                              <span
-                                aria-hidden="true"
-                                className="pointer-events-none absolute -right-10 -top-6 size-44 rounded-full bg-white/15"
-                              />
-                              <span
-                                aria-hidden="true"
-                                className="pointer-events-none absolute -bottom-16 right-10 size-44 rounded-full bg-white/15"
-                              />
-                            </>
-                          )}
-                          <p className="text-[15px]">
-                            {isCreditCard(account)
-                              ? account.balanceCents > 0
-                                ? 'A favor'
-                                : 'Deuda'
-                              : 'Saldo'}
-                          </p>
-                          <AmountDisplay
-                            cents={
-                              isCreditCard(account)
-                                ? Math.abs(account.balanceCents)
-                                : account.balanceCents
-                            }
-                            className="block font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight"
-                          />
-                          {isCreditCard(account) && availableCredit(account) !== null && (
-                            <p className="text-[15px]">
-                              Disponible{' '}
-                              <AmountDisplay
-                                cents={availableCredit(account) ?? 0}
-                                className="font-extrabold"
-                              />
-                            </p>
-                          )}
-                          <div className="mt-3 flex items-center justify-between">
-                            <span />
-                            <CreditCard aria-hidden="true" className="relative size-7" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                ))}
+            </>
           )}
 
           <DashedButton onClick={startCreating}>

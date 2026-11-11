@@ -1,9 +1,11 @@
-import { Send } from 'lucide-react'
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { ArrowUp, Mic } from 'lucide-react'
+import { Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useSpeechRecognition } from '@/features/ai/ui/useSpeechRecognition'
 import { usePlus } from '@/features/plus/api/usePlus'
 import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { Panel } from '@/shared/ui/kit'
 import { useAssistantChat } from '../api/useAssistantChat'
 import {
@@ -12,23 +14,32 @@ import {
   isSendable,
   type ChatMessage,
 } from '../domain/chat'
+import { parsePurchaseMessage } from '../domain/purchaseVerdict'
+import { PurchaseVerdictCard } from './PurchaseVerdictCard'
 
 function Bubble({ message }: { message: ChatMessage }) {
   const mine = message.role === 'user'
   return (
-    <li className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
-      <p
-        className={cn(
-          'max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] px-4 py-3 text-[16px] leading-6',
-          mine
-            ? 'rounded-br-md bg-forest text-cream'
-            : 'rounded-bl-md border border-line bg-card text-ink',
-        )}
-      >
-        <span className="sr-only">{mine ? 'Vos: ' : 'Moni: '}</span>
-        {message.content}
-      </p>
-    </li>
+    <p
+      className={cn(
+        'max-w-[86%] whitespace-pre-wrap break-words px-3.5 py-[9px] text-[14.5px] leading-[1.35]',
+        mine
+          ? 'self-end rounded-[26px_20px_6px_20px] bg-mint text-white'
+          : 'self-start rounded-[26px_20px_20px_6px] bg-card text-ink',
+      )}
+    >
+      <span className="sr-only">{mine ? 'Vos: ' : 'Moni: '}</span>
+      {message.content}
+    </p>
+  )
+}
+
+function MoniBubble({ children }: { children: ReactNode }) {
+  return (
+    <p className="self-start max-w-[86%] rounded-[26px_20px_20px_6px] bg-card px-3.5 py-[9px] text-[14.5px] leading-[1.35] text-ink">
+      <span className="sr-only">Moni: </span>
+      {children}
+    </p>
   )
 }
 
@@ -52,6 +63,7 @@ export function AssistantConversation({
   const [draft, setDraft] = useState('')
   const [upsell, setUpsell] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
+  const speech = useSpeechRecognition({ onTranscript: setDraft })
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' })
@@ -77,38 +89,23 @@ export function AssistantConversation({
         </Panel>
       ) : (
         <>
-          {chat.messages.length === 0 ? (
-            <div className="flex flex-col gap-2" role="group" aria-label="Preguntas sugeridas">
-              {greeting && (
-                <p className="mb-1 max-w-[90%] rounded-[20px] rounded-bl-md border border-line bg-card px-4 py-3 text-[16px] leading-6 text-ink">
-                  <span className="sr-only">Moni: </span>
-                  {greeting}
-                </p>
-              )}
-              {suggestions.map((question) => (
-                <button
-                  key={question}
-                  type="button"
-                  disabled={chat.isPending}
-                  onClick={() => chat.send(question)}
-                  className="min-h-11 rounded-full border border-line bg-card px-4 py-2 text-left text-[16px] font-bold text-ink disabled:opacity-60"
-                >
-                  {question}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <ul
-              role="log"
-              aria-label="Conversación con Moni"
-              aria-live="polite"
-              className="flex flex-col gap-3"
-            >
-              {chat.messages.map((m) => (
-                <Bubble key={m.id} message={m} />
-              ))}
-            </ul>
-          )}
+          <div
+            role="log"
+            aria-label="Conversación con Moni"
+            aria-live="polite"
+            className="flex flex-col gap-2"
+          >
+            {chat.messages.length === 0 && greeting && <MoniBubble>{greeting}</MoniBubble>}
+            {chat.messages.map((m) => {
+              const purchase = m.role === 'user' ? parsePurchaseMessage(m.content) : null
+              return (
+                <Fragment key={m.id}>
+                  <Bubble message={m} />
+                  {purchase && <PurchaseVerdictCard request={purchase} message={m.content} />}
+                </Fragment>
+              )
+            })}
+          </div>
 
           {chat.isPending && (
             <p role="status" className="flex items-center gap-2 text-[15px] text-text-muted">
@@ -135,6 +132,27 @@ export function AssistantConversation({
           )}
           <div ref={endRef} />
 
+          <div
+            role="group"
+            aria-label="Preguntas sugeridas"
+            className="-mr-5 flex gap-2 overflow-x-auto pr-5 [scrollbar-width:none]"
+          >
+            {suggestions.map((question) => (
+              <button
+                key={question}
+                type="button"
+                disabled={chat.isPending}
+                onClick={() => chat.send(question)}
+                className={cn(
+                  'min-h-11 shrink-0 whitespace-nowrap rounded-full bg-card px-[13px] text-[13px] font-medium text-ink disabled:opacity-60',
+                  FOCUS_RING,
+                )}
+              >
+                {question}
+              </button>
+            ))}
+          </div>
+
           <form
             onSubmit={submit}
             className={cn(
@@ -142,23 +160,43 @@ export function AssistantConversation({
               !inSheet && 'sticky bottom-0 z-20 -mx-5 px-5 pb-[max(env(safe-area-inset-bottom),8px)]',
             )}
           >
-            <input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              maxLength={ASSISTANT_LIMITS.maxChars}
-              aria-label="Tu pregunta"
-              placeholder="Preguntale algo a Moni"
-              autoComplete="off"
-              className="h-12 min-w-0 flex-1 rounded-full border border-line bg-card px-4 text-[16px] text-ink"
-            />
-            <button
-              type="submit"
-              aria-label="Enviar"
-              disabled={chat.isPending || !isSendable(draft)}
-              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-forest text-cream disabled:opacity-60 dark:bg-lime dark:text-forest"
-            >
-              <Send aria-hidden="true" className="size-5" />
-            </button>
+            <div className="flex h-[50px] min-w-0 flex-1 items-center gap-2 rounded-full border border-line bg-card pl-4 pr-1.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-mint-ink">
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                maxLength={ASSISTANT_LIMITS.maxChars}
+                aria-label="Tu pregunta"
+                placeholder="Preguntale a Moni…"
+                autoComplete="off"
+                className="min-w-0 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-[#8A9A90]"
+              />
+              {speech.supported && (
+                <button
+                  type="button"
+                  aria-label={speech.listening ? 'Detener dictado' : 'Dictar pregunta'}
+                  aria-pressed={speech.listening}
+                  onClick={speech.listening ? speech.stop : speech.start}
+                  className={cn(
+                    'flex size-[38px] shrink-0 items-center justify-center rounded-full bg-sand text-ink',
+                    speech.listening && 'bg-lilac',
+                    FOCUS_RING,
+                  )}
+                >
+                  <Mic aria-hidden="true" className="size-[18px]" />
+                </button>
+              )}
+              <button
+                type="submit"
+                aria-label="Enviar"
+                disabled={chat.isPending || !isSendable(draft)}
+                className={cn(
+                  'flex size-[38px] shrink-0 items-center justify-center rounded-full bg-mint text-white disabled:opacity-60',
+                  FOCUS_RING,
+                )}
+              >
+                <ArrowUp aria-hidden="true" className="size-[18px]" strokeWidth={2.2} />
+              </button>
+            </div>
           </form>
           <p className="text-center text-[13px] text-text-muted">
             Moni puede equivocarse y no da asesoramiento financiero.

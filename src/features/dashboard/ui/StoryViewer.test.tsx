@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import type { Story } from '../domain/stories'
@@ -87,14 +87,18 @@ describe('StoryViewer', () => {
     expect(onViewed).toHaveBeenCalledWith(gastos)
   })
 
-  it('the progress shows the slide of the story, and tapping right and left moves through them', async () => {
+  it('the progress has one bar per story, and tapping right and left moves through the slides', async () => {
     const { user } = setup()
     const progress = () => screen.getByRole('progressbar', { name: 'Avance de la historia' })
     expect(progress()).toHaveAttribute('aria-valuenow', '1')
     expect(progress()).toHaveAttribute('aria-valuemax', '2')
+    expect(progress().children).toHaveLength(2)
+    await user.click(screen.getByRole('button', { name: 'Siguiente' }))
+    // Still the first story: its second slide.
+    expect(progress()).toHaveAttribute('aria-valuenow', '1')
+    expect(screen.getByRole('dialog')).toHaveTextContent('Casi llegás')
     await user.click(screen.getByRole('button', { name: 'Siguiente' }))
     expect(progress()).toHaveAttribute('aria-valuenow', '2')
-    expect(screen.getByRole('dialog')).toHaveTextContent('Casi llegás')
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(progress()).toHaveAttribute('aria-valuenow', '1')
   })
@@ -206,5 +210,101 @@ describe('StoryViewer', () => {
   it('hosts the recurring reminders as they are', () => {
     setup([story('recordatorios', [{ title: 'Pagos', body: 'x', embed: 'recurring-reminders' }])])
     expect(screen.getByText('pagos próximos')).toBeInTheDocument()
+  })
+
+  describe('Menta viewer', () => {
+    const withTip = story('limites', [
+      {
+        title: 'Cerca de un límite',
+        figure: '$3.000',
+        body: 'Llevás el 80%.',
+        tip: 'Mirá cuánto te queda antes de comprar.',
+      },
+      { title: 'Sin consejo', body: 'Solo lo que pasó.' },
+    ])
+
+    it('maps body to "Qué pasó" and shows the tip as "Qué podés mejorar"', () => {
+      setup([withTip])
+      const dialog = screen.getByRole('dialog')
+      expect(dialog).toHaveTextContent('Qué pasó')
+      expect(dialog).toHaveTextContent('Llevás el 80%.')
+      expect(dialog).toHaveTextContent('Qué podés mejorar')
+      expect(dialog).toHaveTextContent('Mirá cuánto te queda antes de comprar.')
+    })
+
+    it('a slide without tip does not show the "Qué podés mejorar" card', async () => {
+      const { user } = setup([withTip])
+      await user.click(screen.getByRole('button', { name: 'Siguiente' }))
+      expect(screen.getByRole('dialog')).toHaveTextContent('Solo lo que pasó.')
+      expect(screen.queryByText('Qué podés mejorar')).toBeNull()
+    })
+
+    it('shows the cat with "Moni", the kicker and a previous / next row', () => {
+      setup([metas])
+      const dialog = screen.getByRole('dialog')
+      expect(dialog).toHaveTextContent('Moni')
+      expect(dialog).toHaveTextContent('METAS')
+      expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: 'Siguiente' })).toBeEnabled()
+    })
+
+    it('the last "Siguiente" closes the viewer', async () => {
+      const { user, onClose } = setup([gastos])
+      await user.click(screen.getByRole('button', { name: 'Siguiente' }))
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('auto-advances after about 6 seconds of reading with fake timers, and a hold pauses it', () => {
+      vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] })
+      try {
+        setup([
+          story('uno', [
+            { title: 'Uno', body: 'a' },
+            { title: 'Dos', body: 'b' },
+          ]),
+        ])
+        const dialog = screen.getByRole('dialog')
+        const area = screen.getByTestId('story-tap-next')
+        act(() => void fireEvent.pointerDown(area))
+        act(() => void vi.advanceTimersByTime(30_000))
+        expect(dialog).toHaveTextContent('Uno')
+        act(() => void fireEvent.pointerUp(area))
+        act(() => void vi.advanceTimersByTime(7_500))
+        expect(dialog).toHaveTextContent('Dos')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('tapping the left and right areas navigates', () => {
+      setup()
+      const dialog = screen.getByRole('dialog')
+      fireEvent.pointerDown(screen.getByTestId('story-tap-next'))
+      fireEvent.pointerUp(screen.getByTestId('story-tap-next'))
+      expect(dialog).toHaveTextContent('Casi llegás')
+      fireEvent.pointerDown(screen.getByTestId('story-tap-prev'))
+      fireEvent.pointerUp(screen.getByTestId('story-tap-prev'))
+      expect(dialog).toHaveTextContent('Este mes te faltan')
+    })
+
+    it('swiping down closes it, and a short drag does not', () => {
+      const { onClose } = setup()
+      const area = screen.getByTestId('story-tap-next')
+      fireEvent.pointerDown(area, { clientX: 100, clientY: 100 })
+      fireEvent.pointerUp(area, { clientX: 105, clientY: 140 })
+      expect(onClose).not.toHaveBeenCalled()
+      fireEvent.pointerDown(area, { clientX: 100, clientY: 100 })
+      fireEvent.pointerUp(area, { clientX: 110, clientY: 260 })
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('traps the focus inside the dialog', async () => {
+      const { user } = setup()
+      const dialog = screen.getByRole('dialog')
+      for (let i = 0; i < 12; i++) {
+        await user.tab()
+        expect(dialog.contains(document.activeElement)).toBe(true)
+      }
+    })
   })
 })

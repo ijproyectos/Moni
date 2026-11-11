@@ -71,6 +71,12 @@ async function throughBenefits(user: ReturnType<typeof renderFlow>) {
   await user.click(screen.getByRole('button', { name: 'Continuar' }))
 }
 
+/** The income step is optional: "Saltar" goes on to the notifications. */
+async function skipIncome(user: ReturnType<typeof renderFlow>) {
+  expect(screen.getByRole('heading', { name: '¿Cuánto cobrás por mes?' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Saltar' }))
+}
+
 async function goToCategories() {
   const user = renderFlow()
   await user.click(screen.getByRole('button', { name: /Saber en qué se me va la plata/ }))
@@ -117,6 +123,7 @@ describe('OnboardingPage', () => {
     await user.type(screen.getByLabelText('Nombre'), 'Gimnasio')
     await user.click(screen.getByRole('button', { name: 'Guardar' }))
     await user.click(screen.getByRole('button', { name: 'Continuar · 3 elegidas' }))
+    await skipIncome(user)
     await user.click(screen.getByRole('button', { name: 'Más tarde' }))
     await waitFor(() => expect(mutateAsync).toHaveBeenCalled())
     expect(mutateAsync).toHaveBeenCalledWith({
@@ -129,9 +136,29 @@ describe('OnboardingPage', () => {
     expect(await screen.findByText('home')).toBeInTheDocument()
   })
 
+  it('the income step suggests a budget only once there is an amount, and saves it on the device', async () => {
+    const user = await goToCategories()
+    await user.click(screen.getByRole('button', { name: 'Continuar · 3 elegidas' }))
+    expect(screen.queryByText(/Te sugiero un presupuesto/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled()
+    await user.type(screen.getByLabelText('Ingreso mensual'), '1000000')
+    expect(screen.getByText(/Te sugiero un presupuesto de/)).toHaveTextContent('$850.000')
+    expect(screen.getByText('Así te queda un 15% para ahorrar cada mes.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '15' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+    await user.click(screen.getByRole('button', { name: 'Más tarde' }))
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalled())
+    const saved = JSON.parse(window.localStorage.getItem('moni:prefs:user-1') ?? '{}') as {
+      monthlyIncomeCents?: number
+      payDay?: number
+    }
+    expect(saved).toMatchObject({ monthlyIncomeCents: 1_000_000_00, payDay: 15 })
+  })
+
   it('has no Pro paywall step while the pro flag is off, even from a deep link', async () => {
     const user = await goToCategories()
     await user.click(screen.getByRole('button', { name: 'Continuar · 3 elegidas' }))
+    await skipIncome(user)
     await user.click(screen.getByRole('button', { name: 'Más tarde' }))
     expect(screen.queryByRole('button', { name: 'Ahora no' })).toBeNull()
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1))
@@ -142,6 +169,7 @@ describe('OnboardingPage', () => {
     try {
       const user = await goToCategories()
       await user.click(screen.getByRole('button', { name: 'Continuar · 3 elegidas' }))
+    await skipIncome(user)
       await user.click(screen.getByRole('button', { name: 'Más tarde' }))
       expect(mutateAsync).not.toHaveBeenCalled()
       expect(screen.getByRole('button', { name: 'Ahora no' })).toBeInTheDocument()
@@ -154,6 +182,7 @@ describe('OnboardingPage', () => {
     mutateAsync.mockRejectedValueOnce(new Error('offline'))
     const user = await goToCategories()
     await user.click(screen.getByRole('button', { name: 'Continuar · 3 elegidas' }))
+    await skipIncome(user)
     await user.click(screen.getByRole('button', { name: 'Más tarde' }))
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(screen.queryByText('home')).not.toBeInTheDocument()
@@ -219,11 +248,11 @@ describe('OnboardingPage', () => {
       expect(mutateAsync).not.toHaveBeenCalled()
     })
 
-    it('Saltar on the categories restores the suggested ones and goes on to the notifications', async () => {
+    it('Saltar on the categories restores the suggested ones and goes on to the income', async () => {
       const user = await goToCategories()
       await user.click(screen.getByRole('button', { name: 'Quitar todas' }))
       await user.click(screen.getByRole('button', { name: 'Saltar' }))
-      expect(screen.getByRole('heading', { name: 'Que no se te escape nada' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: '¿Cuánto cobrás por mes?' })).toBeInTheDocument()
       await user.click(screen.getByRole('button', { name: 'Volver' }))
       expect(screen.getByRole('button', { name: 'Continuar · 3 elegidas' })).toBeInTheDocument()
       expect(mutateAsync).not.toHaveBeenCalled()
@@ -270,6 +299,7 @@ describe('OnboardingPage', () => {
     it('finishes with defaults from the notifications step, bypassing the paywall', async () => {
       const user = await goToCategories()
       await user.click(screen.getByRole('button', { name: 'Continuar · 3 elegidas' }))
+    await skipIncome(user)
       await skipAll(user)
       await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith(defaults))
       expect(await screen.findByText('home')).toBeInTheDocument()
@@ -303,7 +333,7 @@ describe('OnboardingPage', () => {
     it('the progress bar has one segment per step and fills the ones reached', async () => {
       const user = renderFlow()
       const bar = () => screen.getByRole('progressbar', { name: 'Progreso' })
-      expect(bar().children).toHaveLength(5)
+      expect(bar().children).toHaveLength(6)
       expect(bar()).toHaveAttribute('aria-valuenow', '1')
       await user.click(screen.getByRole('button', { name: 'Continuar' }))
       expect(bar()).toHaveAttribute('aria-valuenow', '2')

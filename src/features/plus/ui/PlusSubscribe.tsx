@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { toUserMessage } from '@/shared/lib/errors'
-import { Button } from '@/shared/ui/Button'
+import { cn } from '@/shared/ui/cn'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
+import { MINT_PILL, WHITE_PILL } from '@/shared/ui/mentaStyles'
 import {
   useReactivateSubscription,
   useStartCheckout,
@@ -45,16 +47,23 @@ export function PlusSubscribe() {
   const busy = checkout.isPending || checkout.isSuccess
   const showSubscribe = state !== 'authorized' && state !== 'paused'
 
+  const [price = '', unit = ''] = PLUS_PRICE_DISPLAY.perMonth.split('/')
+
   return (
     <section
       data-mp-subscriptions-page="without-plan-pending"
       aria-label="Suscripción a Moni Plus"
-      className="flex flex-col gap-3 rounded-[18px] border border-line bg-card p-4"
+      className="flex flex-col gap-3"
     >
-      <p className="text-[16px] leading-6">
-        <strong className="font-extrabold">{PLUS_PRICE_DISPLAY.perMonth}</strong> con Mercado Pago.
-        Se renueva cada mes y cancelás cuando quieras.
-      </p>
+      {/* The plan card: only the real monthly plan; the amount charged is decided by the server. */}
+      <div className="flex flex-col gap-0.5 rounded-[18px] bg-card px-3.5 py-3 shadow-[inset_0_0_0_2px_var(--color-mint-ink)]">
+        <span className="text-[13px] font-semibold text-mint-ink">Mensual</span>
+        <span className="text-[19px] font-semibold tracking-[-0.02em]">
+          {price}
+          <span className="text-[13px] font-normal text-text-muted"> /{unit}</span>
+        </span>
+        <span className="text-[12.5px] text-text-muted">Se renueva cada mes con Mercado Pago.</span>
+      </div>
 
       {subscription.isLoading && (
         <p role="status" className="text-[15px] leading-5 text-text-muted">
@@ -89,22 +98,42 @@ export function PlusSubscribe() {
       )}
 
       {showSubscribe && (
-        <Button
-          data-mp-subscription-cta="without-plan-pending"
-          onClick={() => void subscribe()}
-          disabled={busy || subscription.isLoading}
-        >
-          {busy
-            ? 'Preparando el pago…'
-            : state === 'pending'
-              ? `Reintentar · ${PLUS_PRICE_DISPLAY.perMonth}`
-              : SUBSCRIBE_LABEL}
-        </Button>
+        <>
+          {/* The accessible name stays the billing label (it carries the price); the visible copy is the design's. */}
+          <button
+            type="button"
+            data-mp-subscription-cta="without-plan-pending"
+            aria-label={
+              busy
+                ? undefined
+                : state === 'pending'
+                  ? `Reintentar · ${PLUS_PRICE_DISPLAY.perMonth}`
+                  : SUBSCRIBE_LABEL
+            }
+            onClick={() => void subscribe()}
+            disabled={busy || subscription.isLoading}
+            className={cn(MINT_PILL, 'h-[54px] text-[16px] font-semibold')}
+          >
+            {busy
+              ? 'Preparando el pago…'
+              : state === 'pending'
+                ? 'Reintentar con Mercado Pago'
+                : 'Suscribirme con Mercado Pago'}
+          </button>
+          <p className="text-center text-[12.5px] text-text-muted">
+            Cancelás cuando quieras desde Perfil.
+          </p>
+        </>
       )}
       {state === 'paused' && (
-        <Button variant="dark" onClick={() => void resume()} disabled={reactivate.isPending}>
+        <button
+          type="button"
+          onClick={() => void resume()}
+          disabled={reactivate.isPending}
+          className={cn(WHITE_PILL, 'h-[54px] text-[16px] font-semibold', FOCUS_RING)}
+        >
           {reactivate.isPending ? 'Reactivando…' : 'Reactivar suscripción'}
-        </Button>
+        </button>
       )}
     </section>
   )

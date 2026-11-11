@@ -68,3 +68,22 @@ export function caretAfterAmountChars(formatted: string, count: number): number 
   }
   return formatted.length
 }
+
+export type AmountKey = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | ',' | 'back'
+
+/**
+ * Applies a key of the on-screen keypad to the text of an amount field, es-AR style: digits append (with thousands
+ * regrouped), "," starts the decimals (once), "back" deletes the last digit. Never returns a malformed amount.
+ */
+export function applyAmountKey(current: string, key: AmountKey): string {
+  if (key === 'back') {
+    let next = current.slice(0, -1)
+    if (next.endsWith('.')) next = next.slice(0, -1)
+    return formatAmountTyping(next)
+  }
+  if (key === ',') {
+    if (current.includes(',')) return current
+    return formatAmountTyping(`${current === '' ? '0' : current},`)
+  }
+  return formatAmountTyping(current + key)
+}

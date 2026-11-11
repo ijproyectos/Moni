@@ -20,6 +20,9 @@ import { IncomeByMonthPage } from '@/features/dashboard/ui/IncomeByMonthPage'
 import { YearReportPage } from '@/features/dashboard/ui/YearReportPage'
 import { AssistantPage } from '@/features/assistant/ui/AssistantPage'
 import { AntsPage } from '@/features/insights/ui/AntsPage'
+import { InsightsPage } from '@/features/insights/ui/InsightsPage'
+import { HealthPage } from '@/features/health/ui/HealthPage'
+import { InstallmentSimulatorPage } from '@/features/cards/ui/InstallmentSimulatorPage'
 import { WeeklyDigestPage } from '@/features/insights/ui/WeeklyDigestPage'
 import { NotificationsPage } from '@/features/notifications/ui/NotificationsPage'
 import { ProPage } from '@/features/pro/ui/ProPage'
@@ -61,6 +64,7 @@ import { WelcomePage } from '@/features/onboarding/ui/WelcomePage'
 import { MorePage } from '@/features/settings/ui/MorePage'
 import { ProfilePage } from '@/features/settings/ui/ProfilePage'
 import { ActivityPage } from '@/features/transactions/ui/ActivityPage'
+import { BudgetPage } from '@/features/budgets/ui/BudgetPage'
 import type { FeatureFlag } from '@/shared/config/features'
 import { AppShell } from './AppShell'
 import { FeatureGate } from './FeatureGate'
@@ -78,6 +82,9 @@ const simulatedRoutes = [
   { path: 'metas/cuotas', element: <InstallmentsPage /> },
   { path: 'metas/:id', element: <GoalDetailPage /> },
   { path: 'hormigas', element: <AntsPage /> },
+  { path: 'insights', element: <InsightsPage /> },
+  { path: 'salud', element: <HealthPage /> },
+  { path: 'tarjetas/simulador', element: <InstallmentSimulatorPage /> },
   { path: 'hormigas/aviso-semanal', element: gated('weeklyDigest', <WeeklyDigestPage />) },
   { path: 'avisos', element: gated('notifications', <NotificationsPage />) },
   { path: 'pro', element: gated('pro', <ProPage />) },
@@ -96,6 +103,7 @@ const simulatedRoutes = [
 export const appRoutes = [
   { index: true, element: <HomePage /> },
   { path: 'actividad', element: <ActivityPage /> },
+  { path: 'presupuesto', element: <BudgetPage /> },
   { path: 'grupos', element: <GroupsPage /> },
   { path: 'grupos/nuevo', element: <CreateGroupPage /> },
   { path: 'grupos/avisos', element: <GroupNoticesPage /> },

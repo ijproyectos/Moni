@@ -1,13 +1,20 @@
 import { useState } from 'react'
 import mascotUrl from '@/assets/mascot/personaje_asistente.svg'
-import logoUrl from '@/assets/brand/logo_moni_lima.svg'
 import { signInWithGoogle } from '@/features/auth/api/authActions'
 import { clearSuspendedNotice, readSuspendedNotice } from '@/features/auth/domain/suspendedNotice'
 import { SUSPENDED_MESSAGE } from '@/features/support/domain/support'
-import { ArrowRight } from 'lucide-react'
-import { Coin } from '@/shared/ui/Coin'
+import { MessageCircle, Sun, UsersRound } from 'lucide-react'
+import { cn } from '@/shared/ui/cn'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
+import { MINT_PILL } from '@/shared/ui/mentaStyles'
 
-// Screen 01 — Bienvenida. Measurements follow the 390×844 design export.
+const BENEFITS = [
+  { icon: Sun, title: 'Tu disponible del día', text: 'Un número claro, todos los días.', tile: 'bg-ok-bg text-ok-ink' },
+  { icon: MessageCircle, title: '¿Me conviene?', text: 'Preguntame antes de comprar o elegir cuotas.', tile: 'bg-lilac-soft text-[#4A3F96]' },
+  { icon: UsersRound, title: 'Gastos compartidos', text: 'Dividí con tu pareja, familia o amigos.', tile: 'bg-[#FFF0B8] text-[#5A4300]' },
+]
+
+// Screen 016 — Bienvenida (Menta).
 export function WelcomePage() {
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,66 +34,74 @@ export function WelcomePage() {
   }
 
   return (
-    <main className="min-h-dvh bg-forest text-cream">
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-[390px] flex-col px-6 pb-[max(env(safe-area-inset-bottom),38px)]">
-        <img src={logoUrl} alt="moni" className="mx-auto mt-[65px] h-[52px] w-auto" />
-
-        <div className="relative mx-auto mt-[57px] size-[314px]">
-          <div
-            aria-hidden="true"
-            className="absolute left-1/2 top-[38px] size-[258px] -translate-x-1/2 rounded-full bg-surface/60"
+    <main className="min-h-dvh bg-canvas text-ink">
+      <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col gap-3 px-[18px] pb-[max(env(safe-area-inset-bottom),24px)]">
+        <header className="-mx-[18px] flex flex-col items-center gap-4 rounded-b-[40px] bg-mint px-6 pb-[34px] pt-[30px] text-white">
+          <img
+            src={mascotUrl}
+            alt="Moni"
+            className="size-[132px] rounded-full border-[5px] border-lilac bg-card object-cover"
           />
-          <img src={mascotUrl} alt="" className="relative size-full" />
+          <h1 className="text-balance text-center font-display text-[34px] font-bold leading-[1.05] tracking-[-0.03em]">
+            Hola, soy Moni
+          </h1>
+          <p className="max-w-[290px] text-pretty text-center text-[16px] text-[#DDF3E6]">
+            Te digo cuánto podés gastar hoy y te ayudo a decidir qué hacer con tu plata.
+          </p>
+        </header>
+
+        <ul className="flex flex-col gap-3.5 px-1 pt-2.5">
+          {BENEFITS.map(({ icon: Icon, title, text, tile }) => (
+            <li key={title} className="grid grid-cols-[44px_1fr] items-center gap-3.5">
+              <span
+                aria-hidden="true"
+                className={`flex size-11 shrink-0 items-center justify-center rounded-[14px] ${tile}`}
+              >
+                <Icon className="size-5" strokeWidth={2} />
+              </span>
+              <div>
+                <p className="text-[16px] font-bold">{title}</p>
+                <p className="text-[13.5px] text-text-muted">{text}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div aria-hidden="true" className="mt-auto flex justify-center gap-1.5 pt-3">
+          <span className="h-[7px] w-[22px] rounded-full bg-mint" />
+          <span className="size-[7px] rounded-full bg-[#C7D6CB]" />
+          <span className="size-[7px] rounded-full bg-[#C7D6CB]" />
         </div>
 
-        <Coin className="absolute left-[298px] top-[161px] size-10" />
-        <Coin className="absolute left-[39px] top-[204px] size-7" />
-        <Coin variant="hole" className="absolute left-[337px] top-[284px] size-5" />
-        <Coin className="absolute left-[29px] top-[402px] size-[34px]" />
-
-        <h1 className="mt-[24px] text-center font-display text-[38px] font-extrabold uppercase leading-[40px] text-lime">
-          Tu plata,
-          <br />
-          bajo control
-        </h1>
-        <p className="mx-auto mt-[16px] -rotate-3 bg-gold px-4 py-2 font-display text-xl font-extrabold uppercase leading-none text-forest">
-          Sin vueltas
-        </p>
-
-        <div className="mt-auto flex flex-col items-center gap-[15px] pt-9">
-          <button
-            type="button"
-            onClick={handleSignIn}
-            disabled={isRedirecting}
-            className="flex h-14 w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-lime to-[#d6ecc8] font-display text-[17px] font-extrabold text-forest transition active:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Registrarse
-            <span
-              aria-hidden="true"
-              className="flex size-7 items-center justify-center rounded-full bg-forest text-lime"
-            >
-              <ArrowRight className="size-4" strokeWidth={2.5} />
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={handleSignIn}
-            disabled={isRedirecting}
-            className="min-h-11 px-4 text-[15px] font-bold text-text-muted-on-dark hover:underline disabled:opacity-60"
-          >
-            Ya tengo cuenta
-          </button>
-          {suspended && (
-            <p role="alert" className="text-center text-sm text-blush">
-              {SUSPENDED_MESSAGE}
-            </p>
+        <button
+          type="button"
+          onClick={handleSignIn}
+          disabled={isRedirecting}
+          className={cn(MINT_PILL, 'h-[54px] shrink-0 text-[16px] font-bold')}
+        >
+          Empezar
+        </button>
+        <button
+          type="button"
+          onClick={handleSignIn}
+          disabled={isRedirecting}
+          className={cn(
+            'min-h-11 rounded-full text-center text-[14.5px] font-semibold text-mint-ink disabled:opacity-60',
+            FOCUS_RING,
           )}
-          {error && (
-            <p role="alert" className="text-center text-sm text-blush">
-              {error}
-            </p>
-          )}
-        </div>
+        >
+          Ya tengo cuenta
+        </button>
+        {suspended && (
+          <p role="alert" className="text-center text-sm text-expense">
+            {SUSPENDED_MESSAGE}
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="text-center text-sm text-expense">
+            {error}
+          </p>
+        )}
       </div>
     </main>
   )

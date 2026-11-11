@@ -46,7 +46,7 @@ function DayCell({ day, kind, selected, today, onSelect, variant }: DayCellProps
               : 'border-transparent'),
         variant === 'grid' &&
           (selected
-            ? 'bg-forest text-cream dark:bg-lime dark:text-forest'
+            ? 'bg-forest text-cream dark:bg-lime dark:text-on-bright'
             : isToday
               ? 'border-2 border-forest dark:border-lime'
               : ''),
@@ -64,7 +64,7 @@ function DayCell({ day, kind, selected, today, onSelect, variant }: DayCellProps
           className={cn(
             'text-[11px] font-extrabold',
             variant === 'grid' && selected
-              ? 'text-cream dark:text-forest'
+              ? 'text-cream dark:text-on-bright'
               : hasExpense
                 ? 'text-expense'
                 : 'text-income',

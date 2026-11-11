@@ -1,12 +1,33 @@
-import { Camera, ChevronLeft, Images, ShoppingBasket, Sparkles, Trash2 } from 'lucide-react'
+import {
+  Camera,
+  ChevronLeft,
+  CreditCard,
+  EyeOff,
+  HeartPulse,
+  Images,
+  Palette,
+  ShoppingBasket,
+  Sparkles,
+  Trash2,
+} from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useRef, useState, type ReactNode } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { signOut } from '@/features/auth/api/authActions'
 import { useAuth } from '@/features/auth/api/authContext'
 import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
 import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
+import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
+import { useFinancialHealth } from '@/features/health/api/useFinancialHealth'
+import { BAND_LABELS } from '@/features/health/domain/healthScore'
+import { usePendingDebts } from '@/features/debts/api/useDebts'
+import { useFixedExpenses } from '@/features/fixedExpenses/api/useFixedExpenses'
+import { pendingBills } from '@/features/fixedExpenses/domain/fixedExpense'
+import { useSavings } from '@/features/goals/api/useSavings'
+import { cn } from '@/shared/ui/cn'
+import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
+import { SettingCard, SettingRow } from '@/shared/ui/SettingRow'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { useUpdateProfile } from '@/features/auth/api/useUpdateProfile'
 import { displayNameSchema, firstName, initialOf } from '@/features/auth/domain/profile'
@@ -18,7 +39,6 @@ import { PushNotificationsRow } from '@/features/push/ui/PushNotificationsRow'
 import { AchievementsRow } from '@/features/goals/ui/AchievementsRow'
 import { useSubscriptionState } from '@/features/plus/api/useBilling'
 import { usePlus } from '@/features/plus/api/usePlus'
-import { PlusPill } from '@/features/plus/ui/PlusPill'
 import { isCancellable } from '@/features/plus/domain/billing'
 import { CancelPlusSheet } from '@/features/plus/ui/CancelPlusSheet'
 import { formatPlusExpiry } from '@/features/plus/domain/plus'
@@ -42,14 +62,17 @@ import { AppVersion } from '@/shared/ui/AppVersion'
 import { Button } from '@/shared/ui/Button'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import { CheckDot, MoniSays, OptionRow, Page, SectionLabel, Toggle } from '@/shared/ui/kit'
-import { PageHeader } from '@/shared/ui/PageHeader'
-import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { FEATURES } from '@/shared/config/features'
 import { useTheme } from '../api/useTheme'
-import { THEME_LABELS, THEME_MODES } from '../domain/theme'
+import { THEME_LABELS, THEME_MODES, type ThemeMode } from '../domain/theme'
 import { updateProfileExtras, useProfileExtras } from '../mock/profileExtrasStore'
+import {
+  ProfileAccessGrid,
+  ProfileMoreTools,
+  type AccessSubtitles,
+} from './ProfileShortcuts'
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
@@ -74,7 +97,7 @@ function ProfilePhoto({
         initial={initial}
         alt="Tu foto de perfil"
         className={box}
-        fallbackClassName="bg-forest font-display font-extrabold text-lime ring-4 ring-lime/60 ring-offset-2 ring-offset-canvas"
+        fallbackClassName="bg-forest font-display font-extrabold text-cream ring-4 ring-lime/60 ring-offset-2 ring-offset-canvas"
       />
       <button
         type="button"
@@ -92,7 +115,6 @@ function ProfilePhoto({
 export function ProfilePage() {
   const { user } = useAuth()
   const { data: profile, isLoading, isError } = useProfile()
-  const accounts = useAccounts()
   const extras = useProfileExtras()
   const weekly = useWeeklyDigestSettings()
   const toast = useToast()
@@ -101,6 +123,31 @@ export function ProfilePage() {
   const queryClient = useQueryClient()
   const plus = usePlus()
   const subscription = useSubscriptionState()
+  const hiddenAmounts = useHiddenAmounts()
+  const accounts = useAccounts()
+  const allowance = useDailyAllowance()
+  const health = useFinancialHealth()
+  const fixed = useFixedExpenses()
+  const savings = useSavings()
+  const { debts } = usePendingDebts()
+  const accessSubtitles = useMemo<AccessSubtitles>(() => {
+    const out: AccessSubtitles = {}
+    if (allowance.allowance.kind === 'ok')
+      out.Presupuesto = `${formatArs(Math.max(0, allowance.allowance.spendBudgetCents))} por mes`
+    if (fixed.data) {
+      const count = fixed.data.expenses.filter((e) => e.status !== 'removed').length
+      if (count > 0)
+        out['Gastos fijos'] = `${count} · faltan ${pendingBills(fixed.data).length} este mes`
+    }
+    const activeGoals = savings.data?.goals.filter((g) => g.status === 'active').length ?? 0
+    if (activeGoals > 0)
+      out['Metas de ahorro'] = `${activeGoals} ${activeGoals === 1 ? 'meta activa' : 'metas activas'}`
+    const owed = debts
+      .filter((d) => d.direction === 'owed')
+      .reduce((sum, d) => sum + d.amountCents, 0)
+    if (owed > 0) out.Grupos = `te deben ${formatArs(owed)}`
+    return out
+  }, [allowance.allowance, fixed.data, savings.data, debts])
 
   const saved = profile?.display_name ?? ''
   const shortName = firstName(saved) || user?.email?.split('@')[0] || 'Vos'
@@ -117,7 +164,6 @@ export function ProfilePage() {
   const since = createdAt
     ? `Desde ${MONTHS[Number(createdAt.slice(5, 7)) - 1]} ${createdAt.slice(0, 4)}`
     : null
-  const accountCount = accounts.data?.length ?? 0
   const localPrefs = user ? loadLocalPreferences(user.id) : null
   const usesUsd = (profile?.secondary_currency ?? localPrefs?.secondaryCurrency) === 'USD'
   const goalCount = sanitizeGoals(profile?.goals).length
@@ -144,36 +190,124 @@ export function ProfilePage() {
   }
 
   return (
-    <Page className="pb-10">
-      <PageHeader title="Perfil" backTo="/mas" />
+    <Page className="gap-3 pb-10 pt-6">
+      <h1 className="sr-only">Perfil</h1>
 
       {isLoading ? (
-        <Skeleton className="h-48" />
+        <Skeleton className="h-16" />
       ) : isError ? (
         <p role="alert" className="text-center text-expense">
           No pudimos cargar tu perfil.
         </p>
       ) : (
-        <div className="flex flex-col items-center gap-1">
-          <ProfilePhoto url={photo} initial={initial} size="lg" onCamera={() => setSheet('edit')} />
-          <h2 className="mt-3 font-display text-[30px] font-extrabold leading-9">{shortName}</h2>
-          {user?.email && <p className="text-[16px] text-text-muted">{user.email}</p>}
-          <div className="mt-1 flex items-center justify-center gap-2">
-            {plus.isPlus ? (
-              <PlusPill />
-            ) : (
-              <span className="inline-flex h-7 items-center rounded-full bg-sand px-3 text-[13px] font-extrabold leading-none">
-                Plan gratis
-              </span>
-            )}
-            {since && (
-              <span className="inline-flex h-7 items-center rounded-full bg-sand px-3 text-[13px] font-extrabold leading-none">
-                {since}
-              </span>
-            )}
+        <div className="flex items-center gap-3.5 pt-1">
+          <button
+            type="button"
+            onClick={() => setSheet('edit')}
+            aria-label="Editar perfil"
+            className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
+          >
+            <PhotoOrInitial
+              url={photo}
+              initial={initial}
+              alt="Tu foto de perfil"
+              className="size-[58px]"
+              fallbackClassName="bg-mint-soft font-display text-[20px] font-semibold text-mint-ink"
+            />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate font-display text-[21px] font-semibold tracking-[-0.02em]">
+              {saved.trim() || shortName}
+            </h2>
+            {user?.email && <p className="truncate text-[13px] text-text-muted">{user.email}</p>}
           </div>
+          {plus.isPlus ? (
+            <span className="rounded-full bg-gold px-2.5 py-1 text-[11.5px] font-bold tracking-[0.06em] text-mint-ink">
+              ✦ PLUS
+            </span>
+          ) : (
+            <span className="rounded-full bg-sand px-2.5 py-1 text-[11.5px] font-bold tracking-[0.06em] text-text-muted">
+              GRATIS
+            </span>
+          )}
         </div>
       )}
+
+      <Link
+        to="/salud"
+        className="flex items-center gap-3.5 rounded-[26px] bg-mint px-4 py-3.5 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
+      >
+        <span
+          aria-hidden="true"
+          className="flex size-[46px] shrink-0 items-center justify-center rounded-full bg-white/[.18] text-[#FFE58A]"
+        >
+          <HeartPulse className="size-6" strokeWidth={1.9} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16px] font-semibold">Salud financiera</span>
+          <span className="block text-[12.5px] text-[#DDF3E6]">
+            {health.score.kind === 'ok'
+              ? `${health.score.score} de 100 · ${BAND_LABELS[health.score.band]}`
+              : health.isLoading
+                ? 'Mirá cómo viene tu mes'
+                : 'Cargá tus ingresos para medirla'}
+          </span>
+        </span>
+        <ChevronLeft aria-hidden="true" className="size-[18px] rotate-180 text-[#DDF3E6]" />
+      </Link>
+
+      <ProfileAccessGrid subtitles={accessSubtitles} />
+
+      <SettingCard>
+        <SettingRow
+          icon={<Palette className="size-[17px]" strokeWidth={1.9} />}
+          title="Tema de color"
+          trailing={<ThemeSwatches />}
+        />
+        <SettingRow
+          icon={<EyeOff className="size-[17px]" strokeWidth={1.9} />}
+          title="Modo privacidad"
+          trailing={
+            <button
+              type="button"
+              role="switch"
+              aria-checked={hiddenAmounts.hidden}
+              aria-label="Modo privacidad"
+              onClick={hiddenAmounts.toggle}
+              className={cn(
+                'relative h-[26px] w-11 shrink-0 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink motion-reduce:transition-none',
+                hiddenAmounts.hidden ? 'bg-mint' : 'bg-track',
+              )}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'absolute top-[3px] size-5 rounded-full bg-white transition-all motion-reduce:transition-none',
+                  hiddenAmounts.hidden ? 'right-[3px]' : 'left-[3px]',
+                )}
+              />
+            </button>
+          }
+        />
+        <SettingRow
+          icon={<CreditCard className="size-[17px]" strokeWidth={1.9} />}
+          title="Tarjetas y medios de pago"
+          to="/cuentas"
+          trailing={accounts.data ? accounts.data.length : undefined}
+        />
+        <PushNotificationsRow />
+        <SettingRow
+          icon={<Sparkles className="size-[17px]" strokeWidth={1.9} />}
+          title={plus.isPlus ? 'Plan Moni Plus' : 'Pasar a Moni Plus'}
+          subtitle={
+            plus.isPlus && plus.expiresAt
+              ? `Activo hasta el ${formatPlusExpiry(plus.expiresAt, true)}`
+              : undefined
+          }
+          trailing={plus.isPlus ? 'Activo' : 'Gratis'}
+          onClick={() => setSheet('plus')}
+        />
+      </SettingCard>
 
       {FEATURES.pro && (
         <Link to="/pro" className="flex items-center gap-4 rounded-[22px] bg-gold px-4 py-4">
@@ -186,21 +320,19 @@ export function ProfilePage() {
         </Link>
       )}
 
-      <SectionLabel plain className="mt-1">
+      <SectionLabel plain className="mt-3">
         Mis datos
       </SectionLabel>
       <ProfileGroup>
         <OptionRow
           className="rounded-none border-0"
-
           title="Datos personales"
-          subtitle="Nombre, mail y foto"
+          subtitle={since ? `Nombre, mail y foto · ${since.toLowerCase()}` : 'Nombre, mail y foto'}
           onClick={() => setSheet('edit')}
         />
         {FEATURES.monthlyIncome && (
           <OptionRow
             className="rounded-none border-0"
-
             title="Mis ingresos"
             subtitle={`${formatArs(extras.monthlyIncomeCents)} por mes · solo los ves vos`}
             onClick={() => setSheet('income')}
@@ -208,34 +340,6 @@ export function ProfilePage() {
         )}
         <OptionRow
           className="rounded-none border-0"
-
-          title={FEATURES.accountAlias ? 'Medios de pago y alias' : 'Medios de pago'}
-          subtitle={`${accountCount} ${accountCount === 1 ? 'medio' : 'medios'}`}
-          to="/cuentas"
-        />
-        <OptionRow
-          className="rounded-none border-0"
-
-          title="Categorías"
-          subtitle="Creá y editá las tuyas"
-          to="/categorias"
-        />
-      </ProfileGroup>
-
-      <SectionLabel plain className="mt-1">
-        Mis logros
-      </SectionLabel>
-      <ProfileGroup>
-        <AchievementsRow />
-      </ProfileGroup>
-
-      <SectionLabel plain className="mt-1">
-        Preferencias
-      </SectionLabel>
-      <ProfileGroup>
-        <OptionRow
-          className="rounded-none border-0"
-
           title="Mis objetivos"
           subtitle={
             goalCount === 0
@@ -246,16 +350,13 @@ export function ProfilePage() {
         />
         <OptionRow
           className="rounded-none border-0"
-
           title="Moneda"
           subtitle={usesUsd ? 'Peso argentino (ARS) · también dólares' : 'Peso argentino (ARS)'}
           chevron={false}
         />
-        <AppearanceRow />
         {FEATURES.weeklyDigest && (
           <OptionRow
             className="rounded-none border-0"
-
             title="Resumen semanal"
             subtitle={`Los ${weekly.day.toLowerCase()}s, con tus gastos hormiga`}
             chevron={false}
@@ -268,28 +369,16 @@ export function ProfilePage() {
             }
           />
         )}
-        <PushNotificationsRow />
+        <AchievementsRow />
       </ProfileGroup>
 
       <SectionLabel plain className="mt-1">
         Moni Plus
       </SectionLabel>
       <ProfileGroup>
-        <OptionRow
-          className="rounded-none border-0"
-
-          title={plus.isPlus ? 'Moni Plus' : 'Pasar a Moni Plus'}
-          subtitle={
-            plus.isPlus && plus.expiresAt
-              ? `Activo hasta el ${formatPlusExpiry(plus.expiresAt, true)}`
-              : 'Voz, tickets y más grupos · suscripción o código'
-          }
-          onClick={() => setSheet('plus')}
-        />
         {isCancellable(subscription.data) && (
           <OptionRow
             className="rounded-none border-0"
-
             title="Cancelar suscripción"
             subtitle={
               plus.expiresAt
@@ -301,25 +390,19 @@ export function ProfilePage() {
         )}
         <OptionRow
           className="rounded-none border-0"
-
           title="Recomendá a un amigo"
           subtitle="Compartí el link de Moni"
           onClick={recommend}
         />
-      </ProfileGroup>
-
-      <SectionLabel plain className="mt-1">
-        Ayuda
-      </SectionLabel>
-      <ProfileGroup>
         <OptionRow
           className="rounded-none border-0"
-
           title="Contactar a soporte"
           subtitle="Escribinos y mirá tus consultas"
           to="/soporte"
         />
       </ProfileGroup>
+
+      <ProfileMoreTools />
 
       <SectionLabel plain className="mt-1">
         Cuenta
@@ -327,13 +410,11 @@ export function ProfilePage() {
       <ProfileGroup>
         <OptionRow
           className="rounded-none border-0"
-
           title="Cerrar sesión"
           onClick={() => setSheet('signout')}
         />
         <OptionRow
           className="rounded-none border-0 [&_span]:text-expense"
-
           title="Eliminar cuenta"
           onClick={() => setSheet('delete')}
         />
@@ -435,7 +516,7 @@ function GoalsSheet({ saved, onClose }: { saved: readonly string[]; onClose: () 
   return (
     <BottomSheet title="Mis objetivos" onClose={onClose}>
       <p className="-mt-1 mb-3 text-[15px] leading-5 text-text-muted">
-        Según lo que elijas, Moni te muestra primero esas herramientas. Las demás siguen en Más ›
+        Según lo que elijas, Moni te muestra primero esas herramientas. Las demás siguen en Perfil ›
         Más herramientas.
       </p>
       <ul className="flex flex-col gap-2">
@@ -471,26 +552,42 @@ function GoalsSheet({ saved, onClose }: { saved: readonly string[]; onClose: () 
   )
 }
 
-/** Apariencia: Claro / Oscuro / Sistema, saved on this device only. */
-function AppearanceRow() {
+const SWATCH: Record<ThemeMode, string> = {
+  light: '#EEF5EF',
+  dark: '#0E1A13',
+  system: 'linear-gradient(135deg, #EEF5EF 50%, #0E1A13 50%)',
+}
+
+/** "Tema de color": Claro / Oscuro / Sistema as three dots, saved on this device only. */
+function ThemeSwatches() {
   const { mode, setMode } = useTheme()
   return (
-    <div className="flex flex-col gap-3 px-4 py-3">
-      <span className="flex items-center gap-3">
-        <span className="flex-1">
-          <span className="block text-[17px] font-extrabold leading-6">Apariencia</span>
-          <span className="block text-[14px] leading-5 text-text-muted">
-            Solo en este dispositivo
-          </span>
-        </span>
-      </span>
-      <SegmentedControl
-        label="Apariencia"
-        value={mode}
-        onChange={setMode}
-        options={THEME_MODES.map((m) => ({ value: m, label: THEME_LABELS[m] }))}
-      />
-    </div>
+    <span role="radiogroup" aria-label="Tema de color" className="flex gap-0.5">
+      {THEME_MODES.map((m) => (
+        <button
+          key={m}
+          type="button"
+          role="radio"
+          aria-checked={mode === m}
+          aria-label={THEME_LABELS[m]}
+          title={THEME_LABELS[m]}
+          onClick={() => setMode(m)}
+          className="flex size-7 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
+        >
+          <span
+            aria-hidden="true"
+            className="size-[18px] rounded-full ring-1 ring-line"
+            style={{
+              background: SWATCH[m],
+              boxShadow:
+                mode === m
+                  ? '0 0 0 2px var(--color-card), 0 0 0 3.5px var(--color-mint-ink)'
+                  : undefined,
+            }}
+          />
+        </button>
+      ))}
+    </span>
   )
 }
 

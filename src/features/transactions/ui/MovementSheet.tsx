@@ -1,4 +1,5 @@
 import { TripLinkSelect } from '@/features/trips/ui/TripLinkSelect'
+import { Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
@@ -16,13 +17,14 @@ import {
 import { SavingsCommittedSheet } from '@/features/goals/ui/SavingsCommittedSheet'
 import { CreditLimitSheet } from '@/features/cards/ui/CreditLimitSheet'
 import { useCategories } from '@/features/categories/api/useCategories'
+import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
 import { SharedMovementForm } from '@/features/groups/ui/SharedMovementForm'
 import { formatAmountInput } from '@/shared/lib/amountInput'
+import { formatRelativeDay } from '@/shared/lib/dates'
+import { todayIso } from '@/shared/lib/month'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Skeleton } from '@/shared/ui/Skeleton'
-import { KIND_ACTIVE } from '@/shared/ui/fieldStyles'
-import { Toggle } from '@/shared/ui/kit'
 import { SegmentedControl, type SegmentOption } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
 import {
@@ -36,7 +38,9 @@ import type {
   TransactionFormValues,
   TransferFormValues,
 } from '../domain/transaction'
-import type { SheetMode } from './movementSheetContext'
+import type { MovementPrefill, SheetMode } from './movementSheetContext'
+import { ExpenseSaved, type SavedExpense } from './ExpenseSaved'
+import { ShareRow } from './FormRows'
 import { TransactionForm, type TransactionDraft } from './TransactionForm'
 import { TransferForm } from './TransferForm'
 
@@ -50,13 +54,17 @@ interface MovementSheetProps {
   transferAmountCents?: number
   /** New expense that belongs to this personal trip (opened from Viajes). */
   tripId?: string
+  /** New expense / income: values the form starts with ("Repetir uno reciente"). */
+  initialValues?: MovementPrefill
+  /** New expense: starts with "Dividir con un grupo" on. */
+  initialShared?: boolean
   onClose: () => void
 }
 
-// Screen 019: Gasto / Ingreso. Transfers open from Medios de pago with their own title.
+// Screen 19: Gasto / Ingreso. Transfers open from Medios de pago with their own title.
 const MODE_OPTIONS: readonly SegmentOption<SheetMode>[] = [
-  { value: 'expense', label: 'Gasto', activeClassName: KIND_ACTIVE.expense },
-  { value: 'income', label: 'Ingreso', activeClassName: KIND_ACTIVE.income },
+  { value: 'expense', label: 'Gasto' },
+  { value: 'income', label: 'Ingreso' },
 ]
 
 type PendingOverdraft =
@@ -80,13 +88,15 @@ type PendingOverdraft =
       warning: SavingsCommittedWarning
     }
 
-/** "Nuevo movimiento" sheet (screen 13): expense, income, transfer, or edit of an existing movement. */
+/** "Nuevo gasto" screen (19): expense, income, transfer, or edit of an existing movement. */
 export function MovementSheet({
   initialMode,
   transaction,
   transferTo,
   transferAmountCents,
   tripId,
+  initialValues,
+  initialShared = false,
   onClose,
 }: MovementSheetProps) {
   const isEdit = Boolean(transaction)
@@ -97,8 +107,26 @@ export function MovementSheet({
   // Edit mode of an expense: the trip it belongs to ('' = none). Saved together with the other fields.
   const [tripChoice, setTripChoice] = useState(transaction?.tripId ?? '')
   // "Compartido": the expense goes to one of the person's groups instead of a plain movement.
-  const [shared, setShared] = useState(false)
-  const [draft, setDraft] = useState<TransactionDraft | undefined>(undefined)
+  const [shared, setShared] = useState(initialShared && !transaction)
+  const [draft, setDraft] = useState<TransactionDraft | undefined>(() =>
+    initialValues && !transaction
+      ? {
+          amount: initialValues.amountCents ? formatAmountInput(initialValues.amountCents) : '',
+          note: initialValues.note ?? '',
+          categoryId: initialValues.categoryId ?? '',
+          accountId: initialValues.accountId ?? '',
+          occurredOn: todayIso(),
+        }
+      : undefined,
+  )
+  // Screen 20: after saving a personal expense. `formKey` remounts the form for "Cargar otro".
+  const [saved, setSaved] = useState<SavedExpense | null>(null)
+  const [formKey, setFormKey] = useState(0)
+  const [clock] = useState(() =>
+    new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+  )
+  const allowance = useDailyAllowance()
+  const dailyCents = allowance.allowance.kind === 'ok' ? allowance.allowance.dailyCents : null
   const navigate = useNavigate()
   const toast = useToast()
 
@@ -214,6 +242,8 @@ export function MovementSheet({
     if (saving.current) return
     saving.current = true
     setSubmitError(null)
+    // Today's allowance as it was before this expense: the confirmation subtracts from it.
+    const dailyBefore = dailyCents
     try {
       if (transaction) {
         const { kind: _kind, ...rest } = values
@@ -228,12 +258,23 @@ export function MovementSheet({
         toast.show('Movimiento actualizado', { mascotUrl: mascotHappy })
       } else {
         // An expense opened from a trip belongs to it; it is saved like any other movement.
-        await createTransaction.mutateAsync(
+        const created = await createTransaction.mutateAsync(
           tripId && values.kind === 'expense' ? { ...values, tripId } : values,
         )
-        toast.show(values.kind === 'income' ? 'Ingreso guardado' : 'Gasto guardado', {
-          mascotUrl: values.kind === 'income' ? mascotMoney : mascotHappy,
-        })
+        if (values.kind === 'expense') {
+          // Screen 20 replaces the toast for a personal expense.
+          setSaved({
+            transactionId: created?.id ?? null,
+            installmentPlanId: created?.installmentPlanId ?? null,
+            amountCents: values.amount,
+            categoryName: categories.find((c) => c.id === values.categoryId)?.name ?? null,
+            accountName: accounts.find((a) => a.id === values.accountId)?.name ?? null,
+            occurredOn: values.occurredOn,
+            dailyBeforeCents: dailyBefore,
+          })
+          return
+        }
+        toast.show('Ingreso guardado', { mascotUrl: mascotMoney })
       }
       onClose()
     } catch (e) {
@@ -286,17 +327,54 @@ export function MovementSheet({
     ? 'Editar movimiento'
     : mode === 'transfer'
       ? 'Transferencia'
-      : 'Nuevo movimiento'
+      : mode === 'income'
+        ? 'Nuevo ingreso'
+        : 'Nuevo gasto'
   const segments = isEdit
     ? MODE_OPTIONS.filter((o) => o.value === mode).map((o) => ({ ...o, disabled: true }))
     : MODE_OPTIONS
+  const today = todayIso()
+  const subtitle = isEdit || mode === 'transfer' ? undefined : `${formatRelativeDay(today, today)} · ${clock}`
+
+  if (saved) {
+    return (
+      <BottomSheet title="Gasto registrado" variant="screen" bare onClose={onClose}>
+        <ExpenseSaved
+          saved={saved}
+          onAnother={() => {
+            setSaved(null)
+            setDraft(undefined)
+            setSubmitError(null)
+            setFormKey((n) => n + 1)
+          }}
+          onHome={() => {
+            onClose()
+            navigate('/')
+          }}
+          onUndone={onClose}
+        />
+      </BottomSheet>
+    )
+  }
+
+  // "Dividir con un grupo" is a row of the form's card; in the shared form it stands alone in its own card.
+  const shareRow =
+    mode === 'expense' && canShare && !isLoading && !loadFailed ? (
+      <ShareRow icon={Users} checked={shared} onChange={setShared} />
+    ) : null
 
   return (
-    <BottomSheet title={title} onClose={() => (pendingRef.current ? setPending(null) : onClose())}>
-      <div className="flex flex-col gap-4 short:gap-3">
+    <BottomSheet
+      title={title}
+      subtitle={subtitle}
+      variant="screen"
+      onClose={() => (pendingRef.current ? setPending(null) : onClose())}
+    >
+      <div className="flex flex-1 flex-col gap-3">
         {mode !== 'transfer' && (
           <SegmentedControl
             label="Tipo de movimiento"
+            variant="menta"
             options={segments}
             value={mode}
             onChange={(value) => {
@@ -306,16 +384,8 @@ export function MovementSheet({
           />
         )}
 
-        {mode === 'expense' && canShare && !isLoading && !loadFailed && (
-          <div className="flex items-center justify-between gap-3 rounded-[18px] border border-line bg-card px-4 py-2">
-            <span>
-              <span className="block text-[17px] font-extrabold">Compartido</span>
-              <span className="block text-[14px] text-text-muted">
-                {isEdit ? 'Pasarlo a un grupo y dividirlo' : 'Dividirlo con un grupo'}
-              </span>
-            </span>
-            <Toggle label="Compartido" checked={shared} onChange={setShared} />
-          </div>
+        {shared && shareRow && (
+          <div className="rounded-[26px] bg-card px-4 py-0.5">{shareRow}</div>
         )}
 
         {isLoading ? (
@@ -366,6 +436,7 @@ export function MovementSheet({
           />
         ) : (
           <TransactionForm
+            key={formKey}
             kind={mode}
             draft={draft}
             onDraftChange={setDraft}
@@ -375,6 +446,8 @@ export function MovementSheet({
             isSubmitting={createTransaction.isPending || updateTransaction.isPending}
             submitError={submitError}
             onSubmit={(values) => void saveTransaction(values)}
+            dailyCents={dailyCents}
+            extraRow={shareRow}
             onCreateCategory={() => {
               onClose()
               navigate('/categorias')

@@ -65,7 +65,7 @@ export function AddActionMenu({
       role="menu"
       aria-label="Agregar movimiento"
       className={cn(
-        'pointer-events-auto absolute bottom-[calc(100%+32px)] left-1/2 w-[min(20.5rem,calc(100vw-4rem))] -translate-x-1/2 origin-bottom',
+        'pointer-events-auto absolute bottom-[calc(100%+16px)] -right-2 w-[min(20.5rem,calc(100vw-2rem))] origin-bottom-right',
         'rounded-[32px] bg-forest px-3 pb-3 pt-4 text-cream shadow-[0_14px_40px_rgb(16_48_30/0.28)] dark:bg-[#1f3a28]',
         'motion-safe:animate-[menu-pop_240ms_cubic-bezier(0.2,0.9,0.3,1.15)]',
         className,
@@ -97,7 +97,7 @@ export function AddActionMenu({
                 {action.label}
               </span>
               {action.badge && (
-                <span className="-mt-1.5 rounded-full bg-gold px-2 py-0.5 text-[12px] font-extrabold leading-4 text-forest">
+                <span className="-mt-1.5 rounded-full bg-gold px-2 py-0.5 text-[12px] font-extrabold leading-4 text-on-bright">
                   {action.badge}
                 </span>
               )}
@@ -110,7 +110,7 @@ export function AddActionMenu({
       )}
       <span
         aria-hidden="true"
-        className="absolute -bottom-2 left-1/2 size-5 -translate-x-1/2 rotate-45 rounded-[4px] bg-forest dark:bg-[#1f3a28] [clip-path:polygon(100%_0,100%_100%,0_100%)]"
+        className="absolute -bottom-2 right-[28px] size-5 rotate-45 rounded-[4px] bg-forest dark:bg-[#1f3a28] [clip-path:polygon(100%_0,100%_100%,0_100%)]"
       />
     </div>
   )

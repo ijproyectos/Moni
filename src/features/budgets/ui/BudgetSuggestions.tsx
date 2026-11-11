@@ -51,7 +51,7 @@ export function BudgetSuggestions() {
               disabled={pendingId !== null}
               onClick={() => void use(s)}
               aria-label={`Usar sugerencia para ${s.name}`}
-              className="min-h-11 rounded-full bg-forest px-4 text-[15px] font-extrabold text-cream dark:bg-lime dark:text-forest disabled:opacity-60"
+              className="min-h-11 rounded-full bg-forest px-4 text-[15px] font-extrabold text-cream dark:bg-lime dark:text-on-bright disabled:opacity-60"
             >
               Usar sugerencia
             </button>

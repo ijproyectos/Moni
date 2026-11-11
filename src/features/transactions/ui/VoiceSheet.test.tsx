@@ -154,6 +154,22 @@ afterEach(() => {
   delete (window as unknown as SpeechWindow).SpeechRecognition
 })
 
+describe('VoiceSheet (screen 10)', () => {
+  it('has the Menta frame: close, "Cargar a mano" and the "Moni entendió" card with its save button', async () => {
+    const { user } = renderSheet()
+    await reachConfirmation(user)
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cargar a mano' })).toBeInTheDocument()
+    expect(screen.getAllByText('Moni entendió').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Tocá para corregir').length).toBeGreaterThan(0)
+    // Amount and chips are editable controls.
+    expect(screen.getByRole('button', { name: /^Monto del movimiento 1/ })).toBeInTheDocument()
+    expect(screen.getByLabelText('Categoría del movimiento 1')).toBeInTheDocument()
+    expect(screen.getByLabelText('Cuenta del movimiento 1')).toBeInTheDocument()
+    expect(screen.getByLabelText('Fecha del movimiento 1')).toBeInTheDocument()
+  })
+})
+
 describe('VoiceSheet', () => {
   it('falls back to a text box when speech recognition is unsupported', () => {
     delete (window as unknown as SpeechWindow).webkitSpeechRecognition
@@ -178,18 +194,18 @@ describe('VoiceSheet', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Activar micrófono' })).toBeInTheDocument()
     expect(screen.queryByText('Terminé')).not.toBeInTheDocument()
-    expect(document.querySelector('svg.fortune-cat')).not.toHaveAttribute('data-mode')
+    expect(screen.queryByTestId('audio-wave')).not.toBeInTheDocument()
   })
 
-  it('the cat listens only while the microphone is on, with the words in a bubble', async () => {
+  it('Moni listens only while the microphone is on: label, live words and the sound wave', async () => {
     const { user } = renderSheet()
     await user.click(screen.getByRole('button', { name: 'Activar micrófono' }))
 
     const recognition = FakeRecognition.instances[0]
     expect(recognition?.start).toHaveBeenCalled()
     expect(recognition?.lang).toBe('es-AR')
-    expect(screen.getAllByText(/Escuchando/).length).toBeGreaterThan(0)
-    expect(document.querySelector('svg.fortune-cat')).toHaveAttribute('data-mode', 'listening')
+    expect(screen.getByText('Te escucho…')).toBeInTheDocument()
+    expect(screen.getByTestId('audio-wave')).toHaveAttribute('aria-hidden', 'true')
 
     act(() => recognition?.say('gasté 5 lucas en el bondi'))
     expect(screen.getByLabelText('Lo que se va entendiendo')).toHaveTextContent(
@@ -197,7 +213,7 @@ describe('VoiceSheet', () => {
     )
 
     finishListening()
-    expect(document.querySelector('svg.fortune-cat')).not.toHaveAttribute('data-mode')
+    expect(screen.queryByTestId('audio-wave')).not.toBeInTheDocument()
     // Nothing is interpreted until "Listo".
     expect(mocks.invoke).not.toHaveBeenCalled()
   })
@@ -227,7 +243,7 @@ describe('VoiceSheet', () => {
     expect(screen.getByLabelText('Cuenta del movimiento 1')).toHaveDisplayValue('Efectivo')
     expect(screen.getByLabelText('Fecha del movimiento 1')).toHaveValue('2026-10-27')
     expect(screen.getByText(/2 movimientos · Salen \$23\.000/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Confirmar movimientos' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar movimientos' })).toBeInTheDocument()
     // No category could be told: it says so instead of inventing one.
     expect(screen.getByText('Elegí una categoría.')).toBeInTheDocument()
     expect(mocks.createTransaction).not.toHaveBeenCalled()
@@ -259,7 +275,7 @@ describe('VoiceSheet', () => {
     finishListening()
     await user.click(screen.getByRole('button', { name: 'Volver a grabar' }))
     expect(FakeRecognition.instances).toHaveLength(2)
-    expect(screen.getAllByText(/Escuchando/).length).toBeGreaterThan(0)
+    expect(screen.getByText('Te escucho…')).toBeInTheDocument()
     act(() => FakeRecognition.instances[1]?.say('dos'))
     finishListening()
     expect(screen.getByText(/“dos”/)).toBeInTheDocument()
@@ -296,7 +312,7 @@ describe('VoiceSheet', () => {
     fireEvent.change(screen.getByLabelText('Fecha del movimiento 2'), {
       target: { value: '2026-10-20' },
     })
-    await user.click(screen.getByRole('button', { name: 'Confirmar movimientos' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar movimientos' }))
 
     await waitFor(() => expect(mocks.createTransaction).toHaveBeenCalledTimes(2))
     expect(mocks.createTransaction.mock.calls[0]?.[0]).toMatchObject({
@@ -319,12 +335,12 @@ describe('VoiceSheet', () => {
     const { user } = renderSheet()
     await reachConfirmation(user)
 
-    await user.click(screen.getByRole('button', { name: 'Confirmar movimientos' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar movimientos' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Elegí una categoría.')
     expect(mocks.createTransaction).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole('button', { name: 'Quitar movimiento 2' }))
-    await user.click(screen.getByRole('button', { name: 'Confirmar gasto' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar gasto' }))
     await waitFor(() => expect(mocks.createTransaction).toHaveBeenCalledTimes(1))
   })
 
@@ -347,10 +363,10 @@ describe('VoiceSheet', () => {
     const { user, onClose } = renderSheet()
     await reachConfirmation(user)
     await user.selectOptions(screen.getByLabelText('Categoría del movimiento 2'), 'Comida')
-    await user.click(screen.getByRole('button', { name: 'Confirmar movimientos' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar movimientos' }))
 
     expect(await screen.findByText('No tenés permiso para hacer eso.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Confirmar gasto' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar gasto' })).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Nota del movimiento 1: Almuerzo' }),
     ).toBeInTheDocument()
@@ -383,16 +399,18 @@ describe('VoiceSheet', () => {
     expect(await screen.findByText(/No encontré gastos ni ingresos/)).toBeInTheDocument()
   })
 
-  it('Descartar throws the movements away without saving and keeps the transcript to try again', async () => {
+  it('the lilac microphone throws the movements away without saving and listens again', async () => {
     const { user, onClose } = renderSheet()
     await reachConfirmation(user)
-    await user.click(screen.getByRole('button', { name: 'Descartar' }))
-    expect(screen.getByText('Te escuché decir:')).toBeInTheDocument()
+    const before = FakeRecognition.instances.length
+    await user.click(screen.getByRole('button', { name: 'Volver a grabar' }))
+    expect(screen.getByText('Te escucho…')).toBeInTheDocument()
+    expect(FakeRecognition.instances.length).toBeGreaterThan(before)
     expect(onClose).not.toHaveBeenCalled()
     expect(mocks.createTransaction).not.toHaveBeenCalled()
   })
 
-  it('a single movement says Confirmar gasto / Confirmar ingreso and lets the type be switched', async () => {
+  it('a single movement says Guardar gasto / Guardar ingreso and lets the type be switched', async () => {
     mocks.invoke.mockResolvedValue({
       data: { movements: [RESPONSE.movements[0]], warnings: [] },
       error: null,
@@ -400,14 +418,14 @@ describe('VoiceSheet', () => {
     const { user } = renderSheet({ startWith: 'text' })
     await user.type(screen.getByRole('textbox'), '5 lucas bondi')
     await user.click(screen.getByRole('button', { name: 'Listo' }))
-    expect(await screen.findByRole('button', { name: 'Confirmar gasto' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Guardar gasto' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Quitar movimiento/ })).not.toBeInTheDocument()
     await user.click(
       within(screen.getByRole('group', { name: 'Tipo del movimiento 1' })).getByRole('button', {
         name: 'Ingreso',
       }),
     )
-    expect(screen.getByRole('button', { name: 'Confirmar ingreso' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar ingreso' })).toBeInTheDocument()
   })
 
   it('never invents the account: with several accounts and none named, the person has to pick one', async () => {
@@ -427,11 +445,11 @@ describe('VoiceSheet', () => {
       await user.click(screen.getByRole('button', { name: 'Listo' }))
       const select = await screen.findByLabelText('Cuenta del movimiento 1')
       expect(select).toHaveDisplayValue('Elegir cuenta')
-      await user.click(screen.getByRole('button', { name: 'Confirmar gasto' }))
+      await user.click(screen.getByRole('button', { name: 'Guardar gasto' }))
       expect(await screen.findByRole('alert')).toHaveTextContent('Elegí una cuenta.')
       expect(mocks.createTransaction).not.toHaveBeenCalled()
       await user.selectOptions(select, 'Banco')
-      await user.click(screen.getByRole('button', { name: 'Confirmar gasto' }))
+      await user.click(screen.getByRole('button', { name: 'Guardar gasto' }))
       await waitFor(() => expect(mocks.createTransaction).toHaveBeenCalledTimes(1))
       expect(mocks.createTransaction.mock.calls[0]?.[0]).toMatchObject({ accountId: second.id })
     } finally {
@@ -493,10 +511,8 @@ describe('VoiceSheet', () => {
     await user.click(screen.getByRole('button', { name: 'Activar micrófono' }))
     act(() => FakeRecognition.instances[0]?.onerror?.({ error: 'not-allowed' }))
     expect(await screen.findByText(/No pude usar el micrófono/)).toBeInTheDocument()
-    expect(document.querySelector('svg.fortune-cat')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Escribir' }))
     expect(screen.getByRole('textbox')).toBeInTheDocument()
-    expect(document.querySelector('svg.fortune-cat')).toBeInTheDocument()
   })
 
   describe('opening', () => {

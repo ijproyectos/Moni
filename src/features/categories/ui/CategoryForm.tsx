@@ -108,7 +108,7 @@ export function CategoryForm({
                 onClick={() => setValue('icon', iconName)}
                 className={cn(
                   'flex aspect-square w-full max-w-12 items-center justify-center rounded-[16px] border-2',
-                  selected ? 'border-ink bg-forest text-lime' : 'border-line bg-card text-ink',
+                  selected ? 'border-ink bg-forest text-cream' : 'border-line bg-card text-ink',
                 )}
               >
                 <Icon aria-hidden="true" className="size-5" strokeWidth={2} />

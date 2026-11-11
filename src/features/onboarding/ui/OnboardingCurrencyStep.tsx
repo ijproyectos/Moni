@@ -128,7 +128,7 @@ export function OnboardingCurrencyStep({
           className={cn(
             'flex size-8 shrink-0 items-center justify-center rounded-[8px] border-2',
             usesDollars
-              ? 'border-forest bg-forest text-cream dark:border-lime dark:bg-lime dark:text-forest'
+              ? 'border-forest bg-forest text-cream dark:border-lime dark:bg-lime dark:text-on-bright'
               : 'border-line',
           )}
         >

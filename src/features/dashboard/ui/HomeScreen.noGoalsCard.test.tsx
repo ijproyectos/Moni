@@ -3,12 +3,6 @@ import { MemoryRouter } from 'react-router'
 import type { MonthSummary } from '../domain/monthSummary'
 import { HomeScreen } from './HomeScreen'
 
-// Same stubs as the base HomeScreen test: the budget and ants hooks need a query client.
-vi.mock('@/features/budgets/api/useBudgets', () => ({ useBudgetStatus: () => ({ data: [] }) }))
-vi.mock('@/features/insights/api/useAnts', () => ({
-  useAnts: () => ({ data: { monthTotalCents: 1_200_000 } }),
-}))
-
 const summary: MonthSummary = {
   incomeCents: 100_000_00,
   expenseCents: 20_000_00,
@@ -35,7 +29,8 @@ describe('HomeScreen: no Metas card', () => {
         <HomeScreen summary={summary} initial="J" onAddMovement={vi.fn()} />
       </MemoryRouter>,
     )
-    expect(screen.getByRole('heading', { name: 'En qué se fue' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'En qué se fue' })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Hormigas/ })).toBeNull()
     expect(screen.queryByRole('heading', { name: 'Metas' })).toBeNull()
     expect(screen.queryByRole('link', { name: /Ver la meta|Ver las \d+/ })).toBeNull()
     expect(screen.queryByRole('progressbar', { name: 'Avance de tus metas' })).toBeNull()

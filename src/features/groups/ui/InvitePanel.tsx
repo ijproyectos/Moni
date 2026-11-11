@@ -139,7 +139,7 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
               href={whatsappUrl(message)}
               target="_blank"
               rel="noopener noreferrer"
-              className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-forest')}
+              className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-on-bright')}
             >
               <MessageCircle aria-hidden="true" className="size-5" />
               Enviar por WhatsApp
@@ -148,7 +148,7 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
             <button
               type="button"
               disabled
-              className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-forest')}
+              className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-on-bright')}
             >
               <MessageCircle aria-hidden="true" className="size-5" />
               Enviar por WhatsApp

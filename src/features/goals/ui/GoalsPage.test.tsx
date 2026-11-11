@@ -91,11 +91,13 @@ const overview = makeSavings({
 describe('GoalsPage (real goals)', () => {
   it('lists the active goals with their reserve and progress, and a summary of what is reserved', () => {
     setup(overview)
-    expect(screen.getByRole('heading', { name: 'Metas' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Metas de ahorro' })).toBeInTheDocument()
+    expect(screen.getByText('2 metas activas')).toBeInTheDocument()
+    // Without savings records of the year the hero says what is reserved, not what "was saved".
     expect(screen.getByText('Reservado para tus metas')).toBeInTheDocument()
     expect(screen.getByText('$200.000')).toBeInTheDocument() // 150.000 + 50.000 of the ACTIVE goals
-    expect(screen.getByText(/de \$1\.000\.000/)).toBeInTheDocument()
-    expect(screen.getByText(/La plata sigue en tus cuentas/)).toBeInTheDocument()
+    expect(screen.getByText(/La plata sigue en tus cuentas/)).toHaveTextContent('de $1.000.000')
+    expect(screen.queryByText(/Ahorraste en/)).toBeNull()
     expect(screen.getByRole('button', { name: /^Viaje, 25% reservado/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Auto, 12% reservado/ })).toBeInTheDocument()
   })
@@ -126,6 +128,13 @@ describe('GoalsPage (real goals)', () => {
 
   it('the + button opens the new goal sheet', async () => {
     const user = setup(overview)
+    await user.click(screen.getByRole('button', { name: 'Agregar una meta' }))
+    expect(screen.getByRole('dialog', { name: 'Nueva meta' })).toBeInTheDocument()
+  })
+
+  it('has a "Nueva meta" button at the end of the list, and no mixed budget card', async () => {
+    const user = setup(overview)
+    expect(screen.queryByText('Presupuestos y metas')).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Nueva meta' }))
     expect(screen.getByRole('dialog', { name: 'Nueva meta' })).toBeInTheDocument()
   })
@@ -172,6 +181,7 @@ describe('GoalsPage (real goals)', () => {
   it('keeps the installments calculator shortcut and hides Aguinaldo and shared goals (no backend)', () => {
     setup(overview)
     expect(screen.getByRole('link', { name: /Cuotas/ })).toHaveAttribute('href', '/metas/cuotas')
+    expect(screen.getByRole('link', { name: /Mis logros/ })).toHaveAttribute('href', '/logros')
     expect(screen.queryByRole('link', { name: /Aguinaldo/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Compartidas/ })).toBeNull()
   })

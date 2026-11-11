@@ -15,8 +15,10 @@ export interface StorySlide {
   title: string
   /** The big figure of the slide (an amount, a percentage). */
   figure?: string
-  /** What Moni says, in a sentence. */
+  /** What Moni says, in a sentence ("Qué pasó"). */
   body: string
+  /** One practical, non-judgmental suggestion ("Qué podés mejorar"), derived by rules from the same data; none when there is nothing useful to add. */
+  tip?: string
   /** A few supporting lines (who owes what, which charges). */
   lines?: string[]
   action?: { label: string; to: string }
@@ -170,6 +172,7 @@ export function buildStories(input: StoryInput): Story[] {
               ? 'Tenés un aviso'
               : `Tenés ${input.groupNoticeCount} avisos`,
           body: 'Recordatorios de deudas o pagos de tus grupos que esperan tu respuesta.',
+          tip: 'Respondelos hoy y tus grupos quedan al día.',
           action: { label: 'Ver avisos', to: input.noticesPath },
         },
       ],
@@ -192,6 +195,7 @@ export function buildStories(input: StoryInput): Story[] {
             title: 'Tus suscripciones',
             figure: formatArs(sum(monthly)),
             body: `Entre ${monthly.length} suscripciones mensuales activas pagás ${formatArs(sum(monthly))} por mes.`,
+            tip: 'Repasalas: si alguna ya no la usás, cancelarla baja tu gasto fijo.',
             lines: monthly
               .slice()
               .sort((a, b) => b.amountCents - a.amountCents)
@@ -220,6 +224,7 @@ export function buildStories(input: StoryInput): Story[] {
           title: 'Se acerca un cobro',
           figure: formatArs(nextCharge.amountCents),
           body: `${nextCharge.name} se cobra ${when}.`,
+          tip: 'Dejá ese importe separado para que el cobro no te sorprenda.',
           lines:
             upcoming.length > 1
               ? upcoming
@@ -253,6 +258,7 @@ export function buildStories(input: StoryInput): Story[] {
           title: 'Te deben plata',
           figure: formatArs(sum(owed)),
           body: `${people(who)} te ${who === 1 ? 'debe' : 'deben'} plata entre tus grupos.`,
+          tip: 'Un recordatorio amable desde el grupo suele alcanzar para cobrar más rápido.',
           lines: debtLines(owed),
           action: { label: 'Ver quién me debe', to: input.debtsPath },
         },
@@ -276,6 +282,7 @@ export function buildStories(input: StoryInput): Story[] {
             owe.length === 1 && first
               ? `Le debés a ${first.otherName} en ${first.groupName}.`
               : `Le debés a ${people(new Set(owe.map((d) => d.otherName)).size)} entre tus grupos.`,
+          tip: 'Registrar el pago apenas lo hacés te saca el pendiente de encima.',
           lines: debtLines(owe),
           action: {
             label: 'Registrar un pago',
@@ -305,6 +312,7 @@ export function buildStories(input: StoryInput): Story[] {
         body: focus
           ? `Este mes te faltan ${formatArs(plan.missingCents)} para seguir al día con tus metas, empezando por ${focus.goal.name}.`
           : `Este mes te faltan ${formatArs(plan.missingCents)} para seguir al día con tus metas.`,
+        tip: 'Un aporte chico ahora te acerca más que esperar a fin de mes.',
         action: { label: focus ? 'Ver mi meta' : 'Ver mis metas', to },
       })
     } else if (plan?.status === 'on_track') {
@@ -312,6 +320,7 @@ export function buildStories(input: StoryInput): Story[] {
         title: 'Metas',
         figure: `${pct}%`,
         body: 'Estás al día con tu plan de ahorro de este mes. ¡Seguí así!',
+        tip: 'Mantené el aporte de este mes y seguís en ritmo.',
         action: { label: 'Ver mis metas', to: '/metas' },
       })
     }
@@ -320,6 +329,7 @@ export function buildStories(input: StoryInput): Story[] {
         title: 'Casi llegás',
         figure: formatArs(targetCents - reservedCents),
         body: `Te faltan ${formatArs(targetCents - reservedCents)} para completar lo que juntás para tus metas.`,
+        tip: 'Con un último aporte la completás.',
         action: { label: 'Ver mis metas', to: '/metas' },
       })
     }
@@ -363,6 +373,10 @@ export function buildStories(input: StoryInput): Story[] {
             worst.state === 'over'
               ? `Te pasaste ${formatArs(-worst.remainingCents)} en ${worst.name}.`
               : `En ${worst.name} llevás el ${Math.floor(worst.percent)}% y te quedan ${formatArs(worst.remainingCents)}.`,
+          tip:
+            worst.state === 'over'
+              ? `Si podés, bajale un poco a ${worst.name} el resto del mes para volver al límite.`
+              : `Antes de tu próxima compra de ${worst.name}, mirá cuánto te queda.`,
           lines:
             alerts.length > 1
               ? alerts
@@ -418,6 +432,7 @@ export function buildStories(input: StoryInput): Story[] {
         title: `Tus gastos de ${input.monthName}`,
         figure: `${Math.round(top.percent)}%`,
         body: `El ${Math.round(top.percent)}% de tus gastos de ${input.monthName} corresponde a ${top.name} (${formatArs(top.amountCents)}).`,
+        tip: `Mirá si en ${top.name} hay algo que puedas recortar sin que te pese.`,
         lines: input.spending.byCategory
           .filter((c) => c.amountCents > 0 && c !== top)
           .sort((a, b) => b.amountCents - a.amountCents)
@@ -432,6 +447,7 @@ export function buildStories(input: StoryInput): Story[] {
         title: 'Tu gasto por día',
         figure: formatArs(Math.round(input.spending.expenseCents / days)),
         body: `En ${days === 1 ? 'el primer día' : `${days} días`} de ${input.monthName} gastaste ${formatArs(input.spending.expenseCents)}: es lo que sale por día, en promedio.`,
+        tip: 'Si querés bajar el promedio, probá un día sin gastos esta semana.',
         action: { label: 'Ver el calendario', to: '/actividad' },
       })
     }
@@ -445,6 +461,10 @@ export function buildStories(input: StoryInput): Story[] {
           change === 0
             ? `Gastaste lo mismo que en ${input.spending.previousMonthName}.`
             : `Gastaste ${Math.abs(change)}% ${change > 0 ? 'más' : 'menos'} que en ${input.spending.previousMonthName}: ${formatArs(input.spending.expenseCents)} contra ${formatArs(previous)}.`,
+        tip:
+          change > 0
+            ? 'Mirá en qué categoría subió y ajustá un poco el resto del mes.'
+            : 'Buen ritmo: mantené lo que te está funcionando.',
         action: { label: 'Ver el informe', to: '/este-mes' },
       })
     }

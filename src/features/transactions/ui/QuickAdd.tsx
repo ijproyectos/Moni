@@ -1,20 +1,20 @@
-import { Camera, Mic, Plus } from 'lucide-react'
 import { useRef, useState, type ChangeEvent } from 'react'
 import { useParseReceipt } from '@/features/ai/api/useParseReceipt'
 import { usePlus } from '@/features/plus/api/usePlus'
 import type { PlusGateReason } from '@/features/plus/domain/plus'
 import { PlusSheet } from '@/features/plus/ui/PlusSheet'
-import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
-import { AddActionMenu, type AddAction } from '@/shared/ui/AddActionMenu'
 import { MoniAddButton } from '@/shared/ui/MoniAddButton'
 import { useMovementSheet } from './movementSheetContext'
+import { QuickAddSheet } from './QuickAddSheet'
 import { ReceiptScan } from './ReceiptScan'
+import type { RepeatSuggestion } from '../domain/recentRepeats'
 import { VoiceSheet } from './VoiceSheet'
 
 /**
- * The global add button: Moni's cat in the middle of the bottom bar. Tapping it opens a floating menu with three ways to
- * add a movement: "Sacar foto" (receipt scan), "Por voz" (dictation / typing) and "Manual" (the usual sheet).
+ * The global add button: Moni's cat in the middle of the bottom bar. Tapping it opens the assistant sheet (screen 18)
+ * with three ways to add a movement: "Foto" (receipt scan), "Voz" (dictation / typing) and "A mano" (the form), plus
+ * "Repetir uno reciente" and "Dividir un gasto con un grupo".
  * Other entry points (Inicio, Cuentas, Actividad) keep calling `useMovementSheet().openNew` directly.
  */
 export function QuickAdd() {
@@ -39,12 +39,6 @@ export function QuickAdd() {
     setMenuOpen(false)
   }
 
-  /** Escape or a tap outside: close and give the focus back to the cat. */
-  function dismissMenu() {
-    closeMenu()
-    buttonRef.current?.focus()
-  }
-
   function openPicker() {
     const input = inputRef.current
     if (!input) return
@@ -62,62 +56,53 @@ export function QuickAdd() {
     scanReceipt(file)
   }
 
-  const actions: AddAction[] = [
-    {
-      id: 'photo',
-      label: 'Sacar foto',
-      icon: Camera,
-      circle: 'bg-[#bfd6b3] text-forest',
-      disabled: !online,
-      badge: isFree ? 'Plus' : undefined,
-      onSelect: () => {
-        closeMenu()
-        if (isFree) setUpsell('receipt')
-        else openPicker()
+  function onPhoto() {
+    closeMenu()
+    if (isFree) setUpsell('receipt')
+    else openPicker()
+  }
+
+  function onVoice() {
+    closeMenu()
+    if (isFree) return setUpsell('voice')
+    setVoiceCount((n) => n + 1)
+    setVoiceOpen(true)
+  }
+
+  function onManual() {
+    closeMenu()
+    openNew()
+  }
+
+  function onRepeat(suggestion: RepeatSuggestion) {
+    closeMenu()
+    openNew('expense', {
+      initial: {
+        amountCents: suggestion.amountCents,
+        categoryId: suggestion.categoryId,
+        accountId: suggestion.accountId,
+        note: suggestion.note,
       },
-    },
-    {
-      id: 'voice',
-      label: 'Por voz',
-      icon: Mic,
-      circle: 'bg-[#eceed9] text-forest',
-      disabled: !online,
-      badge: isFree ? 'Plus' : undefined,
-      onSelect: () => {
-        closeMenu()
-        if (isFree) return setUpsell('voice')
-        setVoiceCount((n) => n + 1)
-        setVoiceOpen(true)
-      },
-    },
-    {
-      id: 'manual',
-      label: 'Manual',
-      icon: Plus,
-      circle: 'bg-[#2f7046] text-white',
-      // Stays enabled offline: the sheet shows its own offline notice and blocks saving, as before.
-      onSelect: () => {
-        closeMenu()
-        openNew()
-      },
-    },
-  ]
+    })
+  }
+
+  function onShare() {
+    closeMenu()
+    openNew('expense', { shared: true })
+  }
 
   return (
     <>
       {menuOpen && (
-        <div
-          aria-hidden="true"
-          data-testid="add-menu-backdrop"
-          onClick={dismissMenu}
-          className="pointer-events-auto fixed inset-0 -z-10 bg-ink/50 backdrop-blur-[3px] motion-safe:animate-[fade-in_180ms_ease-out]"
-        />
-      )}
-      {menuOpen && (
-        <AddActionMenu
-          actions={actions}
-          note={online ? undefined : OFFLINE_MESSAGE}
-          onClose={dismissMenu}
+        <QuickAddSheet
+          online={online}
+          plusBadge={isFree}
+          onPhoto={onPhoto}
+          onVoice={onVoice}
+          onManual={onManual}
+          onRepeat={onRepeat}
+          onShare={onShare}
+          onClose={closeMenu}
         />
       )}
       {/* Always mounted: the menu closes before the picker opens, and the click must stay in the same tap. */}
@@ -134,9 +119,9 @@ export function QuickAdd() {
       />
       <MoniAddButton
         ref={buttonRef}
-        aria-label={menuOpen ? 'Cerrar menú de movimientos' : 'Nuevo movimiento'}
+        aria-label="Nuevo movimiento"
         open={menuOpen}
-        onClick={() => setMenuOpen((v) => !v)}
+        onClick={() => setMenuOpen(true)}
       />
       {upsell && <PlusSheet reason={upsell} onClose={() => setUpsell(null)} />}
       {voiceOpen && <VoiceSheet key={voiceCount} onClose={() => setVoiceOpen(false)} />}

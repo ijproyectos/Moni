@@ -72,12 +72,12 @@ describe('Fotos de grupos: en la lista', () => {
       .filter((l) => l.getAttribute('href')?.startsWith('/grupos/g'))
     const photo = (first as HTMLElement).querySelector('img') as HTMLImageElement
     expect(photo).toHaveAttribute('src', 'https://s/casa.jpg')
-    // Same tile: size-14 and rounded-[16px] as the icon tile of the group without photo.
+    // Same tile as the icon tile of the group without photo (round 42px circle).
     const tile = photo.parentElement as HTMLElement
     const iconTile = (second as HTMLElement).querySelector(
       'span[aria-hidden="true"]',
     ) as HTMLElement
-    for (const cls of ['size-14', 'rounded-[16px]', 'shrink-0']) {
+    for (const cls of ['size-[42px]', 'rounded-full', 'shrink-0']) {
       expect(tile).toHaveClass(cls)
       expect(iconTile).toHaveClass(cls)
     }
@@ -89,7 +89,7 @@ describe('Fotos de grupos: en la lista', () => {
     const card = screen.getByRole('link', { name: /Casa/ })
     expect(card).toHaveTextContent('Casa')
     expect(card).toHaveTextContent('3 personas')
-    expect(card).toHaveTextContent('Te deben')
+    expect(card).toHaveTextContent('te deben')
     expect(card).toHaveTextContent('$25.000')
   })
 

@@ -43,7 +43,8 @@ describe('AssistantPage', () => {
     expect(screen.getAllByRole('button', { name: /\?$/ })).toHaveLength(5)
     await user.click(screen.getByRole('button', { name: '¿Cuánto gasté este mes?' }))
     expect(await screen.findByText(/Gastaste \$5\.000 este mes\./)).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: 'Preguntas sugeridas' })).not.toBeInTheDocument()
+    // The chips stay under the conversation, as in the design.
+    expect(screen.getByRole('group', { name: 'Preguntas sugeridas' })).toBeInTheDocument()
   })
 
   it('sends typed questions with the send button and disables it while empty', async () => {

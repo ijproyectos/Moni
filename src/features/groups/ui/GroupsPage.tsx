@@ -3,7 +3,14 @@ import { useNavigate } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
 import type { DebtDirection } from '@/features/debts/domain/debts'
 import { GroupDebtsSheet } from '@/features/debts/ui/GroupDebtsSheet'
+import { useCategoryTemplates } from '@/features/categories/api/useCategories'
+import { formatRelativeDay } from '@/shared/lib/dates'
+import { todayIso } from '@/shared/lib/month'
+import { useGroupLedger } from '../api/useGroupLedger'
 import { useMyGroups } from '../api/useGroups'
+import { lastExpenseView, mostRecentGroup, splitShortLabel } from '../domain/groupsOverview'
+import { personName } from '../domain/ledger'
+import { expenseIcon } from './expenseIcon'
 import { overlayDeltaFor } from '../domain/ledger'
 import { useGroupOverlays } from '../api/useGroupGuests'
 import { useGroupPhotos } from '../api/useGroupPhotos'
@@ -35,9 +42,29 @@ export function GroupsPage() {
     [groups.data, overlays, photos, user?.id],
   )
 
+  // "Último en <grupo>": the latest real expense of the group with the most recent activity.
+  const recent = listed ? mostRecentGroup(listed) : undefined
+  const recentData = useGroupLedger(recent?.id)
+  const templates = useCategoryTemplates()
+  const lastExpense = useMemo(() => {
+    if (!recent) return null
+    const view = lastExpenseView(recentData.ledger.expenses, user?.id ?? '')
+    if (!view) return null
+    const payer = view.paidByMe ? 'Pagaste vos' : `Pagó ${personName(recentData.ledger.people, view.payerId)}`
+    const split = splitShortLabel(view.methodLabel, recentData.ledger.expenses[0]?.shares.length ?? 0)
+    return {
+      groupName: recent.name,
+      description: `${view.description} · dividido ${split}`,
+      meta: `${payer} · ${formatRelativeDay(view.occurredOn, todayIso()).toLowerCase()}`,
+      deltaCents: view.myDeltaCents,
+      icon: expenseIcon(templates.data ?? [], view.templateSlug),
+    }
+  }, [recent, recentData.ledger, templates.data, user?.id])
+
   return (
     <>
       <GroupsScreen
+        lastExpense={lastExpense}
         groups={listed}
         isLoading={groups.isLoading}
         isError={groups.isError}
