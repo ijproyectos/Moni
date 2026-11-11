@@ -23,6 +23,8 @@ interface SwipeRowProps {
   onPress?: () => void
   pressLabel?: string
   className?: string
+  /** Background of the sliding face; match the surface the row sits on. */
+  surfaceClassName?: string
 }
 
 function ActionButton({ action, onDone }: { action: SwipeAction; onDone: () => void }) {
@@ -56,6 +58,7 @@ export function SwipeRow({
   onPress,
   pressLabel,
   className,
+  surfaceClassName = 'bg-canvas',
 }: SwipeRowProps) {
   const trailingWidth = actions.length * ACTION_WIDTH
   const leadingWidth = leadingAction ? ACTION_WIDTH : 0
@@ -137,7 +140,8 @@ export function SwipeRow({
         }}
         style={{ transform: `translateX(${offset}px)`, touchAction: 'pan-y' }}
         className={cn(
-          'relative bg-canvas transition-transform duration-150 motion-reduce:transition-none',
+          'relative transition-transform duration-150 motion-reduce:transition-none',
+          surfaceClassName,
           dragging && 'transition-none',
         )}
       >

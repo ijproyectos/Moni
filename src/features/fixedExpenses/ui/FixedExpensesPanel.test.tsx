@@ -106,31 +106,39 @@ function setup(data = {}) {
 describe('FixedExpensesPanel', () => {
   beforeEach(() => skip.mockClear())
 
-  it('shows the monthly ESTIMATE and what was REALLY paid as two clearly different figures', () => {
+  it('shows what is left to debit this month against what was really paid', () => {
     setup()
-    expect(screen.getByText('Estimado por mes')).toBeInTheDocument()
-    expect(screen.getByText('$130.000')).toBeInTheDocument() // luz 30.000 + alquiler 100.000 (active only)
-    expect(screen.getByText('Pagado en noviembre')).toBeInTheDocument()
-    // Only what was paid in November (hero, plus the row of that payment in the history).
-    expect(screen.getAllByText('$31.500').length).toBeGreaterThanOrEqual(2)
-    expect(screen.queryByText('$140.500')).toBeNull()
-    expect(screen.getByText(/Lo que realmente registraste como pagado/)).toBeInTheDocument()
+    const card = screen.getByRole('region', { name: 'Faltan debitar este mes' })
+    // luz (overdue, 30.000) + alquiler (today, 100.000) still to go; 31.500 really paid in November.
+    expect(within(card).getByText('$130.000')).toBeInTheDocument()
+    expect(card).toHaveTextContent('de $161.500')
+    expect(within(card).getByText('Pagado')).toBeInTheDocument()
+    expect(within(card).getByText('Por venir')).toBeInTheDocument()
   })
 
-  it('is organised in Pendientes, Próximos and Historial', () => {
+  it('lists the debits of the month by date with their state, and keeps what is later apart', () => {
     setup()
-    expect(screen.getByText('Pendientes de confirmar')).toBeInTheDocument()
+    const month = screen.getByRole('list', { name: 'Gastos fijos de este mes' })
+    const rows = within(month).getAllByRole('button', { name: /, (Pagado|Vence hoy|Vencido hace)/ })
+    expect(rows.map((r) => r.getAttribute('aria-label'))).toEqual([
+      'Luz, Pagado',
+      'Luz, Vencido hace 5 días',
+      'Alquiler, Vence hoy',
+    ])
     expect(screen.getByText('Próximos vencimientos')).toBeInTheDocument()
     expect(screen.getByText('Historial de pagos')).toBeInTheDocument()
+    expect(within(month).queryByText('Gas')).toBeNull()
   })
 
-  it('an overdue bill stays pending and says so plainly; one due today says "Vence hoy"', () => {
+  it('names the next debit only when there is a real one ahead', () => {
     setup()
-    expect(screen.getByText('Vencido hace 5 días (5 nov)')).toBeInTheDocument()
-    expect(screen.getByText('Vence hoy')).toBeInTheDocument()
-    // The overdue one comes first.
-    const buttons = screen.getAllByRole('button', { name: /^Registrar pago de/ })
-    expect(buttons[0]).toHaveAccessibleName('Registrar pago de Luz')
+    expect(screen.getByText('Hoy se debita Alquiler.')).toBeInTheDocument()
+    expect(screen.queryByText(/Ya está contado/)).toBeNull()
+  })
+
+  it('has no Moni note when nothing is left to debit', () => {
+    setup({ occurrences: [], expenses: [alquiler] })
+    expect(screen.queryByText(/se debita/)).toBeNull()
   })
 
   it('offers "Registrar pago" (not "Pagar"), "Cambiar fecha" and "Omitir" on each pending bill', async () => {
@@ -159,10 +167,9 @@ describe('FixedExpensesPanel', () => {
     expect(skip).toHaveBeenCalledWith('o-luz')
   })
 
-  it('upcoming lists the active ones by next due date with the estimate', () => {
+  it('what falls after this month lists the active ones by next due date with the estimate', () => {
     setup()
-    const upcoming = screen.getByText('Próximos vencimientos').parentElement
-      ?.nextElementSibling as HTMLElement
+    const upcoming = screen.getByText('Próximos vencimientos').nextElementSibling as HTMLElement
     const rows = within(upcoming).getAllByRole('button')
     expect(rows[0]).toHaveAccessibleName('Luz, vence el 5 dic')
     expect(rows[1]).toHaveAccessibleName('Alquiler, vence el 10 dic')
@@ -172,8 +179,7 @@ describe('FixedExpensesPanel', () => {
 
   it('the history keeps standing payments, voided payments and skipped bills, with real amount and dates apart', () => {
     setup()
-    const history = screen.getByText('Historial de pagos').parentElement
-      ?.nextElementSibling as HTMLElement
+    const history = screen.getByText('Historial de pagos').nextElementSibling as HTMLElement
     expect(
       within(history).getByText('Pagado el 2 nov 2026 · vencía el 5 oct 2026'),
     ).toBeInTheDocument()
@@ -183,7 +189,7 @@ describe('FixedExpensesPanel', () => {
     expect(within(history).getAllByText('Estimado $30.000').length).toBeGreaterThan(0)
   })
 
-  it('the filter has only Activos and Eliminados, in two equal columns (Pausados is gone from the screen)', () => {
+  it('the filter has only Activos and Eliminados, and only shows up when something was removed', () => {
     setup()
     const group = screen.getByRole('group', { name: 'Ver' })
     expect(
@@ -191,8 +197,12 @@ describe('FixedExpensesPanel', () => {
         .getAllByRole('button')
         .map((b) => b.textContent),
     ).toEqual(['Activos', 'Eliminados'])
-    expect(group).toHaveClass('grid-cols-2')
     expect(screen.queryByRole('button', { name: 'Pausados' })).toBeNull()
+  })
+
+  it('has no filter when nothing was removed', () => {
+    setup({ expenses: [luz, alquiler, gas] })
+    expect(screen.queryByRole('group', { name: 'Ver' })).toBeNull()
   })
 
   it('Activos shows only active expenses and their pending bills; paused ones are not listed', () => {
@@ -211,10 +221,10 @@ describe('FixedExpensesPanel', () => {
     expect(
       screen.getByRole('button', { name: /^Patente, seguimiento eliminado/ }),
     ).toBeInTheDocument()
-    expect(screen.queryByText('Pendientes de confirmar')).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Faltan debitar este mes' })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Gas, (pausado|vence)/ })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Activos' }))
-    expect(screen.getByText('Pendientes de confirmar')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Faltan debitar este mes' })).toBeInTheDocument()
   })
 
   it('invites to add the first one when there is none', async () => {
@@ -224,8 +234,8 @@ describe('FixedExpensesPanel', () => {
     expect(onAdd).toHaveBeenCalled()
   })
 
-  it('says there is nothing pending when everything is settled', () => {
+  it('shows nothing to confirm when everything is settled', () => {
     setup({ occurrences: [] })
-    expect(screen.getByText('No tenés vencimientos pendientes.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Registrar pago de/ })).toBeNull()
   })
 })

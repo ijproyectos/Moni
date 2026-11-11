@@ -70,8 +70,7 @@ describe('Activity: starting balance and salary loaded with an account', () => {
   })
 
   it('a salary loaded with the account is a normal income with its category', () => {
-    // Once in its row and again in the totals of the month and of the day: it counts.
-    expect(screen.getAllByText('+$150.000').length).toBeGreaterThan(1)
+    expect(screen.getAllByText('+$150.000')).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'Anular Sueldo' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Editar Sueldo' })).toBeInTheDocument()
   })

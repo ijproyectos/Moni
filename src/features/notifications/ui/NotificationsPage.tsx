@@ -1,11 +1,19 @@
-import { Bell, Check, ChevronRight, Copy, Gift } from 'lucide-react'
+import { Bell, BellRing, Check, Copy, Gift, PieChart, type LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { useBudgetStatus } from '@/features/budgets/api/useBudgets'
+import { budgetAlerts } from '@/features/budgets/domain/budget'
+import { useRecurringReminders } from '@/features/recurring/api/useRecurringReminders'
+import { monthStart, todayIso } from '@/shared/lib/month'
+import { cn } from '@/shared/ui/cn'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
+import { Kicker } from '@/shared/ui/Kicker'
+import { MentaHeader } from '@/shared/ui/MentaHeader'
+import { groupNotices, type NoticeItem, type NoticeTone } from '../domain/notificationFeed'
 import { formatArs } from '@/shared/lib/money'
 import { copyText } from '@/shared/lib/share'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
-import { Avatar, Page, SectionLabel } from '@/shared/ui/kit'
-import { PageHeader } from '@/shared/ui/PageHeader'
+import { Avatar, SectionLabel } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
 import {
   markAllRead,
@@ -14,9 +22,7 @@ import {
   type PaymentNotice,
 } from '../mock/notificationsStore'
 import { SavingsNotices } from '@/features/goals/ui/SavingsNotices'
-import { RecurringReminders } from '@/features/recurring/ui/RecurringReminders'
 import { RemindSheet } from './RemindSheet'
-import { AntIcon } from '@/shared/ui/AntIcon'
 
 // Screens 021 / 022 / 128 — Avisos.
 export function NotificationsPage() {
@@ -28,11 +34,33 @@ export function NotificationsPage() {
   const [reminding, setReminding] = useState<PaymentNotice | null>(null)
 
   useEffect(() => markAllRead(), [])
+  const today = todayIso()
+  const reminders = useRecurringReminders()
+  const budgets = useBudgetStatus(monthStart(today))
+  const notices: NoticeItem[] = [
+    ...reminders.map((r): NoticeItem => ({ key: r.key, tone: 'gold', title: r.text, day: today, to: r.to })),
+    ...budgetAlerts(budgets.data ?? []).map(
+      (b): NoticeItem => ({
+        key: `budget-${b.budgetId}`,
+        tone: b.state === 'over' ? 'red' : 'gold',
+        title: b.state === 'over' ? `Te pasaste en ${b.name}` : `${b.name} va por el ${Math.floor(b.percent)}%`,
+        detail: b.state === 'over' ? 'Superaste el límite del mes' : 'Está cerca del límite del mes',
+        day: today,
+        to: '/presupuesto',
+      }),
+    ),
+  ]
+  const groups = groupNotices(notices, today)
 
   return (
-    <Page>
-      <PageHeader title="Avisos" backTo="/" />
+    <section className="flex flex-col gap-3 px-[18px] pb-4 pt-1">
+      <MentaHeader
+        title="Notificaciones"
+        subtitle={notices.length === 0 ? 'Todo al día' : `${notices.length} ${notices.length === 1 ? 'aviso' : 'avisos'}`}
+        backTo="/"
+      />
       <SegmentedControl
+        variant="menta"
         label="Tipo de aviso"
         value={tab}
         onChange={(t) => setParams(t === 'grupos' ? { tab: 'grupos' } : {}, { replace: true })}
@@ -45,7 +73,13 @@ export function NotificationsPage() {
       {tab === 'pagos' ? (
         <>
           <SavingsNotices />
-          <RecurringReminders />
+          <NoticeSection title="Hoy" items={groups.today} />
+          <NoticeSection title="Esta semana" items={groups.thisWeek} />
+          {notices.length === 0 && (
+            <p className="rounded-[26px] bg-card px-4 py-5 text-center text-[14.5px] text-text-muted">
+              No tenés avisos por ahora. Cuando haya un vencimiento o un límite cerca, lo ves acá.
+            </p>
+          )}
           <SectionLabel
             action={
               <Link
@@ -132,37 +166,6 @@ export function NotificationsPage() {
             </div>
           ))}
 
-          <SectionLabel>De Moni</SectionLabel>
-          <Link
-            to="/aguinaldo"
-            className="flex items-center gap-3 rounded-[24px] border border-lime/60 bg-lime/25 p-4"
-          >
-            <span className="flex size-12 items-center justify-center rounded-full bg-card">
-              <Gift aria-hidden="true" className="size-6" />
-            </span>
-            <span className="flex-1">
-              <span className="block text-[18px] font-extrabold">Se viene el aguinaldo</span>
-              <span className="block text-[15px] text-text-muted">Cargalo y elegí a dónde va</span>
-            </span>
-            <ChevronRight aria-hidden="true" className="size-5" />
-          </Link>
-          <Link
-            to="/hormigas"
-            className="flex items-center gap-3 rounded-[24px] border border-line bg-card p-4"
-          >
-            <span className="flex size-12 items-center justify-center rounded-full bg-tint-gold">
-              <AntIcon aria-hidden="true" className="size-6" />
-            </span>
-            <span className="flex-1">
-              <span className="block text-[18px] font-extrabold">
-                Tus gastos hormiga de la semana
-              </span>
-              <span className="block text-[15px] text-text-muted">
-                Subieron un 7% contra la anterior
-              </span>
-            </span>
-            <ChevronRight aria-hidden="true" className="size-5" />
-          </Link>
         </>
       ) : (
         <>
@@ -214,6 +217,46 @@ export function NotificationsPage() {
       {reminding && (
         <RemindSheet notice={reminding} myAlias={data.myAlias} onClose={() => setReminding(null)} />
       )}
-    </Page>
+    </section>
+  )
+}
+
+const TONES: Record<NoticeTone, { icon: LucideIcon; className: string }> = {
+  gold: { icon: BellRing, className: 'bg-warn-bg text-warn-ink' },
+  red: { icon: PieChart, className: 'bg-bad-bg text-bad-ink' },
+  green: { icon: Bell, className: 'bg-ok-bg text-ok-ink' },
+}
+
+/** One group of the feed ("Hoy", "Esta semana"): a tinted icon, the notice and where it leads. Empty groups do not show. */
+function NoticeSection({ title, items }: { title: string; items: readonly NoticeItem[] }) {
+  if (items.length === 0) return null
+  return (
+    <section aria-label={title} className="flex flex-col gap-3">
+      <Kicker as="h2">{title}</Kicker>
+      <ul className="rounded-[26px] bg-card px-4 py-0.5">
+        {items.map((n) => {
+          const { icon: Icon, className } = TONES[n.tone]
+          return (
+            <li key={n.key} className="border-b border-line last:border-b-0">
+              <Link
+                to={n.to}
+                className={cn('grid grid-cols-[40px_1fr] items-start gap-3 py-[11px]', FOCUS_RING)}
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn('flex size-10 items-center justify-center rounded-full', className)}
+                >
+                  <Icon className="size-[18px]" strokeWidth={2} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[14.5px] font-medium leading-[1.3]">{n.title}</span>
+                  {n.detail && <span className="block text-[12.5px] text-text-muted">{n.detail}</span>}
+                </span>
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }

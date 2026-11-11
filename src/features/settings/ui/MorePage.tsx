@@ -171,7 +171,7 @@ export function MorePage() {
       key: 'metas',
       feature: 'savings',
       node: (
-        <MoreCard to="/metas" title="Presupuestos y metas" tone="sage">
+        <MoreCard to="/metas" title="Metas de ahorro" tone="sage">
           {goalShare !== null ? (
             <span>
               <span className="block font-display text-[36px] font-extrabold leading-9">

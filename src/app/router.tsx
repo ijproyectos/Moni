@@ -61,6 +61,7 @@ import { WelcomePage } from '@/features/onboarding/ui/WelcomePage'
 import { MorePage } from '@/features/settings/ui/MorePage'
 import { ProfilePage } from '@/features/settings/ui/ProfilePage'
 import { ActivityPage } from '@/features/transactions/ui/ActivityPage'
+import { BudgetPage } from '@/features/budgets/ui/BudgetPage'
 import type { FeatureFlag } from '@/shared/config/features'
 import { AppShell } from './AppShell'
 import { FeatureGate } from './FeatureGate'
@@ -96,6 +97,7 @@ const simulatedRoutes = [
 export const appRoutes = [
   { index: true, element: <HomePage /> },
   { path: 'actividad', element: <ActivityPage /> },
+  { path: 'presupuesto', element: <BudgetPage /> },
   { path: 'grupos', element: <GroupsPage /> },
   { path: 'grupos/nuevo', element: <CreateGroupPage /> },
   { path: 'grupos/avisos', element: <GroupNoticesPage /> },

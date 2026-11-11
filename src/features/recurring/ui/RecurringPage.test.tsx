@@ -43,9 +43,9 @@ function renderAt(url: string) {
 }
 
 describe('RecurringPage (Pagos recurrentes)', () => {
-  it('is called "Pagos recurrentes" and has only two tabs: Suscripciones and Gastos fijos', () => {
+  it('is titled after its tab and has only two tabs: Suscripciones and Gastos fijos', () => {
     renderAt('/recurrentes')
-    expect(screen.getByRole('heading', { name: 'Pagos recurrentes' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Suscripciones' })).toBeInTheDocument()
     expect(screen.queryByText('Fijos y cuotas')).toBeNull()
     expect(screen.getByRole('button', { name: 'Suscripciones' })).toHaveAttribute(
       'aria-pressed',

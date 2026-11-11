@@ -102,6 +102,7 @@ describe('ActivityPage', () => {
     expect(screen.getByText('3 movimientos')).toBeInTheDocument()
     expect(screen.getByText('Alquiler viejo')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Todo' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Por mes' })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('narrows to the month only when "Por mes" is chosen, and goes back with "Todo"', async () => {
@@ -113,47 +114,52 @@ describe('ActivityPage', () => {
     await user.click(screen.getByRole('button', { name: 'Mes anterior' }))
     expect(screen.getByText('Alquiler viejo')).toBeInTheDocument()
     expect(screen.getByText('1 movimiento')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Todo' }))
+    await user.click(screen.getByRole('button', { name: 'Por mes' }))
     expect(screen.getByText('3 movimientos')).toBeInTheDocument()
   })
 
-  it('list view without a month filter summarises everything and has no month navigation', async () => {
-    const user = setup()
-    await user.click(screen.getByRole('button', { name: 'Ver como lista' }))
+  it('by default it covers the whole history and has no month navigation', () => {
+    setup()
     expect(screen.getByText('Todo el historial')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Mes anterior' })).not.toBeInTheDocument()
   })
 
   it('filters by kind by tapping Gastos or Ingresos, and tapping again clears it', async () => {
     const user = setup()
-    await user.click(screen.getByRole('button', { name: /^Ingresos/ }))
-    expect(screen.getByRole('button', { name: /^Ingresos/ })).toHaveAttribute(
+    await user.click(screen.getByRole('button', { name: 'Ingresos' }))
+    expect(screen.getByRole('button', { name: 'Ingresos' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
     expect(screen.getByText('1 ingreso')).toBeInTheDocument()
     expect(screen.getByText('Sueldo octubre')).toBeInTheDocument()
     expect(screen.queryByText('Cena')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /^Ingresos/ }))
+    await user.click(screen.getByRole('button', { name: 'Todo' }))
     expect(screen.getByText('3 movimientos')).toBeInTheDocument()
   })
 
-  it('shows the totals of the month in the header', () => {
-    setup()
-    expect(screen.getByRole('button', { name: /^Gastos/ })).toHaveTextContent('$22.000')
-    expect(screen.getByRole('button', { name: /^Ingresos/ })).toHaveTextContent('$97.000')
+  it('compares the spending of the month with the previous one', async () => {
+    const user = setup()
+    const card = screen.getByRole('region', { name: /^Gastos: .* contra/ })
+    expect(card).toHaveTextContent('$22.000')
+    // Nothing spent the month before: no percentage is invented.
+    expect(card).not.toHaveTextContent('%')
+    expect(card).toHaveTextContent('Comparado al mismo día del mes')
+    await user.click(screen.getByRole('button', { name: 'Ingresos' }))
+    expect(screen.getByRole('region', { name: /^Ingresos: .* contra/ })).toHaveTextContent('$97.000')
   })
 
-  it('keeps each total on one line, both at the same size', () => {
-    setup()
-    const amounts = [/^Gastos/, /^Ingresos/].map((name) => {
-      const button = screen.getByRole('button', { name })
-      return button.querySelector('span.whitespace-nowrap, .whitespace-nowrap') as HTMLElement
-    })
-    for (const amount of amounts) expect(amount).toHaveClass('whitespace-nowrap')
-    expect(amounts[0]?.className.match(/text-\[\d+px\]/)?.[0]).toBe(
-      amounts[1]?.className.match(/text-\[\d+px\]/)?.[0],
-    )
+  it('opens the detail of a movement with its real data and edits or deletes from there', async () => {
+    const user = setup()
+    await user.click(screen.getByRole('button', { name: 'Ver detalle de Cena' }))
+    const dialog = screen.getByRole('dialog', { name: 'Detalle del movimiento' })
+    expect(within(dialog).getByText('Cena')).toBeInTheDocument()
+    expect(within(dialog).getByText('Fecha')).toBeInTheDocument()
+    expect(within(dialog).getByText('Categoría')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Por voz')).not.toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Eliminar' }))
+    await user.click(within(screen.getByRole('dialog', { name: '¿Anular este movimiento?' })).getByRole('button', { name: 'Anular' }))
+    expect(voidTx).toHaveBeenCalledWith('e1')
   })
 
   it('every movement has a real button for what the swipe does (right voids, left edits)', async () => {
@@ -181,30 +187,36 @@ describe('ActivityPage', () => {
   })
 
   describe('calendar and grouping', () => {
-    const groupByCategory = () => screen.getByRole('button', { name: 'Ver como lista' })
-    const groupByDay = () => screen.getByRole('button', { name: 'Ver calendario' })
-    const openMonth = (user: ReturnType<typeof userEvent.setup>) =>
-      user.click(screen.getByRole('button', { name: 'Ver el mes completo' }))
+    const groupByCategory = () => screen.getByRole('button', { name: 'Agrupar por categoría' })
+    const groupByDay = () => screen.getByRole('button', { name: 'Ver por día' })
+    const openCalendar = (user: ReturnType<typeof userEvent.setup>) =>
+      user.click(screen.getByRole('button', { name: 'Ver calendario' }))
+    const openMonth = async (user: ReturnType<typeof userEvent.setup>) => {
+      await openCalendar(user)
+      if (screen.queryByRole('button', { name: 'Ver el mes completo' }))
+        await user.click(screen.getByRole('button', { name: 'Ver el mes completo' }))
+    }
 
-    it('starts by days with the week strip, and the full month opens on demand', async () => {
+    it('starts by days without calendar; the icon opens it unfolded and it folds to the week strip', async () => {
       const user = setup()
-      expect(screen.getByRole('group', { name: 'Últimos días del mes' })).toBeInTheDocument()
-      expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
-      await openMonth(user)
-      expect(screen.getByRole('region', { name: 'Calendario del mes' })).toBeInTheDocument()
       expect(screen.queryByRole('group', { name: 'Últimos días del mes' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
+      await openCalendar(user)
+      expect(screen.getByRole('region', { name: 'Calendario del mes' })).toBeInTheDocument()
       await user.click(screen.getByRole('button', { name: 'Ocultar el calendario' }))
       expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
+      expect(screen.getByRole('group', { name: 'Últimos días del mes' })).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Ver el mes completo' }))
+      expect(screen.getByRole('region', { name: 'Calendario del mes' })).toBeInTheDocument()
     })
 
-    it('one icon switches between calendar and list, and the calendar opens unfolded', async () => {
+    it('one icon switches between the calendar and the plain list of days', async () => {
       const user = setup()
+      await openCalendar(user)
+      expect(screen.getByRole('region', { name: 'Calendario del mes' })).toBeInTheDocument()
       await user.click(screen.getByRole('button', { name: 'Ver como lista' }))
       expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'Ver como lista' })).not.toBeInTheDocument()
-      await user.click(screen.getByRole('button', { name: 'Ver calendario' }))
-      expect(screen.getByRole('region', { name: 'Calendario del mes' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Ver como lista' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Ver calendario' })).toBeInTheDocument()
     })
 
     it('the open calendar keeps its own month navigation', async () => {
@@ -246,13 +258,15 @@ describe('ActivityPage', () => {
       expect(screen.getByText('No encontramos movimientos')).toBeInTheDocument()
       await user.click(groupByCategory())
       expect(screen.getByRole('region', { name: 'Comida' })).toBeInTheDocument()
-      await user.click(groupByDay())
+      await openCalendar(user)
       expect(screen.getByText('No encontramos movimientos')).toBeInTheDocument()
     })
 
     it('filters by a day tapped on the week strip and clears it with a second tap', async () => {
       const user = setup()
       const todayNumber = Number(today.slice(8, 10))
+      await openCalendar(user)
+      await user.click(screen.getByRole('button', { name: 'Ocultar el calendario' }))
       await user.click(screen.getByRole('button', { name: `Día ${todayNumber}` }))
       expect(screen.getByText('Cena')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: `Día ${todayNumber}` })).toHaveAttribute(
@@ -282,6 +296,7 @@ describe('ActivityPage', () => {
     it('falls back to days when the stored value is unknown', () => {
       window.localStorage.setItem('moni:activity-view:v1', 'grid')
       setup()
+      expect(screen.queryByRole('region', { name: 'Calendario del mes' })).not.toBeInTheDocument()
       expect(groupByCategory()).toBeInTheDocument()
     })
   })

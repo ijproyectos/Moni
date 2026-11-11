@@ -20,7 +20,8 @@ import { buildActivity, groupByCategory, type ActivityEntry } from '../domain/ac
 import type { ActivityPeriod } from '../domain/activityPeriod'
 import { loadActivityView, saveActivityView, type ActivityView } from '../domain/activityView'
 import type { EntryKind } from '../domain/transaction'
-import { calendarDayTotals, totalsOf } from '../domain/transactionQueries'
+import { compareMonths } from '../domain/monthComparison'
+import { calendarDayTotals } from '../domain/transactionQueries'
 import { ActivityScreen } from './ActivityScreen'
 import { useMovementSheet } from './movementSheetContext'
 
@@ -97,12 +98,17 @@ export function ActivityPage() {
     () => calendarDayTotals(transactions.data ?? [], month),
     [transactions.data, month],
   )
-  const totals = useMemo(() => {
-    const summarized = (transactions.data ?? []).filter((tx) =>
-      monthScoped ? tx.occurredOn.startsWith(month.slice(0, 7)) : true,
-    )
-    return totalsOf(summarized)
-  }, [transactions.data, monthScoped, month])
+  // Spending (or income, when that filter is on) of the month against the previous one up to the same day.
+  const comparison = useMemo(
+    () =>
+      compareMonths(
+        transactions.data ?? [],
+        kind === 'income' ? 'income' : 'expense',
+        monthScoped ? month : latestMonth,
+        todayIso(),
+      ),
+    [transactions.data, kind, monthScoped, month, latestMonth],
+  )
 
   function changeView(next: ActivityView) {
     setView(next)
@@ -189,7 +195,8 @@ export function ActivityPage() {
       selectedDay={selectedDay}
       onSelectDay={setSelectedDay}
       calendarDays={calendarDays}
-      totals={totals}
+      comparison={comparison}
+      transactions={transactions.data ?? []}
       days={days}
       groups={groups}
       view={view}

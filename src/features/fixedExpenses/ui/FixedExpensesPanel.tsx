@@ -1,31 +1,26 @@
-import { useState } from 'react'
+import { Check, Repeat } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
-import { formatCompactDate, formatDayMonth, formatMonthName } from '@/shared/lib/dates'
+import { formatCompactDate, formatDayMonth } from '@/shared/lib/dates'
 import { formatArs } from '@/shared/lib/money'
+import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { EmptyState } from '@/shared/ui/EmptyState'
-import { ChoiceChip, SectionLabel } from '@/shared/ui/kit'
+import { Kicker } from '@/shared/ui/Kicker'
+import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { toUserMessage } from '@/shared/lib/errors'
 import { useFixedExpenses, useSkipOccurrence } from '../api/useFixedExpenses'
-import {
-  historyItems,
-  monthlyEstimateCents,
-  paidInMonthCents,
-  pendingBills,
-  splitPendingBills,
-  upcomingExpenses,
-  type FixedExpense,
-  type PendingBill,
-} from '../domain/fixedExpense'
-import { dueText } from '../domain/labels'
+import { historyItems, type FixedExpense, type PendingBill } from '../domain/fixedExpense'
+import { findKind } from '../domain/catalog'
+import { debitStatusText, monthDebits, nextDebitText, type MonthDebitRow } from '../domain/monthDebits'
 import { FixedExpenseDetailSheet } from './FixedExpenseDetailSheet'
 import { FixedExpenseFormSheet } from './FixedExpenseFormSheet'
 import { PaymentRow, SkippedRow } from './FixedHistoryRow'
-import { KindTile } from './KindTile'
 import { RegisterPaymentSheet } from './RegisterPaymentSheet'
 import { RescheduleSheet } from './RescheduleSheet'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
@@ -37,7 +32,14 @@ const FILTERS = [
 ] as const
 
 /** Pagos recurrentes › Gastos fijos: pending bills, upcoming due dates and the history of payments. */
-export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
+export function FixedExpensesPanel({
+  onAdd,
+  onCount,
+}: {
+  onAdd: () => void
+  /** Tells the page how many active fixed expenses there are, for its subtitle (null while unknown). */
+  onCount?: (summary: string | null) => void
+}) {
   const toast = useToast()
   const query = useFixedExpenses()
   const skip = useSkipOccurrence()
@@ -48,6 +50,18 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
   const [moving, setMoving] = useState<PendingBill | null>(null)
   const [skipping, setSkipping] = useState<PendingBill | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const loaded = query.data
+  useEffect(() => {
+    if (!onCount) return
+    const active = loaded?.expenses.filter((e) => e.status === 'active') ?? []
+    if (!loaded || active.length === 0) return onCount(null)
+    const monthly = active.every((e) => e.period === 'monthly')
+    onCount(
+      monthly
+        ? `${active.length} ${active.length === 1 ? 'débito' : 'débitos'} por mes`
+        : `${active.length} ${active.length === 1 ? 'gasto fijo activo' : 'gastos fijos activos'}`,
+    )
+  }, [loaded, onCount])
 
   if (query.isLoading) {
     return (
@@ -70,16 +84,13 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
   }
 
   const overview = query.data
-  const { expenses, payments, today } = overview
-  const monthName = formatMonthName(today).toLowerCase()
-  const active = expenses.filter((e) => e.status === 'active')
-  const { active: bills } = splitPendingBills(pendingBills(overview))
-  const upcoming = upcomingExpenses(expenses)
+  const { expenses } = overview
   const history = historyItems(overview)
   const shown = showAll ? history : history.slice(0, HISTORY_SHOWN)
   const occurrences = new Map(overview.occurrences.map((o) => [o.id, o]))
   const open = openId ? expenses.find((e) => e.id === openId) : undefined
   const others = expenses.filter((e) => e.status === filter)
+  const removed = expenses.filter((e) => e.status === 'removed')
   const byId = new Map(expenses.map((e) => [e.id, e]))
 
   async function confirmSkip() {
@@ -94,84 +105,74 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
     }
   }
 
+  const debits = monthDebits(overview)
+  const paidShare = debits.totalCents > 0 ? debits.paidCents : 0
+
   return (
     <>
-      <section className="rounded-[28px] bg-forest p-5 text-cream">
-        <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
-          Estimado por mes
-        </p>
-        <p className="font-display text-[36px] font-extrabold leading-[42px]">
-          {formatArs(monthlyEstimateCents(expenses))}
-        </p>
-        <p className="text-[13px] text-text-muted-on-dark">
-          Según los importes estimados de {active.length}{' '}
-          {active.length === 1 ? 'gasto fijo activo' : 'gastos fijos activos'}.
-        </p>
-        <div className="mt-3 border-t border-white/15 pt-3">
-          <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
-            Pagado en {monthName}
-          </p>
-          <p className="font-display text-[28px] font-extrabold leading-9 text-cream">
-            {formatArs(paidInMonthCents(payments, today))}
-          </p>
-          <p className="text-[13px] text-text-muted-on-dark">
-            Lo que realmente registraste como pagado.
-          </p>
-        </div>
-      </section>
-
-      {expenses.length === 0 && (
-        <div className="rounded-[24px] border border-line bg-card p-4">
-          <EmptyState
-            mascotUrl={mascotAssistant}
-            title="Todavía no cargaste gastos fijos"
-            description="Luz, gas, alquiler, expensas… Moni te avisa cuando vencen y vos registrás lo que pagaste."
-            action={<Button onClick={onAdd}>Agregar un gasto fijo</Button>}
-          />
-        </div>
-      )}
-
-      {expenses.length > 0 && (
-        <div role="group" aria-label="Ver" className="grid grid-cols-2 gap-2">
-          {FILTERS.map((f) => (
-            <ChoiceChip
-              key={f.value}
-              selected={filter === f.value}
-              onClick={() => setFilter(f.value)}
-              className="min-h-11 w-full px-3 text-[15px]"
-            >
-              {f.label}
-            </ChoiceChip>
-          ))}
-        </div>
-      )}
-
-      {filter !== 'active' && expenses.length > 0 && (
+      {expenses.length > 0 && filter === 'active' && (
         <>
-          <SectionLabel>Seguimiento eliminado</SectionLabel>
-          {others.length === 0 ? (
-            <p className="text-[15px] text-text-muted">No hay gastos fijos en esta lista.</p>
-          ) : (
-            <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
-              {others.map((e) => (
-                <ExpenseRow key={e.id} expense={e} muted onOpen={() => setOpenId(e.id)} />
-              ))}
-            </ul>
+          <section
+            aria-labelledby="debits-title"
+            className="flex flex-col gap-2.5 rounded-[28px] bg-card p-4"
+          >
+            <Kicker as="h2" className="font-medium">
+              <span id="debits-title">Faltan debitar este mes</span>
+            </Kicker>
+            <div className="flex items-baseline justify-between gap-2">
+              <AmountDisplay
+                cents={debits.pendingCents}
+                className="text-[38px] font-bold leading-none tracking-[-0.04em]"
+              />
+              <span className="text-[13px] text-text-muted">
+                de <AmountDisplay cents={debits.totalCents} />
+              </span>
+            </div>
+            {debits.totalCents > 0 && (
+              <div
+                role="img"
+                aria-label={`Pagado ${formatArs(debits.paidCents)}, por venir ${formatArs(debits.pendingCents)}`}
+                className="flex gap-[3px]"
+              >
+                <span
+                  className="h-2 rounded-full bg-mint"
+                  style={{ flex: paidShare, display: paidShare > 0 ? 'block' : 'none' }}
+                />
+                <span
+                  className="h-2 rounded-full bg-[#E8B931]"
+                  style={{
+                    flex: debits.pendingCents,
+                    display: debits.pendingCents > 0 ? 'block' : 'none',
+                  }}
+                />
+              </div>
+            )}
+            <div className="flex gap-3.5 text-[12px] text-[#4F6157] dark:text-text-muted">
+              <span className="flex items-center gap-[5px]">
+                <span aria-hidden="true" className="size-[9px] rounded-[3px] bg-mint" />
+                Pagado
+              </span>
+              <span className="flex items-center gap-[5px]">
+                <span aria-hidden="true" className="size-[9px] rounded-[3px] bg-[#E8B931]" />
+                Por venir
+              </span>
+            </div>
+          </section>
+
+          {debits.next && (
+            <div className="flex items-center gap-3 rounded-[18px] bg-sun px-3.5 py-2.5">
+              <img src={mascotAssistant} alt="" className="size-[30px] rounded-full" />
+              <p className="text-[13.5px] text-[#2F3A24]">{nextDebitText(debits.next)}</p>
+            </div>
           )}
-        </>
-      )}
 
-      {filter === 'active' && expenses.length > 0 && (
-        <>
-          <SectionLabel>Pendientes de confirmar</SectionLabel>
-          {bills.length === 0 ? (
-            <p className="text-[15px] text-text-muted">No tenés vencimientos pendientes.</p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {bills.map((bill) => (
-                <PendingBillCard
-                  key={bill.occurrence.id}
-                  bill={bill}
+          {debits.rows.length > 0 && (
+            <ul aria-label="Gastos fijos de este mes" className="rounded-[26px] bg-card px-4 py-0.5">
+              {debits.rows.map((row) => (
+                <DebitRow
+                  key={row.key}
+                  row={row}
+                  onOpen={() => setOpenId(row.expense.id)}
                   onPay={setPaying}
                   onMove={setMoving}
                   onSkip={setSkipping}
@@ -180,23 +181,25 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
             </ul>
           )}
 
-          <SectionLabel>Próximos vencimientos</SectionLabel>
-          {upcoming.length === 0 ? (
-            <p className="text-[15px] text-text-muted">No hay gastos fijos activos.</p>
-          ) : (
-            <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
-              {upcoming.map((e) => (
-                <ExpenseRow key={e.id} expense={e} onOpen={() => setOpenId(e.id)} />
-              ))}
-            </ul>
+          {debits.later.length > 0 && (
+            <>
+              <h2 className="font-display text-[17px] font-semibold tracking-[-0.02em]">
+                Próximos vencimientos
+              </h2>
+              <ul className="rounded-[26px] bg-card px-4 py-0.5">
+                {debits.later.map((e) => (
+                  <ExpenseRow key={e.id} expense={e} onOpen={() => setOpenId(e.id)} />
+                ))}
+              </ul>
+            </>
           )}
 
-          <SectionLabel>Historial de pagos</SectionLabel>
-          {history.length === 0 ? (
-            <p className="text-[15px] text-text-muted">Todavía no registraste pagos.</p>
-          ) : (
+          {history.length > 0 && (
             <>
-              <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
+              <h2 className="font-display text-[17px] font-semibold tracking-[-0.02em]">
+                Historial de pagos
+              </h2>
+              <ul className="divide-y divide-line rounded-[26px] bg-card py-0.5">
                 {shown.map((item) => {
                   if (item.type === 'payment') {
                     return (
@@ -227,6 +230,44 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
             </>
           )}
         </>
+      )}
+
+      {expenses.length === 0 && (
+        <div className="rounded-[26px] bg-card p-4">
+          <EmptyState
+            mascotUrl={mascotAssistant}
+            title="Todavía no cargaste gastos fijos"
+            description="Luz, gas, alquiler, expensas… Moni te avisa cuando vencen y vos registrás lo que pagaste."
+            action={<Button onClick={onAdd}>Agregar un gasto fijo</Button>}
+          />
+        </div>
+      )}
+
+      {filter !== 'active' && expenses.length > 0 && (
+        <>
+          <h2 className="font-display text-[17px] font-semibold tracking-[-0.02em]">
+            Seguimiento eliminado
+          </h2>
+          {others.length === 0 ? (
+            <p className="text-[15px] text-text-muted">No hay gastos fijos en esta lista.</p>
+          ) : (
+            <ul className="rounded-[26px] bg-card px-4 py-0.5">
+              {others.map((e) => (
+                <ExpenseRow key={e.id} expense={e} muted onOpen={() => setOpenId(e.id)} />
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+
+      {removed.length > 0 && (
+        <SegmentedControl
+          variant="menta"
+          label="Ver"
+          options={FILTERS}
+          value={filter}
+          onChange={setFilter}
+        />
       )}
 
       {open && !editing && (
@@ -260,6 +301,22 @@ export function FixedExpensesPanel({ onAdd }: { onAdd: () => void }) {
   )
 }
 
+function KindCircle({ kindId, muted }: { kindId: string; muted?: boolean }) {
+  const Icon = findKind(kindId)?.icon ?? Repeat
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'flex size-[38px] shrink-0 items-center justify-center rounded-full bg-sand text-ink',
+        muted && 'opacity-60',
+      )}
+    >
+      <Icon className="size-[17px]" strokeWidth={1.9} />
+    </span>
+  )
+}
+
+/** A fixed expense by its next due date (no bill yet): used for what falls after this month and for removed ones. */
 function ExpenseRow({
   expense: e,
   muted = false,
@@ -278,95 +335,113 @@ function ExpenseRow({
         ? 'pausado'
         : 'seguimiento eliminado'
   return (
-    <li>
+    <li className="border-b border-line last:border-b-0">
       <button
         type="button"
         onClick={onOpen}
         aria-label={`${e.name}, ${when}`}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        className={cn('grid w-full grid-cols-[38px_1fr_auto] items-center gap-3 py-2 text-left', FOCUS_RING)}
       >
-        <KindTile kindId={e.kindId} size="md" className={muted ? 'opacity-60' : undefined} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[18px] font-extrabold">{e.name}</span>
-          <span className="block text-[15px] leading-5 text-text-muted">
+        <KindCircle kindId={e.kindId} muted={muted} />
+        <span className="min-w-0">
+          <span className="block truncate text-[15px] font-medium">{e.name}</span>
+          <span className="block truncate text-[12px] text-text-muted">
             {when} · {e.accountName}
           </span>
         </span>
         <span className="text-right">
-          <span className="block text-[18px] font-extrabold">≈ {formatArs(e.amountCents)}</span>
-          <span className="block text-[14px] text-text-muted">{per}</span>
+          <span className="block text-[15px] font-medium">≈ {formatArs(e.amountCents)}</span>
+          <span className="block text-[11.5px] text-text-muted">{per}</span>
         </span>
       </button>
     </li>
   )
 }
 
-function PendingBillCard({
-  bill,
+const STATUS_TONE: Record<MonthDebitRow['status'], string> = {
+  paid: 'text-ok-ink',
+  overdue: 'text-bad-ink',
+  today: 'text-warn-ink',
+  soon: 'text-warn-ink',
+  later: 'font-normal text-text-muted',
+}
+
+/** One debit of the month: icon, name, "date · account", amount and its state ("Pagado", "En 5 días"...). */
+function DebitRow({
+  row,
+  onOpen,
   onPay,
   onMove,
   onSkip,
 }: {
-  bill: PendingBill
+  row: MonthDebitRow
+  onOpen: () => void
   onPay: (bill: PendingBill) => void
   onMove: (bill: PendingBill) => void
   onSkip: (bill: PendingBill) => void
 }) {
+  const { expense, bill } = row
+  const status = debitStatusText(row)
+  const action = cn(
+    'min-h-11 text-[12.5px] font-semibold text-mint-ink underline-offset-2 hover:underline',
+    FOCUS_RING,
+  )
   return (
-    <li
-      className={cn(
-        'flex flex-col gap-3 rounded-[24px] border bg-card p-4',
-        bill.state === 'overdue' ? 'border-expense/50' : 'border-line',
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <KindTile kindId={bill.expense.kindId} size="md" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[18px] font-extrabold">{bill.expense.name}</span>
-          <span
-            className={cn(
-              'block text-[14px] leading-5',
-              bill.state === 'overdue' ? 'font-extrabold text-expense' : 'text-text-muted',
-            )}
-          >
-            {dueText(bill)}
-          </span>
-          <span className="block text-[14px] leading-5 text-text-muted">
-            {bill.expense.accountName}
-          </span>
-        </span>
-        <span className="text-right">
-          <span className="block text-[17px] font-extrabold">
-            ≈ {formatArs(bill.occurrence.expectedCents)}
-          </span>
-          <span className="block text-[13px] text-text-muted">estimado</span>
-        </span>
-      </div>
-      <Button
-        variant="dark"
-        onClick={() => onPay(bill)}
-        aria-label={`Registrar pago de ${bill.expense.name}`}
+    <li className="border-b border-line last:border-b-0">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`${expense.name}, ${status}`}
+        className={cn('grid w-full grid-cols-[38px_1fr_auto] items-center gap-3 py-2 text-left', FOCUS_RING)}
       >
-        Registrar pago
-      </Button>
-      <div className="flex gap-5">
-        <button
-          type="button"
-          onClick={() => onMove(bill)}
-          aria-label={`Cambiar fecha de ${bill.expense.name}`}
-          className="text-[15px] font-extrabold text-ink underline"
-        >
-          Cambiar fecha
-        </button>
-        <button
-          type="button"
-          onClick={() => onSkip(bill)}
-          aria-label={`Omitir ${bill.expense.name}`}
-          className="text-[15px] font-extrabold text-ink underline"
-        >
-          Omitir
-        </button>
-      </div>
+        <KindCircle kindId={expense.kindId} />
+        <span className="min-w-0">
+          <span className="block truncate text-[15px] font-medium">{expense.name}</span>
+          <span className="block truncate text-[12px] text-text-muted">
+            {formatDayMonth(row.date)} · {row.accountName}
+          </span>
+        </span>
+        <span className="flex flex-col items-end gap-[3px]">
+          <span className="text-[15px] font-medium">
+            {row.status === 'paid' ? '' : '≈ '}
+            <AmountDisplay cents={row.amountCents} />
+          </span>
+          <span className={cn('flex items-center gap-[3px] text-[11.5px] font-semibold', STATUS_TONE[row.status])}>
+            {row.status === 'paid' && (
+              <Check aria-hidden="true" className="size-3" strokeWidth={2.8} />
+            )}
+            {status}
+          </span>
+        </span>
+      </button>
+      {bill && (
+        <div className="flex flex-wrap gap-x-4 pb-1 pl-[50px]">
+          <button
+            type="button"
+            onClick={() => onPay(bill)}
+            aria-label={`Registrar pago de ${expense.name}`}
+            className={action}
+          >
+            Registrar pago
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove(bill)}
+            aria-label={`Cambiar fecha de ${expense.name}`}
+            className={action}
+          >
+            Cambiar fecha
+          </button>
+          <button
+            type="button"
+            onClick={() => onSkip(bill)}
+            aria-label={`Omitir ${expense.name}`}
+            className={action}
+          >
+            Omitir
+          </button>
+        </div>
+      )}
     </li>
   )
 }

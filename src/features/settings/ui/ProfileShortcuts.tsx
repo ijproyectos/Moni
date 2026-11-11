@@ -20,7 +20,7 @@ interface AccessTile {
 /** The four accesses of Perfil, in the design's order and tints. */
 const ACCESS: readonly AccessTile[] = [
   {
-    to: '/metas',
+    to: '/presupuesto',
     title: 'Presupuesto',
     icon: PieChart,
     tint: 'bg-tint-green text-mint-ink',

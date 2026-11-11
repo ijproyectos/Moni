@@ -11,7 +11,7 @@ describe('ProfileShortcuts', () => {
         <ProfileAccessGrid subtitles={{ Grupos: 'te deben $1.000' }} />
       </MemoryRouter>,
     )
-    expect(href(/^Presupuesto/)).toBe('/metas')
+    expect(href(/^Presupuesto/)).toBe('/presupuesto')
     expect(href(/^Gastos fijos/)).toBe('/recurrentes?tab=gastos-fijos')
     expect(href(/^Metas de ahorro/)).toBe('/metas')
     expect(href(/^Grupos/)).toBe('/grupos')
