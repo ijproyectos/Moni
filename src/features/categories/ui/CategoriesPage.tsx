@@ -1,4 +1,9 @@
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router'
+import mascotMoni from '@/assets/mascot/expresion_feliz.svg'
+import { AmountDisplay } from '@/shared/ui/AmountDisplay'
+import { useTransactions } from '@/features/transactions/api/useTransactions'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { toUserMessage } from '@/shared/lib/errors'
@@ -16,13 +21,15 @@ import { budgetByCategory, parseBudgetLimit } from '@/features/budgets/domain/bu
 import { BudgetBadge } from '@/features/budgets/ui/BudgetBadge'
 import { BudgetSuggestions } from '@/features/budgets/ui/BudgetSuggestions'
 import { formatAmountInput } from '@/shared/lib/amountInput'
-import { formatArs } from '@/shared/lib/money'
-import { todayIso } from '@/shared/lib/month'
-import { HeaderAddButton } from '@/shared/ui/kit'
+import { formatMonthName } from '@/shared/lib/dates'
+import { monthStart, todayIso } from '@/shared/lib/month'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
-import { themedColor } from '@/shared/ui/categoryIcons'
-import { PageHeader } from '@/shared/ui/PageHeader'
+import { getCategoryIcon, themedColor, tint } from '@/shared/ui/categoryIcons'
+import { cn } from '@/shared/ui/cn'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
+import { MentaHeader } from '@/shared/ui/MentaHeader'
+import { MENTA_CIRCLE } from '@/shared/ui/mentaStyles'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
@@ -39,6 +46,7 @@ import {
   type Category,
   type CategoryFormValues,
 } from '../domain/category'
+import { countUncategorized } from '../domain/uncategorized'
 import { CategoryForm } from './CategoryForm'
 import { withAmountFormatting } from '@/shared/ui/amountField'
 
@@ -66,6 +74,8 @@ export function CategoriesPage() {
   const spentById = new Map(
     (month.data?.byCategory ?? []).map((c) => [c.categoryId, c.amountCents]),
   )
+  const monthTransactions = useTransactions({ from: monthStart(todayIso()), to: todayIso() })
+  const uncategorized = countUncategorized(monthTransactions.data ?? [], todayIso())
   const budgetStatus = useBudgetStatus(todayIso())
   const budgetsByCategory = budgetByCategory(budgetStatus.data ?? [])
   const createBudget = useCreateBudget()
@@ -132,15 +142,21 @@ export function CategoriesPage() {
   }
 
   return (
-    <section className="flex flex-col gap-4 px-5 pt-14">
-      <PageHeader
+    <section className="flex flex-col gap-3 px-[18px] pb-4 pt-1">
+      <MentaHeader
         title="Categorías"
-        backTo="/mas"
-        action={<HeaderAddButton label="Nueva categoría" onClick={() => startEditing()} />}
+        subtitle={`${list.length} ${list.length === 1 ? 'categoría' : 'categorías'} · ${formatMonthName(monthStart(todayIso())).toLowerCase()}`}
+        backTo="/perfil"
+        action={
+          <button type="button" onClick={() => startEditing()} aria-label="Nueva categoría" className={MENTA_CIRCLE}>
+            <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />
+          </button>
+        }
       />
       <SegmentedControl
         label="Tipo de categoría"
         options={KIND_OPTIONS}
+        variant="menta"
         value={kind}
         onChange={setKind}
       />
@@ -165,51 +181,72 @@ export function CategoriesPage() {
           description="Creá la primera para ordenar tus movimientos."
         />
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-[28px] border border-line bg-card">
+        <ul aria-label="Categorías" className="grid grid-cols-3 gap-2.5">
           {list.map((category) => {
             const spent = spentById.get(category.id) ?? 0
             const budget = budgetsByCategory.get(category.id)
+            const Icon = getCategoryIcon(category.icon)
             return (
-              <li key={category.id}>
+              <li key={category.id} className="flex">
                 <button
                   type="button"
                   onClick={() => startEditing(category)}
                   aria-label={`Editar ${category.name}`}
-                  className="flex min-h-[64px] w-full items-center gap-3 px-4 py-2 text-left"
+                  className={cn('flex w-full min-w-0 flex-col gap-2.5 rounded-3xl bg-card px-3 py-3.5 text-left', FOCUS_RING)}
                 >
                   <span
                     aria-hidden="true"
-                    className="size-5 shrink-0 rounded-full"
-                    style={{ backgroundColor: themedColor(category.color) }}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[18px] font-extrabold">
-                      {category.name}
-                    </span>
-                    <span className="block text-[15px] text-text-muted">
-                      {spent > 0
-                        ? `${formatArs(spent)} este mes`
-                        : kind === 'expense'
-                          ? 'Sin gastos'
-                          : 'Sin ingresos'}
+                    className="flex size-[42px] shrink-0 items-center justify-center rounded-[14px]"
+                    style={{ backgroundColor: tint(category.color), color: themedColor(category.color) }}
+                  >
+                    <Icon className="size-[19px]" strokeWidth={2} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[14.5px] font-bold">{category.name}</span>
+                    <span className="block truncate text-[12.5px] text-text-muted">
+                      {spent > 0 ? (
+                        <AmountDisplay cents={spent} />
+                      ) : kind === 'expense' ? (
+                        'Sin gastos'
+                      ) : (
+                        'Sin ingresos'
+                      )}
                     </span>
                     {budget && <BudgetBadge budget={budget} className="mt-1" />}
-                  </span>
-                  <span aria-hidden="true" className="text-[16px] font-extrabold text-text-muted">
-                    Editar
                   </span>
                 </button>
               </li>
             )
           })}
+          <li className="flex">
+            <button
+              type="button"
+              onClick={() => startEditing()}
+              className={cn(
+                'flex min-h-[116px] w-full flex-col items-center justify-center gap-1.5 rounded-3xl border-[1.5px] border-dashed border-[#9DB5A5] text-[13px] font-medium text-[#4F6157] dark:text-text-muted',
+                FOCUS_RING,
+              )}
+            >
+              <Plus aria-hidden="true" className="size-5" strokeWidth={2} />
+              Nueva
+            </button>
+          </li>
         </ul>
       )}
 
-      {kind === 'expense' && <BudgetSuggestions />}
+      {uncategorized > 0 && (
+        <Link
+          to="/actividad"
+          className={cn('flex items-center gap-3 rounded-3xl bg-lilac-soft px-3.5 py-3', FOCUS_RING)}
+        >
+          <img src={mascotMoni} alt="" className="size-8 shrink-0 rounded-full" />
+          <span className="text-[13.5px] text-lilac-ink dark:text-ink">
+            Tengo {uncategorized} {uncategorized === 1 ? 'movimiento' : 'movimientos'} sin categoría. ¿Los ordenamos?
+          </span>
+        </Link>
+      )}
 
-      <p className="px-1 text-[15px] leading-5 text-text-muted">
-        Tocá una categoría para cambiar el nombre, el ícono, el color o ponerle un límite.
-      </p>
+      {kind === 'expense' && <BudgetSuggestions />}
 
       {editing && (
         <BottomSheet

@@ -1,6 +1,7 @@
 import { ChevronLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { useGoBack } from '@/shared/lib/useGoBack'
 import { MENTA_CIRCLE } from './mentaStyles'
 
 interface MentaHeaderProps {
@@ -8,24 +9,27 @@ interface MentaHeaderProps {
   subtitle?: string
   /** Back target; without it the back button goes to the previous screen. `null` hides the button. */
   backTo?: string | null
+  /** Back goes to the screen the person came from; only when there is none (page opened directly) it goes here. */
+  fallbackTo?: string
   /** Right circle (usually a `MENTA_CIRCLE` button); empty keeps the title centered. */
   action?: ReactNode
 }
 
 /** Header of the Menta design: back circle, centered title with a small line under it, optional action circle. */
-export function MentaHeader({ title, subtitle, backTo, action }: MentaHeaderProps) {
+export function MentaHeader({ title, subtitle, backTo, fallbackTo, action }: MentaHeaderProps) {
   const navigate = useNavigate()
+  const goBack = useGoBack(fallbackTo ?? '/')
   const chevron = <ChevronLeft aria-hidden="true" className="size-5" strokeWidth={2} />
   return (
     <header className="grid grid-cols-[44px_1fr_44px] items-center">
       {backTo === null ? (
         <span aria-hidden="true" />
-      ) : backTo ? (
+      ) : backTo && !fallbackTo ? (
         <Link to={backTo} aria-label="Volver" className={MENTA_CIRCLE}>
           {chevron}
         </Link>
       ) : (
-        <button type="button" onClick={() => navigate(-1)} aria-label="Volver" className={MENTA_CIRCLE}>
+        <button type="button" onClick={fallbackTo ? goBack : () => navigate(-1)} aria-label="Volver" className={MENTA_CIRCLE}>
           {chevron}
         </button>
       )}

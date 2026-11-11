@@ -27,7 +27,7 @@ vi.mock('@/features/transactions/ui/movementSheetContext', () => ({
 }))
 
 function row(name: string) {
-  const list = screen.getByRole('list', { name: 'Medios de pago' })
+  const list = screen.getByRole('list', { name: 'Cuentas y billeteras' })
   return within(list).getByRole('button', { name: `Abrir ${name}` })
 }
 

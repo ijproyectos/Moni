@@ -19,6 +19,8 @@ import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
 import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
+import { useFinancialHealth } from '@/features/health/api/useFinancialHealth'
+import { BAND_LABELS } from '@/features/health/domain/healthScore'
 import { usePendingDebts } from '@/features/debts/api/useDebts'
 import { useFixedExpenses } from '@/features/fixedExpenses/api/useFixedExpenses'
 import { pendingBills } from '@/features/fixedExpenses/domain/fixedExpense'
@@ -124,6 +126,7 @@ export function ProfilePage() {
   const hiddenAmounts = useHiddenAmounts()
   const accounts = useAccounts()
   const allowance = useDailyAllowance()
+  const health = useFinancialHealth()
   const fixed = useFixedExpenses()
   const savings = useSavings()
   const { debts } = usePendingDebts()
@@ -231,7 +234,7 @@ export function ProfilePage() {
       )}
 
       <Link
-        to="/este-mes"
+        to="/salud"
         className="flex items-center gap-3.5 rounded-[26px] bg-mint px-4 py-3.5 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
       >
         <span
@@ -242,7 +245,13 @@ export function ProfilePage() {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[16px] font-semibold">Salud financiera</span>
-          <span className="block text-[12.5px] text-[#DDF3E6]">Mirá cómo viene tu mes</span>
+          <span className="block text-[12.5px] text-[#DDF3E6]">
+            {health.score.kind === 'ok'
+              ? `${health.score.score} de 100 · ${BAND_LABELS[health.score.band]}`
+              : health.isLoading
+                ? 'Mirá cómo viene tu mes'
+                : 'Cargá tus ingresos para medirla'}
+          </span>
         </span>
         <ChevronLeft aria-hidden="true" className="size-[18px] rotate-180 text-[#DDF3E6]" />
       </Link>

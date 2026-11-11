@@ -1,29 +1,29 @@
-import { ArrowDown, ArrowUp } from 'lucide-react'
 import { useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { monthNameOf } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
-import { monthStart, shiftMonth, todayIso } from '@/shared/lib/month'
+import { daysInMonth, monthStart, shiftMonth, todayIso } from '@/shared/lib/month'
+import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
+import { getCategoryIcon, themedColor, tint } from '@/shared/ui/categoryIcons'
+import { cn } from '@/shared/ui/cn'
 import { EmptyState } from '@/shared/ui/EmptyState'
-import { CategoryIconCircle } from '@/shared/ui/IconCircle'
-import { MoniGlyph, Page, Panel } from '@/shared/ui/kit'
-import { PageHeader } from '@/shared/ui/PageHeader'
+import { Kicker } from '@/shared/ui/Kicker'
+import { MentaHeader } from '@/shared/ui/MentaHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
+import { formatArs } from '@/shared/lib/money'
 import { useAnts } from '../api/useAnts'
-import {
-  antKey,
-  buildAntsTip,
-  groupDeltas,
-  monthChangePercent,
-  type AntGroup,
-} from '../domain/ants'
+import { useAntWeekdays } from '../api/useAntWeekdays'
+import { antKey, monthChangePercent, type AntExpenses, type AntGroup } from '../domain/ants'
+import { antInsight } from '../domain/insights'
+import { WEEKDAY_INITIALS, antSavings, busiestWeekdays, weekdayHeadline } from '../domain/antsPatterns'
 
 type Period = 'current' | 'previous'
 
-// Screen 033 — Gastos hormiga (real data: get_ant_expenses for the month and the one before it).
+const BAR_AREA = 70
+
+// Gastos hormiga (screen 26). Real data: get_ant_expenses (untouched) plus the month's own movements for the weekdays.
 export function AntsPage() {
   const [period, setPeriod] = useState<Period>('current')
   const thisMonth = monthStart(todayIso())
@@ -32,10 +32,11 @@ export function AntsPage() {
   const previous = useAnts(shiftMonth(month, -1))
 
   return (
-    <Page>
-      <PageHeader title="Gastos hormiga" />
+    <section className="flex flex-col gap-3 px-[18px] pb-4 pt-1">
+      <MentaHeader title="Gastos hormiga" subtitle={monthNameOf(month)} />
       <SegmentedControl
         label="Período"
+        variant="menta"
         value={period}
         onChange={setPeriod}
         options={[
@@ -45,10 +46,10 @@ export function AntsPage() {
       />
 
       {current.isLoading ? (
-        <div role="status" aria-label="Cargando gastos hormiga" className="flex flex-col gap-4">
-          <Skeleton className="h-52 rounded-[28px]" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-48" />
+        <div role="status" aria-label="Cargando gastos hormiga" className="flex flex-col gap-3">
+          <Skeleton className="h-36 rounded-[30px]" />
+          <Skeleton className="h-28 rounded-[26px]" />
+          <Skeleton className="h-48 rounded-[26px]" />
         </div>
       ) : current.isError || !current.data ? (
         <EmptyState
@@ -71,7 +72,7 @@ export function AntsPage() {
           isCurrentMonth={period === 'current'}
         />
       )}
-    </Page>
+    </section>
   )
 }
 
@@ -82,118 +83,108 @@ function AntsContent({
   isCurrentMonth,
 }: {
   month: string
-  data: NonNullable<ReturnType<typeof useAnts>['data']>
-  previousData: ReturnType<typeof useAnts>['data']
+  data: AntExpenses
+  previousData: AntExpenses | undefined
   isCurrentMonth: boolean
 }) {
+  const insight = antInsight(data)
   const pct = monthChangePercent(data, previousData)
-  const max = Math.max(data.monthTotalCents, previousData?.monthTotalCents ?? 0)
-  const deltas = groupDeltas(data.groups, previousData?.groups ?? [])
-  const label = isCurrentMonth ? 'Este mes' : 'Mes pasado'
-  const previousLabel = monthNameOf(shiftMonth(month, -1))
-  const currentLabel = monthNameOf(month)
+  const weekdays = useAntWeekdays(data, month)
+  const busiest = weekdays ? busiestWeekdays(weekdays) : []
+  const maxCount = Math.max(1, ...(weekdays ?? [0]))
+  const observed = isCurrentMonth ? Number(todayIso().slice(8, 10)) : daysInMonth(month)
+  const savings = antSavings(data.groups[0], observed)
 
   return (
     <>
-      <section className="rounded-[28px] bg-forest p-5 text-cream">
-        <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
-          {label} · {currentLabel}
-        </p>
-        <div className="mt-1 flex items-center justify-between">
-          <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
-            {formatArs(data.monthTotalCents)}
+      {insight && (
+        <section aria-label="Resumen" className="flex flex-col gap-1.5 rounded-[30px] bg-gold px-[18px] py-4 text-[#3D2E00]">
+          <Kicker as="h2" className="font-medium text-[#5A4300]">
+            {insight.labels.join(' + ')}, al año
+          </Kicker>
+          <AmountDisplay cents={insight.yearlyCents} className="text-[44px] font-bold leading-none tracking-[-0.04em]" />
+          <p className="text-[13.5px] text-[#5A4300]">
+            Son unos <AmountDisplay cents={insight.weeklyCents} /> por semana en {insight.count}{' '}
+            {insight.count === 1 ? 'compra chica' : 'compras chicas'}
+            {pct !== null && ` · ${pct >= 0 ? '+' : ''}${pct}% vs mes anterior`}
           </p>
-          {pct !== null && (
-            <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[15px] font-extrabold text-on-bright">
-              {pct >= 0 ? (
-                <ArrowUp aria-hidden="true" className="size-4" />
-              ) : (
-                <ArrowDown aria-hidden="true" className="size-4" />
-              )}
-              {pct >= 0 ? '+' : ''}
-              {pct}%
-            </span>
-          )}
-        </div>
-        {data.shareOfExpenses !== null && (
-          <p className="mt-1 text-[15px] text-text-muted-on-dark">
-            Es el {data.shareOfExpenses.toLocaleString('es-AR')}% de lo que gastaste en el mes.
-          </p>
-        )}
-        {previousData && (
-          <>
-            {[
-              { label: previousLabel, cents: previousData.monthTotalCents, color: 'bg-lime/60' },
-              { label: currentLabel, cents: data.monthTotalCents, color: 'bg-blush' },
-            ].map((row) => (
-              <div key={row.label} className="mt-3 flex items-center gap-3 text-[15px]">
-                <span className="w-28 capitalize text-text-muted-on-dark">{row.label}</span>
-                <span className="h-2.5 flex-1 overflow-hidden rounded-full">
-                  <span
-                    className={`block h-full rounded-full ${row.color}`}
-                    style={{ width: `${max > 0 ? (row.cents / max) * 100 : 0}%` }}
-                  />
-                </span>
-                <span className="w-20 text-right font-extrabold">{formatArs(row.cents)}</span>
-              </div>
+        </section>
+      )}
+
+      {weekdays && weekdays.some((c) => c > 0) && (
+        <section aria-label="Cuándo pasan" className="flex flex-col gap-2.5 rounded-[26px] bg-card px-4 py-3.5">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-[15px] font-bold">Cuándo pasan</h2>
+            <span className="text-[12px] text-text-muted">{weekdayHeadline(busiest)}</span>
+          </div>
+          <div
+            role="img"
+            aria-label={`Compras por día de la semana: ${weekdays
+              .map((c, i) => `${WEEKDAY_INITIALS[i]} ${c}`)
+              .join(', ')}`}
+            className="grid grid-cols-7 items-end gap-2.5"
+            style={{ height: BAR_AREA }}
+          >
+            {weekdays.map((count, i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                className={cn('rounded-full', busiest.includes(i) ? 'bg-[#E8B931]' : 'bg-[#FFF0B8] dark:bg-warn-bg')}
+                style={{ height: Math.max(6, Math.round((count / maxCount) * BAR_AREA)) }}
+              />
             ))}
-          </>
-        )}
-      </section>
-      <Panel className="flex items-start gap-4">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-[16px] bg-tint-gold text-ink">
-          <MoniGlyph className="size-9" />
-        </span>
-        <p className="text-[16px] leading-6">
-          <strong className="font-extrabold">Sugerido:</strong> {buildAntsTip(data.groups)}
-        </p>
-      </Panel>
-      <div>
-        <h2 className="text-[22px] font-extrabold">Dónde se repiten</h2>
-        <p className="text-[15px] text-text-muted">
-          Gastos de hasta {formatArs(data.thresholdCents)} que aparecen 3 veces o más
-        </p>
-      </div>
-      <Panel className="py-1">
-        <ul className="divide-y divide-line">
-          {data.groups.map((group) => (
-            <AntRow key={antKey(group)} group={group} delta={deltas.get(antKey(group)) ?? null} />
-          ))}
-        </ul>
-      </Panel>
+          </div>
+          <div aria-hidden="true" className="grid grid-cols-7 gap-2.5 text-center text-[11.5px] text-text-muted">
+            {WEEKDAY_INITIALS.map((d, i) => (
+              <span key={i}>{d}</span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <ul aria-label="Dónde se repiten" className="divide-y divide-line rounded-[26px] bg-card px-4 py-0.5">
+        {data.groups.map((group) => (
+          <AntRow key={antKey(group)} group={group} />
+        ))}
+      </ul>
+      <p className="px-1 text-[12px] text-text-muted">
+        Gastos de hasta {formatArs(data.thresholdCents)} que aparecen 3 veces o más.
+      </p>
+
+      {savings && (
+        <section aria-label="Consejo" className="flex items-center gap-3 rounded-3xl bg-lilac-soft px-3.5 py-3">
+          <img src={mascotHappy} alt="" className="size-8 shrink-0 rounded-full" />
+          <p className="flex-1 text-[13.5px] text-lilac-ink dark:text-ink">
+            Si bajás {savings.label} de {savings.fromPerWeek} a {savings.toPerWeek} veces por semana, ahorrás{' '}
+            <strong className="font-bold">
+              <AmountDisplay cents={savings.yearlyCents} />
+            </strong>{' '}
+            al año.
+          </p>
+        </section>
+      )}
     </>
   )
 }
 
-function AntRow({ group, delta }: { group: AntGroup; delta: number | null }) {
+function AntRow({ group }: { group: AntGroup }) {
+  const Icon = getCategoryIcon(group.icon)
   return (
-    <li className="flex items-center gap-3 py-3">
-      <CategoryIconCircle iconName={group.icon} color={group.color} className="size-12" />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[18px] font-extrabold">{group.label}</span>
-        <span className="block text-[15px] text-text-muted">
-          {group.count} veces · {formatArs(group.averageCents)} c/u
-        </span>
-        <span className="block text-[14px] text-text-muted">
-          {formatArs(group.yearlyProjectionCents)} al año si sigue igual
-        </span>
+    <li className="grid grid-cols-[40px_1fr_auto] items-center gap-3 py-[9px]">
+      <span
+        aria-hidden="true"
+        className="flex size-10 shrink-0 items-center justify-center rounded-full"
+        style={{ backgroundColor: tint(group.color), color: themedColor(group.color) }}
+      >
+        <Icon className="size-[18px]" strokeWidth={2} />
       </span>
-      <span className="flex flex-col items-end gap-1">
-        <span className="text-[18px] font-extrabold">{formatArs(group.totalCents)}</span>
-        {delta === null ? (
-          <span className="rounded-full bg-sand px-2 py-0.5 text-[13px] font-extrabold">Nueva</span>
-        ) : delta === 0 ? (
-          <span className="rounded-full bg-sand px-2 py-0.5 text-[13px] font-extrabold">Igual</span>
-        ) : delta > 0 ? (
-          <span className="flex items-center gap-0.5 rounded-full bg-tint-gold px-2 py-0.5 text-[13px] font-extrabold">
-            <ArrowUp aria-hidden="true" className="size-3.5" /> {formatArs(delta)}
-          </span>
-        ) : (
-          <span className="flex items-center gap-0.5 rounded-full bg-tint-green px-2 py-0.5 text-[13px] font-extrabold">
-            <ArrowDown aria-hidden="true" className="size-3.5" /> {formatArs(-delta)}
-          </span>
-        )}
-      </span>
+      <div className="min-w-0">
+        <div className="truncate text-[15px] font-semibold">{group.label}</div>
+        <div className="text-[12px] text-text-muted">
+          {group.count} {group.count === 1 ? 'vez' : 'veces'} este mes
+        </div>
+      </div>
+      <AmountDisplay cents={group.totalCents} className="whitespace-nowrap text-[15px] font-semibold" />
     </li>
   )
 }

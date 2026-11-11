@@ -25,6 +25,16 @@ vi.mock('@/features/dashboard/api/useDailyAllowance', () => ({
     pace: null,
   }),
 }))
+vi.mock('@/features/health/api/useFinancialHealth', () => ({
+  useFinancialHealth: () => ({
+    isLoading: false,
+    current: null,
+    score: { kind: 'ok', score: 68, band: 'bien', factors: [] },
+    series: [],
+    delta: null,
+    suggestion: null,
+  }),
+}))
 vi.mock('@/features/debts/api/useDebts', () => ({
   usePendingDebts: () => ({ debts: [{ direction: 'owed', amountCents: 577_00 }] }),
 }))
@@ -61,10 +71,9 @@ describe('ProfilePage', () => {
     expect(screen.getByRole('heading', { name: 'Ana Pérez' })).toBeInTheDocument()
     expect(screen.getByText('ana@example.com')).toBeInTheDocument()
     expect(screen.getByText('GRATIS')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Salud financiera/ })).toHaveAttribute(
-      'href',
-      '/este-mes',
-    )
+    const health = screen.getByRole('link', { name: /Salud financiera/ })
+    expect(health).toHaveAttribute('href', '/salud')
+    expect(health).toHaveTextContent('68 de 100 · Bien encaminado')
     for (const name of [/^Presupuesto/, /^Gastos fijos/, /^Metas de ahorro/, /^Grupos/]) {
       expect(screen.getByRole('link', { name })).toBeInTheDocument()
     }

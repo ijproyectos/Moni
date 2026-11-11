@@ -1,82 +1,66 @@
-import type { CategorySlice } from '../domain/monthSummary'
-import { donutArcs } from '../domain/donut'
-import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { themedColor } from '@/shared/ui/categoryIcons'
+import { donutArcs } from '../domain/donut'
+import type { LegendSlice } from '../domain/stats'
 
-const RADIUS = 70
+const SIZE = 150
+const RADIUS = 60
+const STROKE = 18
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
-const LEGEND_SIZE = 5
 
-interface CategoryDonutProps {
-  slices: readonly CategorySlice[]
-  totalCents: number
+function colorOf(slice: LegendSlice): string {
+  return slice.color ? themedColor(slice.color) : 'var(--color-mint-soft)'
 }
 
-/** Hand-made SVG donut: category colors, total in the center, top 4 in the legend. */
-export function CategoryDonut({ slices, totalCents }: CategoryDonutProps) {
-  const sorted = [...slices].sort((a, b) => b.amountCents - a.amountCents)
+/** Donut of the Menta design: 150px, 18px ring, biggest share in the middle, legend with top 4 + "Otras N". */
+export function CategoryDonut({ slices }: { slices: readonly LegendSlice[] }) {
   const arcs = donutArcs(
-    sorted.map((s) => s.amountCents),
+    slices.map((s) => s.amountCents),
     CIRCUMFERENCE,
   )
-
+  const top = slices[0]
   return (
-    <div className="flex items-center gap-4">
-      <div className="relative size-[150px] shrink-0">
+    <div className="grid grid-cols-[150px_1fr] items-center gap-4">
+      <div className="relative size-[150px]">
         <svg
-          viewBox="0 0 176 176"
-          className="size-full -rotate-90"
+          width={SIZE}
+          height={SIZE}
+          viewBox={`0 0 ${SIZE} ${SIZE}`}
+          className="-rotate-90"
           role="img"
-          aria-label="Gastos por categoría"
+          aria-label={`Gastos por categoría: ${slices.map((s) => `${s.name} ${Math.round(s.percent)}%`).join(', ')}`}
         >
-          <circle
-            cx="88"
-            cy="88"
-            r={RADIUS}
-            fill="none"
-            stroke="var(--color-sand)"
-            strokeWidth="26"
-          />
-          {sorted.map((slice, i) => {
+          <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none" stroke="var(--color-sand)" strokeWidth={STROKE} />
+          {slices.map((slice, i) => {
             const arc = arcs[i]
             if (!arc || arc.length <= 0) return null
             return (
               <circle
-                key={slice.categoryId}
-                cx="88"
-                cy="88"
+                key={slice.id}
+                cx={SIZE / 2}
+                cy={SIZE / 2}
                 r={RADIUS}
                 fill="none"
-                stroke={themedColor(slice.color)}
-                strokeWidth="26"
+                stroke={colorOf(slice)}
+                strokeWidth={STROKE}
                 strokeDasharray={`${arc.length} ${CIRCUMFERENCE - arc.length}`}
                 strokeDashoffset={-arc.offset}
               />
             )
           })}
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-display text-xs font-extrabold uppercase tracking-wider text-text-muted">
-            Total
-          </span>
-          <AmountDisplay
-            cents={totalCents}
-            className="font-display text-lg font-extrabold text-ink"
-          />
-        </div>
+        {top && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-5 text-center">
+            <span className="text-[22px] font-bold">{Math.round(top.percent)}%</span>
+            <span className="max-w-full truncate text-[11.5px] text-text-muted">{top.name}</span>
+          </div>
+        )}
       </div>
-      <ul className="flex min-w-0 flex-1 flex-col gap-2.5" aria-label="Categorías principales">
-        {sorted.slice(0, LEGEND_SIZE).map((slice) => (
-          <li key={slice.categoryId} className="flex items-center gap-2 text-[16px]">
-            <span
-              aria-hidden="true"
-              className="size-3 shrink-0 rounded-full"
-              style={{ backgroundColor: themedColor(slice.color) }}
-            />
-            <span className="min-w-0 flex-1 truncate text-ink">{slice.name}</span>
-            <span className="font-display font-extrabold text-ink">
-              {Math.round(slice.percent)}%
-            </span>
+      <ul className="flex min-w-0 flex-col gap-2" aria-label="Categorías principales">
+        {slices.map((slice) => (
+          <li key={slice.id} className="grid grid-cols-[10px_1fr_auto] items-center gap-2 text-[13px]">
+            <span aria-hidden="true" className="size-2.5 rounded-full" style={{ backgroundColor: colorOf(slice) }} />
+            <span className="truncate">{slice.name}</span>
+            <span className="font-bold">{Math.round(slice.percent)}%</span>
           </li>
         ))}
       </ul>

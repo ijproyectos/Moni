@@ -85,6 +85,8 @@ function moreTools(): Shortcut[] {
   return [
     { to: '/cuentas?tab=tarjetas', title: 'Tarjetas y cuotas', subtitle: 'Lo que viene' },
     { to: '/viajes', title: 'Viajes', subtitle: 'Presupuesto y gastos' },
+    { to: '/insights', title: 'Lo que Moni detectó', subtitle: 'Avisos sobre tus gastos' },
+    { to: '/tarjetas/simulador', title: 'Cuotas vs contado', subtitle: 'Simulá una compra' },
     { to: '/hormigas', title: 'Gastos hormiga', subtitle: 'Esos gustitos que suman' },
     { to: '/este-mes', title: 'Informes', subtitle: 'Tu mes y tu año' },
     ...(FEATURES.debts

@@ -27,6 +27,8 @@ describe('ProfileShortcuts', () => {
     expect(href(/^Tarjetas y cuotas/)).toBe('/cuentas?tab=tarjetas')
     expect(href(/^Viajes/)).toBe('/viajes')
     expect(href(/^Gastos hormiga/)).toBe('/hormigas')
+    expect(href(/^Lo que Moni detectó/)).toBe('/insights')
+    expect(href(/^Cuotas vs contado/)).toBe('/tarjetas/simulador')
     expect(href(/^Informes/)).toBe('/este-mes')
     expect(href(/^Categorías/)).toBe('/categorias')
     expect(screen.getByText('Más herramientas')).toBeInTheDocument()

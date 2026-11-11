@@ -61,7 +61,7 @@ describe('Medios de pago: opening a card', () => {
     expect(screen.getByTestId('account-hero')).toHaveTextContent('Reservado para metas $50.000')
     await user.click(screen.getByRole('button', { name: 'Volver' }))
     expect(screen.queryByRole('dialog', { name: 'Galicia' })).toBeNull()
-    expect(screen.getByRole('list', { name: 'Medios de pago' })).toBeVisible()
+    expect(screen.getByRole('list', { name: 'Cuentas y billeteras' })).toBeVisible()
   })
 
   it('deleting asks for confirmation first; nothing is deleted until confirmed', async () => {

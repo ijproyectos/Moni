@@ -6,11 +6,13 @@ import { AntsPage } from './AntsPage'
 
 const state = vi.hoisted(() => ({
   byMonth: {} as Record<string, unknown>,
+  weekdays: null as number[] | null,
 }))
 
 vi.mock('../api/useAnts', () => ({
   useAnts: (month: string) => state.byMonth[month] ?? { isLoading: true },
 }))
+vi.mock('../api/useAntWeekdays', () => ({ useAntWeekdays: () => state.weekdays }))
 
 function ants(total: number, withGroup = true): AntExpenses {
   return {
@@ -47,6 +49,7 @@ function renderPage() {
 describe('AntsPage', () => {
   afterEach(() => {
     state.byMonth = {}
+    state.weekdays = null
   })
 
   it('shows the loading state', () => {
@@ -69,9 +72,33 @@ describe('AntsPage', () => {
     state.byMonth['2026-09-01'] = { data: ants(600_000) }
     renderPage()
     expect(screen.getByText('Cafe')).toBeInTheDocument()
-    expect(screen.getByText('+50%')).toBeInTheDocument()
+    expect(screen.getByText('3 veces este mes')).toBeInTheDocument()
     expect(screen.getByText(/Gastos de hasta \$10\.000/)).toBeInTheDocument()
-    expect(screen.getByText(/\$108\.000 al año/)).toBeInTheDocument()
+    const hero = screen.getByRole('region', { name: 'Resumen' })
+    expect(hero).toHaveTextContent('Cafe, al año')
+    expect(hero).toHaveTextContent('$108.000')
+    expect(hero).toHaveTextContent('+50% vs mes anterior')
+    vi.useRealTimers()
+  })
+
+  it('draws the weekdays from the movements and the advice from the real projection', () => {
+    vi.setSystemTime(new Date('2026-10-28T15:00:00Z'))
+    state.byMonth['2026-10-01'] = { data: { ...ants(900_000), groups: ants(900_000).groups.map((g) => ({ ...g, count: 10 })) } }
+    state.byMonth['2026-09-01'] = { data: ants(600_000) }
+    state.weekdays = [0, 1, 0, 4, 5, 0, 0]
+    renderPage()
+    expect(screen.getByText('Más jueves y viernes')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /J 4, V 5/ })).toBeInTheDocument()
+    // 10 purchases in 28 days = 2.5 -> 3 per week, cut to 2: saves 1/3 of the yearly projection
+    expect(screen.getByRole('region', { name: 'Consejo' })).toHaveTextContent('de 3 a 2 veces por semana')
+    vi.useRealTimers()
+  })
+
+  it('shows no weekday card without weekday data', () => {
+    vi.setSystemTime(new Date('2026-10-28T15:00:00Z'))
+    state.byMonth['2026-10-01'] = { data: ants(900_000) }
+    renderPage()
+    expect(screen.queryByRole('region', { name: 'Cuándo pasan' })).toBeNull()
     vi.useRealTimers()
   })
 
