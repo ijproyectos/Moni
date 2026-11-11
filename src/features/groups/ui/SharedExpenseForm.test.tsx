@@ -46,9 +46,9 @@ describe('SharedExpenseForm', () => {
 
   it('offers only the shared split methods and a single payer when it cannot store records for people without an account', () => {
     setup()
-    expect(screen.getByRole('button', { name: 'Partes iguales' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Por %' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Por monto' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Iguales' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Porcentaje' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Montos' })).toBeNull()
     expect(screen.queryByRole('button', { name: /Pagaron varios/ })).toBeNull()
   })
 
@@ -73,7 +73,7 @@ describe('SharedExpenseForm', () => {
     const { user, onSubmit } = setup()
     await user.type(screen.getByLabelText('Monto'), '100')
     await user.type(screen.getByLabelText('Descripción'), 'Super')
-    await user.click(screen.getByRole('button', { name: 'Por %' }))
+    await user.click(screen.getByRole('button', { name: 'Porcentaje' }))
     expect(screen.getByText('Suman 100%. Listo.')).toBeInTheDocument()
 
     const beto = screen.getByLabelText('Porcentaje de Beto')

@@ -19,7 +19,7 @@ import { useCategoryTemplates } from '@/features/categories/api/useCategories'
 import { percentLabel, progress } from '@/features/goals/domain/goals'
 import { useGoals } from '@/features/goals/mock/goalsStore'
 import { FEATURES } from '@/shared/config/features'
-import { formatMonthName } from '@/shared/lib/dates'
+import { formatMonthName, formatRelativeDay } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
 import { formatArs } from '@/shared/lib/money'
 import { useGoBack } from '@/shared/lib/useGoBack'
@@ -30,6 +30,7 @@ import { cn } from '@/shared/ui/cn'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import { EmptyState } from '@/shared/ui/EmptyState'
+import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Avatar, MoniGlyph, ProgressBar } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
@@ -44,8 +45,9 @@ import {
 } from '../api/useGroups'
 import type { Settlement } from '../domain/group'
 import { canVoidExpense, canRecordReceipt, canVoidSettlement } from '../domain/groupView'
+import { balanceHeadline, reminderMessage, splitShortLabel } from '../domain/groupsOverview'
 import { personName, type LedgerExpense } from '../domain/ledger'
-import { debtPhrase, expensePaidPhrase, settlementPhrase } from '../domain/phrases'
+import { expensePaidPhrase, settlementPhrase } from '../domain/phrases'
 import { patchOverlay } from '../mock/overlayStore'
 import type { GuestExpenseInput } from '../api/guestsRepository'
 import {
@@ -60,6 +62,7 @@ import { InvitePanel } from './InvitePanel'
 import { ExpenseDetailSheet } from './ExpenseDetailSheet'
 import { expenseIcon } from './expenseIcon'
 import { AvatarStack } from './groupVisuals'
+import { GroupBalanceHero, GroupExpenseRows, GroupPaidCards, type GroupExpenseRowData } from './GroupDetailBlocks'
 import { PhraseText } from './PhraseText'
 import { ReceiptSheet } from './ReceiptSheet'
 import { SettleUpSheet } from './SettleUpSheet'
@@ -145,12 +148,72 @@ export function GroupDetailPage() {
   const partner = kind === 'pareja' ? ledger.people.find((p) => !p.isMe) : undefined
   const myNet = ledger.myNetCents
   const myTransfers = ledger.transfers.filter((t) => t.fromUserId === meId || t.toUserId === meId)
-  const badge =
-    myNet > 0
-      ? `Te deben ${formatArs(myNet)}`
-      : myNet < 0
-        ? `Debés ${formatArs(-myNet)}`
-        : 'Estás al día'
+  const headline = balanceHeadline({
+    myNetCents: myNet,
+    meId,
+    people: ledger.people,
+    transfers: ledger.transfers,
+  })
+  const otherPaid = partner
+    ? (ledger.paid[partner.id] ?? 0)
+    : Object.entries(ledger.paid).reduce((s, [id, c]) => (id === meId ? s : s + c), 0)
+  const canRemind =
+    typeof navigator !== 'undefined' && Boolean(navigator.share || navigator.clipboard)
+
+  // Real mechanism: the native share sheet, or the message copied to the clipboard.
+  async function remind() {
+    const text = reminderMessage({
+      debtorNames: headline.debtorNames,
+      groupName: name,
+      amountText: formatArs(myNet),
+    })
+    try {
+      if (navigator.share) {
+        await navigator.share({ text })
+      } else {
+        await navigator.clipboard.writeText(text)
+        toast.show('Mensaje copiado', { mascotUrl: mascotHappy })
+      }
+    } catch (e) {
+      // The person closing the share sheet is not an error.
+      if (!(e instanceof DOMException && e.name === 'AbortError')) {
+        toast.show('No pudimos compartir el mensaje', { tone: 'error', mascotUrl: mascotAlert })
+      }
+    }
+  }
+
+  function expenseRow(e: LedgerExpense): GroupExpenseRowData {
+    const payerId = e.payers[0]?.personId ?? ''
+    const payer =
+      e.payers.length > 1
+        ? 'Pagaron varios'
+        : expensePaidPhrase({ id: payerId, name: personName(ledger.people, payerId) }, meId).replace(
+            /^Pagaste$/,
+            'Pagaste vos',
+          )
+    const myShare = e.shares.find((s) => s.personId === meId)?.cents ?? 0
+    const myPaid = e.payers.find((p) => p.personId === meId)?.cents ?? 0
+    const delta = myPaid - myShare
+    const split = splitShortLabel(e.methodLabel, e.shares.length)
+    const debtor = e.shares.find((s) => s.personId !== meId)
+    return {
+      id: e.id,
+      title: e.description,
+      meta: `${payer} · ${split} · ${formatRelativeDay(e.occurredOn, todayIso()).toLowerCase()}`,
+      amountCents: e.amountCents,
+      balanceLabel:
+        delta > 0
+          ? e.shares.length === 2 && debtor
+            ? `${personName(ledger.people, debtor.personId)} te debe`
+            : 'Te deben'
+          : delta < 0
+            ? 'Le debés'
+            : null,
+      balanceCents: Math.abs(delta),
+      balanceTone: delta > 0 ? 'owed' : delta < 0 ? 'owes' : null,
+      icon: icon(e),
+    }
+  }
   const sharedGoal = goals.find(
     (g) =>
       g.shared && (g.shared.space === name || (kind === 'pareja' && g.shared.space === 'Nosotros')),
@@ -221,113 +284,51 @@ export function GroupDetailPage() {
         onOptions={() => setSheet({ type: 'group' })}
       />
 
-      {kind === 'pareja' ? (
-        <section
-          className="border-b border-line px-1 pb-5 text-ink"
-          aria-label="Saldo de la pareja"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-[16px] font-semibold text-text-muted">
-              {myNet === 0 || !partner
-                ? myNet > 0
-                  ? 'Tu pareja te debe'
-                  : myNet < 0
-                    ? 'Le debés a tu pareja'
-                    : 'Están a mano'
-                : myNet > 0
-                  ? debtPhrase(partner, { id: meId, name: 'Vos' }, meId)
-                  : debtPhrase({ id: meId, name: 'Vos' }, partner, meId)}
-            </p>
-            <span className="rounded-full bg-sand px-3 py-1 text-[14px] font-extrabold text-ink">
-              {overlay.coupleSplit === 'income' ? 'Según ingresos' : 'Mitad y mitad'}
-            </span>
-          </div>
-          <p
-            className={cn(
-              'font-display text-[clamp(32px,10vw,40px)] font-extrabold leading-tight',
-              myNet >= 0 ? 'text-income' : 'text-expense',
-            )}
-          >
-            {formatArs(Math.abs(myNet))}
+      <GroupBalanceHero
+        headline={headline}
+        myNetCents={myNet}
+        onSettle={() => setSheet({ type: 'settle' })}
+        onRemind={canRemind && myNet > 0 ? () => void remind() : undefined}
+      />
+
+      <GroupPaidCards
+        myPaidCents={ledger.paid[meId] ?? 0}
+        otherPaidCents={otherPaid}
+        otherName={partner?.name ?? null}
+      />
+
+      {groupTrip && (
+        <div className="rounded-[22px] bg-card px-4 py-3">
+          <ProgressBar value={ledger.totalCents / groupTrip.budgetCents} />
+          <p className="mt-1 text-[13px] text-text-muted">
+            Presupuesto del grupo {formatArs(groupTrip.budgetCents)} · gastaron el{' '}
+            {Math.round((ledger.totalCents / groupTrip.budgetCents) * 100)}%
           </p>
-          <p className="text-[16px] text-text-muted">
-            Gastos compartidos de {formatMonthName(month).toLowerCase()}:{' '}
-            {formatArs(monthExpenses.reduce((s, e) => s + e.amountCents, 0))}
-          </p>
-          <Button
-            className="mt-4"
-            onClick={() => setSheet({ type: 'settle' })}
-            disabled={myNet === 0}
-          >
-            <Check aria-hidden="true" className="mr-2 size-5" /> Saldar cuentas
-          </Button>
-        </section>
-      ) : (
-        <section className="border-b border-line px-1 pb-5 text-ink" aria-label="Total del grupo">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-[16px] font-semibold text-text-muted">Total del grupo</p>
-            <span
-              className={cn(
-                'rounded-full px-3 py-1 text-[14px] font-extrabold',
-                myNet > 0 ? 'bg-tint-green text-ink' : 'bg-sand text-ink',
-              )}
-            >
-              {badge}
-            </span>
-          </div>
-          <p className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
-              {formatArs(ledger.totalCents)}
-            </span>
-            <span className="text-[16px] text-text-muted">
-              tu parte {formatArs(ledger.myShareCents)}
-            </span>
-          </p>
-          {groupTrip && (
-            <>
-              <ProgressBar value={ledger.totalCents / groupTrip.budgetCents} className="mt-2" />
-              <p className="mt-1 text-[14px] text-text-muted">
-                Presupuesto del grupo {formatArs(groupTrip.budgetCents)} · gastaron el{' '}
-                {Math.round((ledger.totalCents / groupTrip.budgetCents) * 100)}%
-              </p>
-            </>
-          )}
-          {ledger.transfers.length > 0 && (
-            <div className="mt-4 border-t border-line pt-3">
-              <p className="text-[16px] font-semibold text-text-muted">Para quedar a mano</p>
-              <ul className="mt-2 flex flex-col gap-2">
-                {ledger.transfers.map((t) => {
-                  const from = personName(ledger.people, t.fromUserId)
-                  const to = personName(ledger.people, t.toUserId)
-                  return (
-                    <li key={`${t.fromUserId}-${t.toUserId}`} className="flex items-center gap-3">
-                      <AvatarStack people={[{ name: from }, { name: to }]} />
-                      <span className="flex-1 text-[17px] font-extrabold">
-                        {t.fromUserId === meId
-                          ? `Vos le pasás a ${to}`
-                          : t.toUserId === meId
-                            ? `${from} te pasa`
-                            : `${from} le pasa a ${to}`}
-                      </span>
-                      <span className="text-[19px] font-extrabold text-ink">
-                        {formatArs(t.amountCents)}
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-              {/* Casa groups have their own "Saldar" (pareja is another section); every other group records a payment from here. */}
-              {kind !== 'casa' && (
-                <button
-                  type="button"
-                  onClick={() => setSheet({ type: 'settle' })}
-                  className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-forest text-[17px] font-extrabold text-cream dark:bg-lime dark:text-on-bright"
-                >
-                  <Check aria-hidden="true" className="size-5" /> Registrar un pago
-                </button>
-              )}
-            </div>
-          )}
+        </div>
+      )}
+
+      {kind !== 'pareja' && ledger.transfers.length > 0 && (
+        <section aria-label="Para quedar a mano" className="rounded-[26px] bg-card px-4 py-3">
+          <p className="text-[13px] font-semibold text-text-muted">Para quedar a mano</p>
+          <ul className="mt-2 flex flex-col gap-2">
+            {ledger.transfers.map((t) => {
+              const from = personName(ledger.people, t.fromUserId)
+              const to = personName(ledger.people, t.toUserId)
+              return (
+                <li key={`${t.fromUserId}-${t.toUserId}`} className="flex items-center gap-3">
+                  <AvatarStack people={[{ name: from }, { name: to }]} />
+                  <span className="flex-1 text-[15px] font-medium">
+                    {t.fromUserId === meId
+                      ? `Vos le pasás a ${to}`
+                      : t.toUserId === meId
+                        ? `${from} te pasa`
+                        : `${from} le pasa a ${to}`}
+                  </span>
+                  <AmountDisplay cents={t.amountCents} className="text-[15px] font-semibold" />
+                </li>
+              )
+            })}
+          </ul>
         </section>
       )}
 
@@ -405,99 +406,30 @@ export function GroupDetailPage() {
         </section>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
-        <h2 className="text-[21px] font-extrabold">
-          {kind === 'casa' ? `Gastos de ${formatMonthName(month).toLowerCase()}` : 'Gastos'}
-        </h2>
-        {kind === 'pareja' ? (
-          <span className="text-[15px] text-text-muted">
-            {monthExpenses.length} gastos este mes
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <h2 className="text-[17px] font-bold tracking-[-0.02em]">Gastos del grupo</h2>
+        {kind === 'casa' || kind === 'pareja' ? (
+          <span className="text-[13.5px] text-[#4F6157] dark:text-text-muted">
+            {formatMonthName(month)}
           </span>
-        ) : (
-          <Link
-            to={`/grupos/${groupId}/personas`}
-            className="flex min-h-11 items-center gap-1.5 whitespace-nowrap text-[15px] font-extrabold"
-          >
-            <AvatarStack people={ledger.people} />
-            {ledger.people.length} {ledger.people.length === 1 ? 'persona' : 'personas'}
-            <ChevronRight aria-hidden="true" className="size-5" />
-          </Link>
-        )}
+        ) : null}
+        <Link
+          to={`/grupos/${groupId}/personas`}
+          className="flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full text-[14px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
+        >
+          <AvatarStack people={ledger.people} />
+          {ledger.people.length} {ledger.people.length === 1 ? 'persona' : 'personas'}
+          <ChevronRight aria-hidden="true" className="size-4" />
+        </Link>
       </div>
 
-      {ledger.expenses.length === 0 ? (
-        <p className="rounded-[24px] border border-line bg-card p-5 text-center text-[16px] text-text-muted">
-          Todavía no hay gastos. Cargá el primero y Moni hace las cuentas.
-        </p>
-      ) : (
-        <ul className="divide-y divide-line rounded-[24px] border border-line bg-card">
-          {(kind === 'casa' ? monthExpenses : ledger.expenses).map((e) => {
-            const Icon = icon(e)
-            const payerId = e.payers[0]?.personId ?? ''
-            const payer =
-              e.payers.length > 1
-                ? 'Pagaron varios'
-                : expensePaidPhrase({ id: payerId, name: personName(ledger.people, payerId) }, meId)
-            const myShare = e.shares.find((s) => s.personId === meId)?.cents ?? 0
-            const myPaid = e.payers.find((p) => p.personId === meId)?.cents ?? 0
-            const coupleDelta = myPaid - myShare
-            return (
-              <li key={e.id}>
-                <button
-                  type="button"
-                  onClick={() => setSheet({ type: 'detail', id: e.id })}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                >
-                  <span
-                    className={cn(
-                      'flex size-11 shrink-0 items-center justify-center rounded-full max-[339px]:hidden',
-                      coupleDelta < 0 && kind === 'pareja'
-                        ? 'bg-tint-red text-expense'
-                        : 'bg-lime/35',
-                    )}
-                  >
-                    <Icon className="size-5" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 block text-[17px] font-extrabold leading-6">
-                      {e.description}
-                    </span>
-                    <span
-                      className={cn(
-                        'line-clamp-2 block text-text-muted',
-                        kind === 'pareja' ? 'text-[14px]' : 'text-[15px]',
-                      )}
-                    >
-                      {kind === 'pareja'
-                        ? `${payer} · ${formatArs(e.amountCents)} · ${e.methodLabel.startsWith('entre') ? '50/50' : e.methodLabel}`
-                        : `${payer} · ${e.methodLabel} · tu parte ${formatArs(myShare)}`}
-                    </span>
-                  </span>
-                  {kind === 'pareja' ? (
-                    <span className="text-right">
-                      <span
-                        className={cn(
-                          'block text-[18px] font-extrabold',
-                          coupleDelta >= 0 ? 'text-income' : 'text-expense',
-                        )}
-                      >
-                        {formatArs(coupleDelta, { signed: true })}
-                      </span>
-                      <span className="block text-[14px] text-text-muted">
-                        {coupleDelta >= 0 ? 'te debe' : 'le debés'}
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="shrink-0 text-right text-[17px] font-extrabold">
-                      {formatArs(e.amountCents)}
-                    </span>
-                  )}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      )}
+      <GroupExpenseRows
+        rows={(kind === 'casa' || kind === 'pareja' ? monthExpenses : ledger.expenses).map(
+          (e) => expenseRow(e),
+        )}
+        onOpen={(id) => setSheet({ type: 'detail', id })}
+        empty="Todavía no hay gastos. Cargá el primero y Moni hace las cuentas."
+      />
 
       {((settlements.data ?? []).filter((s) => s.status === 'posted').length > 0 ||
         overlay.settlements.length > 0) && (

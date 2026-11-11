@@ -18,7 +18,8 @@ import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useCompleteOnboarding } from '../api/useCompleteOnboarding'
 import { goalsToPersist, toggleGoal } from '../domain/goals'
-import { clearDraft, loadDraft, saveDraft } from '../domain/localPreferences'
+import { updateProfileExtras } from '@/features/settings/mock/profileExtrasStore'
+import { clearDraft, loadDraft, mergeLocalPreferences, saveDraft } from '../domain/localPreferences'
 import {
   customNameTaken,
   defaultTemplateSlugs,
@@ -33,6 +34,7 @@ import { OnboardingBenefitsStep, type SlideTint } from './OnboardingBenefitsStep
 import { OnboardingCategoriesStep } from './OnboardingCategoriesStep'
 import { OnboardingCurrencyStep } from './OnboardingCurrencyStep'
 import { OnboardingGoalsStep } from './OnboardingGoalsStep'
+import { OnboardingIncomeStep, type IncomeAnswer } from './OnboardingIncomeStep'
 import { OnboardingNotificationsStep } from './OnboardingNotificationsStep'
 
 /**
@@ -58,6 +60,7 @@ export function OnboardingPage() {
   const [notificationsOptIn, setNotificationsOptIn] = useState<boolean | null>(
     draft?.notificationsOptIn ?? null,
   )
+  const [income, setIncome] = useState<IncomeAnswer | null>(draft?.income ?? null)
   const [creatingKind, setCreatingKind] = useState<CategoryKind | null>(null)
   // "Omitir configuración" throws away the answers, so it asks first.
   const [confirmingSkipAll, setConfirmingSkipAll] = useState(false)
@@ -79,8 +82,8 @@ export function OnboardingPage() {
   const step = Math.min(requested > 4 && slugs !== null && !hasCategories ? 4 : requested, lastStep)
 
   useEffect(() => {
-    saveDraft(userId, { goals, slugs, custom, usesDollars, notificationsOptIn })
-  }, [userId, goals, slugs, custom, usesDollars, notificationsOptIn])
+    saveDraft(userId, { goals, slugs, custom, usesDollars, notificationsOptIn, income })
+  }, [userId, goals, slugs, custom, usesDollars, notificationsOptIn, income])
 
   function goTo(next: number) {
     setError(null)
@@ -94,11 +97,16 @@ export function OnboardingPage() {
     else goTo(step - 1)
   }
 
-  async function submit(input: OnboardingInput) {
+  async function submit(input: OnboardingInput, skipIncome = false) {
     if (complete.isPending) return
     setError(null)
     try {
       await complete.mutateAsync(input)
+      // Income and pay day have no column yet: they stay on this device, in the existing preferences.
+      if (income && !skipIncome) {
+        mergeLocalPreferences(userId, { monthlyIncomeCents: income.incomeCents, payDay: income.payDay })
+        updateProfileExtras({ monthlyIncomeCents: income.incomeCents })
+      }
       clearDraft(userId)
       navigate(peekReturnTo() ?? '/', { replace: true })
     } catch (e) {
@@ -129,7 +137,7 @@ export function OnboardingPage() {
       customCategories: [],
       secondaryCurrency: null,
       notificationsOptIn: null,
-    })
+    }, true)
   }
 
   if (step === PRO_STEP) {
@@ -237,6 +245,22 @@ export function OnboardingPage() {
             />
           ))}
         {step === 5 && (
+          <OnboardingIncomeStep
+            initial={income}
+            onContinue={(answer) => {
+              setIncome(answer)
+              goTo(6)
+            }}
+            // Skipping the income keeps it unset: Moni never invents one.
+            onSkip={() => {
+              setIncome(null)
+              goTo(6)
+            }}
+            onSkipAll={() => setConfirmingSkipAll(true)}
+            isBusy={complete.isPending}
+          />
+        )}
+        {step === 6 && (
           <OnboardingNotificationsStep
             isBusy={complete.isPending}
             onContinue={(optIn) => {

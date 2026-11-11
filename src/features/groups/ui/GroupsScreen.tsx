@@ -1,16 +1,21 @@
-import { KeyRound } from 'lucide-react'
+import { ChevronRight, KeyRound, Plus, UsersRound, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
-import { formatArs } from '@/shared/lib/money'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { EmptyState } from '@/shared/ui/EmptyState'
-import { HeaderAddButton } from '@/shared/ui/kit'
+import { BigFigure } from '@/shared/ui/BigFigure'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
+import { Kicker } from '@/shared/ui/Kicker'
+import { MentaHeader } from '@/shared/ui/MentaHeader'
+import { MENTA_CIRCLE, MINT_PILL, WHITE_PILL } from '@/shared/ui/mentaStyles'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { GROUP_KIND_LABELS, type MyGroup } from '../domain/group'
-import { GroupKindTile } from './GroupKindIcon'
+import { balanceTotals } from '../domain/groupsOverview'
+import { GROUP_KIND_ICONS } from './groupKindIcons'
 
 /** A group as listed: real data plus the overlay (name, guests, simulated balance). */
 export interface ListedGroup extends MyGroup {
@@ -27,21 +32,15 @@ interface GroupsScreenProps {
   onNewGroup: () => void
   /** Taps on the green box: opens "Deudas de grupos" on the tab of the amount that was tapped. */
   onOpenDebts?: (tab: 'owe' | 'owed') => void
+  /** Latest real expense of the most recently active group; omitted when there is none. */
+  lastExpense?: LastExpenseRow | null
 }
 
 function netLabel(group: ListedGroup): { text: string; tone: 'owed' | 'owes' | 'even' } {
   if (group.myNetCents > 0)
-    return { text: group.kind === 'pareja' ? 'Te debe' : 'Te deben', tone: 'owed' }
-  if (group.myNetCents < 0) return { text: 'Debés', tone: 'owes' }
-  return { text: group.peopleCount <= 1 ? 'Sin gastos' : 'Estás al día', tone: 'even' }
-}
-
-/** "en el grupo IJ", "entre Amores y Cena viernes", "en 4 grupos": where the amount comes from. */
-function whereLabel(prefix: 'en' | 'entre', names: readonly string[]): string {
-  if (names.length === 0) return ''
-  if (names.length === 1) return prefix === 'en' ? `en el grupo ${names[0]}` : `en ${names[0]}`
-  if (names.length === 2) return `entre ${names[0]} y ${names[1]}`
-  return `en ${names.length} grupos`
+    return { text: group.kind === 'pareja' ? 'te debe' : 'te deben', tone: 'owed' }
+  if (group.myNetCents < 0) return { text: 'debés', tone: 'owes' }
+  return { text: group.peopleCount <= 1 ? 'Sin gastos' : 'Al día', tone: 'even' }
 }
 
 function subtitle(group: ListedGroup): string {
@@ -51,59 +50,51 @@ function subtitle(group: ListedGroup): string {
   return `${kind} · ${group.peopleCount} personas`
 }
 
-/** Text size of both amounts: they shrink together with the longest one so it never leaves its card. */
-function debtAmountSize(...cents: number[]): string {
-  const longest = Math.max(...cents.map((c) => formatArs(c).length))
-  if (longest <= 8) return 'text-[clamp(22px,6.5vw,28px)]'
-  if (longest <= 10) return 'text-[clamp(17px,5vw,22px)]'
-  return 'text-[clamp(15px,4.2vw,19px)]'
-}
-
-const DEBT_CARD_TONE = {
-  owe: 'from-[#c85a3e] to-[#e28a5c]',
-  owed: 'from-[#3a7a4a] to-[#5a9a64]',
-} as const
-
-/**
- * "Debés" / "Te deben": one component for both, so they cannot drift apart. The grid stretches them to the same height
- * (the taller one sets it) and the content always starts at the top: title, amount, then the optional line.
- */
-function DebtCard({
-  label,
-  ariaLabel,
-  cents,
-  where,
-  tone,
-  amountSize,
-  onOpen,
-}: {
-  label: string
-  ariaLabel: string
-  cents: number
-  where?: string | null
-  tone: keyof typeof DEBT_CARD_TONE
-  /** Same on both cards, so a long amount in one shrinks the pair together. */
-  amountSize: string
-  onOpen: () => void
-}) {
+/** Icon of a group row: round, mint for the first (couple) kind, soft mint otherwise; a photo takes its place. */
+function GroupRowIcon({ group }: { group: ListedGroup }) {
+  const Icon = GROUP_KIND_ICONS[group.kind]
+  // The failed address, so a new photo (another address) is tried again.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  const photo = group.photoUrl && failedUrl !== group.photoUrl ? group.photoUrl : null
   return (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      onClick={onOpen}
-      className={`flex min-h-[112px] min-w-0 flex-col justify-start rounded-[24px] bg-gradient-to-br p-4 text-left text-white ${DEBT_CARD_TONE[tone]}`}
+    <span
+      aria-hidden="true"
+      className={cn(
+        'flex size-[42px] shrink-0 items-center justify-center overflow-hidden rounded-full',
+        group.kind === 'pareja' ? 'bg-mint text-white' : 'bg-mint-soft text-mint-ink',
+        photo && 'ring-1 ring-inset ring-ink/10',
+      )}
     >
-      <span className="block text-[15px] leading-5">{label}</span>
-      <AmountDisplay
-        cents={cents}
-        className={`mt-0.5 block whitespace-nowrap font-display font-extrabold leading-tight ${amountSize}`}
-      />
-      {where && <span className="mt-1 block text-[13px] leading-[18px]">{where}</span>}
-    </button>
+      {photo ? (
+        <img
+          src={photo}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          onError={() => setFailedUrl(photo)}
+          className="size-full object-cover"
+        />
+      ) : (
+        <Icon className="size-[19px]" strokeWidth={1.9} />
+      )}
+    </span>
   )
 }
 
-// Screens 016 / 017 / 112 — Grupos.
+export interface LastExpenseRow {
+  groupName: string
+  description: string
+  /** Second line: "Pagaste vos · ayer". */
+  meta: string
+  /** My effect on the balance: positive they owe me, negative I owe. */
+  deltaCents: number
+  icon: LucideIcon
+}
+
+const PILL = `flex min-h-12 items-center gap-2.5 rounded-[18px] bg-sand p-3 text-[14px] font-medium ${FOCUS_RING}`
+
+// Screens 015 / 028 — Grupos.
 export function GroupsScreen({
   groups,
   isLoading,
@@ -111,138 +102,184 @@ export function GroupsScreen({
   onRetry,
   onNewGroup,
   onOpenDebts,
+  lastExpense,
 }: GroupsScreenProps) {
-  const owe = (groups ?? []).reduce((s, g) => s + Math.max(0, -g.myNetCents), 0)
-  const owed = (groups ?? []).reduce((s, g) => s + Math.max(0, g.myNetCents), 0)
-  const amountSize = debtAmountSize(owe, owed)
-  const oweWhere = whereLabel(
-    'en',
-    (groups ?? []).filter((g) => g.myNetCents < 0).map((g) => g.name),
-  )
-  const owedWhere = whereLabel(
-    'entre',
-    (groups ?? []).filter((g) => g.myNetCents > 0).map((g) => g.name),
+  const { owedCents: owed, oweCents: owe } = balanceTotals(groups ?? [])
+  const header = (
+    <MentaHeader
+      backTo={null}
+      title="Grupos"
+      subtitle="Gastos compartidos"
+      action={
+        <button type="button" aria-label="Nuevo grupo" onClick={onNewGroup} className={MENTA_CIRCLE}>
+          <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />
+        </button>
+      }
+    />
   )
 
   return (
-    <section className="flex flex-col gap-4 px-5 pt-6">
-      <div className="mb-1 flex items-start justify-between gap-3">
-        <div>
-          <p className="font-display text-xl font-medium text-text-muted">
-            {groups ? `${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}` : '\u00a0'}
-          </p>
-          <h1 className="font-display text-[clamp(28px,8.5vw,32px)] font-extrabold leading-tight">
-            Grupos
-          </h1>
-        </div>
-        <HeaderAddButton label="Nuevo grupo" onClick={onNewGroup} />
-      </div>
-
+    <section className="flex flex-col gap-3 px-[18px] pt-1">
       {isLoading ? (
-        <div role="status" aria-label="Cargando grupos" className="flex flex-col gap-3">
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-        </div>
+        <>
+          <MentaHeader backTo={null} title="Grupos" subtitle="Gastos compartidos" />
+          <div role="status" aria-label="Cargando grupos" className="flex flex-col gap-3">
+            <Skeleton className="h-36" />
+            <Skeleton className="h-24" />
+          </div>
+        </>
       ) : isError || !groups ? (
-        <EmptyState
-          className="pt-16"
-          mascotUrl={mascotAlert}
-          title="No pudimos cargar tus grupos"
-          description="Revisá tu conexión y probá de nuevo."
-          action={<Button onClick={onRetry}>Reintentar</Button>}
-        />
+        <>
+          <MentaHeader backTo={null} title="Grupos" subtitle="Gastos compartidos" />
+          <EmptyState
+            className="pt-16"
+            mascotUrl={mascotAlert}
+            title="No pudimos cargar tus grupos"
+            description="Revisá tu conexión y probá de nuevo."
+            action={<Button onClick={onRetry}>Reintentar</Button>}
+          />
+        </>
       ) : groups.length === 0 ? (
         <>
-          <div className="rounded-[28px] border border-line bg-card">
-            <EmptyState
-              mascotUrl={mascotGroup}
-              title="Todavía no tenés grupos"
-              description="Armá uno para dividir los gastos de la casa, una salida o lo que sea. Solo tu parte cuenta como gasto tuyo."
-              action={<Button onClick={onNewGroup}>Nuevo grupo</Button>}
-              className="pb-6 [&_h2]:text-[24px] [&_h2]:font-extrabold [&_img]:size-44"
+          <MentaHeader
+            backTo={null}
+            title="Grupos"
+            subtitle="Gastos compartidos"
+            action={
+              <button type="button" aria-label="Nuevo grupo" onClick={onNewGroup} className={MENTA_CIRCLE}>
+                <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />
+              </button>
+            }
+          />
+          <div className="flex flex-col items-center gap-3.5 px-3 pt-10 text-center">
+            <img
+              src={mascotGroup}
+              alt=""
+              className="size-[120px] rounded-full border-[5px] border-lilac bg-card object-cover"
             />
+            <h2 className="font-display text-[26px] font-bold leading-[1.1] tracking-[-0.03em]">
+              Todavía no compartís gastos
+            </h2>
+            <p className="max-w-[280px] text-pretty text-[15px] text-text-muted">
+              Armá un grupo con tu pareja, tu familia o tus amigos y yo llevo la cuenta de quién debe
+              qué.
+            </p>
+            <div className="mt-1.5 flex w-full flex-col gap-2.5">
+              <button type="button" onClick={onNewGroup} className={cn(MINT_PILL, 'h-[54px] text-[16px] font-bold')}>
+                <UsersRound aria-hidden="true" className="size-5" strokeWidth={2.2} />
+                Crear grupo
+              </button>
+              <Link to="/grupos/unirse" className={cn(WHITE_PILL, 'h-12 text-[15px] font-semibold')}>
+                <ChevronRight aria-hidden="true" className="size-[18px]" />
+                Entrar con un código
+              </Link>
+            </div>
           </div>
-          <Link
-            to="/grupos/unirse"
-            className="flex h-14 items-center justify-center gap-3 rounded-full border border-line bg-card text-[17px] font-extrabold"
-          >
-            <KeyRound aria-hidden="true" className="size-5 -scale-x-100" strokeWidth={2} />
-            Entrar a un grupo con un código
-          </Link>
         </>
       ) : (
         <>
-          <div className="grid grid-cols-2 items-stretch gap-3">
-            <DebtCard
-              label="Debés"
-              ariaLabel="Ver lo que debés"
-              cents={owe}
-              where={oweWhere}
-              tone="owe"
-              amountSize={amountSize}
-              onOpen={() => onOpenDebts?.('owe')}
-            />
-            <DebtCard
-              label="Te deben"
-              ariaLabel="Ver lo que te deben"
-              cents={owed}
-              where={owedWhere}
-              tone="owed"
-              amountSize={amountSize}
-              onOpen={() => onOpenDebts?.('owed')}
-            />
+          {header}
+          <div className="flex flex-col gap-2.5 rounded-[30px] bg-mint px-[18px] py-4 text-white">
+            <button
+              type="button"
+              aria-label="Ver lo que te deben"
+              onClick={() => onOpenDebts?.('owed')}
+              className="flex flex-col gap-2.5 rounded-xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              <Kicker as="span" className="font-medium text-[#CBEBD9]">
+                Te deben
+              </Kicker>
+              <BigFigure cents={owed} signed={owed > 0} />
+            </button>
+            <button
+              type="button"
+              aria-label="Ver lo que debés"
+              onClick={() => onOpenDebts?.('owe')}
+              className="flex items-center justify-between gap-2 rounded-lg border-t border-white/15 pt-2.5 text-[13.5px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              <span className="text-[#DDF3E6]">Debés</span>
+              <span className="font-medium">
+                {owe > 0 ? <AmountDisplay cents={owe} /> : '$0 · sin deudas'}
+              </span>
+            </button>
           </div>
-          <h2 className="mt-2 font-display text-[22px] font-extrabold">Tus grupos</h2>
-          <ul className="-mx-5 divide-y divide-line border-y border-line">
+          <div className="grid grid-cols-2 gap-2.5">
+            <button type="button" onClick={onNewGroup} className={PILL}>
+              <UsersRound aria-hidden="true" className="size-[19px]" strokeWidth={1.9} />
+              Crear grupo
+            </button>
+            <Link to="/grupos/unirse" className={PILL}>
+              <KeyRound aria-hidden="true" className="size-[19px] -scale-x-100" strokeWidth={1.9} />
+              Entrar con código
+            </Link>
+          </div>
+          <ul className="divide-y divide-line rounded-[26px] bg-card px-4 py-0.5">
             {groups.map((group) => {
               const net = netLabel(group)
               return (
                 <li key={group.id}>
                   <Link
                     to={`/grupos/${group.id}`}
-                    className="flex min-h-[84px] items-center gap-4 px-5 py-3"
+                    className={cn('grid grid-cols-[42px_1fr_auto] items-center gap-3 py-2.5', FOCUS_RING)}
                   >
-                    <GroupKindTile
-                      kind={group.kind}
-                      photoUrl={group.photoUrl}
-                      className="rounded-full"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[20px] font-extrabold leading-6">
-                        {group.name}
-                      </span>
-                      <span className="block truncate text-[15px] leading-5 text-text-muted">
-                        {subtitle(group)}
-                      </span>
+                    <GroupRowIcon group={group} />
+                    <span className="min-w-0">
+                      <span className="block truncate text-[15px] font-medium">{group.name}</span>
+                      <span className="block truncate text-[12px] text-text-muted">{subtitle(group)}</span>
                     </span>
-                    <span
-                      className={cn(
-                        'max-w-[7.5rem] shrink-0 text-right text-[15px] font-extrabold leading-5',
-                        net.tone === 'owed' && 'text-income',
-                        net.tone === 'owes' && 'text-expense',
-                        net.tone === 'even' && 'font-semibold text-text-muted',
-                      )}
-                    >
-                      {net.text}
-                      {group.myNetCents !== 0 && (
+                    {net.tone === 'owed' || net.tone === 'owes' ? (
+                      <span className="text-right">
                         <AmountDisplay
                           cents={Math.abs(group.myNetCents)}
-                          className="block text-[18px]"
+                          signed={net.tone === 'owed'}
+                          className={cn(
+                            'block text-[15px] font-medium',
+                            net.tone === 'owed' ? 'text-income' : 'text-expense',
+                          )}
                         />
-                      )}
-                    </span>
+                        <span className="block text-[12px] text-text-muted">{net.text}</span>
+                      </span>
+                    ) : (
+                      <span className={cn('text-[14px] font-medium', net.tone === 'even' && group.peopleCount > 1 ? 'text-income' : 'text-text-muted')}>
+                        {net.text}
+                      </span>
+                    )}
                   </Link>
                 </li>
               )
             })}
           </ul>
-          <Link
-            to="/grupos/unirse"
-            className="flex h-14 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-card text-[16px] font-extrabold"
-          >
-            <KeyRound aria-hidden="true" className="size-5 shrink-0 -scale-x-100" /> Entrar con un
-            código
-          </Link>
+          {lastExpense && (
+            <div className="flex flex-col gap-2">
+              <h2 className="text-[17px] font-semibold tracking-[-0.02em]">
+                Último en {lastExpense.groupName}
+              </h2>
+              <div className="rounded-[26px] bg-card px-4 py-0.5">
+                <div className="grid grid-cols-[38px_1fr_auto] items-center gap-3 py-2">
+                  <span
+                    aria-hidden="true"
+                    className="flex size-[38px] items-center justify-center rounded-full bg-sand text-ink"
+                  >
+                    <lastExpense.icon className="size-[17px]" strokeWidth={1.9} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-medium">{lastExpense.description}</p>
+                    <p className="text-[12px] text-text-muted">{lastExpense.meta}</p>
+                  </div>
+                  {lastExpense.deltaCents !== 0 && (
+                    <AmountDisplay
+                      cents={lastExpense.deltaCents}
+                      signed
+                      className={cn(
+                        'whitespace-nowrap text-[15px] font-medium',
+                        lastExpense.deltaCents > 0 ? 'text-income' : 'text-expense',
+                      )}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </section>

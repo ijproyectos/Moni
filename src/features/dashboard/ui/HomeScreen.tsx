@@ -1,4 +1,6 @@
+import { ChevronRight, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import type { Story } from '../domain/stories'
 import type { DailyAllowanceView } from '../api/useDailyAllowance'
@@ -90,6 +92,15 @@ export function HomeScreen({
           offline={offline}
           voicePlusBadge={voicePlusBadge}
         />
+
+        <Link
+          to="/informes/asistente"
+          className="mx-[18px] flex min-h-11 items-center gap-2.5 rounded-full bg-lilac-soft px-4 py-2 text-[14px] font-medium text-lilac-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
+        >
+          <MessageCircle aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={2} />
+          <span className="flex-1">Preguntale a Moni: ¿me conviene?</span>
+          <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
+        </Link>
 
         {stories.length > 0 && (
           <section aria-labelledby="today-title" className="mx-[18px] flex flex-col gap-2">

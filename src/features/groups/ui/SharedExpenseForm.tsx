@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, ChevronDown, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { useForm } from 'react-hook-form'
 import type { Account } from '@/features/accounts/domain/account'
 import type { CategoryTemplate } from '@/features/categories/domain/category'
@@ -11,11 +12,17 @@ import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { todayIso } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
-import { Button } from '@/shared/ui/Button'
+import { AmountDisplay } from '@/shared/ui/AmountDisplay'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
+import { Kicker } from '@/shared/ui/Kicker'
+import { MINT_PILL } from '@/shared/ui/mentaStyles'
+import { useMyInitial } from '@/shared/ui/myInitialContext'
+import { initialsOf } from '../domain/groupsOverview'
+import type { ReactNode } from 'react'
 import { CategoryChip } from '@/shared/ui/CategoryChip'
 import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import { cn } from '@/shared/ui/cn'
-import { Avatar, SectionLabel } from '@/shared/ui/kit'
+import { Avatar } from '@/shared/ui/kit'
 import { SegmentedControl, type SegmentOption } from '@/shared/ui/SegmentedControl'
 import {
   memberLabel,
@@ -83,9 +90,9 @@ function methodOptions(
         { value: 'solo', label: 'Solo uno' },
       ]
     : [
-        { value: 'equal', label: 'Partes iguales' },
-        ...(canStoreByAmount ? [{ value: 'amount' as const, label: 'Por monto' }] : []),
-        { value: 'percent', label: 'Por %' },
+        { value: 'equal', label: 'Iguales' },
+        { value: 'percent', label: 'Porcentaje' },
+        ...(canStoreByAmount ? [{ value: 'amount' as const, label: 'Montos' }] : []),
       ]
 }
 
@@ -121,6 +128,7 @@ export function SharedExpenseForm({
   onDelete,
 }: SharedExpenseFormProps) {
   const online = useOnlineStatus()
+  const myInitial = useMyInitial()
   const memberIds = useMemo(() => members.map((m) => m.userId), [members])
   const people = useMemo(
     () => [
@@ -329,40 +337,56 @@ export function SharedExpenseForm({
   const others = people.filter((p) => selected.includes(p.id) && p.id !== paidBy)
   const payerName = people.find((p) => p.id === paidBy)?.name ?? 'Alguien'
   const guestNames = people.filter((p) => !p.hasMoni && selected.includes(p.id)).map((p) => p.name)
+  // Informational only: what the split leaves pending between me and the payer.
+  const moniNote = (() => {
+    if (!shares || multiPayer || total <= 0) return null
+    if (paidBy === meId) {
+      const owedToMe = shares.filter((x) => x.personId !== meId).reduce((s, x) => s + x.cents, 0)
+      const only = others.filter((o) => o.id !== meId)
+      if (owedToMe <= 0 || only.length === 0) return null
+      return {
+        text: only.length === 1 ? `${only[0]?.name} te va a deber` : 'Te van a deber',
+        cents: owedToMe,
+      }
+    }
+    const mine = shares.find((x) => x.personId === meId)?.cents ?? 0
+    return mine > 0 ? { text: `Le vas a deber a ${payerName}`, cents: mine } : null
+  })()
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-3">
-      <div>
+    <form onSubmit={submit} noValidate className="flex flex-1 flex-col gap-3">
+      <section className="flex flex-col gap-2.5 rounded-[26px] bg-card px-[18px] py-4">
+        <Kicker as="span">Monto</Kicker>
+        <AmountInput
+          aria-label="Monto"
+          invalid={Boolean(errors.amount)}
+          data-autofocus
+          scale="hero"
+          className="!justify-start"
+          {...register('amount')}
+        />
+        {errors.amount && (
+          <p role="alert" className="text-sm text-expense">
+            {errors.amount.message}
+          </p>
+        )}
         <input
           type="text"
           aria-label="Descripción"
           placeholder="¿En qué se gastó?"
           maxLength={120}
           autoComplete="off"
-          className={fieldClass}
+          className={`h-9 w-full border-t border-line bg-transparent pt-2 text-[14px] text-ink placeholder:text-text-muted ${FOCUS_RING}`}
           {...register('description')}
         />
         {errors.description && (
-          <p role="alert" className="mt-1 px-2 text-sm text-expense">
+          <p role="alert" className="text-sm text-expense">
             {errors.description.message}
           </p>
         )}
-      </div>
-      <div>
-        <AmountInput
-          aria-label="Monto"
-          invalid={Boolean(errors.amount)}
-          data-autofocus
-          {...register('amount')}
-        />
-        {errors.amount && (
-          <p role="alert" className="mt-1 text-sm text-expense">
-            {errors.amount.message}
-          </p>
-        )}
-      </div>
+      </section>
 
-      <SectionLabel
+      <SectionTitle
         action={
           !couple && onSubmitSimulated ? (
             <button
@@ -376,7 +400,7 @@ export function SharedExpenseForm({
         }
       >
         {multiPayer ? '¿Quiénes pagaron?' : '¿Quién pagó?'}
-      </SectionLabel>
+      </SectionTitle>
       <div role="group" aria-label="Quién pagó" className="flex flex-wrap gap-2">
         {people.map((p) => {
           const active = multiPayer ? p.id in payers : paidBy === p.id
@@ -397,8 +421,9 @@ export function SharedExpenseForm({
                 }
               }}
               className={cn(
-                'inline-flex min-h-12 items-center gap-1.5 rounded-full border-2 pl-1 pr-3 text-[16px] font-extrabold',
-                active ? 'border-ink bg-forest text-cream' : 'border-line bg-card',
+                'inline-flex min-h-11 items-center gap-1.5 rounded-full pl-1 pr-3.5 text-[14px] font-semibold',
+                FOCUS_RING,
+                active ? 'bg-mint text-white' : 'bg-seg-track text-[#4F6157] dark:text-text-muted',
               )}
             >
               <Avatar name={p.name} size="sm" />
@@ -432,24 +457,25 @@ export function SharedExpenseForm({
         </>
       )}
 
-      <SectionLabel>{multiPayer ? '¿Entre quiénes se divide?' : '¿Cómo se divide?'}</SectionLabel>
+      <SectionTitle>{multiPayer ? '¿Entre quiénes se divide?' : '¿Cómo se divide?'}</SectionTitle>
       {!multiPayer && (
         <SegmentedControl
           label="Cómo dividir"
           options={methodOptions(kind, Boolean(onSubmitSimulated))}
           value={method}
           onChange={changeMethod}
+          variant="menta"
         />
       )}
 
       <fieldset>
         <legend className="sr-only">Entre quiénes</legend>
-        <ul className="flex flex-col divide-y divide-line rounded-[22px] border border-line bg-card">
+        <ul className="flex flex-col divide-y divide-line rounded-[26px] bg-card px-4 py-0.5">
           {people.map((p) => {
             const checked = selected.includes(p.id)
             const share = shareOf(p.id)
             return (
-              <li key={p.id} className="flex min-h-14 items-center gap-3 px-4 py-2">
+              <li key={p.id} className="flex min-h-14 items-center gap-3 py-2">
                 <label className="flex min-h-11 min-w-0 flex-1 items-center gap-3">
                   <input
                     type="checkbox"
@@ -461,29 +487,38 @@ export function SharedExpenseForm({
                   <span
                     aria-hidden="true"
                     className={cn(
-                      'flex size-7 shrink-0 items-center justify-center rounded-[8px] border-2 peer-focus-visible:ring-2 peer-focus-visible:ring-gold',
-                      checked ? 'border-ink bg-forest text-cream' : 'border-line bg-card',
+                      'flex size-6 shrink-0 items-center justify-center rounded-full border-2 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-mint-ink',
+                      checked ? 'border-mint bg-mint text-white' : 'border-line bg-card',
                     )}
                   >
                     {checked && <Check className="size-4" strokeWidth={3} />}
                   </span>
-                  <Avatar name={p.name} size="sm" className={cn(!checked && 'opacity-50')} />
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'flex size-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold',
+                      p.id === meId ? 'bg-mint-soft text-mint-ink' : 'bg-lilac-soft text-[#4A3F96]',
+                      !checked && 'opacity-50',
+                    )}
+                  >
+                    {p.id === meId ? myInitial : initialsOf(p.name)}
+                  </span>
                   <span
                     className={cn(
-                      'min-w-0 truncate text-[18px] font-extrabold',
+                      'min-w-0 truncate text-[15px] font-semibold',
                       !checked && 'text-text-muted',
                     )}
                   >
                     {p.name}
                   </span>
                   {!p.hasMoni && (
-                    <span className="shrink-0 rounded-full bg-tint-gold px-2 py-0.5 text-[12px] font-extrabold">
+                    <span className="shrink-0 rounded-full bg-tint-gold px-2 py-0.5 text-[12px] font-semibold">
                       Sin cuenta
                     </span>
                   )}
                 </label>
                 {!checked ? (
-                  <span className="text-[16px] font-bold text-text-muted">No participa</span>
+                  <span className="text-[13px] text-text-muted">No participa</span>
                 ) : method === 'amount' ? (
                   <AmountField
                     label={`Parte de ${p.name}`}
@@ -493,9 +528,9 @@ export function SharedExpenseForm({
                 ) : method === 'percent' ? (
                   <span className="flex items-center gap-2">
                     {share !== undefined && (
-                      <span className="text-[14px] text-text-muted">{formatArs(share)}</span>
+                      <AmountDisplay cents={share} className="text-[15px] font-semibold" />
                     )}
-                    <span className="flex h-11 items-center rounded-[14px] border border-line bg-canvas px-3 text-[18px] font-extrabold">
+                    <span className="flex h-11 items-center rounded-[14px] border border-line bg-canvas px-3 text-[15px] font-semibold">
                       <input
                         type="text"
                         inputMode="decimal"
@@ -513,8 +548,13 @@ export function SharedExpenseForm({
                   </span>
                 ) : (
                   share !== undefined && (
-                    <span className="text-[18px] font-extrabold tabular-nums">
-                      {formatArs(share)}
+                    <span className="flex items-baseline gap-3">
+                      {total > 0 && (
+                        <span className="text-[13px] text-text-muted">
+                          {formatPercentTotal(Math.round((share / total) * 10000))}%
+                        </span>
+                      )}
+                      <AmountDisplay cents={share} className="text-[15px] font-semibold" />
                     </span>
                   )
                 )}
@@ -540,7 +580,19 @@ export function SharedExpenseForm({
           text={`Suman ${formatArs(amountsSum)} de ${formatArs(total)}.${amountsSum === total && total > 0 ? ' Listo.' : ''}`}
         />
       )}
-      {(method === 'equal' || method === 'income' || method === 'solo' || multiPayer) && shares && (
+      {moniNote && (
+        <div className="flex items-center gap-3 rounded-[22px] bg-lilac-soft px-3.5 py-3">
+          <img
+            src={mascotHappy}
+            alt=""
+            className="size-8 shrink-0 rounded-full border-2 border-lilac bg-card object-cover"
+          />
+          <p className="text-[14px] text-lilac-ink">
+            {moniNote.text} <AmountDisplay cents={moniNote.cents} className="font-bold" />.
+          </p>
+        </div>
+      )}
+      {(method === 'income' || method === 'solo' || multiPayer || guestNames.length > 0) && shares && (
         <p className="text-[15px] leading-5 text-text-muted">
           {method === 'solo'
             ? `Es solo de ${others[0]?.name ?? payerName}: ${others[0] ? `te debe los ${formatArs(total)} completos.` : 'no se divide.'}`
@@ -642,7 +694,7 @@ export function SharedExpenseForm({
           {OFFLINE_MESSAGE}
         </p>
       )}
-      <div className="flex gap-2">
+      <div className="mt-auto flex gap-2 pt-2">
         {onDelete && (
           <button
             type="button"
@@ -653,9 +705,13 @@ export function SharedExpenseForm({
             <Trash2 aria-hidden="true" className="size-5" />
           </button>
         )}
-        <Button type="submit" disabled={isSubmitting || !online}>
+        <button
+          type="submit"
+          disabled={isSubmitting || !online}
+          className={cn(MINT_PILL, 'h-[54px] text-[16px] font-bold')}
+        >
           {isSubmitting ? 'Guardando…' : submitLabel}
-        </Button>
+        </button>
       </div>
     </form>
   )
@@ -694,6 +750,15 @@ function AmountField({
         className="w-20 bg-transparent text-right outline-none"
       />
     </span>
+  )
+}
+
+function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="text-[15px] font-bold">{children}</h3>
+      {action}
+    </div>
   )
 }
 

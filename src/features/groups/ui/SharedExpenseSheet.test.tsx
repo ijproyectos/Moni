@@ -183,7 +183,7 @@ describe('Editar un gasto compartido', () => {
     const { user } = setup()
     await user.type(screen.getByLabelText('Monto'), '1000')
     await user.type(screen.getByLabelText('Descripción'), 'Pan')
-    await user.click(screen.getByRole('button', { name: 'Guardar gasto' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar en el grupo' }))
     await waitFor(() => expect(state.createShared).toHaveBeenCalled())
     expect(state.createShared.mock.calls[0]?.[0].replaces).toBeUndefined()
   })

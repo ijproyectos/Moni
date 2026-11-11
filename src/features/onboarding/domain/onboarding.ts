@@ -46,9 +46,9 @@ export function customNameTaken(
   )
 }
 
-/** Onboarding steps shown with a progress bar; the Pro offer is step 6 (no bar). */
-export const ONBOARDING_STEPS = 5
-export const PRO_STEP = 6
+/** Onboarding steps shown with a progress bar; the Pro offer is step 7 (no bar). */
+export const ONBOARDING_STEPS = 6
+export const PRO_STEP = 7
 
 /** Reads ?paso=N, clamped to a valid step. */
 export function parseStep(value: string | null): number {
