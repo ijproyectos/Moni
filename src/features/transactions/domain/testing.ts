@@ -16,6 +16,9 @@ export const makeTransaction = (overrides: Partial<Transaction> = {}): Transacti
   installmentPlanId: null,
   installmentNumber: null,
   installmentsTotal: null,
+  originalAmountCents: null,
+  originalCurrency: null,
+  fxRate: null,
   createdAt: '2026-10-10T12:00:00Z',
   ...overrides,
 })

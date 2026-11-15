@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Calendar, Check, CreditCard, Pencil, Plus } from 'lucide-react'
-import { useEffect, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { isCreditCard, type Account } from '@/features/accounts/domain/account'
 import type { Category } from '@/features/categories/domain/category'
+import { useDollarCardRate } from '@/features/subscriptions/api/useDollarCardRate'
+import { usdToArsCents } from '@/features/subscriptions/domain/conversion'
 import { todayAfterExpense } from '@/features/dashboard/domain/todayLeft'
 import {
   applyAmountKey,
@@ -11,6 +13,7 @@ import {
   parseAmountInput,
   type AmountKey,
 } from '@/shared/lib/amountInput'
+import { formatArs } from '@/shared/lib/money'
 import { formatRelativeDay } from '@/shared/lib/dates'
 import { isIsoDate, todayIso } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
@@ -18,6 +21,7 @@ import { AmountInput } from '@/shared/ui/AmountInput'
 import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import { cn } from '@/shared/ui/cn'
 import { FOCUS_RING } from '@/shared/ui/focusRing'
+import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { MINT_PILL } from '@/shared/ui/mentaStyles'
 import { NumericKeypad } from '@/shared/ui/NumericKeypad'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
@@ -79,6 +83,14 @@ export function TransactionForm({
   dailyCents = null,
 }: TransactionFormProps) {
   const online = useOnlineStatus()
+  const savedUsd = initial?.originalCurrency === 'USD' && initial.originalAmountCents !== null
+  const [currency, setCurrency] = useState<'ARS' | 'USD'>(savedUsd ? 'USD' : 'ARS')
+  const [rateError, setRateError] = useState(false)
+  const liveRate = useDollarCardRate()
+  // An existing USD movement keeps the rate it was saved with, not today's.
+  const rate =
+    currency === 'USD' && savedUsd ? (initial.fxRate ?? null) : (liveRate.data?.sell ?? null)
+  const usd = currency === 'USD'
   const {
     register,
     handleSubmit,
@@ -91,7 +103,9 @@ export function TransactionForm({
       kind,
       accountId: initial?.accountId ?? draft?.accountId ?? accounts[0]?.id ?? '',
       categoryId: initial?.categoryId ?? draft?.categoryId ?? '',
-      amount: initial ? formatAmountInput(initial.amountCents) : (draft?.amount ?? ''),
+      amount: initial
+        ? formatAmountInput(savedUsd ? (initial.originalAmountCents ?? 0) : initial.amountCents)
+        : (draft?.amount ?? ''),
       occurredOn: initial?.occurredOn ?? draft?.occurredOn ?? todayIso(),
       note: initial?.note ?? draft?.note ?? '',
     },
@@ -109,11 +123,23 @@ export function TransactionForm({
   const accountId = watch('accountId')
   const occurredOn = watch('occurredOn') ?? ''
 
+  const draftAmount = useCallback(
+    (text: string): string => {
+      if (!usd) return text
+      const cents = parseAmountInput(text)
+      return cents !== null && cents > 0 && rate !== null
+        ? formatAmountInput(usdToArsCents(cents / 100, rate))
+        : ''
+    },
+    [usd, rate],
+  )
+
   useEffect(() => {
     if (!onDraftChange) return
     const subscription = watch((values) =>
       onDraftChange({
-        amount: values.amount ?? '',
+        // The draft (also used by the shared-expense form) is always in pesos.
+        amount: draftAmount(values.amount ?? ''),
         note: values.note ?? '',
         categoryId: values.categoryId ?? '',
         accountId: values.accountId ?? '',
@@ -121,7 +147,27 @@ export function TransactionForm({
       }),
     )
     return () => subscription.unsubscribe()
-  }, [watch, onDraftChange])
+  }, [watch, onDraftChange, draftAmount])
+
+  function submit(values: TransactionFormValues) {
+    if (!usd) {
+      onSubmit({ ...values, currency: 'ARS', fxRate: undefined, originalAmountCents: undefined })
+      return
+    }
+    // Never invent a rate: without one the movement is not saved.
+    if (rate === null) {
+      setRateError(true)
+      return
+    }
+    setRateError(false)
+    onSubmit({
+      ...values,
+      amount: usdToArsCents(values.amount / 100, rate),
+      currency: 'USD',
+      fxRate: rate,
+      originalAmountCents: values.amount,
+    })
+  }
 
   function pressKey(key: AmountKey) {
     setValue('amount', applyAmountKey(amountText, key), {
@@ -131,7 +177,12 @@ export function TransactionForm({
   }
 
   const today = todayIso()
-  const typedCents = parseAmountInput(amountText) ?? 0
+  const typed = parseAmountInput(amountText) ?? 0
+  const typedCents = usd
+    ? rate !== null && typed > 0
+      ? usdToArsCents(typed / 100, rate)
+      : 0
+    : typed
   const showLeft = kind === 'expense' && dailyCents !== null && occurredOn === today
   const left = showLeft ? todayAfterExpense(dailyCents, typedCents).leftCents : 0
   const accountName = accounts.find((a) => a.id === accountId)?.name ?? ''
@@ -144,11 +195,25 @@ export function TransactionForm({
         : 'Guardar ingreso'
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-1 flex-col gap-3">
+    <form onSubmit={handleSubmit(submit)} noValidate className="flex flex-1 flex-col gap-3">
       <div className="flex flex-col items-center gap-0.5 py-1">
+        <SegmentedControl
+          variant="menta"
+          label="Moneda"
+          className="mb-1 w-[132px]"
+          value={currency}
+          onChange={(value) => {
+            setCurrency(value)
+            setRateError(false)
+          }}
+          options={[
+            { value: 'ARS', label: 'ARS' },
+            { value: 'USD', label: 'USD', disabled: rate === null && !usd },
+          ]}
+        />
         <AmountInput
           scale="hero"
-          prefix="$"
+          prefix={usd ? 'US$' : '$'}
           aria-label="Monto"
           // The on-screen keypad types; the native keyboard stays closed here (it opens for the other fields).
           inputMode="none"
@@ -157,6 +222,17 @@ export function TransactionForm({
           data-autofocus
           {...register('amount')}
         />
+        {usd && rate !== null && typed > 0 && (
+          <span className="text-[13px] text-text-muted">
+            ≈ <AmountDisplay cents={typedCents} className="font-semibold text-ink" /> al dólar
+            tarjeta {formatArs(Math.round(rate * 100))}
+          </span>
+        )}
+        {(rateError || (liveRate.isError && liveRate.data === undefined && !savedUsd)) && (
+          <p role="alert" className="text-center text-[13px] text-expense">
+            No pudimos traer la cotización del dólar. Probá de nuevo.
+          </p>
+        )}
         {showLeft && (
           <span className="text-[13px] text-text-muted">
             Te quedan <AmountDisplay cents={left} className="font-semibold text-ink" /> para hoy

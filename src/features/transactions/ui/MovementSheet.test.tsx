@@ -7,6 +7,13 @@ import { makeAccount } from '@/features/accounts/domain/testing'
 import { makeTransaction } from '../domain/testing'
 import { MovementSheet } from './MovementSheet'
 
+vi.mock('@/features/subscriptions/api/useDollarCardRate', () => ({
+  useDollarCardRate: () => ({
+    data: { sell: 1350, updatedAt: '2026-11-15T12:00:00Z' },
+    isError: false,
+  }),
+}))
+
 const CASH = '11111111-1111-4111-8111-111111111111'
 const BANK = '44444444-4444-4444-8444-444444444444'
 const CARD = '55555555-5555-4555-8555-555555555555'

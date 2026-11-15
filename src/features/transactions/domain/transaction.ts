@@ -28,6 +28,11 @@ export interface Transaction {
   installmentsTotal: number | null
   /** Personal trip this expense belongs to (null for anything else). */
   tripId?: string | null
+  /** Typed amount in US dollars (cents) when the movement was loaded in USD; `amountCents` is its ARS equivalent. */
+  originalAmountCents: Cents | null
+  originalCurrency: 'USD' | null
+  /** ARS per USD used to convert (dólar tarjeta at that moment). */
+  fxRate: number | null
   createdAt: string
 }
 
@@ -68,6 +73,11 @@ export const transactionFormSchema = z.object({
   amount: amountField,
   occurredOn: dateField,
   note: noteField,
+  /** Currency the amount was typed in; absent means pesos. */
+  currency: z.enum(['ARS', 'USD']).optional(),
+  /** Set by the form for USD movements: the rate used and the typed dollars (cents). `amount` is then ARS. */
+  fxRate: z.number().positive().optional(),
+  originalAmountCents: z.number().int().positive().optional(),
 })
 
 export type TransactionFormInput = z.input<typeof transactionFormSchema>

@@ -6,6 +6,13 @@ import { makeTransaction } from '../domain/testing'
 import type { Transaction } from '../domain/transaction'
 import { MovementSheet } from './MovementSheet'
 
+vi.mock('@/features/subscriptions/api/useDollarCardRate', () => ({
+  useDollarCardRate: () => ({
+    data: { sell: 1350, updatedAt: '2026-11-15T12:00:00Z' },
+    isError: false,
+  }),
+}))
+
 const ME = '00000000-0000-4000-8000-00000000000a'
 const BETO = '00000000-0000-4000-8000-00000000000b'
 const FOOD = '22222222-2222-4222-8222-222222222222'

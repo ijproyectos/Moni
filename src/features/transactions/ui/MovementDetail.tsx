@@ -10,12 +10,7 @@ import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import { cn } from '@/shared/ui/cn'
 import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { categoryWeekInsight } from '../domain/movementInsight'
-import {
-  addsToBalance,
-  isAdjustment,
-  isOpening,
-  type Transaction,
-} from '../domain/transaction'
+import { addsToBalance, isAdjustment, isOpening, type Transaction } from '../domain/transaction'
 
 interface MovementDetailProps {
   transaction: Transaction
@@ -93,7 +88,10 @@ export function MovementDetail({
   rows.push(['Categoría', categoryName])
   if (installment) rows.push(['Cuota', installment])
   if (transaction.statementClosingOn)
-    rows.push(['Entra en el resumen', `cierra el ${formatDayMonth(transaction.statementClosingOn)}`])
+    rows.push([
+      'Entra en el resumen',
+      `cierra el ${formatDayMonth(transaction.statementClosingOn)}`,
+    ])
   if (!Number.isNaN(new Date(transaction.createdAt).getTime()))
     rows.push(['Cargado', formatRelativeDay(loadedOn, today)])
 
@@ -136,6 +134,14 @@ export function MovementDetail({
               income ? 'text-income' : 'text-ink',
             )}
           />
+          {transaction.originalCurrency === 'USD' &&
+            transaction.originalAmountCents !== null &&
+            transaction.fxRate !== null && (
+              <span className="text-[13px] text-text-muted">
+                <AmountDisplay usd cents={transaction.originalAmountCents} /> · dólar tarjeta{' '}
+                <AmountDisplay cents={Math.round(transaction.fxRate * 100)} />
+              </span>
+            )}
           <span className="rounded-full bg-mint-soft px-[9px] py-[3px] text-[12px] font-semibold text-mint-ink">
             {categoryName}
           </span>
