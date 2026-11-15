@@ -49,7 +49,7 @@ export function AmountInput({
         className={cn(
           'min-w-0 bg-transparent font-display text-ink outline-none placeholder:text-text-muted/40',
           hero
-            ? 'w-[1ch] min-w-[1ch] max-w-full text-[52px] font-bold leading-none tracking-[-0.04em] [field-sizing:content]'
+            ? 'min-w-[1ch] max-w-full text-[52px] font-bold leading-none tracking-[-0.04em] [field-sizing:content]'
             : cn(
                 'flex-1 font-extrabold',
                 scale === 'lg'
@@ -58,6 +58,8 @@ export function AmountInput({
               ),
           hero && invalid && 'text-expense',
         )}
+        // Safari/Firefox ignore field-sizing: size the box to what is typed so no digit is clipped.
+        style={hero ? { width: `${Math.max(1, props.size ?? 1) + 0.6}ch` } : undefined}
         {...props}
         onChange={withAmountFormatting(onChange)}
       />

@@ -95,7 +95,7 @@ export function HomeScreen({
 
         <Link
           to="/informes/asistente"
-          className="mx-[18px] flex min-h-11 items-center gap-2.5 rounded-full bg-lilac-soft px-4 py-2 text-[14px] font-medium text-lilac-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
+          className="mx-[18px] flex min-h-11 items-center gap-2.5 rounded-full bg-lilac-soft px-4 py-2 text-[14px] font-medium text-lilac-ink dark:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
         >
           <MessageCircle aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={2} />
           <span className="flex-1">Preguntale a Moni: ¿me conviene?</span>

@@ -363,6 +363,7 @@ export function SharedExpenseForm({
           data-autofocus
           scale="hero"
           className="!justify-start"
+          size={Math.max(1, (amountText ?? '').length)}
           {...register('amount')}
         />
         {errors.amount && (
@@ -587,7 +588,7 @@ export function SharedExpenseForm({
             alt=""
             className="size-8 shrink-0 rounded-full border-2 border-lilac bg-card object-cover"
           />
-          <p className="text-[14px] text-lilac-ink">
+          <p className="text-[14px] text-lilac-ink dark:text-ink">
             {moniNote.text} <AmountDisplay cents={moniNote.cents} className="font-bold" />.
           </p>
         </div>

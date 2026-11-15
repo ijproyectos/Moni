@@ -58,6 +58,7 @@ export function OnboardingIncomeStep({
           aria-label="Ingreso mensual"
           scale="hero"
           className="!justify-start"
+          size={Math.max(1, salary.length)}
           value={salary}
           onChange={(e) => setSalary(e.target.value)}
         />
@@ -120,7 +121,7 @@ export function OnboardingIncomeStep({
         <div className="flex gap-3 rounded-[24px] bg-lilac-soft p-3.5">
           <img src={mascotUrl} alt="" className="size-9 shrink-0 rounded-full border-2 border-lilac bg-card object-cover" />
           <div className="flex flex-col gap-[3px]">
-            <p className="text-[15px] font-bold text-lilac-ink">
+            <p className="text-[15px] font-bold text-lilac-ink dark:text-ink">
               Te sugiero un presupuesto de <AmountDisplay cents={budget} />
             </p>
             <p className="text-[13px] text-[#4A3F96] dark:text-text-muted">

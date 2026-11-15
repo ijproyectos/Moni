@@ -148,7 +148,7 @@ describe('QuickAdd sheet (screen 18)', () => {
     expect(fab).toHaveAttribute('aria-haspopup', 'dialog')
 
     const dialog = await openMenu(user)
-    expect(within(dialog).getByText('Contame y yo lo ordeno')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Contame y yo lo ordeno')).not.toBeInTheDocument()
     const ways = within(dialog)
       .getAllByRole('button')
       .map((el) => el.textContent)

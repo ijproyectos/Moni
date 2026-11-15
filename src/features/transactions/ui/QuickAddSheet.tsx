@@ -1,6 +1,5 @@
 import { Camera, ChevronRight, Mic, Pencil, Users, type LucideIcon } from 'lucide-react'
 import { useMemo } from 'react'
-import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { todayIso } from '@/shared/lib/month'
@@ -106,9 +105,7 @@ export function QuickAddSheet({
   return (
     <BottomSheet
       title="¿Cómo lo cargás?"
-      subtitle="Contame y yo lo ordeno"
       variant="menta"
-      icon={<img src={mascotHappy} alt="" className="size-11 shrink-0 rounded-full bg-lilac" />}
       onClose={onClose}
     >
       <div className="flex flex-col gap-3.5">
