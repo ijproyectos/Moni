@@ -2,7 +2,9 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import { accountKeys } from '@/features/accounts/api/queryKeys'
 import { useAuth } from '@/features/auth/api/authContext'
 import { getGroupBalances } from '@/features/groups/api/groupsRepository'
+import { dashboardKeys } from '@/features/dashboard/api/queryKeys'
 import { groupKeys } from '@/features/groups/api/queryKeys'
+import { transactionKeys } from '@/features/transactions/api/queryKeys'
 import { useMyGroups } from '@/features/groups/api/useGroups'
 import { useGroupOverlays } from '@/features/groups/api/useGroupGuests'
 import { balancesWithGuests } from '@/features/groups/domain/ledger'
@@ -93,6 +95,8 @@ function useInvalidateDebts() {
       // A confirmed payment is a settlement: balances, the group lists and Inicio refresh.
       queryClient.invalidateQueries({ queryKey: groupKeys.all(user?.id) }),
       queryClient.invalidateQueries({ queryKey: accountKeys.all(user?.id) }),
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all(user?.id) }),
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all(user?.id) }),
     ])
 }
 

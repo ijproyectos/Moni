@@ -164,7 +164,14 @@ describe('buildStories', () => {
     }
     const [plain] = buildStories({ ...base, spending })
     expect(plain?.slides.map((s) => s.title)).toEqual(['Tus gastos de noviembre'])
-    expect(plain?.slides[0]?.lines).toEqual(['Salidas · 40% · $60.000'])
+    // The chart carries the categories as bars: the biggest is full width, the rest relative to it.
+    expect(plain?.slides[0]?.visual).toEqual({
+      kind: 'bars',
+      rows: [
+        { label: 'Súper', share: 1, amount: '$90.000' },
+        { label: 'Salidas', share: 60_000_00 / 90_000_00, amount: '$60.000' },
+      ],
+    })
     const [withDays] = buildStories({ ...base, spending: { ...spending, daysCounted: 10 } })
     expect(withDays?.slides[1]?.figure).toBe('$15.000')
   })
@@ -254,7 +261,7 @@ describe('buildStories', () => {
       expect(up[0]?.tip).toContain('Súper')
       expect(up.find((s) => s.title.startsWith('Comparado'))?.tip).toMatch(/subió/)
       const down = slidesOf({ spending: spending(200_000_00) }, 'gastos')
-      expect(down.find((s) => s.title.startsWith('Comparado'))?.tip).toMatch(/Buen ritmo/)
+      expect(down.find((s) => s.title.startsWith('Comparado'))?.tip).toMatch(/menos: mantené/)
     })
 
     it('slides with nothing useful to add carry no tip (no filler)', () => {
@@ -263,6 +270,42 @@ describe('buildStories', () => {
         'logros',
       )
       expect(logros[0]?.tip).toBeUndefined()
+    })
+  })
+
+  describe('colors and charts per category', () => {
+    it('Cobros green, Debés coral, Gastos orange, Logros violet, Metas blue', () => {
+      const tone = (id: string, over: Partial<StoryInput>) =>
+        buildStories({ ...base, ...over }).find((s) => s.id === id)?.tone
+      const debts = [
+        { key: 'a', groupId: 'g', groupName: 'IJ', direction: 'owed' as const, otherName: 'Ana', amountCents: 10_000_00, report: null },
+        { key: 'b', groupId: 'g', groupName: 'IJ', direction: 'owe' as const, otherName: 'Beto', amountCents: 5_000_00, report: null },
+      ]
+      expect(tone('cobros', { debts })).toBe('green')
+      expect(tone('deudas', { debts })).toBe('blush')
+      expect(
+        tone('gastos', {
+          spending: { expenseCents: 10_000_00, byCategory: [{ name: 'Súper', amountCents: 10_000_00, percent: 100 }], previousExpenseCents: null, previousMonthName: 'octubre' },
+        }),
+      ).toBe('orange')
+      expect(tone('logros', { badges: [{ key: 'k', name: 'Constante', earnedOn: '2026-11-03' }] })).toBe('violet')
+    })
+
+    it('debts draw bars from the real amounts and advise to start with the biggest', () => {
+      const debts = [
+        { key: 'a', groupId: 'g', groupName: 'IJ', direction: 'owed' as const, otherName: 'Ana', amountCents: 10_000_00, report: null },
+        { key: 'c', groupId: 'g', groupName: 'IJ', direction: 'owed' as const, otherName: 'Caro', amountCents: 5_000_00, report: null },
+      ]
+      const slide = buildStories({ ...base, debts }).find((s) => s.id === 'cobros')?.slides[0]
+      expect(slide?.visual).toEqual({
+        kind: 'bars',
+        rows: [
+          { label: 'Ana', share: 1, amount: '$10.000' },
+          { label: 'Caro', share: 0.5, amount: '$5.000' },
+        ],
+      })
+      expect(slide?.tip).toContain('Ana')
+      expect(slide?.tip).toContain('$10.000')
     })
   })
 })

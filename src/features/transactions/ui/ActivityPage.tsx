@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { useMyGroups } from '@/features/groups/api/useGroups'
 import { useVoidInstallmentPlan } from '@/features/cards/api/useCards'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { indexCategories } from '@/features/categories/domain/category'
@@ -48,6 +49,7 @@ export function ActivityPage() {
   const transfers = useTransfers()
   const categories = useCategories(undefined, { includeArchived: true })
   const accounts = useAccounts({ includeArchived: true })
+  const myGroups = useMyGroups()
   const voidTransaction = useVoidTransaction()
   const voidTransfer = useVoidTransfer()
   const voidPlan = useVoidInstallmentPlan()
@@ -58,6 +60,10 @@ export function ActivityPage() {
   const accountNamesById = useMemo(
     () => new Map((accounts.data ?? []).map((a) => [a.id, a.name])),
     [accounts.data],
+  )
+  const groupNamesById = useMemo(
+    () => new Map((myGroups.data ?? []).map((g) => [g.id, g.name])),
+    [myGroups.data],
   )
   // The calendar always shows one month; the summary and the list only narrow to it with the "Por mes" filter.
   const monthScoped = view === 'calendar' || period === 'month'
@@ -190,6 +196,7 @@ export function ActivityPage() {
       categories={(categories.data ?? []).filter((c) => c.archivedAt === null)}
       categoriesById={categoriesById}
       accountNamesById={accountNamesById}
+      groupNamesById={groupNamesById}
       categoryId={categoryId}
       onCategoryChange={setCategoryId}
       selectedDay={selectedDay}

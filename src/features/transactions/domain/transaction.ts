@@ -18,6 +18,8 @@ export interface Transaction {
   status: RowStatus
   voidedAt: string | null
   sharedExpenseId: string | null
+  /** Group the movement belongs to (shared expense paid, or settlement in/out); null for personal movements. */
+  groupId?: string | null
   /** Expense with people without an account that this payment belongs to. */
   guestExpenseId?: string | null
   /** Statement of a card charge (its closing date); null for anything else. */
@@ -130,4 +132,12 @@ export function isScheduled(
   today: IsoDate,
 ): boolean {
   return tx.installmentPlanId !== null && tx.status === 'posted' && tx.occurredOn > today
+}
+
+/** What a group movement is, in words: the three kinds are told apart in Movimientos and Inicio. */
+export function groupKindLabel(kind: string): string | null {
+  if (kind === 'shared_payment') return 'Gasto grupal'
+  if (kind === 'settlement_out') return 'Pago de deuda'
+  if (kind === 'settlement_in') return 'Cobro de deuda'
+  return null
 }

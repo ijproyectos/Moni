@@ -7,7 +7,6 @@ import { toUserMessage } from '@/shared/lib/errors'
 import { formatArs } from '@/shared/lib/money'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { cn } from '@/shared/ui/cn'
-import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { Avatar } from '@/shared/ui/kit'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -29,6 +28,7 @@ import {
   type PendingDebt,
 } from '../domain/debts'
 import { CollectSheet } from './CollectSheet'
+import { PaymentAccountSheet } from './PaymentAccountSheet'
 
 const pill =
   'flex min-h-11 items-center justify-center gap-1.5 rounded-full px-4 text-[15px] font-extrabold disabled:opacity-60 [&>svg]:shrink-0'
@@ -51,6 +51,7 @@ export function GroupDebtsSheet({
   const groups = useMyGroups()
   const report = useReportPayment()
   const confirm = useConfirmPayment()
+  const [confirming, setConfirming] = useState<PendingDebt | null>(null)
   const reject = useRejectPayment()
   const cancel = useCancelPayment()
   const [tab, setTab] = useState<DebtDirection>(initialTab)
@@ -74,10 +75,10 @@ export function GroupDebtsSheet({
     }
   }
 
-  async function confirmReceipt(debt: PendingDebt) {
+  async function confirmReceipt(debt: PendingDebt, accountId: string) {
     if (!debt.report) return
     try {
-      const settled = await confirm.mutateAsync(debt.report.id)
+      const settled = await confirm.mutateAsync({ reportId: debt.report.id, accountId })
       toast.show(
         settled
           ? `Listo, ${debt.otherName} quedó al día`
@@ -204,7 +205,7 @@ export function GroupDebtsSheet({
                           <div className="mt-3 grid grid-cols-2 gap-2">
                             <button
                               type="button"
-                              onClick={() => void confirmReceipt(debt)}
+                              onClick={() => setConfirming(debt)}
                               disabled={confirm.isPending}
                               className={cn(pill, 'bg-lime')}
                             >
@@ -357,13 +358,14 @@ export function GroupDebtsSheet({
 
       {collecting && <CollectSheet debt={collecting} onClose={() => setCollecting(null)} />}
       {paying && (
-        <ConfirmDialog
+        <PaymentAccountSheet
           title="¿Ya le pagaste?"
-          message={`Le vamos a avisar a ${paying.otherName} que le transferiste ${formatArs(paying.amountCents)}. La deuda se salda cuando ${paying.otherName} confirme que lo recibió.`}
+          description={`Le vamos a avisar a ${paying.otherName} que le transferiste ${formatArs(paying.amountCents)}. Elegí de qué cuenta salió: se descuenta ahora de esa cuenta y queda en Movimientos. La deuda se salda cuando ${paying.otherName} confirme.`}
           confirmLabel="Sí, ya pagué"
-          cancelLabel="Todavía no"
-          isBusy={report.isPending}
-          onConfirm={() => {
+          noneLabel="Avisar sin elegir cuenta"
+          busy={report.isPending}
+          onClose={() => setPaying(null)}
+          onConfirm={(accountId) => {
             const debt = paying
             setPaying(null)
             void run(
@@ -372,11 +374,25 @@ export function GroupDebtsSheet({
                   groupId: debt.groupId,
                   creditorId: debt.otherUserId,
                   amountCents: debt.amountCents,
+                  accountId,
                 }),
               `Le avisamos a ${debt.otherName}`,
             )
           }}
-          onCancel={() => setPaying(null)}
+        />
+      )}
+      {confirming && (
+        <PaymentAccountSheet
+          title="Confirmar recepción"
+          description="Elegí en qué cuenta entró la plata. Se acredita ahora y queda en Movimientos."
+          confirmLabel="Confirmar y registrar"
+          busy={confirm.isPending}
+          onClose={() => setConfirming(null)}
+          onConfirm={(accountId) => {
+            const debt = confirming
+            setConfirming(null)
+            if (accountId) void confirmReceipt(debt, accountId)
+          }}
         />
       )}
     </BottomSheet>

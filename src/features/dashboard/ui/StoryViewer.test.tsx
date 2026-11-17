@@ -223,20 +223,19 @@ describe('StoryViewer', () => {
       { title: 'Sin consejo', body: 'Solo lo que pasó.' },
     ])
 
-    it('maps body to "Qué pasó" and shows the tip as "Qué podés mejorar"', () => {
+    it('shows the body and the tip as "Consejo de Moni"', () => {
       setup([withTip])
       const dialog = screen.getByRole('dialog')
-      expect(dialog).toHaveTextContent('Qué pasó')
       expect(dialog).toHaveTextContent('Llevás el 80%.')
-      expect(dialog).toHaveTextContent('Qué podés mejorar')
+      expect(dialog).toHaveTextContent('Consejo de Moni')
       expect(dialog).toHaveTextContent('Mirá cuánto te queda antes de comprar.')
     })
 
-    it('a slide without tip does not show the "Qué podés mejorar" card', async () => {
+    it('a slide without tip does not show the "Consejo de Moni" card', async () => {
       const { user } = setup([withTip])
       await user.click(screen.getByRole('button', { name: 'Siguiente' }))
       expect(screen.getByRole('dialog')).toHaveTextContent('Solo lo que pasó.')
-      expect(screen.queryByText('Qué podés mejorar')).toBeNull()
+      expect(screen.queryByText('Consejo de Moni')).toBeNull()
     })
 
     it('shows the cat with "Moni", the kicker and a previous / next row', () => {

@@ -137,10 +137,20 @@ describe('debtsRepository', () => {
     await reportPayment({ groupId: 'g', creditorId: 'a', amountCents: 30_000_00 })
     expect(rpcArgs('report_payment')).toEqual({ p_group: 'g', p_creditor: 'a', p_amount: 30000 })
     sb.state.result = { data: 'settlement-1', error: null }
-    await expect(confirmPaymentReport('r1')).resolves.toBe(true)
+    await expect(confirmPaymentReport({ reportId: 'r1', accountId: 'acc-0' })).resolves.toBe(true)
     sb.state.result = { data: null, error: null }
     // NULL: the debt had already been settled another way and nothing was recorded.
-    await expect(confirmPaymentReport('r1')).resolves.toBe(false)
+    await expect(confirmPaymentReport({ reportId: 'r1', accountId: 'acc-0' })).resolves.toBe(false)
+    // The account of the payer travels only when chosen (the money leaves at once); the receiver's is required.
+    await reportPayment({ groupId: 'g', creditorId: 'a', amountCents: 30_000_00, accountId: 'acc-1' })
+    expect(sb.calls.filter((c) => c.method === 'rpc:report_payment').at(-1)?.args[0]).toMatchObject({
+      p_account_id: 'acc-1',
+    })
+    await confirmPaymentReport({ reportId: 'r1', accountId: 'acc-2' })
+    expect(sb.calls.filter((c) => c.method === 'rpc:confirm_payment_report').at(-1)?.args[0]).toEqual({
+      p_report: 'r1',
+      p_account_id: 'acc-2',
+    })
     await rejectPaymentReport('r1')
     await cancelPaymentReport('r1')
     expect(rpcArgs('reject_payment_report')).toEqual({ p_report: 'r1' })

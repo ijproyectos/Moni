@@ -34,6 +34,9 @@ interface SettleUpSheetProps {
   onClose: () => void
 }
 
+/** Value of the explicit "Sin cuenta" choice. */
+const NO_ACCOUNT = 'none'
+
 // Screen 062 — Saldar cuentas. When I pay, it is a real settlement; when someone else pays me
 // (or someone without Moni is involved) it is recorded in the in-memory overlay.
 export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: SettleUpSheetProps) {
@@ -44,8 +47,9 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
   const mine = transfers.filter((t) => t.fromUserId === meId || t.toUserId === meId)
   const [index, setIndex] = useState(0)
   const [method, setMethod] = useState('Transferencia')
-  // Optional: the own account the money moved in or out of (only for payments recorded in the group).
-  const [accountId, setAccountId] = useState('')
+  // The own account the money moved in or out of. null = not chosen yet; NO_ACCOUNT = "Sin cuenta" on purpose.
+  // When I pay, choosing is required: the money must visibly leave one account (or I say it does not).
+  const [chosenAccount, setChosenAccount] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const transfer = (mine.length ? mine : transfers)[index]
 
@@ -69,13 +73,14 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
       : `${from} le pasa a ${to}`
   const saving = create.isPending || createGuest.isPending
   const iReceive = transfer.toUserId === meId
-  // Payments between two members where I pay already move my account through the shared settlement.
-  const canPickAccount = !(iPay && toIsReal) && (iPay || iReceive)
+  const canPickAccount = iPay || iReceive
   const pickable = (accounts.data ?? []).filter((a) => a.kind !== 'credit_card' && !a.archivedAt)
+  const mustChoose = iPay && pickable.length > 0 && chosenAccount === null
+  const accountId = chosenAccount && chosenAccount !== NO_ACCOUNT ? chosenAccount : ''
   const message = `${iPay ? `Te pasé ${formatArs(transfer.amountCents)}` : `Pasame ${formatArs(transfer.amountCents)}`} por Moni 🙌`
 
   async function markSettled() {
-    if (!transfer) return
+    if (!transfer || mustChoose) return
     setError(null)
     try {
       if (iPay && toIsReal) {
@@ -84,10 +89,7 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
           amount: formatAmountInput(transfer.amountCents),
           occurredOn: todayIso(),
           note: method,
-          accountId:
-            method === 'Efectivo'
-              ? (accounts.data?.find((a) => a.kind === 'cash')?.id ?? null)
-              : null,
+          accountId: accountId || null,
         })
         await create.mutateAsync({ groupId, values })
       } else {
@@ -133,7 +135,7 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
                 selected={i === index}
                 onClick={() => {
                   setIndex(i)
-                  setAccountId('')
+                  setChosenAccount(null)
                 }}
               >
                 {personName(people, t.fromUserId)} → {personName(people, t.toUserId)}
@@ -158,14 +160,18 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
           <label className="flex flex-col gap-1">
             <span className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
               {iReceive ? '¿En qué cuenta lo recibiste?' : '¿Desde qué cuenta lo pagaste?'}
-              <span className="font-bold normal-case tracking-normal"> · opcional</span>
             </span>
             <select
               className={fieldClass}
-              value={accountId}
-              onChange={(event) => setAccountId(event.target.value)}
+              value={chosenAccount ?? ''}
+              onChange={(event) => setChosenAccount(event.target.value)}
             >
-              <option value="">Sin cuenta: solo saldar la deuda</option>
+              {iPay && (
+                <option value="" disabled>
+                  Elegí una cuenta
+                </option>
+              )}
+              <option value={iPay ? NO_ACCOUNT : ''}>Sin cuenta: solo saldar la deuda</option>
               {pickable.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -176,7 +182,7 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
         )}
         <MoniSays>
           {canPickAccount && accountId
-            ? `queda como un pago entre ustedes y ${iReceive ? 'se suma a' : 'se descuenta de'} tu cuenta. No cuenta como gasto ni como ingreso tuyo.`
+            ? `queda como un pago entre ustedes y ${iReceive ? 'se suma a' : 'se descuenta ahora de'} tu cuenta y aparece en Movimientos. No cuenta como gasto ni como ingreso tuyo.`
             : 'queda como un pago entre ustedes. No cuenta como gasto ni como ingreso tuyo.'}
         </MoniSays>
         {error && (
@@ -184,7 +190,7 @@ export function SettleUpSheet({ groupId, meId, people, transfers, onClose }: Set
             {error}
           </p>
         )}
-        <Button onClick={() => void markSettled()} disabled={saving}>
+        <Button onClick={() => void markSettled()} disabled={saving || mustChoose}>
           {saving ? 'Guardando…' : 'Marcar como saldado'}
         </Button>
         <div className={FEATURES.notifications ? 'grid grid-cols-2 gap-2' : 'grid gap-2'}>

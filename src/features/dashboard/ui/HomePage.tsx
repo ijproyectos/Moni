@@ -7,6 +7,7 @@ import { initialOf } from '@/features/auth/domain/profile'
 import { usePlus } from '@/features/plus/api/usePlus'
 import { availableBalance } from '@/features/accounts/domain/account'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { useMyGroups } from '@/features/groups/api/useGroups'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { indexCategories } from '@/features/categories/domain/category'
 import { useVoidInstallmentPlan } from '@/features/cards/api/useCards'
@@ -63,6 +64,7 @@ export function HomePage() {
   const transactions = useTransactions()
   const categories = useCategories(undefined, { includeArchived: true })
   const accounts = useAccounts({ includeArchived: true })
+  const groups = useMyGroups()
   const { openNew, openEdit } = useMovementSheet()
   const toast = useToast()
   const voidTransaction = useVoidTransaction()
@@ -79,10 +81,11 @@ export function HomePage() {
         transactions: transactions.data ?? [],
         categoriesById: indexCategories(categories.data ?? []),
         accountNamesById: new Map((accounts.data ?? []).map((a) => [a.id, a.name])),
+        groupNamesById: new Map((groups.data ?? []).map((g) => [g.id, g.name])),
         today: todayIso(),
         limit: RECENT_LIMIT,
       }),
-    [transactions.data, categories.data, accounts.data],
+    [transactions.data, categories.data, accounts.data, groups.data],
   )
   const stories = useHomeStories(month, summary.data ?? EMPTY_SUMMARY)
 

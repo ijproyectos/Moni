@@ -6,8 +6,9 @@ import type { Person } from '../domain/ledger'
 import { SettleUpSheet } from './SettleUpSheet'
 
 const ME = 'u-ana'
-const BETO = 'u-beto'
+const BETO = '00000000-0000-4000-8000-0000000000b1'
 const FRAN = 'guest-fran'
+const GAL = '00000000-0000-4000-8000-0000000000a1'
 
 const state = vi.hoisted(() => ({
   accounts: [] as unknown[],
@@ -111,9 +112,27 @@ describe('Saldar cuentas: pagos con personas sin cuenta', () => {
     })
   })
 
-  it('a payment I make to a member already moves my account through the shared settlement: no extra picker', async () => {
-    setup([{ fromUserId: ME, toUserId: BETO, amountCents: 5_000_00 }])
-    expect(screen.queryByRole('combobox')).toBeNull()
+  it('paying a member requires choosing the account: nothing is preselected and the button waits', async () => {
+    state.accounts = [makeAccount({ id: GAL, name: 'Galicia', kind: 'bank' })]
+    const { user } = setup([{ fromUserId: ME, toUserId: BETO, amountCents: 5_000_00 }])
+    const picker = screen.getByRole('combobox', { name: /¿Desde qué cuenta lo pagaste\?/ })
+    expect(picker).toHaveValue('')
+    const button = screen.getByRole('button', { name: 'Marcar como saldado' })
+    expect(button).toBeDisabled()
+    await user.selectOptions(picker, GAL)
+    expect(button).toBeEnabled()
+    await user.click(button)
+    await waitFor(() => expect(state.createReal).toHaveBeenCalled())
+    expect(state.createReal.mock.calls[0]?.[0].values.accountId).toBe(GAL)
+  })
+
+  it('"Sin cuenta" is a manual choice: only the debt is settled', async () => {
+    state.accounts = [makeAccount({ id: GAL, name: 'Galicia', kind: 'bank' })]
+    const { user } = setup([{ fromUserId: ME, toUserId: BETO, amountCents: 5_000_00 }])
+    await user.selectOptions(screen.getByRole('combobox'), 'none')
+    await user.click(screen.getByRole('button', { name: 'Marcar como saldado' }))
+    await waitFor(() => expect(state.createReal).toHaveBeenCalled())
+    expect(state.createReal.mock.calls[0]?.[0].values.accountId).toBeNull()
   })
 
   it('the picker is not offered for payments between other people', () => {

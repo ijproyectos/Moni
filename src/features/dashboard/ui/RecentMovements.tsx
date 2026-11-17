@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
-import { addsToBalance, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
+import { addsToBalance, groupKindLabel, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
 import { formatLongDate, formatLongDay, formatRelativeDay } from '@/shared/lib/dates'
 import { todayIso } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
@@ -24,11 +24,14 @@ export interface MovementActions {
 function titleOf(m: RecentMovement): string {
   if (isOpening(m.kind)) return 'Saldo inicial'
   if (isAdjustment(m.kind)) return 'Ajuste de saldo'
+  if (!m.note?.trim() && groupKindLabel(m.kind)) return groupKindLabel(m.kind) ?? 'Movimiento'
   return m.note?.trim() || m.categoryName || 'Movimiento'
 }
 
 function subtitleOf(m: RecentMovement): string {
   if (isOpening(m.kind) || isAdjustment(m.kind)) return m.accountName
+  const groupLabel = groupKindLabel(m.kind)
+  if (groupLabel) return [groupLabel, m.groupName, m.accountName].filter(Boolean).join(' · ')
   return `${m.categoryName ?? 'Sin categoría'} · ${m.accountName}`
 }
 
@@ -88,12 +91,12 @@ export function RecentMovements({
     return (
       <section aria-labelledby="recent-title" className="mx-[18px] flex flex-col gap-2.5">
         <div className="flex items-center justify-between px-1">
-          <h2 id="recent-title" className="font-display text-[22px] font-extrabold tracking-[-0.02em] text-[#0B3D2E] dark:text-ink">
+          <h2 id="recent-title" className="font-display text-[clamp(18px,5.6vw,22px)] font-extrabold tracking-[-0.02em] text-[#0B3D2E] dark:text-ink">
             Últimos movimientos
           </h2>
           <Link
             to="/actividad"
-            className="flex min-h-11 items-center text-[16px] font-bold text-[#566A5C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B3D2E] dark:text-text-muted"
+            className="flex min-h-11 shrink-0 items-center whitespace-nowrap text-[clamp(14px,4vw,16px)] font-bold text-[#566A5C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B3D2E] dark:text-text-muted"
           >
             Ver todos →
           </Link>
@@ -111,24 +114,24 @@ export function RecentMovements({
                   onClick={edit}
                   disabled={!edit}
                   aria-label={edit ? `Editar ${titleOf(m)}` : undefined}
-                  className="grid min-h-[84px] w-full grid-cols-[48px_1fr_auto] items-center gap-4 px-5 py-3 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0B3D2E]"
+                  className="grid min-h-[84px] w-full grid-cols-[44px_1fr_auto] items-center gap-3 px-4 py-3 min-[380px]:grid-cols-[48px_1fr_auto] min-[380px]:gap-4 min-[380px]:px-5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0B3D2E]"
                 >
                   <span
                     aria-hidden="true"
-                    className={`flex size-12 items-center justify-center rounded-full ${isIncome ? 'bg-[#D9E6D6] text-[#1B7F4E]' : 'bg-[#EEDDD3] text-[#B5382A]'}`}
+                    className={`flex size-11 items-center justify-center rounded-full min-[380px]:size-12 ${isIncome ? 'bg-[#D9E6D6] text-[#1B7F4E]' : 'bg-[#EEDDD3] text-[#B5382A]'}`}
                   >
                     <Icon className="size-5" strokeWidth={2.6} />
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-[20px] font-extrabold leading-tight text-[#0B3D2E] dark:text-ink">{titleOf(m)}</span>
-                    <span className="block truncate text-[16px] text-[#566A5C] dark:text-text-muted">
+                    <span className="block truncate text-[clamp(17px,5vw,20px)] font-extrabold leading-tight text-[#0B3D2E] dark:text-ink">{titleOf(m)}</span>
+                    <span className="block truncate text-[clamp(13px,3.9vw,16px)] text-[#566A5C] dark:text-text-muted">
                       {subtitleOf(m)} · {when}
                     </span>
                   </span>
                   <AmountDisplay
                     cents={isIncome ? m.amountCents : -m.amountCents}
                     signed
-                    className={`text-[20px] font-extrabold ${isIncome ? 'text-[#1B7F4E] dark:text-income' : 'text-[#B5382A] dark:text-expense'}`}
+                    className={`text-[clamp(17px,5vw,20px)] font-extrabold ${isIncome ? 'text-[#1B7F4E] dark:text-income' : 'text-[#B5382A] dark:text-expense'}`}
                   />
                 </button>
               </li>

@@ -71,6 +71,7 @@ vi.mock('@/features/categories/api/useCategories', () => ({
     ],
   }),
 }))
+vi.mock('@/features/groups/api/useGroups', () => ({ useMyGroups: () => ({ data: [] }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
 
 function setup() {

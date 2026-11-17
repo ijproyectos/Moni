@@ -47,6 +47,7 @@ vi.mock('@/features/categories/api/useCategories', () => ({
     ],
   }),
 }))
+vi.mock('@/features/groups/api/useGroups', () => ({ useMyGroups: () => ({ data: [] }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
 
 describe('Activity: starting balance and salary loaded with an account', () => {

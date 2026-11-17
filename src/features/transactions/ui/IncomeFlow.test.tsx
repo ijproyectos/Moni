@@ -57,6 +57,7 @@ vi.mock('@/shared/lib/supabase', () => {
 })
 
 const accountsData = vi.hoisted(() => ({ current: [] as unknown[] }))
+vi.mock('@/features/groups/api/useGroups', () => ({ useMyGroups: () => ({ data: [] }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({
   useAccounts: () => ({
     isLoading: false,

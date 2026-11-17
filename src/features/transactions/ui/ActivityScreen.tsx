@@ -33,6 +33,7 @@ import type { ActivityView } from '../domain/activityView'
 import type { MonthComparison } from '../domain/monthComparison'
 import {
   addsToBalance,
+  groupKindLabel,
   isAdjustment,
   isOpening,
   isScheduled,
@@ -61,6 +62,8 @@ interface ActivityScreenProps {
   categories: readonly Category[]
   categoriesById: ReadonlyMap<string, Category>
   accountNamesById: ReadonlyMap<string, string>
+  /** Names of the groups, to tell where a group expense or payment belongs. */
+  groupNamesById?: ReadonlyMap<string, string>
   categoryId: string | null
   onCategoryChange: (id: string | null) => void
   selectedDay: IsoDate | null
@@ -233,6 +236,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
                 : undefined
             }
             accountName={accountNamesById.get(entry.transaction.accountId)}
+            groupName={groupNameOf(entry.transaction, props.groupNamesById)}
             today={today}
             withDay={withDay}
             onOpen={() => setDetail(entry.transaction)}
@@ -603,10 +607,20 @@ function RowFace({
   )
 }
 
+/** Name of the group a movement belongs to ("Grupo" when it is not in the list any more). */
+function groupNameOf(
+  transaction: Transaction,
+  names: ReadonlyMap<string, string> | undefined,
+): string | null {
+  if (!transaction.groupId) return null
+  return names?.get(transaction.groupId) ?? 'Grupo'
+}
+
 function TransactionRow({
   transaction,
   category,
   accountName,
+  groupName,
   today,
   withDay,
   onOpen,
@@ -616,6 +630,7 @@ function TransactionRow({
   transaction: Transaction
   category: Category | undefined
   accountName: string | undefined
+  groupName: string | null
   today: IsoDate
   withDay: boolean
   onOpen: () => void
@@ -640,12 +655,19 @@ function TransactionRow({
     transaction.installmentNumber !== null && transaction.installmentsTotal !== null
       ? `cuota ${transaction.installmentNumber}/${transaction.installmentsTotal}`
       : null
-  const name = transaction.note?.trim() || categoryName
+  const groupLabel = groupKindLabel(transaction.kind)
+  const name = transaction.note?.trim() || (groupLabel ?? categoryName)
   const Icon = adjustment ? Scale : getCategoryIcon(category?.icon)
   const day = formatRelativeDay(transaction.occurredOn, today)
   // The category goes in the detail line only when the title is something else (the note).
+  // Group movements say what they are (gasto, pago o cobro de deuda), the group and the account used.
   const place =
-    [name !== categoryName ? categoryName : null, accountName].filter(Boolean).join(' · ') || day
+    (groupLabel
+      ? [groupLabel, groupName, accountName]
+      : [name !== categoryName ? categoryName : null, accountName]
+    )
+      .filter(Boolean)
+      .join(' · ') || day
   const subtitle = scheduled
     ? `Programada · cierra el ${day} · ${categoryName}`
     : withDay && place !== day

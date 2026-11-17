@@ -68,6 +68,7 @@ vi.mock('../api/useDailyAllowance', () => ({
   }),
 }))
 vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: false }) }))
+vi.mock('@/features/groups/api/useGroups', () => ({ useMyGroups: () => ({ data: [] }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
 vi.mock('@/features/categories/api/useCategories', () => ({ useCategories: () => ({ data: [] }) }))
 vi.mock('@/features/transactions/api/useTransactions', () => ({

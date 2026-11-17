@@ -1,5 +1,5 @@
-import { type Cents } from '@/shared/lib/money'
-import { AmountDisplay } from '@/shared/ui/AmountDisplay'
+import { formatArs, type Cents } from '@/shared/lib/money'
+import { AmountDisplay, MASK } from '@/shared/ui/AmountDisplay'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
 import type { DailyAllowanceView } from '../api/useDailyAllowance'
 import { DAY_STATUS_LABELS } from '../domain/monthPace'
@@ -26,7 +26,7 @@ export function HomeHero({ view, balance, onAddIncome }: HomeHeroProps) {
     <section
       aria-labelledby="hero-title"
       data-status={status}
-      className="relative mx-[18px] flex flex-col gap-1.5 overflow-hidden rounded-[32px] bg-[#0B3D2E] px-[26px] pb-6 pt-[26px] text-[#F1EEDD]"
+      className="relative mx-[18px] flex flex-col gap-1.5 overflow-hidden [container-type:inline-size] rounded-[32px] bg-[#0B3D2E] px-[26px] pb-6 pt-[26px] text-[#F1EEDD]"
     >
       <span
         aria-hidden="true"
@@ -78,11 +78,23 @@ export function HomeHero({ view, balance, onAddIncome }: HomeHeroProps) {
   )
 }
 
-/** The big figure: the real total, in one line that shrinks on narrow phones. */
+/** Width of a digit in Nunito ExtraBold, with the tight tracking, in em (a little generous so it never overflows). */
+const CHAR_EM = 0.64
+const MAX_FIGURE_PX = 64
+const MIN_FIGURE_PX = 22
+
+/**
+ * The big figure: the real total in ONE line. The font size follows the card's width (container query units) and the
+ * number of characters, so a long amount shrinks instead of wrapping, and never scrolls sideways.
+ */
 function Figure({ cents }: { cents: Cents }) {
+  const { hidden } = useHiddenAmounts()
+  const text = hidden ? MASK : formatArs(cents)
+  const size = `clamp(${MIN_FIGURE_PX}px, ${(100 / (text.length * CHAR_EM)).toFixed(2)}cqw, ${MAX_FIGURE_PX}px)`
   return (
     <p
-      className="relative font-display text-[clamp(44px,15vw,64px)] font-extrabold leading-none tracking-[-0.04em] tabular-nums"
+      className="relative whitespace-nowrap font-display font-extrabold leading-none tracking-[-0.04em] tabular-nums"
+      style={{ fontSize: size }}
       data-testid="hero-figure"
     >
       <AmountDisplay cents={cents} />

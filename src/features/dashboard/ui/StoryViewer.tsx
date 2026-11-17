@@ -14,6 +14,7 @@ import { cn } from '@/shared/ui/cn'
 import { useModal } from '@/shared/ui/useModal'
 import type { Story, StorySlide } from '../domain/stories'
 import { STORY_VIEW } from './storyTones'
+import { StoryVisual } from './StoryVisual'
 
 /** Reading time of a slide: a base plus a little more for every supporting line. */
 const BASE_MS = 7000
@@ -263,40 +264,45 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
         </div>
       </div>
 
-      <div className="pointer-events-none relative z-10 flex flex-1 flex-col gap-3.5 overflow-y-auto px-[18px] pb-4 pt-6">
+      <div className="pointer-events-none relative z-10 flex flex-1 flex-col justify-center gap-4 overflow-y-auto px-[18px] pb-4 pt-6">
         <div className="flex flex-col gap-2">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] opacity-85">
+          <p
+            className="w-fit rounded-full px-3 py-1 text-[12px] font-extrabold uppercase tracking-[0.12em]"
+            style={cardStyle}
+          >
             {story.label}
           </p>
-          <h2 className="text-balance font-display text-[34px] font-bold leading-[1.05] tracking-[-0.03em]">
+          <h2 className="text-balance font-display text-[30px] font-extrabold leading-[1.05] tracking-[-0.03em]">
             {slide.title}
           </h2>
           {slide.figure && (
-            <p className="break-words font-display text-[clamp(38px,13vw,46px)] font-bold leading-none tracking-[-0.04em] tabular-nums">
+            <p className="break-words font-display text-[clamp(44px,15vw,60px)] font-extrabold leading-none tracking-[-0.04em] tabular-nums">
               {slide.figure}
             </p>
           )}
         </div>
-        <div className="flex flex-col gap-1.5 rounded-[26px] p-4" style={cardStyle}>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] opacity-75">
-            Qué pasó
-          </p>
-          <p className="text-[16px] leading-[1.35]">{slide.body}</p>
-          {slide.lines && (
-            <ul className="mt-1 flex flex-col gap-1 text-[14.5px] opacity-85">
-              {slide.lines.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {slide.visual && (
+          <div className="rounded-[26px] p-4" style={cardStyle}>
+            <StoryVisual visual={slide.visual} accent={view.accent} />
+          </div>
+        )}
+        <p className="text-[16px] font-medium leading-[1.35] opacity-95">{slide.body}</p>
+        {slide.lines && !slide.visual && (
+          <ul className="flex flex-col gap-1 rounded-[22px] p-3.5 text-[15px] font-semibold" style={cardStyle}>
+            {slide.lines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        )}
         {slide.tip && (
-          <div className="flex flex-col gap-1.5 rounded-[26px] bg-white p-4 text-[#052319]">
-            <p className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#17734B]">
-              <Lightbulb aria-hidden="true" className="size-[15px]" strokeWidth={2.2} />
-              Qué podés mejorar
-            </p>
-            <p className="text-[16px] font-medium leading-[1.35]">{slide.tip}</p>
+          <div className="flex gap-3 rounded-[24px] bg-white p-4 text-[#052319]">
+            <Lightbulb aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-[#B88A1E]" strokeWidth={2.2} />
+            <div className="flex flex-col gap-0.5">
+              <p className="text-[12px] font-extrabold uppercase tracking-[0.12em] text-[#566A5C]">
+                Consejo de Moni
+              </p>
+              <p className="text-[15.5px] font-semibold leading-[1.35]">{slide.tip}</p>
+            </div>
           </div>
         )}
         {slide.embed && (

@@ -25,7 +25,7 @@ function NavTab({ to, label, end }: NavItem) {
       end={end}
       className={({ isActive }) =>
         cn(
-          'flex min-w-0 flex-1 items-center justify-center rounded-full px-2 text-[15px] leading-none outline-none',
+          'flex min-w-0 flex-auto items-center justify-center whitespace-nowrap rounded-full px-1.5 text-[clamp(12px,3.7vw,15px)] leading-none outline-none',
           RING,
           'motion-safe:transition motion-safe:active:scale-[0.97] active:brightness-95',
           isActive
@@ -34,7 +34,7 @@ function NavTab({ to, label, end }: NavItem) {
         )
       }
     >
-      <span className="max-w-full truncate">{label}</span>
+      <span>{label}</span>
     </NavLink>
   )
 }
@@ -46,10 +46,10 @@ function NavTab({ to, label, end }: NavItem) {
 export function BottomNav({ assistant }: { assistant?: ReactNode }) {
   const initial = useMyInitial()
   return (
-    <div className="flex h-[60px] items-center gap-2 px-3">
+    <div className="flex h-[60px] items-center gap-1.5 px-2.5 min-[380px]:gap-2 min-[380px]:px-3">
       <nav
         aria-label="Navegación principal"
-        className="pointer-events-auto flex h-full min-w-0 flex-1 items-stretch gap-0.5 rounded-full border border-[#DCD8BF] bg-[#FAF8EC] p-1.5 shadow-[0_12px_36px_rgba(17,34,24,0.14)] dark:border-line dark:bg-card"
+        className="pointer-events-auto flex h-full min-w-0 flex-1 items-stretch gap-0.5 rounded-full border border-[#DCD8BF] bg-[#FAF8EC] p-1 shadow-[0_12px_36px_rgba(17,34,24,0.14)] dark:border-line dark:bg-card"
       >
         {NAV_ITEMS.map((item) => (
           <NavTab key={item.to} {...item} />
@@ -59,7 +59,7 @@ export function BottomNav({ assistant }: { assistant?: ReactNode }) {
           aria-label="Perfil"
           className={({ isActive }) =>
             cn(
-              'flex aspect-square h-full shrink-0 items-center justify-center rounded-full bg-[#0B3D2E] font-display text-[18px] font-extrabold text-[#F1EEDD] outline-none',
+              'flex size-11 shrink-0 items-center min-[380px]:size-[52px] justify-center rounded-full bg-[#0B3D2E] font-display text-[17px] font-extrabold text-[#F1EEDD] outline-none',
               RING,
               isActive && 'ring-2 ring-[#E3B23C]',
             )

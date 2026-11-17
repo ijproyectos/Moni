@@ -11,10 +11,11 @@ export function buildRecentMovements(input: {
   transactions: readonly Transaction[]
   categoriesById: ReadonlyMap<string, Category>
   accountNamesById: ReadonlyMap<string, string>
+  groupNamesById?: ReadonlyMap<string, string>
   today: IsoDate
   limit: number
 }): RecentMovement[] {
-  const { transactions, categoriesById, accountNamesById, today, limit } = input
+  const { transactions, categoriesById, accountNamesById, groupNamesById, today, limit } = input
   return transactions
     .filter((tx) => tx.status === 'posted' && !isScheduled(tx, today))
     .sort(
@@ -34,6 +35,7 @@ export function buildRecentMovements(input: {
         categoryName: category?.name ?? null,
         categoryColor: category?.color ?? null,
         categoryIcon: category?.icon ?? null,
+        groupName: tx.groupId ? (groupNamesById?.get(tx.groupId) ?? 'Grupo') : null,
       }
     })
 }

@@ -21,7 +21,9 @@ export function ShellBottomBar() {
   const keyboardOpen = useKeyboardOpen()
   if (!TAB_PATHS.includes(path) || keyboardOpen) return null
   return (
-    <div data-bottom-action className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[430px] pb-[calc(env(safe-area-inset-bottom)+12px)]">
+    // In the flow, after <main>: `sticky bottom-0` floats it over the content while scrolling, and at the end of the page it
+    // rests in its own place, so the content always ends above it (no padding to guess, nothing can hide behind it).
+    <div data-bottom-action className="pointer-events-none sticky bottom-0 z-30 pb-[calc(env(safe-area-inset-bottom)+12px)]">
       <BottomNav assistant={<QuickAdd key={path} />} />
     </div>
   )
@@ -32,8 +34,8 @@ export function AppShell() {
   const { data: profile } = useProfile()
   const initial = initialOf(profile?.display_name, user?.email ?? '') || 'V'
   const { pathname } = useLocation()
-  // Room for the fixed bottom bar only where there is one; inner screens just keep a small margin.
-  const bottomRoom = TAB_PATHS.includes(pathname) ? 'pb-[calc(env(safe-area-inset-bottom)+6rem)]' : 'pb-10'
+  // The bottom bar is in the flow (sticky), so it brings its own room; tab pages only need a small gap above it.
+  const bottomRoom = TAB_PATHS.includes(pathname) ? 'pb-4' : 'pb-10'
   // Safety net for the server job: register what is already due for this person when the app opens.
   useSyncDueSubscriptions()
   // Due fixed expenses become pending bills (nothing is charged or registered by itself).
@@ -41,9 +43,9 @@ export function AppShell() {
   return (
     <MyInitialContext.Provider value={initial}>
       <MovementSheetProvider>
-        <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-canvas">
+        <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-canvas">
           <OfflineBanner />
-          <main className={bottomRoom}>
+          <main className={`flex-1 ${bottomRoom}`}>
             <Outlet />
           </main>
           <ShellBottomBar />

@@ -70,6 +70,8 @@ export interface RecentMovement {
   categoryName: string | null
   categoryColor: string | null
   categoryIcon: string | null
+  /** Group of a group expense or payment (null for personal movements). */
+  groupName?: string | null
 }
 
 export interface MonthSummary {

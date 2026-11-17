@@ -59,6 +59,7 @@ vi.mock('@/features/cards/api/useCards', () => ({
   useVoidInstallmentPlan: () => ({ mutateAsync: voidPlan, isPending: false }),
 }))
 vi.mock('@/features/categories/api/useCategories', () => ({ useCategories: () => ({ data: [] }) }))
+vi.mock('@/features/groups/api/useGroups', () => ({ useMyGroups: () => ({ data: [] }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
 
 describe('Activity: adjustments and incoming settlements', () => {

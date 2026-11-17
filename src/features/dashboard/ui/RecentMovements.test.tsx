@@ -227,4 +227,21 @@ describe('RecentMovements: groups by day and expands', () => {
     expect(screen.queryByRole('heading', { level: 3 })).toBeNull()
     expect(screen.getByRole('link', { name: 'Ver todos →' })).toHaveAttribute('href', '/actividad')
   })
+
+  it('tells group movements apart: the kind, the group and the account used', () => {
+    render(
+      <MemoryRouter>
+        <RecentMovements
+          variant="latest"
+          today="2026-11-05"
+          movements={[
+            movement({ id: 'g1', kind: 'shared_payment', note: 'Cena', categoryName: null, groupName: 'IJ' }),
+            movement({ id: 'g2', kind: 'settlement_in', note: null, categoryName: null, groupName: 'IJ' }),
+          ]}
+        />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/Gasto grupal · IJ · Mercado Pago/)).toBeInTheDocument()
+    expect(screen.getByText(/Cobro de deuda · IJ · Mercado Pago/)).toBeInTheDocument()
+  })
 })

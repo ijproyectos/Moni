@@ -42,6 +42,22 @@ describe('HomeHero', () => {
     expect(screen.getByText('repartido en 5 medios de pago')).toBeInTheDocument()
   })
 
+  it('the total stays on one line and its size follows the width and the length of the amount', () => {
+    const { unmount } = render(
+      <HiddenAmountsProvider>
+        <HomeHero view={view(100_000_00)} balance={{ totalCents: 5_550_553_00, methodCount: 5 }} onAddIncome={vi.fn()} />
+      </HiddenAmountsProvider>,
+    )
+    const long = screen.getByTestId('hero-figure')
+    expect(long).toHaveClass('whitespace-nowrap')
+    expect(long.style.fontSize).toContain('cqw')
+    const longWidth = Number(/, ([\d.]+)cqw/.exec(long.style.fontSize)?.[1])
+    unmount()
+    setup(view(100_000_00))
+    const shortWidth = Number(/, ([\d.]+)cqw/.exec(screen.getByTestId('hero-figure').style.fontSize)?.[1])
+    expect(longWidth).toBeLessThan(shortWidth)
+  })
+
   it('says "medio de pago" in singular', () => {
     setup(view(100_000_00), vi.fn(), { totalCents: 1000_00, methodCount: 1 })
     expect(screen.getByText('repartido en 1 medio de pago')).toBeInTheDocument()

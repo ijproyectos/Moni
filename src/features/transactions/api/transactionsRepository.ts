@@ -14,7 +14,11 @@ import type { TransactionQueryFilters } from './queryKeys'
 
 const toNumeric = (cents: number) => Number(fromCents(cents))
 
-export function toTransaction(row: TransactionRow): Transaction {
+type GroupEmbed = { group_id: string } | null
+
+export function toTransaction(
+  row: TransactionRow & { shared_expense?: GroupEmbed; settlement?: GroupEmbed },
+): Transaction {
   return {
     id: row.id,
     accountId: row.account_id,
@@ -26,6 +30,7 @@ export function toTransaction(row: TransactionRow): Transaction {
     status: row.status,
     voidedAt: row.voided_at,
     sharedExpenseId: row.shared_expense_id,
+    groupId: row.shared_expense?.group_id ?? row.settlement?.group_id ?? null,
     guestExpenseId: row.guest_expense_id ?? null,
     statementClosingOn: row.statement_closing_on ?? null,
     installmentPlanId: row.installment_plan_id ?? null,
@@ -57,7 +62,7 @@ export async function listTransactions(
 ): Promise<Transaction[]> {
   let query = getSupabase()
     .from('transactions')
-    .select('*')
+    .select('*, shared_expense:shared_expenses(group_id), settlement:settlements(group_id)')
     .order('occurred_on', { ascending: false })
     .order('created_at', { ascending: false })
 
@@ -70,7 +75,8 @@ export async function listTransactions(
 
   const { data, error } = await query
   if (error) throw error
-  return data.map(toTransaction)
+  // The generated types do not know the group relations of these two links; the shape is the one declared above.
+  return (data as unknown as Parameters<typeof toTransaction>[0][]).map(toTransaction)
 }
 
 /** A new movement; an expense may also belong to one of the person's trips (`tripId`). */

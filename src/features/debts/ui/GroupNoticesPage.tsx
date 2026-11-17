@@ -8,7 +8,6 @@ import { formatArs } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
 import { copyText } from '@/shared/lib/share'
 import { cn } from '@/shared/ui/cn'
-import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { Avatar, Page } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
@@ -23,6 +22,7 @@ import {
   useReportPayment,
 } from '../api/useDebts'
 import { noticeText, type Notice } from '../domain/debts'
+import { PaymentAccountSheet } from './PaymentAccountSheet'
 
 const pill =
   'flex min-h-11 items-center justify-center gap-1.5 rounded-full px-4 text-[15px] font-extrabold disabled:opacity-60 [&>svg]:shrink-0'
@@ -35,6 +35,7 @@ export function GroupNoticesPage() {
   const markRead = useMarkNoticesRead()
   const report = useReportPayment()
   const confirm = useConfirmPayment()
+  const [confirming, setConfirming] = useState<string | null>(null)
   const reject = useRejectPayment()
   const [paying, setPaying] = useState<Notice | null>(null)
   const today = todayIso()
@@ -153,12 +154,7 @@ export function GroupNoticesPage() {
                     <>
                       <button
                         type="button"
-                        onClick={() =>
-                          void run(async () => {
-                            const settled = await confirm.mutateAsync(open.id)
-                            if (!settled) throw new Error('debt_already_settled')
-                          }, 'Listo, confirmaste el pago')
-                        }
+                        onClick={() => setConfirming(open.id)}
                         disabled={confirm.isPending}
                         className={cn(pill, 'bg-lime')}
                       >
@@ -193,13 +189,14 @@ export function GroupNoticesPage() {
       )}
 
       {paying && (
-        <ConfirmDialog
+        <PaymentAccountSheet
           title="¿Ya le pagaste?"
-          message={`Le vamos a avisar a ${paying.actorName} que le transferiste ${formatArs(paying.amountCents)}. La deuda se salda cuando ${paying.actorName} confirme que lo recibió.`}
+          description={`Le vamos a avisar a ${paying.actorName} que le transferiste ${formatArs(paying.amountCents)}. Elegí de qué cuenta salió: se descuenta ahora de esa cuenta y queda en Movimientos. La deuda se salda cuando ${paying.actorName} confirme.`}
           confirmLabel="Sí, ya pagué"
-          cancelLabel="Todavía no"
-          isBusy={report.isPending}
-          onConfirm={() => {
+          noneLabel="Avisar sin elegir cuenta"
+          busy={report.isPending}
+          onClose={() => setPaying(null)}
+          onConfirm={(accountId) => {
             const notice = paying
             setPaying(null)
             void run(
@@ -208,11 +205,29 @@ export function GroupNoticesPage() {
                   groupId: notice.groupId,
                   creditorId: notice.actorId,
                   amountCents: notice.amountCents,
+                  accountId,
                 }),
               `Le avisamos a ${notice.actorName}`,
             )
           }}
-          onCancel={() => setPaying(null)}
+        />
+      )}
+      {confirming && (
+        <PaymentAccountSheet
+          title="Confirmar recepción"
+          description="Elegí en qué cuenta entró la plata. Se acredita ahora y queda en Movimientos."
+          confirmLabel="Confirmar y registrar"
+          busy={confirm.isPending}
+          onClose={() => setConfirming(null)}
+          onConfirm={(accountId) => {
+            const reportId = confirming
+            setConfirming(null)
+            if (!accountId) return
+            void run(async () => {
+              const settled = await confirm.mutateAsync({ reportId, accountId })
+              if (!settled) throw new Error('debt_already_settled')
+            }, 'Listo, confirmaste el pago')
+          }}
         />
       )}
     </Page>

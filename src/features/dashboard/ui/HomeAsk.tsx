@@ -35,7 +35,7 @@ export function HomeAsk({ plusBadge = false }: { plusBadge?: boolean }) {
           onChange={(e) => setDraft(e.target.value)}
           aria-label={plusBadge ? 'Preguntale a Moni, Plus' : 'Preguntale a Moni'}
           placeholder="Preguntale a Moni…"
-          className="h-10 min-w-0 flex-1 bg-transparent text-[16px] text-[#0B3D2E] outline-none placeholder:text-[#566A5C] dark:text-ink"
+          className="h-10 min-w-0 flex-1 bg-transparent text-[clamp(14px,4.2vw,16px)] text-[#0B3D2E] outline-none placeholder:text-[#566A5C] dark:text-ink"
         />
         {plusBadge && (
           <span

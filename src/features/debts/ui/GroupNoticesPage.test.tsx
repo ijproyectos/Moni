@@ -13,6 +13,9 @@ const state = vi.hoisted(() => ({
   confirm: vi.fn(),
   reject: vi.fn(),
 }))
+vi.mock('@/features/accounts/api/useAccounts', () => ({
+  useAccounts: () => ({ data: [], isLoading: false }),
+}))
 vi.mock('../api/useDebts', () => ({
   useNotices: () => state.notices,
   usePaymentReports: () => state.reports,
@@ -136,11 +139,12 @@ describe('Avisos de grupos', () => {
     const user = renderPage()
     await user.click(screen.getByRole('button', { name: 'Ya pagué' }))
     expect(state.report).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Sí, ya pagué' }))
+    await user.click(screen.getByRole('button', { name: 'Avisar sin elegir cuenta' }))
     expect(state.report).toHaveBeenCalledWith({
       groupId: 'g1',
       creditorId: 'ana',
       amountCents: 30_000_00,
+      accountId: null,
     })
   })
 
@@ -164,7 +168,10 @@ describe('Avisos de grupos', () => {
     const user = renderPage()
     expect(screen.getByText(/Ana informó que te pagó \$30\.000/)).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Confirmar recepción' }))
-    expect(state.confirm).toHaveBeenCalledWith('r1')
+    // Nothing is credited yet: the receiver must choose an account (there is no way to skip it).
+    expect(state.confirm).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: /sin registrar/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Confirmar y registrar' })).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'No lo recibí' }))
     expect(state.reject).toHaveBeenCalledWith('r1')
   })

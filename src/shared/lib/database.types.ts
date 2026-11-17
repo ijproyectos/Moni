@@ -146,6 +146,8 @@ export interface Database {
           voided_at: string | null
           shared_expense_id: string | null
           settlement_id: string | null
+          /** Payer's outgoing money of a payment notice, until it is linked to its settlement (migration 20261122000000). */
+          payment_report_id?: string | null
           /** Expense with a person without an account that this payment belongs to (migration 20261115000000). */
           guest_expense_id?: string | null
           /** Payment with a person without an account that moved this account (same migration). */
@@ -987,11 +989,11 @@ export interface Database {
         Returns: string
       }
       report_payment: {
-        Args: { p_group: string; p_creditor: string; p_amount: number }
+        Args: { p_group: string; p_creditor: string; p_amount: number; p_account_id?: string }
         Returns: string
       }
       confirm_payment_report: {
-        Args: { p_report: string }
+        Args: { p_report: string; p_account_id: string }
         Returns: string | null
       }
       reject_payment_report: {

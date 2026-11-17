@@ -6,7 +6,13 @@ import { formatArs, formatCompact, type Cents } from '@/shared/lib/money'
 import { addDays, type IsoDate } from '@/shared/lib/month'
 
 /** Ring and fill of the bubble; each story picks the one that fits what it tells. */
-export type StoryTone = 'gold' | 'blush' | 'blue' | 'violet' | 'green'
+export type StoryTone = 'gold' | 'blush' | 'blue' | 'violet' | 'green' | 'orange'
+
+/** A chart a slide draws from the person's real figures (every share and amount comes from the data, never invented). */
+export type StoryVisual =
+  | { kind: 'progress'; value: number; caption?: string }
+  | { kind: 'bars'; rows: { label: string; share: number; amount: string }[] }
+  | { kind: 'badge'; name: string }
 
 /** Interactive content a slide hosts as is, so its actions (add a contribution, postpone, skip, hide) stay available. */
 export type StoryEmbed = 'savings-notices' | 'recurring-reminders'
@@ -21,6 +27,8 @@ export interface StorySlide {
   tip?: string
   /** A few supporting lines (who owes what, which charges). */
   lines?: string[]
+  /** Chart that replaces the plain lines (bars, progress, badge). */
+  visual?: StoryVisual
   action?: { label: string; to: string }
   embed?: StoryEmbed
 }
@@ -98,6 +106,16 @@ const people = (n: number) => `${n} ${n === 1 ? 'persona' : 'personas'}`
 
 function sum(items: readonly { amountCents: Cents }[]): Cents {
   return items.reduce((s, i) => s + i.amountCents, 0)
+}
+
+/** Horizontal bars for amounts: each row's share is relative to the biggest one. */
+function barRows(rows: readonly { label: string; amountCents: Cents }[]): { label: string; share: number; amount: string }[] {
+  const max = Math.max(...rows.map((r) => r.amountCents), 1)
+  return rows.map((r) => ({ label: cap(r.label, 16), share: r.amountCents / max, amount: formatArs(r.amountCents) }))
+}
+
+function topDebts<T extends Pick<PendingDebt, 'otherName' | 'amountCents'>>(debts: readonly T[]): T[] {
+  return debts.slice().sort((a, b) => b.amountCents - a.amountCents).slice(0, MAX_LINES)
 }
 
 function debtLines(debts: readonly Pick<PendingDebt, 'otherName' | 'groupName' | 'amountCents'>[]) {
@@ -244,6 +262,7 @@ export function buildStories(input: StoryInput): Story[] {
   // 2. Debts and what is owed to the person -------------------------------------------------------------------------
   const owed = input.debts.filter((d) => d.direction === 'owed' && d.amountCents > 0)
   const owe = input.debts.filter((d) => d.direction === 'owe' && d.amountCents > 0)
+  const topOwed = owed.slice().sort((a, b) => b.amountCents - a.amountCents)[0]
   if (owed.length > 0) {
     const who = new Set(owed.map((d) => d.otherName)).size
     add({
@@ -258,8 +277,14 @@ export function buildStories(input: StoryInput): Story[] {
           title: 'Te deben plata',
           figure: formatArs(sum(owed)),
           body: `${people(who)} te ${who === 1 ? 'debe' : 'deben'} plata entre tus grupos.`,
-          tip: 'Un recordatorio amable desde el grupo suele alcanzar para cobrar más rápido.',
+          tip: topOwed
+            ? `Empezá por ${topOwed.otherName}: te debe ${formatArs(topOwed.amountCents)}, lo más grande. Un recordatorio desde el grupo ayuda a cobrar más rápido.`
+            : undefined,
           lines: debtLines(owed),
+          visual: {
+            kind: 'bars',
+            rows: barRows(topDebts(owed).map((d) => ({ label: d.otherName, amountCents: d.amountCents }))),
+          },
           action: { label: 'Ver quién me debe', to: input.debtsPath },
         },
       ],
@@ -282,8 +307,14 @@ export function buildStories(input: StoryInput): Story[] {
             owe.length === 1 && first
               ? `Le debés a ${first.otherName} en ${first.groupName}.`
               : `Le debés a ${people(new Set(owe.map((d) => d.otherName)).size)} entre tus grupos.`,
-          tip: 'Registrar el pago apenas lo hacés te saca el pendiente de encima.',
+          tip: first
+            ? `Empezá por ${first.otherName} (${formatArs(first.amountCents)}): es lo más grande. Registrá el pago apenas lo hacés para sacártelo de encima.`
+            : undefined,
           lines: debtLines(owe),
+          visual: {
+            kind: 'bars',
+            rows: barRows(topDebts(owe).map((d) => ({ label: d.otherName, amountCents: d.amountCents }))),
+          },
           action: {
             label: 'Registrar un pago',
             to: owe.length === 1 && first ? `/grupos/${first.groupId}` : input.debtsPath,
@@ -309,18 +340,20 @@ export function buildStories(input: StoryInput): Story[] {
       slides.push({
         title: 'Metas',
         figure: formatArs(plan.missingCents),
+        visual: { kind: 'progress', value: share, caption: `${formatArs(reservedCents)} de ${formatArs(targetCents)}` },
         body: focus
           ? `Este mes te faltan ${formatArs(plan.missingCents)} para seguir al día con tus metas, empezando por ${focus.goal.name}.`
           : `Este mes te faltan ${formatArs(plan.missingCents)} para seguir al día con tus metas.`,
-        tip: 'Un aporte chico ahora te acerca más que esperar a fin de mes.',
+        tip: `Aportar ${formatArs(Math.ceil(plan.missingCents / 2))} hoy ya te deja a mitad de camino de lo que falta este mes.`,
         action: { label: focus ? 'Ver mi meta' : 'Ver mis metas', to },
       })
     } else if (plan?.status === 'on_track') {
       slides.push({
         title: 'Metas',
         figure: `${pct}%`,
-        body: 'Estás al día con tu plan de ahorro de este mes. ¡Seguí así!',
-        tip: 'Mantené el aporte de este mes y seguís en ritmo.',
+        visual: { kind: 'progress', value: share, caption: `${formatArs(reservedCents)} de ${formatArs(targetCents)}` },
+        body: 'Estás al día con tu plan de ahorro de este mes.',
+        tip: `Te faltan ${formatArs(Math.max(0, targetCents - reservedCents))} para completar tus metas: mantené el aporte mensual y llegás.`,
         action: { label: 'Ver mis metas', to: '/metas' },
       })
     }
@@ -328,6 +361,7 @@ export function buildStories(input: StoryInput): Story[] {
       slides.push({
         title: 'Casi llegás',
         figure: formatArs(targetCents - reservedCents),
+        visual: { kind: 'progress', value: share, caption: `${pct}% de tus metas` },
         body: `Te faltan ${formatArs(targetCents - reservedCents)} para completar lo que juntás para tus metas.`,
         tip: 'Con un último aporte la completás.',
         action: { label: 'Ver mis metas', to: '/metas' },
@@ -338,6 +372,7 @@ export function buildStories(input: StoryInput): Story[] {
       slides.push({
         title: g.name,
         figure: `${pct}%`,
+        visual: { kind: 'progress', value: share, caption: `${formatArs(reservedCents)} de ${formatArs(targetCents)}` },
         body: `Llevás ${formatArs(reservedCents)} de ${formatArs(targetCents)} entre tus metas.`,
         action: { label: 'Ver mi meta', to },
       })
@@ -369,6 +404,7 @@ export function buildStories(input: StoryInput): Story[] {
         {
           title: worst.state === 'over' ? 'Te pasaste de un límite' : 'Cerca de un límite',
           figure: formatArs(Math.abs(worst.remainingCents)),
+          visual: { kind: 'progress', value: Math.min(1, worst.percent / 100), caption: `${Math.floor(worst.percent)}% de ${worst.name}` },
           body:
             worst.state === 'over'
               ? `Te pasaste ${formatArs(-worst.remainingCents)} en ${worst.name}.`
@@ -409,6 +445,7 @@ export function buildStories(input: StoryInput): Story[] {
         {
           title: 'Tus límites van bien',
           figure: `${Math.floor(closest.percent)}%`,
+          visual: { kind: 'progress', value: Math.min(1, closest.percent / 100), caption: closest.name },
           body: `El que más usaste es ${closest.name}: llevás el ${Math.floor(closest.percent)}% y te quedan ${formatArs(closest.remainingCents)}.`,
           lines: healthy
             .slice(1, 1 + MAX_LINES)
@@ -432,12 +469,17 @@ export function buildStories(input: StoryInput): Story[] {
         title: `Tus gastos de ${input.monthName}`,
         figure: `${Math.round(top.percent)}%`,
         body: `El ${Math.round(top.percent)}% de tus gastos de ${input.monthName} corresponde a ${top.name} (${formatArs(top.amountCents)}).`,
-        tip: `Mirá si en ${top.name} hay algo que puedas recortar sin que te pese.`,
-        lines: input.spending.byCategory
-          .filter((c) => c.amountCents > 0 && c !== top)
-          .sort((a, b) => b.amountCents - a.amountCents)
-          .slice(0, 2)
-          .map((c) => `${c.name} · ${Math.round(c.percent)}% · ${formatArs(c.amountCents)}`),
+        tip: `Recortar un 10% en ${top.name} te ahorra ${formatArs(Math.round(top.amountCents * 0.1))} este mes.`,
+        visual: {
+          kind: 'bars',
+          rows: barRows(
+            input.spending.byCategory
+              .filter((c) => c.amountCents > 0)
+              .sort((a, b) => b.amountCents - a.amountCents)
+              .slice(0, 4)
+              .map((c) => ({ label: c.name, amountCents: c.amountCents })),
+          ),
+        },
         action: { label: 'Ver mis gastos', to: '/actividad' },
       },
     ]
@@ -447,7 +489,7 @@ export function buildStories(input: StoryInput): Story[] {
         title: 'Tu gasto por día',
         figure: formatArs(Math.round(input.spending.expenseCents / days)),
         body: `En ${days === 1 ? 'el primer día' : `${days} días`} de ${input.monthName} gastaste ${formatArs(input.spending.expenseCents)}: es lo que sale por día, en promedio.`,
-        tip: 'Si querés bajar el promedio, probá un día sin gastos esta semana.',
+        tip: `Un día por debajo de ${formatArs(Math.round(input.spending.expenseCents / days))} baja tu promedio del mes; uno por encima lo sube.`,
         action: { label: 'Ver el calendario', to: '/actividad' },
       })
     }
@@ -461,10 +503,17 @@ export function buildStories(input: StoryInput): Story[] {
           change === 0
             ? `Gastaste lo mismo que en ${input.spending.previousMonthName}.`
             : `Gastaste ${Math.abs(change)}% ${change > 0 ? 'más' : 'menos'} que en ${input.spending.previousMonthName}: ${formatArs(input.spending.expenseCents)} contra ${formatArs(previous)}.`,
+        visual: {
+          kind: 'bars',
+          rows: barRows([
+            { label: input.monthName, amountCents: input.spending.expenseCents },
+            { label: input.spending.previousMonthName, amountCents: previous },
+          ]),
+        },
         tip:
           change > 0
-            ? 'Mirá en qué categoría subió y ajustá un poco el resto del mes.'
-            : 'Buen ritmo: mantené lo que te está funcionando.',
+            ? `Gastaste ${formatArs(input.spending.expenseCents - previous)} más: mirá en qué categoría subió (arriba, ${top.name}) y ajustá el resto del mes.`
+            : `Gastaste ${formatArs(previous - input.spending.expenseCents)} menos: mantené lo que te está funcionando.`,
         action: { label: 'Ver el informe', to: '/este-mes' },
       })
     }
@@ -473,7 +522,7 @@ export function buildStories(input: StoryInput): Story[] {
       signature: `${top.name}:${input.spending.expenseCents}`,
       label: 'Gastos',
       bubble: `${Math.round(top.percent)}%`,
-      tone: 'blue',
+      tone: 'orange',
       priority: 4,
       slides,
     })
@@ -488,12 +537,12 @@ export function buildStories(input: StoryInput): Story[] {
       signature: recent.map((b) => b.key).join(','),
       label: 'Logros',
       bubble: '★',
-      tone: 'gold',
+      tone: 'violet',
       priority: 5,
       slides: [
         {
           title: 'Conseguiste una insignia',
-          figure: latest.name,
+          visual: { kind: 'badge', name: latest.name },
           body:
             recent.length === 1
               ? `Desbloqueaste «${latest.name}». Gracias a tu constancia.`

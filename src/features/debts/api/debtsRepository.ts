@@ -93,18 +93,28 @@ export async function reportPayment(input: {
   groupId: string
   creditorId: string
   amountCents: number
+  /** Account the money leaves from: it is discounted right away (and given back if the notice is refused or withdrawn). */
+  accountId?: string | null
 }): Promise<void> {
   const { error } = await getSupabase().rpc('report_payment', {
     p_group: input.groupId,
     p_creditor: input.creditorId,
     p_amount: toNumeric(input.amountCents),
+    ...(input.accountId ? { p_account_id: input.accountId } : {}),
   })
   if (error) throw error
 }
 
 /** Returns true when the debt was settled, false when it had already been settled another way (nothing is recorded twice). */
-export async function confirmPaymentReport(reportId: string): Promise<boolean> {
-  const { data, error } = await getSupabase().rpc('confirm_payment_report', { p_report: reportId })
+export async function confirmPaymentReport(input: {
+  reportId: string
+  /** Account where the receiver got the money: the income is recorded there (required). */
+  accountId: string
+}): Promise<boolean> {
+  const { data, error } = await getSupabase().rpc('confirm_payment_report', {
+    p_report: input.reportId,
+    p_account_id: input.accountId,
+  })
   if (error) throw error
   return data !== null
 }

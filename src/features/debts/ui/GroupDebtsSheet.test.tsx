@@ -347,7 +347,10 @@ describe('Me deben: Enviar cobro', () => {
     const user = renderSheet()
     expect(screen.queryByRole('button', { name: 'Enviar cobro' })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Confirmar recepción' }))
-    expect(state.confirm).toHaveBeenCalledWith('r1')
+    // Nothing is credited yet: the receiver chooses the account in the sheet first.
+    expect(state.confirm).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Confirmar y registrar' }))
+    expect(state.confirm).toHaveBeenCalledWith({ reportId: 'r1', accountId: 'cash' })
     await user.click(screen.getByRole('button', { name: 'No lo recibí' }))
     expect(state.reject).toHaveBeenCalledWith('r1')
   })
@@ -357,6 +360,7 @@ describe('Me deben: Enviar cobro', () => {
     state.debts = [{ ...owedByJoni, report }]
     const user = renderSheet()
     await user.click(screen.getByRole('button', { name: 'Confirmar recepción' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar y registrar' }))
     expect(await screen.findByText(/ya estaba saldada/)).toBeVisible()
   })
 })
@@ -406,6 +410,7 @@ describe('Debo', () => {
       groupId: 'g1',
       creditorId: 'ana',
       amountCents: 12_500_00,
+      accountId: expect.any(String),
     })
     expect(state.confirm).not.toHaveBeenCalled()
   })

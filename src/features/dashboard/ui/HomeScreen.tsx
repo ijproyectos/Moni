@@ -60,7 +60,7 @@ export function HomeScreen({
   const recent = movements ?? summary.recent
 
   return (
-    <div className="-mb-[calc(env(safe-area-inset-bottom)+6rem)] min-h-dvh bg-[#F1EEDD] pb-[calc(env(safe-area-inset-bottom)+6rem)] dark:bg-canvas">
+    <div>
       <HomeHeader
         initial={initial}
         photoUrl={photoUrl}
