@@ -10,7 +10,7 @@ export const THEME_STORAGE_KEY = 'moni.theme'
 
 /** Browser chrome color (<meta name="theme-color">) per resolved theme: forest in light, canvas in dark. */
 export const THEME_COLOR: Record<ResolvedTheme, string> = {
-  light: '#1b7f53',
+  light: '#0b3d2e',
   dark: '#0e1a13',
 }
 

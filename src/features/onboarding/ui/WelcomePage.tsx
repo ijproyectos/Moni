@@ -40,7 +40,7 @@ export function WelcomePage() {
           <img
             src={mascotUrl}
             alt="Moni"
-            className="size-[132px] rounded-full border-[5px] border-lilac bg-card object-cover"
+            className="size-[132px] rounded-full border-[5px] border-lilac bg-card object-contain p-2"
           />
           <h1 className="text-balance text-center font-display text-[34px] font-bold leading-[1.05] tracking-[-0.03em]">
             Hola, soy Moni

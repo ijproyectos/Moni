@@ -1,38 +1,39 @@
-import { ArrowLeftRight, House, User, Users, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router'
 import { cn } from './cn'
+import { useMyInitial } from './myInitialContext'
 
 interface NavItem {
   to: string
   label: string
-  icon: LucideIcon
   end?: boolean
 }
 
-/** The four tabs of the floating bar. Grupos is always there: it no longer depends on the person's goals. */
+/** The tabs of the floating bar; the profile is the round avatar at the end. Grupos is always there. */
 const NAV_ITEMS: readonly NavItem[] = [
-  { to: '/', label: 'Hoy', icon: House, end: true },
-  { to: '/actividad', label: 'Movimientos', icon: ArrowLeftRight },
-  { to: '/grupos', label: 'Grupos', icon: Users },
-  { to: '/perfil', label: 'Perfil', icon: User },
+  { to: '/', label: 'Hoy', end: true },
+  { to: '/grupos', label: 'Grupos' },
+  { to: '/mas', label: 'Herramientas' },
 ]
 
-function NavTab({ to, label, icon: Icon, end }: NavItem) {
+const RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B3D2E] dark:focus-visible:outline-mint-ink'
+
+function NavTab({ to, label, end }: NavItem) {
   return (
     <NavLink
       to={to}
       end={end}
       className={({ isActive }) =>
         cn(
-          'flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10.5px] leading-none outline-none',
-          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink',
+          'flex min-w-0 flex-1 items-center justify-center rounded-full px-2 text-[15px] leading-none outline-none',
+          RING,
           'motion-safe:transition motion-safe:active:scale-[0.97] active:brightness-95',
-          isActive ? 'bg-mint-soft font-bold text-mint-ink' : 'font-semibold text-text-muted',
+          isActive
+            ? 'bg-[#0B3D2E] font-extrabold text-[#F1EEDD]'
+            : 'font-bold text-[#566A5C] dark:text-text-muted',
         )
       }
     >
-      <Icon aria-hidden="true" className="size-[20px]" strokeWidth={2.1} />
       <span className="max-w-full truncate">{label}</span>
     </NavLink>
   )
@@ -43,15 +44,29 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
  * (`assistant`, the cat button that opens the add menu). Only the pill carries a shadow.
  */
 export function BottomNav({ assistant }: { assistant?: ReactNode }) {
+  const initial = useMyInitial()
   return (
     <div className="flex h-[60px] items-center gap-2 px-3">
       <nav
         aria-label="Navegación principal"
-        className="pointer-events-auto flex h-full min-w-0 flex-1 items-stretch gap-0.5 rounded-full bg-card p-1.5 shadow-[0_12px_36px_rgba(17,34,24,0.14)]"
+        className="pointer-events-auto flex h-full min-w-0 flex-1 items-stretch gap-0.5 rounded-full border border-[#DCD8BF] bg-[#FAF8EC] p-1.5 shadow-[0_12px_36px_rgba(17,34,24,0.14)] dark:border-line dark:bg-card"
       >
         {NAV_ITEMS.map((item) => (
           <NavTab key={item.to} {...item} />
         ))}
+        <NavLink
+          to="/perfil"
+          aria-label="Perfil"
+          className={({ isActive }) =>
+            cn(
+              'flex aspect-square h-full shrink-0 items-center justify-center rounded-full bg-[#0B3D2E] font-display text-[18px] font-extrabold text-[#F1EEDD] outline-none',
+              RING,
+              isActive && 'ring-2 ring-[#E3B23C]',
+            )
+          }
+        >
+          {initial}
+        </NavLink>
       </nav>
       {assistant && (
         <div data-testid="assistant-slot" className="pointer-events-auto relative size-[60px] shrink-0">

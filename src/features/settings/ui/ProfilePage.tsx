@@ -1,11 +1,13 @@
 import {
   Camera,
   ChevronLeft,
-  CreditCard,
-  EyeOff,
-  HeartPulse,
+  Activity,
   Images,
-  Palette,
+  Lock,
+  Moon,
+  Sun,
+  SunMoon,
+  Wallet,
   ShoppingBasket,
   Sparkles,
   Trash2,
@@ -66,7 +68,6 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { FEATURES } from '@/shared/config/features'
 import { useTheme } from '../api/useTheme'
-import { THEME_LABELS, THEME_MODES, type ThemeMode } from '../domain/theme'
 import { updateProfileExtras, useProfileExtras } from '../mock/profileExtrasStore'
 import {
   ProfileAccessGrid,
@@ -241,7 +242,7 @@ export function ProfilePage() {
           aria-hidden="true"
           className="flex size-[46px] shrink-0 items-center justify-center rounded-full bg-white/[.18] text-[#FFE58A]"
         >
-          <HeartPulse className="size-6" strokeWidth={1.9} />
+          <Activity className="size-6" strokeWidth={1.75} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[16px] font-semibold">Salud financiera</span>
@@ -260,12 +261,12 @@ export function ProfilePage() {
 
       <SettingCard>
         <SettingRow
-          icon={<Palette className="size-[17px]" strokeWidth={1.9} />}
+          icon={<SunMoon className="size-[18px]" strokeWidth={1.75} />}
           title="Tema de color"
-          trailing={<ThemeSwatches />}
+          trailing={<ThemeSelector />}
         />
         <SettingRow
-          icon={<EyeOff className="size-[17px]" strokeWidth={1.9} />}
+          icon={<Lock className="size-[18px]" strokeWidth={1.75} />}
           title="Modo privacidad"
           trailing={
             <button
@@ -290,14 +291,14 @@ export function ProfilePage() {
           }
         />
         <SettingRow
-          icon={<CreditCard className="size-[17px]" strokeWidth={1.9} />}
+          icon={<Wallet className="size-[18px]" strokeWidth={1.75} />}
           title="Tarjetas y medios de pago"
           to="/cuentas"
           trailing={accounts.data ? accounts.data.length : undefined}
         />
         <PushNotificationsRow />
         <SettingRow
-          icon={<Sparkles className="size-[17px]" strokeWidth={1.9} />}
+          icon={<Sparkles className="size-[18px]" strokeWidth={1.75} />}
           title={plus.isPlus ? 'Plan Moni Plus' : 'Pasar a Moni Plus'}
           subtitle={
             plus.isPlus && plus.expiresAt
@@ -552,41 +553,43 @@ function GoalsSheet({ saved, onClose }: { saved: readonly string[]; onClose: () 
   )
 }
 
-const SWATCH: Record<ThemeMode, string> = {
-  light: '#EEF5EF',
-  dark: '#0E1A13',
-  system: 'linear-gradient(135deg, #EEF5EF 50%, #0E1A13 50%)',
-}
+const THEME_CHOICES = [
+  { mode: 'light', label: 'Claro', Icon: Sun },
+  { mode: 'dark', label: 'Oscuro', Icon: Moon },
+] as const
 
-/** "Tema de color": Claro / Oscuro / Sistema as three dots, saved on this device only. */
-function ThemeSwatches() {
-  const { mode, setMode } = useTheme()
+/** "Tema de color": sun / moon, saved on this device only. Until one is picked the device's own theme shows as selected. */
+function ThemeSelector() {
+  const { resolved, setMode } = useTheme()
   return (
-    <span role="radiogroup" aria-label="Tema de color" className="flex gap-0.5">
-      {THEME_MODES.map((m) => (
-        <button
-          key={m}
-          type="button"
-          role="radio"
-          aria-checked={mode === m}
-          aria-label={THEME_LABELS[m]}
-          title={THEME_LABELS[m]}
-          onClick={() => setMode(m)}
-          className="flex size-7 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
-        >
-          <span
-            aria-hidden="true"
-            className="size-[18px] rounded-full ring-1 ring-line"
-            style={{
-              background: SWATCH[m],
-              boxShadow:
-                mode === m
-                  ? '0 0 0 2px var(--color-card), 0 0 0 3.5px var(--color-mint-ink)'
-                  : undefined,
-            }}
-          />
-        </button>
-      ))}
+    <span
+      role="radiogroup"
+      aria-label="Tema de color"
+      className="flex gap-0.5 rounded-full bg-sand p-0.5"
+    >
+      {THEME_CHOICES.map(({ mode: m, label, Icon }) => {
+        const selected = resolved === m
+        return (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            aria-label={label}
+            title={label}
+            onClick={() => setMode(m)}
+            className={cn(
+              'flex size-9 items-center justify-center rounded-full transition-colors motion-reduce:transition-none',
+              'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink',
+              selected
+                ? 'bg-forest text-cream shadow-sm dark:bg-gold dark:text-on-bright'
+                : 'text-text-muted',
+            )}
+          >
+            <Icon aria-hidden="true" className="size-[18px]" strokeWidth={selected ? 2.1 : 1.75} />
+          </button>
+        )
+      })}
     </span>
   )
 }

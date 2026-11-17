@@ -586,7 +586,7 @@ export function SharedExpenseForm({
           <img
             src={mascotHappy}
             alt=""
-            className="size-8 shrink-0 rounded-full border-2 border-lilac bg-card object-cover"
+            className="size-8 shrink-0 rounded-full border-2 border-lilac bg-card object-contain p-px"
           />
           <p className="text-[14px] text-lilac-ink dark:text-ink">
             {moniNote.text} <AmountDisplay cents={moniNote.cents} className="font-bold" />.

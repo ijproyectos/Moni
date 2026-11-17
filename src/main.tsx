@@ -1,4 +1,4 @@
-import '@fontsource-variable/bricolage-grotesque'
+import '@fontsource-variable/nunito'
 import './styles/index.css'
 import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'

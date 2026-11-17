@@ -155,7 +155,7 @@ export function GroupsScreen({
             <img
               src={mascotGroup}
               alt=""
-              className="size-[120px] rounded-full border-[5px] border-lilac bg-card object-cover"
+              className="size-[120px] rounded-full border-[5px] border-lilac bg-card object-contain p-2"
             />
             <h2 className="font-display text-[26px] font-bold leading-[1.1] tracking-[-0.03em]">
               Todavía no compartís gastos

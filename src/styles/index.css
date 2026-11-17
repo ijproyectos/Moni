@@ -17,65 +17,65 @@
    */
 
   /* Primary palette */
-  --color-forest: #1b7f53;
+  --color-forest: #0b3d2e;
   /* Light accent for fills (avatars, tracks, chips) with dark text. Text on mint fills uses `cream` (see below). */
   --color-lime: #9addb6;
   /* Text on the mint fills (white-ish: 4.75:1 on forest, 5.56:1 on surface). */
-  --color-cream: #f4fbf6;
-  --color-gold: #ffe58a;
+  --color-cream: #f1eedd;
+  --color-gold: #e3b23c;
 
   /* Secondary & interface */
-  --color-blush: #f2c3b8;
+  --color-blush: #edb5b0;
   --color-lacquer: #e5533d;
-  --color-canvas: #eef5ef;
-  --color-surface: #17734b;
-  --color-text-muted: #5d6e63;
+  --color-canvas: #f1eedd;
+  --color-surface: #052319;
+  --color-text-muted: #566a5c;
   /* On the mint fills: 4.56:1 on forest. */
-  --color-text-muted-on-dark: #eaf8ef;
+  --color-text-muted-on-dark: #f1eedd;
   --color-white: #ffffff;
-  --color-sand: #e6ede8;
+  --color-sand: #e8e4cc;
   /* Semantic roles that flip in the dark theme. `forest`, `lime`, `gold`, `blush`, `cream` are fixed brand
      fills; use `ink` for text/borders on neutral surfaces and `card` for raised white surfaces. */
-  --color-ink: #112218;
+  --color-ink: #0c2418;
   /* Dark text that stays dark in both themes, for text on the bright fills (gold, blush, lime, cream). */
-  --color-on-bright: #0e1a13;
-  --color-card: #ffffff;
-  --color-line: #e7efe9;
-  --color-track: #e1ebe4;
-  --color-placeholder: #647369;
-  --color-expense: #9e2f24;
-  --color-income: #17734b;
+  --color-on-bright: #2a1e00;
+  --color-card: #faf8ec;
+  --color-line: #dcd8bf;
+  --color-track: #e4e0c8;
+  --color-placeholder: #566a5c;
+  --color-expense: #b5382a;
+  --color-income: #177246;
   /* Expense and income on the mint fills (hero card): 4.53:1 and 4.53:1 on forest. */
   --color-expense-on-dark: #fff1ee;
   --color-income-on-dark: #ddfbe8;
   --color-scrim: rgb(17 34 24 / 0.55);
   /* Soft fills for icon tiles, tags and callouts; they flip with the theme. */
-  --color-tint-green: #d3efdf;
-  --color-tint-gold: #fff0b8;
+  --color-tint-green: #d9e6d6;
+  --color-tint-gold: #f4e6b8;
   --color-tint-red: #f6deda;
   --color-tint-teal: #d5ebe2;
-  --color-tint-blue: #e0ecf7;
+  --color-tint-blue: #dbe8ee;
   --color-tint-violet: #ece8fa;
   --color-transparent: transparent;
   --color-current: currentColor;
 
   /* Menta pop additions (purely additive) */
-  --color-mint: #1f8a5b;
-  --color-mint-ink: #17734b;
-  --color-mint-soft: #d3efdf;
-  --color-lilac: #c9bdf7;
-  --color-lilac-ink: #211a4a;
-  --color-lilac-soft: #ece8fa;
-  --color-sun: #ffe58a;
-  --color-sun-soft: #fff0b8;
-  --color-chip: #e6ede8;
-  --color-seg-track: #e1ebe4;
+  --color-mint: #0b3d2e;
+  --color-mint-ink: #0b3d2e;
+  --color-mint-soft: #d9e6d6;
+  --color-lilac: #f4e6b8;
+  --color-lilac-ink: #2a1e00;
+  --color-lilac-soft: #f4e6b8;
+  --color-sun: #e3b23c;
+  --color-sun-soft: #f4e6b8;
+  --color-chip: #e8e4cc;
+  --color-seg-track: #e4e0c8;
   --color-ok-bg: #cff3dc;
-  --color-ok-ink: #0f5a36;
-  --color-warn-bg: #fff0b8;
-  --color-warn-ink: #5a4300;
+  --color-ok-ink: #0b3d2e;
+  --color-warn-bg: #f4e6b8;
+  --color-warn-ink: #2a1e00;
   --color-bad-bg: #f6deda;
-  --color-bad-ink: #9e2f24;
+  --color-bad-ink: #b5382a;
 
   /* Category data colors */
   --color-category-food: #e5533d;
@@ -86,8 +86,8 @@
   --color-category-home: #6dbe3a;
 
   /* Typography: Bricolage Grotesque for everything (variable font, imported in main.tsx). */
-  --font-display: 'Bricolage Grotesque Variable', system-ui, sans-serif;
-  --font-body: 'Bricolage Grotesque Variable', system-ui, sans-serif;
+  --font-display: 'Nunito Variable', system-ui, sans-serif;
+  --font-body: 'Nunito Variable', system-ui, sans-serif;
 
   /* Radii */
   --radius-sm: 12px;

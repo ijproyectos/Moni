@@ -81,7 +81,7 @@ const sinDatos = {
 }
 
 describe('HomeScreen (Hoy)', () => {
-  it('shows only the newest movement, under "Últimos movimientos"', () => {
+  it('shows the two newest movements, under "Últimos movimientos"', () => {
     renderHome(empty, false, [
       movement('m1', '2026-10-31', 'Cena'),
       movement('m2', '2026-09-30', 'Almuerzo'),
@@ -89,7 +89,7 @@ describe('HomeScreen (Hoy)', () => {
     const section = screen.getByRole('heading', { name: 'Últimos movimientos' }).closest('section')
     expect(section).toHaveTextContent('Cena')
     expect(section).toHaveTextContent('Comida · Efectivo')
-    expect(screen.queryByText('Almuerzo')).toBeNull()
+    expect(section).toHaveTextContent('Almuerzo')
     expect(screen.getByRole('link', { name: 'Ver todos →' })).toHaveAttribute('href', '/actividad')
   })
 
@@ -102,7 +102,6 @@ describe('HomeScreen (Hoy)', () => {
   it('does not render sections the design does not have: totals, "En qué se fue", Hormigas', () => {
     renderHome(withData, false, [movement('m1', '2026-10-31', 'Cena')], {
       allowance: sinDatos,
-      shared: { owedCents: 1_000_00, oweCents: 0 },
     })
     expect(screen.queryByRole('heading', { name: 'En qué se fue' })).toBeNull()
     expect(screen.queryByRole('img', { name: 'Gastos por categoría' })).toBeNull()
@@ -154,10 +153,10 @@ describe('HomeScreen (Hoy)', () => {
   describe('hero, captura y gastos compartidos', () => {
     it('draws the hero only when the allowance is given', () => {
       renderHome(withData)
-      expect(screen.queryByRole('region', { name: 'Hoy podés gastar' })).toBeNull()
+      expect(screen.queryByRole('region', { name: 'Lo que tenés' })).toBeNull()
       cleanup()
       renderHome(withData, false, undefined, { allowance: sinDatos })
-      expect(screen.getByRole('region', { name: 'Hoy podés gastar' })).toBeInTheDocument()
+      expect(screen.getByRole('region', { name: 'Lo que tenés' })).toBeInTheDocument()
     })
 
     it('the empty hero sends to load income through onAddIncome', async () => {
@@ -167,28 +166,13 @@ describe('HomeScreen (Hoy)', () => {
       expect(onAddIncome).toHaveBeenCalled()
     })
 
-    it('the microphone calls onVoice and the keyboard opens the manual sheet', async () => {
-      const onVoice = vi.fn()
-      const onAddMovement = vi.fn()
-      renderHome(withData, false, undefined, { onVoice, onAddMovement })
-      const user = userEvent.setup()
-      await user.click(screen.getByRole('button', { name: 'Cargar con la voz' }))
-      expect(onVoice).toHaveBeenCalledTimes(1)
-      await user.click(screen.getByRole('button', { name: 'Cargar a mano' }))
-      expect(onAddMovement).toHaveBeenCalledTimes(1)
-    })
-
-    it('shows the shared expenses card only with real balances to report', () => {
+    it('the question field is there and the old capture bar is gone (the cat adds movements)', () => {
       renderHome(withData)
-      expect(screen.queryByRole('region', { name: 'Gastos compartidos' })).toBeNull()
-      cleanup()
-      renderHome(withData, false, undefined, { shared: { owedCents: 15_000_00, oweCents: 0 } })
-      expect(screen.getByRole('region', { name: 'Gastos compartidos' })).toHaveTextContent(
-        '+$15.000',
-      )
+      expect(screen.getByRole('textbox', { name: 'Preguntale a Moni' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Cargar con la voz' })).toBeNull()
     })
 
-    it('keeps the order of the design: hero, capture, stories, shared, last movement', () => {
+    it('keeps the order of the design: hero, stories, question, last movement', () => {
       const story = {
         id: 'a',
         signature: 'a',
@@ -201,13 +185,11 @@ describe('HomeScreen (Hoy)', () => {
       renderHome(withData, false, [movement('m1', '2026-10-31', 'Cena')], {
         allowance: sinDatos,
         stories: [story],
-        shared: { owedCents: 1_000_00, oweCents: 0 },
-      })
+        })
       const order = [
-        screen.getByRole('region', { name: 'Hoy podés gastar' }),
-        screen.getByRole('region', { name: 'Cargar un movimiento' }),
+        screen.getByRole('region', { name: 'Lo que tenés' }),
         screen.getByRole('heading', { name: 'Tu resumen de hoy' }),
-        screen.getByRole('region', { name: 'Gastos compartidos' }),
+        screen.getByRole('region', { name: 'Preguntale a Moni' }),
         screen.getByRole('heading', { name: 'Últimos movimientos' }),
       ]
       order.slice(1).forEach((el, i) => {

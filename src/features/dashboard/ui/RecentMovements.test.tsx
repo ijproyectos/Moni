@@ -211,7 +211,7 @@ describe('RecentMovements: groups by day and expands', () => {
     expect(screen.getByRole('link', { name: 'Ver los 40' })).toHaveAttribute('href', '/actividad')
   })
 
-  it('the "latest" variant (Hoy) shows only the newest movement in a card, no day headings', () => {
+  it('the "latest" variant (Hoy) shows the two newest movements in a card, no day headings', () => {
     render(
       <MemoryRouter>
         <RecentMovements
@@ -223,7 +223,7 @@ describe('RecentMovements: groups by day and expands', () => {
     )
     expect(screen.getByRole('heading', { name: 'Últimos movimientos' })).toBeInTheDocument()
     expect(screen.getByText('ChatGPT')).toBeInTheDocument()
-    expect(screen.queryByText('Belleza')).toBeNull()
+    expect(screen.getByText('Belleza')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 3 })).toBeNull()
     expect(screen.getByRole('link', { name: 'Ver todos →' })).toHaveAttribute('href', '/actividad')
   })

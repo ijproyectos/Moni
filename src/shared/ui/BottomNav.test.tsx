@@ -18,31 +18,31 @@ function renderNav(path = '/') {
 }
 
 describe('BottomNav', () => {
-  it('is a navigation landmark with the four tabs, Grupos always included', () => {
+  it('is a navigation landmark with Hoy, Grupos, Herramientas and the profile avatar', () => {
     renderNav()
     const nav = screen.getByRole('navigation', { name: 'Navegación principal' })
     const links = Array.from(nav.querySelectorAll('a'))
-    expect(links.map((a) => a.textContent)).toEqual(['Hoy', 'Movimientos', 'Grupos', 'Perfil'])
+    expect(links.map((a) => a.textContent)).toEqual(['Hoy', 'Grupos', 'Herramientas', 'V'])
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
       '/',
-      '/actividad',
       '/grupos',
+      '/mas',
       '/perfil',
     ])
   })
 
-  it('marks only the current tab with aria-current and the mint pill', () => {
+  it('marks only the current tab with aria-current and the dark pill', () => {
     renderNav('/grupos')
     expect(screen.getByRole('link', { name: 'Grupos' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('link', { name: 'Grupos' })).toHaveClass('bg-mint-soft', 'text-mint-ink')
+    expect(screen.getByRole('link', { name: 'Grupos' })).toHaveClass('bg-[#0B3D2E]')
     expect(screen.getByRole('link', { name: 'Hoy' })).not.toHaveAttribute('aria-current')
-    expect(screen.getByRole('link', { name: 'Perfil' })).not.toHaveClass('bg-mint-soft')
+    expect(screen.getByRole('link', { name: 'Herramientas' })).not.toHaveClass('bg-[#0B3D2E]')
   })
 
   it('Hoy is only active on the exact root', () => {
-    renderNav('/actividad')
+    renderNav('/grupos')
     expect(screen.getByRole('link', { name: 'Hoy' })).not.toHaveAttribute('aria-current')
-    expect(screen.getByRole('link', { name: 'Movimientos' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Grupos' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('shows the assistant button apart from the tabs, outside the landmark', () => {
@@ -68,16 +68,16 @@ describe('ShellBottomBar', () => {
     )
   }
 
-  it('lives on the four tab routes and declares itself as a bottom action', () => {
-    for (const path of ['/', '/actividad', '/grupos', '/perfil']) {
+  it('lives on the tab routes and declares itself as a bottom action', () => {
+    for (const path of ['/', '/actividad', '/grupos', '/mas', '/perfil']) {
       const { container, unmount } = renderBar(path)
       expect(container.querySelector('[data-bottom-action]')).not.toBeNull()
       unmount()
     }
   })
 
-  it('is not shown on inner screens or on /mas', () => {
-    for (const path of ['/mas', '/metas', '/grupos/nuevo']) {
+  it('is not shown on inner screens', () => {
+    for (const path of ['/metas', '/grupos/nuevo']) {
       const { container, unmount } = renderBar(path)
       expect(container.querySelector('[data-bottom-action]')).toBeNull()
       unmount()

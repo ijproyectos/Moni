@@ -50,6 +50,8 @@ interface AssistantConversationProps {
   greeting?: ReactNode
   /** In the sheet the form stays in the flow; on the page it sticks above the bottom bar. */
   inSheet?: boolean
+  /** A question typed in Inicio: it is sent once when the conversation opens (Plus only; Free sees the upsell). */
+  initialQuestion?: string
 }
 
 /** The conversation with Moni (suggestions, log, input, Plus gate): shared by the Asistente page and the Inicio sheet. */
@@ -57,6 +59,7 @@ export function AssistantConversation({
   suggestions,
   greeting,
   inSheet = false,
+  initialQuestion,
 }: AssistantConversationProps) {
   const plus = usePlus()
   const chat = useAssistantChat()
@@ -64,6 +67,15 @@ export function AssistantConversation({
   const [upsell, setUpsell] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const speech = useSpeechRecognition({ onTranscript: setDraft })
+  const initialSent = useRef(false)
+  const { send } = chat
+  const isFree = plus.isFree
+
+  useEffect(() => {
+    if (!initialQuestion || initialSent.current || isFree) return
+    initialSent.current = true
+    send(initialQuestion)
+  }, [initialQuestion, isFree, send])
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' })

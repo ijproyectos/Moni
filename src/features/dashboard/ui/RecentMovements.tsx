@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { ArrowDownLeft, Receipt } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
 import { addsToBalance, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
 import { formatLongDate, formatLongDay, formatRelativeDay } from '@/shared/lib/dates'
@@ -57,7 +57,7 @@ export function RecentMovements({
   actions?: MovementActions
   /** Today, to say "Hoy" and "Ayer" on the day headings (a prop so it can be tested). */
   today?: string
-  /** `latest` is Hoy: only the newest movement, in a card. `list` is the full grouped list. */
+  /** `latest` is Hoy: the two newest movements, in a card. `list` is the full grouped list. */
   variant?: 'list' | 'latest'
 }) {
   const [pending, setPending] = useState<RecentMovement | null>(null)
@@ -65,7 +65,7 @@ export function RecentMovements({
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
   const latest = variant === 'latest'
-  const shown = latest ? movements.slice(0, 1) : expanded ? movements : movements.slice(0, COLLAPSED_COUNT)
+  const shown = latest ? movements.slice(0, 2) : expanded ? movements : movements.slice(0, COLLAPSED_COUNT)
   const canExpand = !latest && movements.length > COLLAPSED_COUNT
   const days = groupMovementsByDay(shown)
   const anySwipe = !latest && actions ? movements.some((m) => actions.canEdit(m) || actions.canVoid(m)) : false
@@ -85,53 +85,56 @@ export function RecentMovements({
   }
 
   if (latest) {
-    const m = shown[0]
-    const edit = m && actions?.canEdit(m) ? () => actions.onEdit(m) : undefined
-    const isIncome = m ? addsToBalance(m.kind) : false
-    const Icon = isIncome ? ArrowDownLeft : Receipt
-    const when = m ? formatRelativeDay(m.occurredOn, today).toLowerCase() : ''
     return (
-      <section aria-labelledby="recent-title" className="mx-[18px] flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <h2 id="recent-title" className="font-display text-[17px] font-semibold tracking-[-0.02em]">
+      <section aria-labelledby="recent-title" className="mx-[18px] flex flex-col gap-2.5">
+        <div className="flex items-center justify-between px-1">
+          <h2 id="recent-title" className="font-display text-[22px] font-extrabold tracking-[-0.02em] text-[#0B3D2E] dark:text-ink">
             Últimos movimientos
           </h2>
           <Link
             to="/actividad"
-            className="flex min-h-11 items-center text-[13.5px] text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
+            className="flex min-h-11 items-center text-[16px] font-bold text-[#566A5C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B3D2E] dark:text-text-muted"
           >
             Ver todos →
           </Link>
         </div>
-        {m && (
-          <div className="rounded-[26px] bg-card px-4 py-0.5">
-            <button
-              type="button"
-              onClick={edit}
-              disabled={!edit}
-              aria-label={edit ? `Editar ${titleOf(m)}` : undefined}
-              className="grid w-full grid-cols-[36px_1fr_auto] items-center gap-3 py-[7px] text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
-            >
-              <span
-                aria-hidden="true"
-                className="flex size-9 items-center justify-center rounded-full bg-sand text-ink"
-              >
-                <Icon className="size-4" strokeWidth={1.9} />
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[15px] font-medium text-ink">{titleOf(m)}</span>
-                <span className="block truncate text-[12px] text-text-muted">
-                  {subtitleOf(m)} · {when}
-                </span>
-              </span>
-              <AmountDisplay
-                cents={isIncome ? m.amountCents : -m.amountCents}
-                signed
-                className="text-[15px] font-medium text-ink"
-              />
-            </button>
-          </div>
-        )}
+        <ul className="divide-y divide-[#DCD8BF] overflow-hidden rounded-[28px] border border-[#DCD8BF] bg-[#FAF8EC] dark:divide-line dark:border-line dark:bg-card">
+          {shown.map((m) => {
+            const edit = actions?.canEdit(m) ? () => actions.onEdit(m) : undefined
+            const isIncome = addsToBalance(m.kind)
+            const Icon = isIncome ? ArrowDownLeft : ArrowUpRight
+            const when = formatRelativeDay(m.occurredOn, today).toLowerCase()
+            return (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  onClick={edit}
+                  disabled={!edit}
+                  aria-label={edit ? `Editar ${titleOf(m)}` : undefined}
+                  className="grid min-h-[84px] w-full grid-cols-[48px_1fr_auto] items-center gap-4 px-5 py-3 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0B3D2E]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`flex size-12 items-center justify-center rounded-full ${isIncome ? 'bg-[#D9E6D6] text-[#1B7F4E]' : 'bg-[#EEDDD3] text-[#B5382A]'}`}
+                  >
+                    <Icon className="size-5" strokeWidth={2.6} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[20px] font-extrabold leading-tight text-[#0B3D2E] dark:text-ink">{titleOf(m)}</span>
+                    <span className="block truncate text-[16px] text-[#566A5C] dark:text-text-muted">
+                      {subtitleOf(m)} · {when}
+                    </span>
+                  </span>
+                  <AmountDisplay
+                    cents={isIncome ? m.amountCents : -m.amountCents}
+                    signed
+                    className={`text-[20px] font-extrabold ${isIncome ? 'text-[#1B7F4E] dark:text-income' : 'text-[#B5382A] dark:text-expense'}`}
+                  />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
       </section>
     )
   }

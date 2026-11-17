@@ -14,7 +14,7 @@ import { OfflineBanner } from '@/shared/ui/OfflineBanner'
 import { useKeyboardOpen } from '@/shared/ui/useKeyboardOpen'
 
 /** The bottom bar only lives on the four main tabs; inner screens are full height (designs/). */
-const TAB_PATHS = ['/', '/actividad', '/grupos', '/perfil']
+const TAB_PATHS = ['/', '/actividad', '/grupos', '/mas', '/perfil']
 
 export function ShellBottomBar() {
   const { pathname: path } = useLocation()

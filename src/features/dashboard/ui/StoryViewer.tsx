@@ -178,7 +178,7 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
       tabIndex={-1}
       data-autofocus
       className="fixed inset-0 z-40 mx-auto flex w-full max-w-[430px] flex-col overflow-hidden outline-none"
-      style={{ backgroundColor: view.bg, color: view.ink }}
+      style={{ background: view.bg, color: view.ink }}
     >
       {/* Tap areas: the left third goes back, the rest goes on. The content sits above them and only its controls catch taps.
           The buttons of the bottom row are the accessible way to move. */}
@@ -291,7 +291,7 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
           )}
         </div>
         {slide.tip && (
-          <div className="flex flex-col gap-1.5 rounded-[26px] bg-white p-4 text-[#112218]">
+          <div className="flex flex-col gap-1.5 rounded-[26px] bg-white p-4 text-[#052319]">
             <p className="flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#17734B]">
               <Lightbulb aria-hidden="true" className="size-[15px]" strokeWidth={2.2} />
               Qué podés mejorar

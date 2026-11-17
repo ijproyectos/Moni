@@ -1,6 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { FEATURES } from '@/shared/config/features'
 import { HomeHeader } from './HomeHeader'
 
 function renderHeader(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
@@ -24,43 +23,15 @@ describe('HomeHeader: greeting, bell and avatar', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Buenas noches' })).toBeInTheDocument()
   })
 
-  it('has the privacy eye next to the bell', () => {
+  it('the privacy toggle moved to the hero ("Ocultar"); the header has no bell', () => {
     renderHeader()
-    expect(screen.getByRole('button', { name: 'Ocultar montos' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(screen.queryByRole('button', { name: 'Ocultar montos' })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Avisos/ })).toBeNull()
   })
 
   it('is a plain greeting row: the money moved to the hero and the totals card', () => {
     renderHeader({ name: 'Iara' })
     expect(screen.getByRole('banner')).not.toHaveTextContent(/\$|disponible|Gastos|Ingresos/)
-  })
-
-  it('always has the bell, without a badge while notifications have no backend, even with reminders', () => {
-    renderHeader({ reminderCount: 4 })
-    expect(screen.getByRole('link', { name: 'Avisos' })).toHaveAttribute('href', '/grupos/avisos')
-    expect(screen.queryByText('4')).toBeNull()
-    expect(screen.getByRole('link', { name: 'Perfil' })).toBeInTheDocument()
-  })
-
-  it('shows the bell with the real reminder count (no simulated unread) when the flag is on', () => {
-    FEATURES.notifications = true
-    try {
-      renderHeader({ reminderCount: 2 })
-      expect(screen.getByRole('link', { name: 'Avisos, 2 sin leer' })).toHaveAttribute(
-        'href',
-        '/avisos',
-      )
-    } finally {
-      FEATURES.notifications = false
-    }
-  })
-
-  it('shows the bell with the unread notices of groups even while the old Avisos screen is off', () => {
-    renderHeader({ noticeCount: 3 })
-    const bell = screen.getByRole('link', { name: 'Avisos, 3 sin leer' })
-    expect(bell).toHaveAttribute('href', '/grupos/avisos')
   })
 
   describe('Moni Plus badge on the avatar', () => {

@@ -1,13 +1,11 @@
-import { ChevronRight, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import type { Story } from '../domain/stories'
+import type { Cents } from '@/shared/lib/money'
 import type { DailyAllowanceView } from '../api/useDailyAllowance'
-import { HomeCapture } from './HomeCapture'
+import { HomeAsk } from './HomeAsk'
 import { HomeHeader } from './HomeHeader'
 import { HomeHero } from './HomeHero'
-import { SharedExpensesCard, type SharedBalance } from './SharedExpensesCard'
 import { RecentMovements, type MovementActions } from './RecentMovements'
 import { StoriesRow } from './StoriesRow'
 import { StoryViewer } from './StoryViewer'
@@ -29,22 +27,14 @@ interface HomeScreenProps {
   /** Moni Plus is running right now: shows the PLUS badge on the avatar. */
   isPlus?: boolean
   onAddMovement: () => void
-  /** Reminders counted next to the unread notices on the bell. */
-  reminderCount?: number
-  /** Unread notices of groups (debt reminders, payments to confirm). */
-  noticeCount?: number
   /** "Tu resumen de hoy": what Moni has to tell, from the person's real data. */
   stories?: readonly Story[]
   /** "Hoy podés gastar": the daily allowance of the month. Without it the hero is not drawn. */
   allowance?: DailyAllowanceView
-  /** What the groups owe the person and vice versa; without it the shared expenses card is not drawn. */
-  shared?: SharedBalance | null
-  /** The microphone: opens the voice flow (Plus gate included). Without it the microphone is not offered. */
-  onVoice?: () => void
-  /** Voice needs a connection. */
-  offline?: boolean
-  /** Free plan: the microphone wears the Plus badge. */
-  voicePlusBadge?: boolean
+  /** "Lo que tenés": the real sum of the payment methods and how many there are. */
+  balance?: { totalCents: Cents; methodCount: number }
+  /** Free plan: the assistant is Plus, so the question field wears the badge. */
+  plusBadge?: boolean
   /** Empty hero action: starts loading an income. */
   onAddIncome?: () => void
 }
@@ -59,14 +49,10 @@ export function HomeScreen({
   photoUrl,
   isPlus,
   onAddMovement,
-  reminderCount = 0,
-  noticeCount = 0,
   stories = [],
   allowance,
-  shared = null,
-  onVoice,
-  offline = false,
-  voicePlusBadge = false,
+  balance = { totalCents: 0, methodCount: 0 },
+  plusBadge = false,
   onAddIncome,
 }: HomeScreenProps) {
   const { isSeen, markSeen } = useStorySeen(userId)
@@ -74,60 +60,39 @@ export function HomeScreen({
   const recent = movements ?? summary.recent
 
   return (
-    <div>
+    <div className="-mb-[calc(env(safe-area-inset-bottom)+6rem)] min-h-dvh bg-[#F1EEDD] pb-[calc(env(safe-area-inset-bottom)+6rem)] dark:bg-canvas">
       <HomeHeader
         initial={initial}
         photoUrl={photoUrl}
         isPlus={isPlus}
         name={name}
-        reminderCount={reminderCount}
-        noticeCount={noticeCount}
       />
 
-      <div className="flex flex-col gap-2.5 pb-6 pt-1">
-        {allowance && <HomeHero view={allowance} onAddIncome={onAddIncome ?? onAddMovement} />}
-        <HomeCapture
-          onVoice={onVoice}
-          onManual={onAddMovement}
-          offline={offline}
-          voicePlusBadge={voicePlusBadge}
-        />
-
-        <Link
-          to="/informes/asistente"
-          className="mx-[18px] flex min-h-11 items-center gap-2.5 rounded-full bg-lilac-soft px-4 py-2 text-[14px] font-medium text-lilac-ink dark:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
-        >
-          <MessageCircle aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={2} />
-          <span className="flex-1">Preguntale a Moni: ¿me conviene?</span>
-          <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
-        </Link>
+      <div className="flex flex-col gap-4 pb-6 pt-1">
+        {allowance && (
+          <HomeHero view={allowance} balance={balance} onAddIncome={onAddIncome ?? onAddMovement} />
+        )}
 
         {stories.length > 0 && (
-          <section aria-labelledby="today-title" className="mx-[18px] flex flex-col gap-2">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2
-                id="today-title"
-                className="font-display text-[16px] font-bold tracking-[-0.02em]"
-              >
-                Tu resumen de hoy
-              </h2>
-              <span className="text-[12px] text-text-muted">Moni · tocá para ver</span>
-            </div>
+          <section aria-labelledby="today-title" className="mx-[18px]">
+            <h2 id="today-title" className="sr-only">
+              Tu resumen de hoy
+            </h2>
             <StoriesRow stories={stories} isSeen={isSeen} onOpen={setOpenStory} />
           </section>
         )}
-        {shared && <SharedExpensesCard shared={shared} to="/grupos" />}
+        <HomeAsk plusBadge={plusBadge} />
         {recent.length > 0 ? (
           <RecentMovements movements={recent} actions={movementActions} variant="latest" />
         ) : (
           <section aria-labelledby="recent-title" className="mx-[18px] flex flex-col gap-2">
             <h2
               id="recent-title"
-              className="font-display text-[17px] font-semibold tracking-[-0.02em]"
+              className="font-display text-[22px] font-extrabold tracking-[-0.02em] text-[#0B3D2E] dark:text-ink"
             >
               Últimos movimientos
             </h2>
-            <p className="rounded-[26px] bg-card px-4 py-3 text-[14px] text-text-muted">
+            <p className="rounded-[28px] bg-[#FAF8EC] px-5 py-4 text-[15px] text-[#566A5C] dark:bg-card dark:text-text-muted">
               Todavía no hay movimientos. Cargá tu primer gasto o ingreso y aparece acá.
             </p>
           </section>

@@ -42,7 +42,7 @@ function PushRow() {
 
   return (
     <SettingRow
-      icon={<Bell className="size-[17px]" strokeWidth={1.9} />}
+      icon={<Bell className="size-[18px]" strokeWidth={1.75} />}
       title="Notificaciones"
       subtitle={subtitle}
       trailing={

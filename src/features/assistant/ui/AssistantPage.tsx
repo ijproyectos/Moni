@@ -1,4 +1,5 @@
 import { ChevronLeft } from 'lucide-react'
+import { useLocation } from 'react-router'
 import { useGoBack } from '@/shared/lib/useGoBack'
 import { MENTA_CIRCLE } from '@/shared/ui/mentaStyles'
 import mascot from '@/assets/mascot/expresion_feliz.svg'
@@ -18,7 +19,7 @@ export function AssistantHeader({ onBack }: { onBack?: () => void }) {
       <img
         src={mascot}
         alt=""
-        className="size-[42px] shrink-0 rounded-full border-2 border-lilac bg-card object-cover"
+        className="size-[42px] shrink-0 rounded-full border-2 border-lilac bg-card object-contain p-0.5"
       />
       <div className="min-w-0 flex-1">
         <h1 className="text-[19px] font-semibold leading-tight tracking-[-0.02em]">¿Me conviene?</h1>
@@ -37,11 +38,13 @@ export function AssistantHeader({ onBack }: { onBack?: () => void }) {
 /** Informes > Asistente: chat with Moni about the person's own data (insights-chat Edge Function). */
 export function AssistantPage() {
   const goBack = useGoBack('/este-mes')
+  const question = (useLocation().state as { question?: string } | null)?.question
   return (
     <Page>
       <AssistantHeader onBack={goBack} />
       <AssistantConversation
         suggestions={SUGGESTIONS}
+        initialQuestion={question}
         greeting="Hola. Contame qué querés comprar y cuánto sale (por ejemplo, “una campera de $180.000 en 3 cuotas”) y te digo si te conviene. También podés preguntarme por tus gastos, vencimientos, cuotas y grupos."
       />
     </Page>

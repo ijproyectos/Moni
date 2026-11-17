@@ -92,7 +92,7 @@ export function PlusSheet({ onClose, reason = 'generic' }: PlusSheetProps) {
           <img
             src={mascot}
             alt=""
-            className="size-16 shrink-0 rounded-full border-[3px] border-lilac bg-card object-cover shadow-[0_8px_20px_rgba(20,50,30,.3)]"
+            className="size-16 shrink-0 rounded-full border-[3px] border-lilac bg-card object-contain p-1 shadow-[0_8px_20px_rgba(20,50,30,.3)]"
           />
           <div>
             <p className="font-display text-[24px] font-semibold leading-[1.1] tracking-[-0.03em]">

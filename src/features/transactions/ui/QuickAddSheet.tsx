@@ -1,6 +1,7 @@
 import { Camera, ChevronRight, Mic, Pencil, Users, type LucideIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { useCategories } from '@/features/categories/api/useCategories'
+import cat from '@/assets/mascot/expresion_feliz.svg'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { todayIso } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
@@ -68,33 +69,34 @@ export function QuickAddSheet({
     [transactions.data, categories.data],
   )
 
+  const GOLD = 'bg-[#E3B23C] text-[#2A1E00] shadow-[0_6px_0_#B88A1E] dark:text-[#2A1E00]'
   const ways: Way[] = [
     {
-      id: 'photo',
-      title: 'Foto',
-      hint: 'del ticket',
-      icon: Camera,
-      tone: 'bg-tint-blue text-[#285A86] dark:text-ink',
-      disabled: !online,
-      badge: plusBadge,
-      onSelect: onPhoto,
-    },
-    {
       id: 'voice',
-      title: 'Voz',
-      hint: 'hablale a Moni',
+      title: 'Por voz',
+      hint: 'Decilo y listo',
       icon: Mic,
-      tone: 'bg-lilac text-lilac-ink',
+      tone: GOLD,
       disabled: !online,
       badge: plusBadge,
       onSelect: onVoice,
     },
     {
+      id: 'photo',
+      title: 'Sacar foto',
+      hint: 'Ticket o resumen',
+      icon: Camera,
+      tone: GOLD,
+      disabled: !online,
+      badge: plusBadge,
+      onSelect: onPhoto,
+    },
+    {
       id: 'manual',
-      title: 'A mano',
-      hint: 'con teclado',
+      title: 'Manual',
+      hint: 'Escribilo vos',
       icon: Pencil,
-      tone: 'bg-tint-gold text-warn-ink',
+      tone: 'bg-[#0B3D2E] text-[#F1EEDD] shadow-[0_6px_0_#052319]',
       // Stays enabled offline: the form shows its own notice and blocks saving.
       disabled: false,
       badge: false,
@@ -104,12 +106,13 @@ export function QuickAddSheet({
 
   return (
     <BottomSheet
-      title="¿Cómo lo cargás?"
+      title="Agregar un gasto"
       variant="menta"
+      surfaceClassName="bg-[#F1EEDD] dark:bg-canvas"
       onClose={onClose}
     >
-      <div className="flex flex-col gap-3.5">
-        <div className="grid grid-cols-3 gap-2.5">
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-3 gap-2.5 pb-1.5">
           {ways.map((way) => (
             <button
               key={way.id}
@@ -117,19 +120,22 @@ export function QuickAddSheet({
               disabled={way.disabled}
               onClick={way.onSelect}
               className={cn(
-                'relative flex flex-col items-center gap-2 rounded-3xl px-2.5 py-4 disabled:opacity-60',
-                'motion-safe:transition active:brightness-95',
+                'relative flex flex-col items-center gap-1.5 rounded-[28px] px-1.5 pb-4 pt-5 disabled:opacity-60',
+                'motion-safe:transition active:translate-y-0.5',
                 FOCUS_RING,
                 way.tone,
               )}
             >
-              <span className="flex size-[52px] items-center justify-center rounded-full bg-card">
-                <way.icon aria-hidden="true" className="size-6" strokeWidth={2.2} />
+              <span className="relative">
+                <img src={cat} alt="" className="size-[64px] object-contain" />
+                <span className="absolute -bottom-1 -right-2 flex size-[26px] items-center justify-center rounded-full bg-[#0B3D2E] text-[#F1EEDD] ring-2 ring-[#F1EEDD]/30">
+                  <way.icon aria-hidden="true" className="size-3.5" strokeWidth={2.4} />
+                </span>
               </span>
-              <span className="text-[15px] font-bold">{way.title}</span>
-              <span className="-mt-1.5 text-[11.5px]">{way.hint}</span>
+              <span className="mt-1 text-[16px] font-extrabold leading-tight">{way.title}</span>
+              <span className="text-[12px] leading-tight opacity-80">{way.hint}</span>
               {way.badge && (
-                <span className="absolute right-2 top-2 rounded-full bg-sun px-1.5 text-[10px] font-bold leading-4 text-mint-ink">
+                <span className="absolute right-2 top-2 rounded-full bg-[#2A1E00] px-2 text-[11px] font-extrabold leading-5 text-[#E3B23C]">
                   Plus
                 </span>
               )}
@@ -154,7 +160,7 @@ export function QuickAddSheet({
                   type="button"
                   onClick={() => onRepeat(suggestion)}
                   className={cn(
-                    'rounded-full bg-card px-3.5 py-2 text-[13.5px] font-semibold text-ink',
+                    'rounded-full bg-[#FAF8EC] px-3.5 py-2 text-[13.5px] font-semibold text-ink',
                     'motion-safe:transition active:brightness-95',
                     FOCUS_RING,
                   )}
@@ -170,7 +176,7 @@ export function QuickAddSheet({
           type="button"
           onClick={onShare}
           className={cn(
-            'flex items-center gap-2.5 rounded-[20px] bg-card px-3.5 py-3 text-left',
+            'flex items-center gap-2.5 rounded-[20px] bg-[#FAF8EC] px-3.5 py-3 text-left',
             'motion-safe:transition active:brightness-95',
             FOCUS_RING,
           )}

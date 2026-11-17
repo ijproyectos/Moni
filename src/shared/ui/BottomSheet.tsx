@@ -28,6 +28,8 @@ interface BottomSheetProps {
   variant?: 'sheet' | 'menta' | 'screen'
   /** `screen` only: no header at all. The title stays in the dialog name for screen readers. */
   bare?: boolean
+  /** Replaces the sheet's background (e.g. the cream of Inicio). */
+  surfaceClassName?: string
 }
 
 /** How far (px) the grabber has to be dragged down to close the sheet. */
@@ -73,6 +75,7 @@ export function BottomSheet({
   onClose,
   children,
   variant = 'sheet',
+  surfaceClassName,
   bare = false,
 }: BottomSheetProps) {
   const titleId = useId()
@@ -112,6 +115,7 @@ export function BottomSheet({
         style={drag > 0 ? { transform: `translateY(${drag}px)`, transition: 'none' } : undefined}
         className={cn(
           'relative w-full max-w-[430px] overflow-y-auto bg-canvas outline-none motion-safe:animate-[sheet-in_220ms_ease-out]',
+          surfaceClassName,
           variant === 'sheet' &&
             'max-h-[min(92dvh,100%)] rounded-t-[32px] px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3',
           variant === 'menta' &&

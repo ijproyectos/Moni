@@ -117,15 +117,12 @@ describe('Hoy: estructura del diseño', () => {
     expect(screen.queryByRole('button', { name: /Mes (anterior|siguiente)/ })).toBeNull()
   })
 
-  it('draws the hero (empty without income data), the voice and keyboard buttons and the shared card', () => {
+  it('draws the hero (empty without income data), the question field and no shared card', () => {
     setup()
-    expect(screen.getByRole('region', { name: 'Hoy podés gastar' })).toHaveTextContent(
-      'Cargá tus ingresos',
+    expect(screen.getByRole('region', { name: 'Lo que tenés' })).toHaveTextContent(
+      'Cargar ingresos',
     )
-    expect(screen.getByRole('button', { name: 'Cargar con la voz' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cargar a mano' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Gastos compartidos' })).toHaveTextContent(
-      'Sin saldos pendientes',
-    )
+    expect(screen.getByRole('textbox', { name: 'Preguntale a Moni' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Gastos compartidos' })).toBeNull()
   })
 })

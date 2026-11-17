@@ -30,8 +30,8 @@ export function MoniAddButton({
       aria-haspopup="dialog"
       aria-expanded={open}
       className={cn(
-        'relative flex size-[60px] shrink-0 select-none items-center justify-center rounded-full border-[3px] bg-lilac outline-none',
-        open ? 'border-mint-ink' : 'border-white',
+        'relative flex size-[60px] shrink-0 select-none items-center justify-center rounded-full border-[3px] bg-[#E3B23C] shadow-[0_8px_24px_rgba(17,34,24,0.18)] outline-none',
+        open ? 'border-[#0B3D2E]' : 'border-[#F1EEDD]',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink',
         'motion-safe:transition motion-safe:active:scale-[0.97] active:brightness-95',
         className,

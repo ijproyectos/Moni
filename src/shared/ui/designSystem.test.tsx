@@ -61,9 +61,9 @@ describe('shared design system', () => {
 
   it('the cat button is the assistant circle: mint border while its menu is open', () => {
     const { rerender } = render(<MoniAddButton aria-label="Nuevo movimiento" />)
-    expect(screen.getByRole('button', { name: 'Nuevo movimiento' })).toHaveClass('border-white')
+    expect(screen.getByRole('button', { name: 'Nuevo movimiento' })).toHaveClass('border-[#F1EEDD]')
     rerender(<MoniAddButton aria-label="Cerrar" open />)
-    expect(screen.getByRole('button', { name: 'Cerrar' })).toHaveClass('border-mint-ink')
+    expect(screen.getByRole('button', { name: 'Cerrar' })).toHaveClass('border-[#0B3D2E]')
   })
 
   it('Page has the same 20px side margins on every screen', () => {

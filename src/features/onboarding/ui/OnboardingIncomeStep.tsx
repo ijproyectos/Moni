@@ -119,7 +119,7 @@ export function OnboardingIncomeStep({
 
       {budget > 0 && (
         <div className="flex gap-3 rounded-[24px] bg-lilac-soft p-3.5">
-          <img src={mascotUrl} alt="" className="size-9 shrink-0 rounded-full border-2 border-lilac bg-card object-cover" />
+          <img src={mascotUrl} alt="" className="size-9 shrink-0 rounded-full border-2 border-lilac bg-card object-contain p-px" />
           <div className="flex flex-col gap-[3px]">
             <p className="text-[15px] font-bold text-lilac-ink dark:text-ink">
               Te sugiero un presupuesto de <AmountDisplay cents={budget} />

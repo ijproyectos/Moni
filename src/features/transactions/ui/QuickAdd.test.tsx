@@ -109,7 +109,7 @@ function renderQuickAdd() {
 
 async function openMenu(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Nuevo movimiento' }))
-  return screen.getByRole('dialog', { name: '¿Cómo lo cargás?' })
+  return screen.getByRole('dialog', { name: 'Agregar un gasto' })
 }
 
 function pickPhoto() {
@@ -141,7 +141,7 @@ afterEach(() => {
 })
 
 describe('QuickAdd sheet (screen 18)', () => {
-  it('opens the assistant sheet with Foto, Voz and A mano, in that order, and the group shortcut', async () => {
+  it('opens the assistant sheet with Por voz, Sacar foto and Manual, in that order, and the group shortcut', async () => {
     const { user } = renderQuickAdd()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     const fab = screen.getByRole('button', { name: 'Nuevo movimiento' })
@@ -152,8 +152,8 @@ describe('QuickAdd sheet (screen 18)', () => {
     const ways = within(dialog)
       .getAllByRole('button')
       .map((el) => el.textContent)
-      .filter((t) => /^(Foto|Voz|A mano)/.test(t ?? ''))
-    expect(ways).toEqual(['Fotodel ticket', 'Vozhablale a Moni', 'A manocon teclado'])
+      .filter((t) => /^(Sacar foto|Por voz|Manual)/.test(t ?? ''))
+    expect(ways).toEqual(['Por vozDecilo y listo', 'Sacar fotoTicket o resumen', 'ManualEscribilo vos'])
     expect(
       within(dialog).getByRole('button', { name: 'Dividir un gasto con un grupo' }),
     ).toBeInTheDocument()
@@ -178,7 +178,7 @@ describe('QuickAdd sheet (screen 18)', () => {
   it('"A mano" opens the usual new-movement form', async () => {
     const { user, openNew } = renderQuickAdd()
     await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^A mano/ }))
+    await user.click(screen.getByRole('button', { name: /^Manual/ }))
     expect(openNew).toHaveBeenCalledTimes(1)
     expect(openNew).toHaveBeenCalledWith()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -194,9 +194,9 @@ describe('QuickAdd sheet (screen 18)', () => {
   it('"Voz" opens the voice conversation', async () => {
     const { user } = renderQuickAdd()
     await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^Voz/ }))
+    await user.click(screen.getByRole('button', { name: /^Por voz/ }))
     expect(screen.getByRole('dialog', { name: 'Carga por voz' })).toBeInTheDocument()
-    expect(screen.queryByRole('dialog', { name: '¿Cómo lo cargás?' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Agregar un gasto' })).not.toBeInTheDocument()
   })
 
   it('"Foto" opens the camera / file picker in the same tap (the input is always mounted)', async () => {
@@ -204,7 +204,7 @@ describe('QuickAdd sheet (screen 18)', () => {
     const { user } = renderQuickAdd()
     const input = screen.getByTestId('receipt-input')
     await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^Foto/ }))
+    await user.click(screen.getByRole('button', { name: /^Sacar foto/ }))
     expect(click).toHaveBeenCalledTimes(1)
     expect(screen.getByTestId('receipt-input')).toBe(input)
     expect(input).toHaveAttribute('accept', 'image/*')
@@ -215,11 +215,11 @@ describe('QuickAdd sheet (screen 18)', () => {
     act(() => onlineManager.setOnline(false))
     const { user, openNew } = renderQuickAdd()
     await openMenu(user)
-    expect(screen.getByRole('button', { name: /^Foto/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /^Voz/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /^A mano/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /^Sacar foto/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Por voz/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Manual/ })).toBeEnabled()
     expect(screen.getByText('Sin conexión. Conectate para guardar cambios.')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /^A mano/ }))
+    await user.click(screen.getByRole('button', { name: /^Manual/ }))
     expect(openNew).toHaveBeenCalled()
   })
 
@@ -247,11 +247,11 @@ describe('QuickAdd free plan gate', () => {
     plusState.isFree = true
     const { user } = renderQuickAdd()
     await openMenu(user)
-    expect(screen.getByRole('button', { name: /^Foto.*Plus$/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^Voz.*Plus$/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^A mano/ })).not.toHaveTextContent('Plus')
+    expect(screen.getByRole('button', { name: /^Sacar foto.*Plus$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Por voz.*Plus$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Manual/ })).not.toHaveTextContent('Plus')
 
-    await user.click(screen.getByRole('button', { name: /^Voz/ }))
+    await user.click(screen.getByRole('button', { name: /^Por voz/ }))
     expect(
       await screen.findByRole('dialog', { name: /Cargar por voz es de Moni Plus/ }),
     ).toBeInTheDocument()
@@ -262,14 +262,14 @@ describe('QuickAdd free plan gate', () => {
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
     const { user, openNew } = renderQuickAdd()
     await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^Foto/ }))
+    await user.click(screen.getByRole('button', { name: /^Sacar foto/ }))
     expect(click).not.toHaveBeenCalled()
     expect(
       await screen.findByRole('dialog', { name: /Escanear tickets es de Moni Plus/ }),
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cerrar' }))
     await user.click(screen.getByRole('button', { name: 'Nuevo movimiento' }))
-    await user.click(screen.getByRole('button', { name: /^A mano/ }))
+    await user.click(screen.getByRole('button', { name: /^Manual/ }))
     expect(openNew).toHaveBeenCalled()
   })
 
@@ -282,7 +282,7 @@ describe('QuickAdd free plan gate', () => {
     })
     const { user } = renderQuickAdd()
     await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^Foto/ }))
+    await user.click(screen.getByRole('button', { name: /^Sacar foto/ }))
     pickPhoto()
     expect(
       await screen.findByRole('dialog', { name: /Escanear tickets es de Moni Plus/ }),
