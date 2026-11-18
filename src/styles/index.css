@@ -562,6 +562,21 @@ html.dark .bg-lime {
   }
 }
 
+/* The coin trail while Moni is dragged: it appears, scatters a little and fades. */
+@keyframes moni-coin {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5) rotate(0deg);
+  }
+  18% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(1) rotate(var(--rot));
+  }
+}
+
 /* Moni blinks now and then: the lids show for a moment (a quick double blink once in a while). */
 @keyframes moni-blink {
   0%,

@@ -1,52 +1,56 @@
 /** What the floating Moni says in its speech bubble. */
 export const MONI_PHRASES = [
-  // Preguntas para charlar
-  '¿Charlamos un rato?',
-  '¿Cómo viene tu plata?',
-  '¿Tenés alguna duda?',
-  '¿Hay algo que quieras saber?',
-  '¿Querés un consejo?',
+  // Ahorro y metas
+  '¿Cómo van tus ahorros?',
   '¿Cómo van tus metas?',
-  '¿Llegamos a fin de mes?',
-  '¿Revisamos tus cuentas?',
+  'Ahorrar de a poquito rinde',
+  '¡Cada peso cuenta!',
   '¿Te ayudo a ahorrar?',
-  '¿Cómo andan tus números?',
-  '¿Armamos un presupuesto?',
-  '¿Miramos tus gastos?',
-  '¿Te cuento algo útil?',
-  '¿Necesitás una mano?',
-  // Invitaciones a registrar
+  'Un ahorrito hoy, tranquilidad mañana',
+  '¿Ya apartaste algo este mes?',
+  'Las metas se logran de a poco',
+  // Registrar y revisar
+  '¿Anotamos un gasto?',
   '¿En qué gastaste hoy?',
-  '¿Cuánto gastaste hoy?',
-  'Contame qué compraste',
   '¿Cargamos un gasto?',
   '¿Anotamos ese cafecito?',
   '¿Te quedó algún ticket?',
   '¿Cobraste algo? Contame',
-  '¿Registramos lo de hoy?',
   '¿Se te escapó algún gasto?',
-  // Consejos breves y sugerencias
+  '¿Revisamos tus números?',
+  '¿Revisamos tus cuentas?',
+  '¿Miramos tus gastos?',
   'Anotar hoy te ahorra dolores mañana',
+  // Control y consejos
+  'Tu plata, bajo control',
+  'Tu plata, bien cuidada',
   'Los gastitos hormiga también cuentan',
-  'Mirar tus números ayuda a decidir',
-  'Ahorrar de a poquito rinde',
-  'Antes de comprar, preguntame',
   'Un presupuesto chiquito ordena todo',
-  '¿Te alcanza para ese gustito?',
+  '¿Armamos un presupuesto?',
+  'Mirar tus números ayuda a decidir',
   'Pensalo antes de pagar en cuotas',
   'Pagar a tiempo evita sorpresas',
-  // Divertidos
-  '¡Cuidemos esos pesitos!',
-  '¡Hola! Acá estoy, ¿eh?',
-  'Miau… ¿me hacés una pregunta?',
-  '¡Tu gato de la fortuna presente!',
-  'Los pesos me caen simpáticos',
-  '¡Vamos que se puede!',
+  'Antes de comprar, preguntame',
+  '¿Te alcanza para ese gustito?',
+  '¿Llegamos bien a fin de mes?',
+  'Gastar con cabeza también es ahorrar',
+  // Charla y fortuna
+  '¿Tenés alguna duda?',
+  '¿Charlamos un rato?',
+  '¿Querés un consejo?',
+  '¿Necesitás una mano?',
+  'Tocame y charlamos',
   'Estoy atento, che',
-  '¡Tocame y charlamos!',
-  'Soy todo oídos, ¿eh?',
-  'Hoy me siento financiero',
+  'Que la fortuna te acompañe',
+  'Las monedas me caen simpáticas',
+  '¡Cuidemos esos pesitos!',
+  'Tu gato de la fortuna presente',
 ] as const
+
+/** Time from one phrase appearing to the next: 12–15 s, a little different each time (`random` is a prop to test it). */
+export function nextInterval(random: () => number = Math.random): number {
+  return 12_000 + Math.round(random() * 3_000)
+}
 
 /** A phrase that is not the previous one (`random` is a prop so it can be tested). */
 export function nextPhrase(previous: string | null, random: () => number = Math.random): string {

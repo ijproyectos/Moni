@@ -176,7 +176,7 @@ export function GroupsScreen({
               onClick={() => onOpenDebts?.('owed')}
               className="flex flex-col gap-2.5 rounded-xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
-              <Kicker as="span" className="font-medium text-[#CBEBD9]">
+              <Kicker as="span" className="font-medium text-[#DDF3E6]!">
                 Te deben
               </Kicker>
               <BigFigure cents={owed} signed={owed > 0} />

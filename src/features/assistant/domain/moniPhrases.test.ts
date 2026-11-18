@@ -1,4 +1,4 @@
-import { CAT_VISIBLE, clampToArea, MONI_PHRASES, nextPhrase } from './moniPhrases'
+import { CAT_VISIBLE, clampToArea, MONI_PHRASES, nextInterval, nextPhrase } from './moniPhrases'
 
 describe('MONI_PHRASES', () => {
   it('has at least 30 different, short phrases', () => {
@@ -46,5 +46,13 @@ describe('clampToArea', () => {
   it('does not break in a tiny area', () => {
     const r = clampToArea({ x: 5, y: 5 }, { width: 50, height: 50 }, size, margin, 7)
     expect(Number.isFinite(r.x) && Number.isFinite(r.y)).toBe(true)
+  })
+})
+
+describe('nextInterval', () => {
+  it('is between 12 and 15 seconds and varies', () => {
+    expect(nextInterval(() => 0)).toBe(12_000)
+    expect(nextInterval(() => 1)).toBe(15_000)
+    expect(nextInterval(() => 0.5)).toBe(13_500)
   })
 })

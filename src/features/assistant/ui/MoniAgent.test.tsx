@@ -187,16 +187,35 @@ describe('MoniAgent (the floating cat)', () => {
     expect((cat().parentElement as HTMLElement).style.top).toBe('666px')
   })
 
-  it('says a phrase soon after arriving, fades it out, and speaks again a few seconds later', () => {
+  it('says the first phrase 8 s after arriving, keeps it 3 s, then speaks again 12–15 s after it appeared', () => {
     vi.useFakeTimers()
     renderAgent()
+    act(() => void vi.advanceTimersByTime(7900))
     expect(screen.queryByTestId('moni-bubble')).toBeNull()
-    act(() => void vi.advanceTimersByTime(1500))
+    act(() => void vi.advanceTimersByTime(200))
     expect(screen.getByTestId('moni-bubble')).toHaveClass('opacity-100', 'pointer-events-none')
     expect(screen.getByTestId('moni-bubble').textContent).toMatch(/\S/)
-    act(() => void vi.advanceTimersByTime(2500))
+    act(() => void vi.advanceTimersByTime(2800))
+    expect(screen.getByTestId('moni-bubble')).toHaveClass('opacity-100')
+    act(() => void vi.advanceTimersByTime(300))
     expect(screen.getByTestId('moni-bubble')).toHaveClass('opacity-0')
-    act(() => void vi.advanceTimersByTime(2500))
+    act(() => void vi.advanceTimersByTime(8000))
+    expect(screen.getByTestId('moni-bubble')).toHaveClass('opacity-0')
+    act(() => void vi.advanceTimersByTime(4000))
+    expect(screen.getByTestId('moni-bubble')).toHaveClass('opacity-100')
+  })
+
+  it('does not speak while the tab is in the background', () => {
+    vi.useFakeTimers()
+    renderAgent()
+    const state = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    act(() => void document.dispatchEvent(new Event('visibilitychange')))
+    act(() => void vi.advanceTimersByTime(60_000))
+    expect(screen.queryByTestId('moni-bubble')).toBeNull()
+    state.mockReturnValue('visible')
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    act(() => void document.dispatchEvent(new Event('visibilitychange')))
+    act(() => void vi.advanceTimersByTime(12_500))
     expect(screen.getByTestId('moni-bubble')).toHaveClass('opacity-100')
   })
 
@@ -205,7 +224,7 @@ describe('MoniAgent (the floating cat)', () => {
     renderAgent()
     const seen: string[] = []
     for (let i = 0; i < 8; i++) {
-      act(() => void vi.advanceTimersByTime(i === 0 ? 1500 : 6000))
+      act(() => void vi.advanceTimersByTime(i === 0 ? 8500 : 15_000))
       seen.push(screen.getByTestId('moni-bubble').textContent ?? '')
     }
     seen.slice(1).forEach((p, i) => expect(p).not.toBe(seen[i]))
@@ -214,18 +233,18 @@ describe('MoniAgent (the floating cat)', () => {
   it('pauses the phrases while the chat is open and goes on when it closes', () => {
     vi.useFakeTimers()
     renderAgent()
-    act(() => void vi.advanceTimersByTime(1500))
+    act(() => void vi.advanceTimersByTime(8500))
     fireEvent.pointerDown(cat(), { pointerId: 5, clientX: 10, clientY: 10 })
     fireEvent.pointerUp(cat(), { pointerId: 5, clientX: 10, clientY: 10 })
     fireEvent.click(cat())
     expect(screen.getByRole('dialog', { name: 'Moni' })).toBeInTheDocument()
     expect(screen.getByTestId('moni-bubble')).toHaveClass('opacity-0')
     const frozen = screen.getByTestId('moni-bubble').textContent
-    act(() => void vi.advanceTimersByTime(30_000))
+    act(() => void vi.advanceTimersByTime(60_000))
     expect(screen.getByTestId('moni-bubble')).toHaveClass('opacity-0')
     expect(screen.getByTestId('moni-bubble').textContent).toBe(frozen)
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }))
-    act(() => void vi.advanceTimersByTime(1500))
+    act(() => void vi.advanceTimersByTime(8500))
     expect(screen.getByTestId('moni-bubble')).toHaveClass('opacity-100')
   })
 })

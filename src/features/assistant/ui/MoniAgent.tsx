@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
 import moniCat from '@/assets/mascot/moni-gato-fortuna-animado.svg'
 import { cn } from '@/shared/ui/cn'
-import { CAT_VISIBLE, clampToArea, nextPhrase } from '../domain/moniPhrases'
+import { CAT_VISIBLE, clampToArea, nextInterval, nextPhrase } from '../domain/moniPhrases'
 import { AssistantSheet } from './AssistantSheet'
 
 const SIZE = 132
@@ -16,13 +16,22 @@ const BAR_GAP = 6
 const NO_BAR_BOTTOM = 12
 /** A touch that moves less than this is a tap; more is a drag. */
 const DRAG_PX = 8
-/** Moni talks often: a phrase soon after arriving, each one on screen a few seconds, the next one right after a short pause. */
-const FIRST_BUBBLE_MS = 1200
-const BUBBLE_VISIBLE_MS = 2200
-const BUBBLE_GAP_MS = 2800
+/** Moni talks now and then: the first phrase 8 s after arriving, each one on screen 3 s, the next 12–15 s after it appeared. */
+const FIRST_BUBBLE_MS = 8000
+const BUBBLE_VISIBLE_MS = 3000
+/** Inertia: the drawn cat closes the gap to the finger with this time constant (ms): fluid, never far behind. */
+const FOLLOW_MS = 70
+/** Coin trail while dragging: one coin every so many px of travel (and not faster than the minimum gap), few at once. */
+const COIN_EVERY_PX = 56
+const COIN_MIN_GAP_MS = 130
+const COIN_MAX = 7
 const POSITION_KEY = 'moni.agent.position'
 
 type Point = { x: number; y: number }
+type Coin = { id: number; x: number; y: number; size: number; dx: number; dy: number; rot: number; ms: number }
+
+const reducedMotion = () =>
+  typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Where the person left the cat during this visit (fractions of the area, so a different screen size still fits). */
 function readSaved(): { fx: number; fy: number } | null {
@@ -51,6 +60,13 @@ export function MoniAgent({ name = null }: { name?: string | null }) {
   const lastPhrase = useRef<string | null>(null)
   /** A tap (down and up without moving) waits for its own `click` to open the chat: opening on `pointerup` lets the browser's follow-up click land on the sheet that just appeared. */
   const tapped = useRef(false)
+  const catEl = useRef<HTMLDivElement>(null)
+  /** Where the cat is drawn right now (follows `pos` with inertia); `pos` itself is the real, clamped position. */
+  const shown = useRef<Point | null>(null)
+  const target = useRef<Point | null>(null)
+  const frame = useRef(0)
+  const [coins, setCoins] = useState<Coin[]>([])
+  const coinTrail = useRef({ x: 0, y: 0, at: 0, id: 0 })
   const gesture = useRef<{ id: number; startX: number; startY: number; origin: Point; moved: boolean } | null>(null)
 
   /** The area and the margins for the cat; the bottom one follows the real position of the navigation bar. */
@@ -85,26 +101,78 @@ export function MoniAgent({ name = null }: { name?: string | null }) {
     }
   }, [bounds])
 
-  // The speech bubble: it fades in with a phrase, fades out, and after a short pause the next phrase (always a different one)
-  // comes in. The phrase only changes while the bubble is invisible, so the change is a soft cross-fade. While the chat is
-  // open the rotation is paused.
+  // Inertia: the box sits at `pos` (layout); a translate carries the drawn cat from where it was to there, easing out.
+  useLayoutEffect(() => {
+    const el = catEl.current
+    if (!pos || !el) return
+    target.current = pos
+    if (!shown.current || reducedMotion()) shown.current = { ...pos }
+    const paint = () => {
+      const s = shown.current as Point
+      el.style.transform = `translate3d(${s.x - pos.x}px, ${s.y - pos.y}px, 0)`
+    }
+    paint()
+    cancelAnimationFrame(frame.current)
+    let last = performance.now()
+    const step = (now: number) => {
+      const s = shown.current as Point
+      const k = 1 - Math.exp(-Math.min(now - last, 64) / FOLLOW_MS)
+      last = now
+      s.x += (pos.x - s.x) * k
+      s.y += (pos.y - s.y) * k
+      if (Math.hypot(pos.x - s.x, pos.y - s.y) < 0.3) {
+        shown.current = { ...pos }
+        paint()
+        return
+      }
+      paint()
+      frame.current = requestAnimationFrame(step)
+    }
+    if (Math.hypot(pos.x - shown.current.x, pos.y - shown.current.y) >= 0.3) frame.current = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frame.current)
+  }, [pos])
+
+  // The speech bubble: it fades in with a phrase, stays 3 s and fades out; the next one comes 12–15 s after the previous one
+  // appeared (always a different phrase). Nothing is shown while the cat is dragged, while the chat is open or while the tab
+  // is in the background: then the phrase is skipped and the clock starts over.
+  const draggingRef = useRef(false)
+  draggingRef.current = dragging
   useEffect(() => {
     if (open) return
     let timer: ReturnType<typeof setTimeout>
+    let hideTimer: ReturnType<typeof setTimeout>
+    const hidden = () => document.visibilityState === 'hidden'
+    const schedule = (ms: number) => {
+      clearTimeout(timer)
+      timer = setTimeout(show, ms)
+    }
     const show = () => {
+      if (draggingRef.current || hidden()) {
+        schedule(nextInterval())
+        return
+      }
       const next = nextPhrase(lastPhrase.current)
       lastPhrase.current = next
       setPhrase(next)
       setBubbleOn(true)
-      timer = setTimeout(hide, BUBBLE_VISIBLE_MS)
+      hideTimer = setTimeout(() => setBubbleOn(false), BUBBLE_VISIBLE_MS)
+      schedule(nextInterval())
     }
-    const hide = () => {
-      setBubbleOn(false)
-      timer = setTimeout(show, BUBBLE_GAP_MS)
+    const onVisibility = () => {
+      if (hidden()) {
+        clearTimeout(timer)
+        clearTimeout(hideTimer)
+        setBubbleOn(false)
+      } else {
+        schedule(nextInterval())
+      }
     }
-    timer = setTimeout(show, FIRST_BUBBLE_MS)
+    document.addEventListener('visibilitychange', onVisibility)
+    schedule(FIRST_BUBBLE_MS)
     return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
       clearTimeout(timer)
+      clearTimeout(hideTimer)
       setBubbleOn(false)
     }
   }, [open])
@@ -113,6 +181,30 @@ export function MoniAgent({ name = null }: { name?: string | null }) {
     if (!pos) return
     gesture.current = { id: event.pointerId, startX: event.clientX, startY: event.clientY, origin: pos, moved: false }
     event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  /** A coin near the cat's body, only after some travel: few, spaced, and never with reduced motion. */
+  function spawnCoin(now: number) {
+    const at = shown.current
+    if (!at || reducedMotion()) return
+    const t = coinTrail.current
+    if (t.at === 0) Object.assign(t, { x: at.x, y: at.y, at: now })
+    if (Math.hypot(at.x - t.x, at.y - t.y) < COIN_EVERY_PX || now - t.at < COIN_MIN_GAP_MS) return
+    t.x = at.x
+    t.y = at.y
+    t.at = now
+    const r = (min: number, max: number) => min + Math.random() * (max - min)
+    const coin: Coin = {
+      id: ++t.id,
+      x: at.x + SIZE * r(0.3, 0.7),
+      y: at.y + SIZE * r(0.45, 0.85),
+      size: Math.round(r(11, 17)),
+      dx: Math.round(r(-26, 26)),
+      dy: Math.round(r(-30, 14)),
+      rot: Math.round(r(-80, 80)),
+      ms: Math.round(r(620, 880)),
+    }
+    setCoins((list) => [...list.slice(-(COIN_MAX - 1)), coin])
   }
 
   function onPointerMove(event: PointerEvent<HTMLButtonElement>) {
@@ -126,6 +218,7 @@ export function MoniAgent({ name = null }: { name?: string | null }) {
       setDragging(true)
       setBubbleOn(false)
     }
+    spawnCoin(event.timeStamp)
     setPos(clampToArea({ x: g.origin.x + dx, y: g.origin.y + dy }, bounds(), SIZE, bounds().margin, FLOAT_LIFT))
   }
 
@@ -133,6 +226,7 @@ export function MoniAgent({ name = null }: { name?: string | null }) {
     const g = gesture.current
     if (!g || g.id !== event.pointerId) return
     gesture.current = null
+    coinTrail.current.at = 0
     event.currentTarget.releasePointerCapture?.(event.pointerId)
     if (g.moved) {
       setDragging(false)
@@ -170,8 +264,30 @@ export function MoniAgent({ name = null }: { name?: string | null }) {
   return (
     <>
       <div ref={area} className="pointer-events-none fixed inset-0 z-20 mx-auto max-w-[430px]">
+        {coins.map((c) => (
+          <span
+            key={c.id}
+            aria-hidden="true"
+            data-testid="moni-coin"
+            onAnimationEnd={() => setCoins((list) => list.filter((x) => x.id !== c.id))}
+            className="pointer-events-none absolute grid place-items-center rounded-full border border-[#B8862B] bg-[#F6CA5A] font-display font-extrabold leading-none text-[#6B4A0E] motion-safe:animate-[moni-coin_var(--ms)_ease-out_forwards]"
+            style={{
+              left: c.x - c.size / 2,
+              top: c.y - c.size / 2,
+              width: c.size,
+              height: c.size,
+              fontSize: c.size * 0.62,
+              '--dx': `${c.dx}px`,
+              '--dy': `${c.dy}px`,
+              '--rot': `${c.rot}deg`,
+              '--ms': `${c.ms}ms`,
+            } as CSSProperties}
+          >
+            $
+          </span>
+        ))}
         {pos && (
-          <div className="absolute" style={{ left: pos.x, top: pos.y, width: SIZE, height: SIZE }}>
+          <div ref={catEl} className="absolute will-change-transform" style={{ left: pos.x, top: pos.y, width: SIZE, height: SIZE }}>
             {phrase && (
               <p
                 role="status"

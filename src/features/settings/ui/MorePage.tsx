@@ -1,7 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import moniFace from '@/assets/mascot/expresion_atento.svg'
 import { AssistantSheet } from '@/features/assistant/ui/AssistantSheet'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
@@ -152,14 +151,6 @@ export function MorePage() {
           <p className="text-[15px] font-semibold text-text-muted">Tu plata de un vistazo</p>
           <h1 className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight tracking-[-0.02em]">Explorar</h1>
         </div>
-        <button
-          type="button"
-          aria-label="Hablá con Moni"
-          onClick={() => setAsking(true)}
-          className="grid size-[52px] shrink-0 place-items-center rounded-full bg-[#1D4A3A] ring-2 ring-[#B9A8E8] ring-offset-2 ring-offset-bg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-mint-ink"
-        >
-          <img src={moniFace} alt="" draggable={false} className="w-8" />
-        </button>
       </header>
 
       <div className="mt-4 px-5">

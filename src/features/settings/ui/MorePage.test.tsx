@@ -75,7 +75,7 @@ describe('Explorar', () => {
     link(/^Gastos hormiga/, '/hormigas')
     link(/^Informes/, '/este-mes')
     link(/^Viajes/, '/viajes')
-    expect(screen.getByRole('button', { name: 'Hablá con Moni' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Hablá con Moni' })).toBeNull()
   })
 
   it('"Más" keeps Categorías, ¿Me conviene?, the simulator (no Avisos de Moni)', () => {
