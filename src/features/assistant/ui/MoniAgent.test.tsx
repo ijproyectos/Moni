@@ -189,6 +189,7 @@ describe('MoniAgent (the floating cat)', () => {
 
   it('says the first phrase 8 s after arriving, keeps it 3 s, then speaks again 12–15 s after it appeared', () => {
     vi.useFakeTimers()
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
     renderAgent()
     act(() => void vi.advanceTimersByTime(7900))
     expect(screen.queryByTestId('moni-bubble')).toBeNull()
