@@ -83,7 +83,7 @@ export function BudgetPage() {
 
   return (
     <section className="flex flex-col gap-3 px-[18px] pb-4 pt-1">
-      <MentaHeader title="Presupuesto" subtitle={formatMonthYear(month)} backTo="/perfil" />
+      <MentaHeader title="Presupuesto" subtitle={formatMonthYear(month)} backTo="/mas" />
 
       {status.isLoading ? (
         <div role="status" aria-label="Cargando presupuesto" className="flex flex-col gap-3">

@@ -1,78 +1,50 @@
+import { Eye, EyeOff } from 'lucide-react'
+import { distributionLabel, type HomeBalance } from '../domain/homeBalance'
 import { formatArs, type Cents } from '@/shared/lib/money'
 import { AmountDisplay, MASK } from '@/shared/ui/AmountDisplay'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
-import type { DailyAllowanceView } from '../api/useDailyAllowance'
-import { DAY_STATUS_LABELS } from '../domain/monthPace'
-
-interface HomeHeroProps {
-  view: DailyAllowanceView
-  /** What the person has: the real sum of their payment methods and how many there are. */
-  balance: { totalCents: Cents; methodCount: number }
-  /** Empty state action: leads to loading income. */
-  onAddIncome: () => void
-}
 
 /**
- * "Lo que tenés": the real total of the payment methods; below it, the chip with "Hoy podés gastar" and the state of the day.
- * Without income there is nothing honest to compute for the day, so the chip says so and leads to loading it.
+ * "Lo que tenés": the real total of the payment methods in one line, the eye that hides it, and the bar that shows how
+ * the money is split (the strong part is the payment method that holds most of it).
  */
-export function HomeHero({ view, balance, onAddIncome }: HomeHeroProps) {
-  const { allowance, status, isLoading } = view
+export function HomeHero({ balance }: { balance: HomeBalance }) {
   const { hidden, toggle } = useHiddenAmounts()
-  const over = status === 'te-pasaste' && allowance.kind !== 'sin-datos' && allowance.overCents > 0
-  const dot =
-    status === 'te-pasaste' ? 'bg-[#9E2F24]' : status === 'ajustado' ? 'bg-[#B8651B]' : 'bg-[#0B3D2E]'
+  const Eye_ = hidden ? EyeOff : Eye
+  const percent = balance.top?.percent ?? 0
   return (
-    <section
-      aria-labelledby="hero-title"
-      data-status={status}
-      className="relative mx-[18px] flex flex-col gap-1.5 overflow-hidden [container-type:inline-size] rounded-[32px] bg-[#0B3D2E] px-[26px] pb-6 pt-[26px] text-[#F1EEDD]"
-    >
+    <section aria-labelledby="hero-title" className="relative mx-[18px] pt-3">
+      {/* The card behind, peeking out. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute -right-10 -top-10 size-64 rounded-full bg-[radial-gradient(circle,rgba(176,148,60,0.45),transparent_70%)]"
+        className="pointer-events-none absolute inset-x-3 top-0 h-16 -rotate-1 rounded-[26px] bg-[#E2DFC9] dark:bg-[#17291F]"
       />
-      <div className="relative flex items-start justify-between gap-2">
-        <h2 id="hero-title" className="pt-3 text-[13px] font-extrabold uppercase tracking-[0.2em] text-[#C9D2BF]">
-          Lo que tenés
-        </h2>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-pressed={hidden}
-          aria-label={hidden ? 'Mostrar montos' : 'Ocultar montos'}
-          className="min-h-11 rounded-full bg-white/10 px-[22px] text-[15px] font-bold text-[#C9D2BF] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F1EEDD]"
+      <div className="relative flex flex-col gap-2 overflow-hidden rounded-[26px] bg-[linear-gradient(135deg,#1B3A2E_0%,#0F2A20_70%)] px-5 pb-5 pt-4 text-[#F1EEDD] shadow-[0_18px_40px_rgba(17,34,24,0.22)] [container-type:inline-size] dark:bg-[linear-gradient(135deg,#2B4A3C_0%,#16291F_75%)]">
+        <div className="flex items-start justify-between gap-2">
+          <h2 id="hero-title" className="pt-1 text-[14px] font-bold text-[#D4DCCB]">
+            Lo que tenés
+          </h2>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-pressed={hidden}
+            aria-label={hidden ? 'Mostrar montos' : 'Ocultar montos'}
+            className="-mr-1 -mt-1 flex size-11 items-center justify-center rounded-full bg-white/10 text-[#F1EEDD] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F1EEDD]"
+          >
+            <Eye_ aria-hidden="true" className="size-5" strokeWidth={2.2} />
+          </button>
+        </div>
+        <Figure cents={balance.totalCents} />
+        <div
+          role="img"
+          aria-label={balance.top ? `${balance.top.percent}% del dinero en ${balance.top.name}` : 'Sin dinero repartido'}
+          className="mt-1 flex items-center gap-1.5"
         >
-          {hidden ? 'Mostrar' : 'Ocultar'}
-        </button>
-      </div>
-      <Figure cents={balance.totalCents} />
-      <p className="relative text-[17px] font-semibold text-[#C9D2BF]">
-        repartido en {balance.methodCount} {balance.methodCount === 1 ? 'medio de pago' : 'medios de pago'}
-      </p>
-      <div className="relative mt-3 flex">
-        {allowance.kind === 'sin-datos' ? (
-          isLoading ? (
-            <div role="status" aria-label="Calculando tu día" className="h-[46px] w-56 animate-pulse rounded-full bg-[#E3B23C]/60" />
-          ) : (
-            <button
-              type="button"
-              onClick={onAddIncome}
-              className="flex min-h-[46px] items-center gap-2.5 rounded-full bg-[#E3B23C] px-6 text-[16px] font-extrabold text-[#0B3D2E] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F1EEDD]"
-            >
-              Cargar ingresos
-            </button>
-          )
-        ) : (
-          <p className="flex min-h-[46px] items-center gap-2.5 rounded-full bg-[#E3B23C] px-6 text-[16px] font-extrabold leading-tight text-[#0B3D2E]">
-            <span aria-hidden="true" className={`size-2.5 shrink-0 rounded-full ${dot}`} />
-            <span>
-              {over ? 'Pasaste tu presupuesto por ' : 'Hoy podés gastar '}
-              <AmountDisplay cents={over ? allowance.overCents : allowance.dailyCents} />
-              {status && ` · ${DAY_STATUS_LABELS[status]}`}
-            </span>
-          </p>
-        )}
+          <span className="h-[5px] min-w-1 rounded-full bg-[#A99BE3]" style={{ width: `${Math.max(percent, 4)}%` }} />
+          <span className="size-[5px] shrink-0 rounded-full bg-[#F1EEDD]/80" />
+          <span className="h-[5px] flex-1 rounded-full bg-white/10" hidden={percent >= 100} />
+        </div>
+        <p className="text-[14px] font-semibold text-[#D4DCCB]">{distributionLabel(balance)}</p>
       </div>
     </section>
   )
@@ -80,12 +52,12 @@ export function HomeHero({ view, balance, onAddIncome }: HomeHeroProps) {
 
 /** Width of a digit in Nunito ExtraBold, with the tight tracking, in em (a little generous so it never overflows). */
 const CHAR_EM = 0.64
-const MAX_FIGURE_PX = 64
+const MAX_FIGURE_PX = 56
 const MIN_FIGURE_PX = 22
 
 /**
- * The big figure: the real total in ONE line. The font size follows the card's width (container query units) and the
- * number of characters, so a long amount shrinks instead of wrapping, and never scrolls sideways.
+ * The big figure in ONE line: the font size follows the card's width (container query units) and the number of
+ * characters, so a long amount shrinks instead of wrapping, and never scrolls sideways.
  */
 function Figure({ cents }: { cents: Cents }) {
   const { hidden } = useHiddenAmounts()
@@ -93,7 +65,7 @@ function Figure({ cents }: { cents: Cents }) {
   const size = `clamp(${MIN_FIGURE_PX}px, ${(100 / (text.length * CHAR_EM)).toFixed(2)}cqw, ${MAX_FIGURE_PX}px)`
   return (
     <p
-      className="relative whitespace-nowrap font-display font-extrabold leading-none tracking-[-0.04em] tabular-nums"
+      className="whitespace-nowrap font-display font-extrabold leading-none tracking-[-0.04em] tabular-nums"
       style={{ fontSize: size }}
       data-testid="hero-figure"
     >

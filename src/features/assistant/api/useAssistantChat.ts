@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useRef, useState } from 'react'
+import type { DraftMovement } from '@/features/ai/domain/draft'
 import { isPlusRequired } from '@/shared/lib/errors'
 import { isSendable, normalizeQuestion, toRequestMessages, type ChatMessage } from '../domain/chat'
 import { askAssistant } from './assistantRepository'
@@ -39,6 +40,11 @@ export function useAssistantChat() {
     mutate(messages)
   }, [isPending, messages, mutate])
 
+  /** Adds a message without asking the assistant (a movement written in the chat, and Moni's reading of it). */
+  const append = useCallback((role: ChatMessage['role'], content: string, drafts?: DraftMovement[]) => {
+    setMessages((current) => [...current, { id: nextId(), role, content, drafts }])
+  }, [])
+
   const clear = useCallback(() => {
     setMessages([])
     reset()
@@ -47,6 +53,7 @@ export function useAssistantChat() {
   return {
     messages,
     send,
+    append,
     retry,
     clear,
     isPending,

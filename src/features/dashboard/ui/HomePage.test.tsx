@@ -93,6 +93,10 @@ function setup() {
   return userEvent.setup()
 }
 
+vi.mock('@/features/transactions/ui/QuickAdd', () => ({
+  QuickAdd: () => <section aria-label="Hablá con Moni" />,
+}))
+
 describe('Hoy: estructura del diseño', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
@@ -118,12 +122,11 @@ describe('Hoy: estructura del diseño', () => {
     expect(screen.queryByRole('button', { name: /Mes (anterior|siguiente)/ })).toBeNull()
   })
 
-  it('draws the hero (empty without income data), the question field and no shared card', () => {
+  it('draws the hero, Hablá con Moni, and no question field nor shared card', () => {
     setup()
-    expect(screen.getByRole('region', { name: 'Lo que tenés' })).toHaveTextContent(
-      'Cargar ingresos',
-    )
-    expect(screen.getByRole('textbox', { name: 'Preguntale a Moni' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Lo que tenés' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Hablá con Moni' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'Preguntale a Moni' })).toBeNull()
     expect(screen.queryByRole('region', { name: 'Gastos compartidos' })).toBeNull()
   })
 })

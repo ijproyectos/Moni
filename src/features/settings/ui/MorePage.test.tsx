@@ -1,8 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
-import { makeAccount } from '@/features/accounts/domain/testing'
-import { FEATURES } from '@/shared/config/features'
 import { MorePage } from './MorePage'
 
 const accountsData = vi.hoisted(() => ({ current: [] as Account[] }))
@@ -37,6 +35,10 @@ vi.mock('@/features/insights/api/useAnts', () => ({
 }))
 const subsData = vi.hoisted(() => ({ current: [] as unknown[] }))
 const antsData = vi.hoisted(() => ({ current: 0 }))
+const budgetData = vi.hoisted(() => ({ current: { kind: 'sin-datos' } as Record<string, unknown> }))
+vi.mock('@/features/dashboard/api/useDailyAllowance', () => ({
+  useDailyAllowance: () => ({ isLoading: false, allowance: budgetData.current, status: null, pace: null }),
+}))
 const plusState = vi.hoisted(() => ({ isPlus: false, isLoading: false }))
 vi.mock('@/features/plus/api/usePlus', () => ({
   usePlus: () => ({ ...plusState, isFree: !plusState.isPlus, expiresAt: null }),
@@ -50,81 +52,32 @@ function renderPage() {
   )
 }
 
-describe('MorePage plan badge', () => {
-  beforeEach(() => {
-    plusState.isPlus = false
-    plusState.isLoading = false
-  })
-
-  it('shows "Plan gratis" for a free person', () => {
-    renderPage()
-    expect(screen.getByText('Plan gratis')).toBeInTheDocument()
-  })
-
-  it('shows the yellow "✦ PLUS" badge instead of "Plan gratis" when Plus is active', () => {
-    plusState.isPlus = true
-    renderPage()
-    expect(screen.getByText('✦ PLUS')).toHaveClass('bg-gold')
-    expect(screen.queryByText('Plan gratis')).toBeNull()
-  })
-
-  it('shows no plan badge while the plan is still loading', () => {
-    plusState.isLoading = true
-    renderPage()
-    expect(screen.queryByText('Plan gratis')).toBeNull()
-    expect(screen.queryByText('✦ PLUS')).toBeNull()
-  })
-})
-
-describe('MorePage navigation', () => {
+describe('Herramientas', () => {
   beforeEach(() => {
     accountsData.current = []
+    subsData.current = []
+    antsData.current = 0
+    budgetData.current = { kind: 'sin-datos' }
   })
 
-  it('"Fijos y cuotas" became "Pagos recurrentes" (suscripciones y gastos fijos)', () => {
+  it('has the header, the carousel, Explorar and Con Moni', () => {
     renderPage()
-    const tile = screen.getByRole('link', { name: /Pagos recurrentes/ })
-    expect(tile).toHaveAttribute('href', '/recurrentes')
-    expect(tile).toHaveTextContent('Suscripciones y gastos fijos')
-    expect(screen.queryByText('Fijos y cuotas')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Herramientas' })).toBeInTheDocument()
+    expect(screen.getByText('Todo en un lugar')).toBeInTheDocument()
+    const carousel = screen.getByRole('list', { name: 'Herramientas destacadas' })
+    expect(within(carousel).getByRole('link', { name: /Pagos recurrentes/ })).toHaveAttribute('href', '/recurrentes')
+    expect(within(carousel).getByRole('link', { name: /Informes/ })).toHaveAttribute('href', '/este-mes')
+    expect(within(carousel).getByRole('link', { name: /Metas de ahorro/ })).toHaveAttribute('href', '/metas')
+    expect(screen.getByRole('link', { name: /^Categorías/ })).toHaveAttribute('href', '/categorias')
+    expect(screen.getByRole('link', { name: /^Viajes/ })).toHaveAttribute('href', '/viajes')
+    expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveAttribute('href', '/hormigas')
+    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveAttribute('href', '/presupuesto')
+    expect(screen.queryByRole('link', { name: 'Ver mi perfil' })).toBeNull()
   })
 
-  it('has no standalone "Tarjetas de crédito" tile, with or without a card: cards live in Medios de pago', () => {
-    for (const accounts of [
-      [makeAccount({ id: 'v', name: 'Visa', kind: 'credit_card' })],
-      [makeAccount({ id: 'c', name: 'Efectivo' })],
-    ]) {
-      accountsData.current = accounts
-      const { unmount } = render(
-        <MemoryRouter>
-          <MorePage />
-        </MemoryRouter>,
-      )
-      expect(screen.queryByRole('link', { name: /Tarjetas de crédito/ })).toBeNull()
-      expect(screen.queryByRole('link', { name: /^Medios de pago/ })).toHaveTextContent(
-        'Administrá tus cuentas y tarjetas',
-      )
-      unmount()
-    }
-  })
-
-  it('"Gastos hormiga" shows the ant icon and the new subtitle', () => {
+  it('has no standalone cards tile (Tarjetas is in the bottom bar)', () => {
     renderPage()
-    const tile = screen.getByRole('link', { name: /Gastos hormiga/ })
-    expect(tile).toHaveAttribute('href', '/hormigas')
-    expect(tile).toHaveTextContent('Esos gustitos que suman')
-    expect(tile).toHaveTextContent('Sin hormigas')
-    expect(tile).not.toHaveTextContent('Lo chico que se repite')
-  })
-
-  it('shows the real ant total of the month when there is one', () => {
-    antsData.current = 12_500_00
-    try {
-      renderPage()
-      expect(screen.getByRole('link', { name: /Gastos hormiga/ })).toHaveTextContent('$12.500')
-    } finally {
-      antsData.current = 0
-    }
+    expect(screen.queryByRole('link', { name: /Tarjetas de crédito|^Medios de pago/ })).toBeNull()
   })
 
   it('"Pagos recurrentes" adds up only the active monthly subscriptions', () => {
@@ -134,54 +87,36 @@ describe('MorePage navigation', () => {
       { id: 'c', status: 'active', period: 'yearly', amountCents: 90_000_00 },
       { id: 'd', status: 'paused', period: 'monthly', amountCents: 7_000_00 },
     ]
-    try {
-      renderPage()
-      const tile = screen.getByRole('link', { name: /Pagos recurrentes/ })
-      expect(tile).toHaveTextContent('$15.000')
-      expect(tile).toHaveTextContent('por mes · 2 activas')
-    } finally {
-      subsData.current = []
-    }
-  })
-
-  it('"Medios de pago" counts the real media', () => {
-    accountsData.current = [
-      makeAccount({ id: 'a', name: 'Efectivo' }),
-      makeAccount({ id: 'b', name: 'Galicia', kind: 'bank' }),
-    ]
     renderPage()
-    expect(screen.getByRole('link', { name: /^Medios de pago/ })).toHaveTextContent('2 medios')
+    const tile = screen.getByRole('link', { name: /Pagos recurrentes/ })
+    expect(tile).toHaveTextContent('2')
+    expect(tile).toHaveTextContent('cobros por mes · $15.000')
   })
 
-  it('keeps Medios de pago next to it', () => {
+  it('shows real secondary info: ants, budget', () => {
+    antsData.current = 12_500_00
+    budgetData.current = { kind: 'ok', spendBudgetCents: 800_000_00, overCents: 75_000_00 }
     renderPage()
-    expect(screen.getByRole('link', { name: /^Medios de pago/ })).toHaveAttribute(
-      'href',
-      '/cuentas',
-    )
+    expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('$12.500 este mes')
+    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('te pasaste $75.000')
   })
 
-  it('hides the screens without a backend: Pro, referral, Integraciones, Deudas and Aguinaldo', () => {
+  it('says "Sin hormigas" and does not invent a budget without data', () => {
     renderPage()
-    for (const name of [/Moni Pro/, /Recomendá Moni/, /Integraciones/, /Deudas/, /Aguinaldo/]) {
-      expect(screen.queryByRole('link', { name })).toBeNull()
-    }
-    expect(screen.queryByText(/2 meses de Pro/)).toBeNull()
+    expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('Sin hormigas')
+    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('Consultá y administrá')
   })
 
-  it('shows them again when their flags are on', () => {
-    Object.assign(FEATURES, { pro: true, referral: true, debts: true, aguinaldo: true })
-    try {
-      renderPage()
-      expect(screen.getByRole('link', { name: /Probá Moni Pro/ })).toHaveAttribute('href', '/pro')
-      expect(screen.getByRole('link', { name: /Recomendá Moni/ })).toHaveAttribute(
-        'href',
-        '/recomendar',
-      )
-      expect(screen.getByRole('link', { name: /Deudas/ })).toHaveAttribute('href', '/deudas')
-      expect(screen.getByRole('link', { name: /Aguinaldo/ })).toHaveAttribute('href', '/aguinaldo')
-    } finally {
-      Object.assign(FEATURES, { pro: false, referral: false, debts: false, aguinaldo: false })
-    }
+  it('has no "Con Moni" chips nor Pro / referral cards below Explorar', () => {
+    renderPage()
+    expect(screen.queryByText('Con Moni')).toBeNull()
+    expect(screen.queryByRole('button', { name: '¿Me conviene?' })).toBeNull()
+  })
+
+  it('has no "Más herramientas": every tool is in the carousel or in Explorar, including insights and the simulator', () => {
+    renderPage()
+    expect(screen.queryByRole('button', { name: /Más herramientas/ })).toBeNull()
+    expect(screen.getByRole('link', { name: /Avisos de Moni/ })).toHaveAttribute('href', '/insights')
+    expect(screen.getByRole('link', { name: /Simulador de cuotas/ })).toHaveAttribute('href', '/tarjetas/simulador')
   })
 })

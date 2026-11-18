@@ -16,8 +16,11 @@ vi.mock('../api/useAssistantChat', () => ({
     isPending: false,
     plusRequired: false,
     send: vi.fn(),
+    append: vi.fn(),
   }),
 }))
+vi.mock('@/features/ai/api/useParseMovements', () => ({ useParseMovements: () => ({ isPending: false, mutate: vi.fn() }) }))
+vi.mock('@/features/categories/api/useCategories', () => ({ useCategories: () => ({ data: [] }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
 vi.mock('@/features/dashboard/api/useMonthSummary', () => {
   const summary = {
@@ -76,7 +79,7 @@ const browserBack = async () => {
   await popped
 }
 const mokiBack = (user: ReturnType<typeof userEvent.setup>) =>
-  user.click(screen.getByRole('button', { name: 'Volver' }))
+  user.click(screen.getByLabelText('Volver'))
 const openAssistant = (user: ReturnType<typeof userEvent.setup>) =>
   user.click(screen.getByRole('link', { name: /Asistente/ }))
 
@@ -90,7 +93,7 @@ describe('Navigation around the assistant', () => {
     await mokiBack(user)
     await waitFor(() => expect(where()).toBe('/este-mes'))
     await mokiBack(user)
-    await waitFor(() => expect(where()).toBe('/'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 
   it('from Tu año (tools): assistant → back → Tu año → back → where Tu año was opened from', async () => {
@@ -115,7 +118,7 @@ describe('Navigation around the assistant', () => {
       await waitFor(() => expect(where()).toBe('/este-mes'))
     }
     await mokiBack(user)
-    await waitFor(() => expect(where()).toBe('/'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 
   it("the browser's back button does the same as Moni's", async () => {
@@ -138,7 +141,7 @@ describe('Navigation around the assistant', () => {
     await user.click(screen.getByRole('link', { name: 'Este mes' }))
     await waitFor(() => expect(where()).toBe('/este-mes'))
     await mokiBack(user)
-    await waitFor(() => expect(where()).toBe('/'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 
   it('after reloading the assistant, back still returns to the screen it came from', async () => {
@@ -159,6 +162,7 @@ describe('Navigation around the assistant', () => {
         ),
         children: [
           { path: '/', element: <p>inicio</p> },
+          { path: '/mas', element: <p>herramientas</p> },
           { path: '/este-mes', element: <MonthReportPage /> },
           { path: '/informes/asistente', element: <AssistantPage /> },
         ],
@@ -169,7 +173,7 @@ describe('Navigation around the assistant', () => {
     await mokiBack(user)
     await waitFor(() => expect(where()).toBe('/este-mes'))
     await mokiBack(user)
-    await waitFor(() => expect(where()).toBe('/'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 
   it('opened directly (new tab, no history) the assistant goes to the summary and then to Inicio', async () => {
@@ -178,6 +182,6 @@ describe('Navigation around the assistant', () => {
     await mokiBack(user)
     await waitFor(() => expect(where()).toBe('/este-mes'))
     await mokiBack(user)
-    await waitFor(() => expect(where()).toBe('/'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 })

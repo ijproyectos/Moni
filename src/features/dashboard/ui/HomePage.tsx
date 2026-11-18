@@ -5,7 +5,7 @@ import { useProfile } from '@/features/auth/api/useProfile'
 import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
 import { initialOf } from '@/features/auth/domain/profile'
 import { usePlus } from '@/features/plus/api/usePlus'
-import { availableBalance } from '@/features/accounts/domain/account'
+import { availableBalance, isCreditCard } from '@/features/accounts/domain/account'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { useMyGroups } from '@/features/groups/api/useGroups'
 import { useCategories } from '@/features/categories/api/useCategories'
@@ -22,10 +22,8 @@ import { monthStart, todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { Skeleton } from '@/shared/ui/Skeleton'
-import { useDailyAllowance } from '../api/useDailyAllowance'
 import { useMonthSummary } from '../api/useMonthSummary'
 import { buildRecentMovements } from '../domain/recentMovements'
-import { useHomeStories } from '../api/useHomeStories'
 import type { RecentMovement } from '../domain/monthSummary'
 import type { MovementActions } from './RecentMovements'
 import { HomeScreen } from './HomeScreen'
@@ -43,15 +41,6 @@ function HomeSkeleton() {
   )
 }
 
-const EMPTY_SUMMARY = {
-  incomeCents: 0,
-  expenseCents: 0,
-  balanceCents: 0,
-  availableBalanceCents: 0,
-  byCategory: [],
-  daily: [],
-  recent: [],
-}
 /** How many of the newest movements the main screen lists, across every month. */
 const RECENT_LIMIT = 20
 
@@ -65,15 +54,20 @@ export function HomePage() {
   const categories = useCategories(undefined, { includeArchived: true })
   const accounts = useAccounts({ includeArchived: true })
   const groups = useMyGroups()
-  const { openNew, openEdit } = useMovementSheet()
+  const { openEdit } = useMovementSheet()
   const toast = useToast()
   const voidTransaction = useVoidTransaction()
   const voidPlan = useVoidInstallmentPlan()
   const plus = usePlus()
-  const allowance = useDailyAllowance()
   const balance = useMemo(() => {
     const active = (accounts.data ?? []).filter((a) => a.archivedAt === null)
-    return { totalCents: availableBalance(accounts.data ?? []), methodCount: active.length }
+    const totalCents = availableBalance(accounts.data ?? [])
+    // Where most of the money is: the share of the biggest payment method among those that hold money.
+    const holding = active.filter((a) => !isCreditCard(a) && a.balanceCents > 0)
+    const holdingTotal = holding.reduce((sum, a) => sum + a.balanceCents, 0)
+    const biggest = holding.reduce<(typeof holding)[number] | null>((best, a) => (!best || a.balanceCents > best.balanceCents ? a : best), null)
+    const top = biggest && holdingTotal > 0 ? { name: biggest.name, percent: Math.round((biggest.balanceCents / holdingTotal) * 100) } : null
+    return { totalCents, methodCount: active.length, top }
   }, [accounts.data])
   const movements = useMemo(
     () =>
@@ -87,7 +81,6 @@ export function HomePage() {
       }),
     [transactions.data, categories.data, accounts.data, groups.data],
   )
-  const stories = useHomeStories(month, summary.data ?? EMPTY_SUMMARY)
 
   // What the swipe on a row can do comes from the real transaction, with the same rules as Actividad.
   const movementActions = useMemo<MovementActions>(() => {
@@ -139,15 +132,9 @@ export function HomePage() {
         initial={initialOf(profile?.display_name, user?.email ?? '')}
         isPlus={plus.isPlus}
         photoUrl={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
-        userId={user?.id}
         name={profile?.display_name?.trim().split(/\s+/)[0] || null}
-        onAddMovement={() => openNew()}
-        stories={stories}
         movementActions={movementActions}
-        allowance={allowance}
         balance={balance}
-        plusBadge={Boolean(plus.isFree)}
-        onAddIncome={() => openNew('income')}
       />
     </>
   )

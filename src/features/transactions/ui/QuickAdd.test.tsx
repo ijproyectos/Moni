@@ -4,7 +4,6 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event'
 import type { Account } from '@/features/accounts/domain/account'
 import type { Category } from '@/features/categories/domain/category'
-import { makeTransaction } from '../domain/testing'
 import { MovementSheetContext } from './movementSheetContext'
 import { QuickAdd } from './QuickAdd'
 
@@ -107,11 +106,6 @@ function renderQuickAdd() {
   return { openNew, user: userEvent.setup() }
 }
 
-async function openMenu(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Nuevo movimiento' }))
-  return screen.getByRole('dialog', { name: 'Agregar un gasto' })
-}
-
 function pickPhoto() {
   const file = new File([new Uint8Array(10)], 'ticket.jpg', { type: 'image/jpeg' })
   fireEvent.change(screen.getByTestId('receipt-input'), { target: { files: [file] } })
@@ -140,136 +134,96 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('QuickAdd sheet (screen 18)', () => {
-  it('opens the assistant sheet with Por voz, Sacar foto and Manual, in that order, and the group shortcut', async () => {
-    const { user } = renderQuickAdd()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    const fab = screen.getByRole('button', { name: 'Nuevo movimiento' })
-    expect(fab).toHaveAttribute('aria-haspopup', 'dialog')
-
-    const dialog = await openMenu(user)
-    expect(within(dialog).queryByText('Contame y yo lo ordeno')).not.toBeInTheDocument()
-    const ways = within(dialog)
-      .getAllByRole('button')
-      .map((el) => el.textContent)
-      .filter((t) => /^(Sacar foto|Por voz|Manual)/.test(t ?? ''))
-    expect(ways).toEqual(['Por vozDecilo y listo', 'Sacar fotoTicket o resumen', 'ManualEscribilo vos'])
-    expect(
-      within(dialog).getByRole('button', { name: 'Dividir un gasto con un grupo' }),
-    ).toBeInTheDocument()
-    // No recent expenses: the section is not invented.
-    expect(screen.queryByText('Repetir uno reciente')).not.toBeInTheDocument()
-  })
-
-  it('closes with Escape, the X and the scrim, and gives focus back to the cat', async () => {
-    const { user } = renderQuickAdd()
-    const fab = screen.getByRole('button', { name: 'Nuevo movimiento' })
-
-    await openMenu(user)
-    await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(fab).toHaveFocus()
-
-    await openMenu(user)
-    await user.click(screen.getByRole('button', { name: 'Cerrar' }))
+describe('QuickAdd (Hablá con Moni, Foto, Manual)', () => {
+  it('shows the cat to talk to Moni and the Foto and Manual buttons', () => {
+    renderQuickAdd()
+    const section = screen.getByRole('region', { name: 'Hablá con Moni' })
+    expect(within(section).getByRole('button', { name: 'Hablá con Moni' })).toHaveAttribute('aria-haspopup', 'dialog')
+    expect(within(section).getByRole('button', { name: 'Foto' })).toBeInTheDocument()
+    expect(within(section).getByRole('button', { name: 'Manual' })).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('"A mano" opens the usual new-movement form', async () => {
+  it('"Manual" opens the usual new-movement form', async () => {
     const { user, openNew } = renderQuickAdd()
-    await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^Manual/ }))
+    await user.click(screen.getByRole('button', { name: 'Manual' }))
     expect(openNew).toHaveBeenCalledTimes(1)
     expect(openNew).toHaveBeenCalledWith()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  })
-
-  it('"Dividir un gasto con un grupo" opens the form already shared', async () => {
-    const { user, openNew } = renderQuickAdd()
-    await openMenu(user)
-    await user.click(screen.getByRole('button', { name: 'Dividir un gasto con un grupo' }))
-    expect(openNew).toHaveBeenCalledWith('expense', { shared: true })
-  })
-
-  it('"Voz" opens the voice conversation', async () => {
-    const { user } = renderQuickAdd()
-    await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^Por voz/ }))
-    expect(screen.getByRole('dialog', { name: 'Carga por voz' })).toBeInTheDocument()
-    expect(screen.queryByRole('dialog', { name: 'Agregar un gasto' })).not.toBeInTheDocument()
   })
 
   it('"Foto" opens the camera / file picker in the same tap (the input is always mounted)', async () => {
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => undefined)
     const { user } = renderQuickAdd()
     const input = screen.getByTestId('receipt-input')
-    await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^Sacar foto/ }))
+    await user.click(screen.getByRole('button', { name: 'Foto' }))
     expect(click).toHaveBeenCalledTimes(1)
     expect(screen.getByTestId('receipt-input')).toBe(input)
     expect(input).toHaveAttribute('accept', 'image/*')
     expect(input).toHaveAttribute('capture', 'environment')
   })
 
-  it('offline: photo and voice are disabled with the offline notice, manual stays available', async () => {
-    act(() => onlineManager.setOnline(false))
-    const { user, openNew } = renderQuickAdd()
-    await openMenu(user)
-    expect(screen.getByRole('button', { name: /^Sacar foto/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /^Por voz/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /^Manual/ })).toBeEnabled()
-    expect(screen.getByText('Sin conexión. Conectate para guardar cambios.')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /^Manual/ }))
-    expect(openNew).toHaveBeenCalled()
+  it('the cat opens the one chat; a written expense is read and offered for review (nothing is saved yet)', async () => {
+    mocks.invoke.mockImplementation(async (name: string) =>
+      name === 'parse-movements'
+        ? {
+            data: {
+              movements: [
+                { kind: 'expense', amountCents: 18_000_00, note: 'Chino', categoryId: FOOD_ID, accountId: null, occurredOn: '2026-10-27', confidence: 0.9 },
+              ],
+              warnings: [],
+            },
+            error: null,
+          }
+        : { data: { reply: 'ok' }, error: null },
+    )
+    const { user } = renderQuickAdd()
+    await user.click(screen.getByRole('button', { name: 'Hablá con Moni' }))
+    expect(screen.getByRole('dialog', { name: 'Hablá con Moni' })).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Tu pregunta'), 'Gasté $18.000 en el chino')
+    await user.click(screen.getByRole('button', { name: 'Enviar' }))
+    expect(await screen.findByText(/Entendí:/)).toBeInTheDocument()
+    expect(mocks.invoke).toHaveBeenCalledWith('parse-movements', expect.anything())
+    expect(mocks.createTransaction).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Revisar y guardar' }))
+    expect(await screen.findByText('Revisá y guardá')).toBeInTheDocument()
+    expect(mocks.createTransaction).not.toHaveBeenCalled()
   })
 
-  it('"Repetir uno reciente" lists distinct recent expenses of the person and prefills the form', async () => {
-    mocks.listTransactions.mockResolvedValue([
-      makeTransaction({ id: 'a', note: 'Café', amountCents: 4_800_00, occurredOn: '2026-10-20' }),
-      makeTransaction({ id: 'b', note: 'Café', amountCents: 4_500_00, occurredOn: '2026-10-10' }),
-      makeTransaction({ id: 'c', note: 'SUBE', amountCents: 2_000_00, occurredOn: '2026-10-21' }),
-    ])
-    const { user, openNew } = renderQuickAdd()
-    await openMenu(user)
-    // Most frequent first; each suggestion once, with its latest amount.
-    const chip = await screen.findByRole('button', { name: 'Café $4.800' })
-    expect(screen.getByRole('button', { name: 'SUBE $2.000' })).toBeInTheDocument()
-    await user.click(chip)
-    expect(openNew).toHaveBeenCalledWith('expense', {
-      initial: { amountCents: 4_800_00, categoryId: FOOD_ID, accountId: ACCOUNT_ID, note: 'Café' },
-    })
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  it('a question goes to the assistant in the same chat and a follow-up keeps the history', async () => {
+    mocks.invoke.mockResolvedValue({ data: { reply: 'Tenés $5.000' }, error: null })
+    const { user } = renderQuickAdd()
+    await user.click(screen.getByRole('button', { name: 'Hablá con Moni' }))
+    await user.type(screen.getByLabelText('Tu pregunta'), '¿Cuánto tengo?')
+    await user.click(screen.getByRole('button', { name: 'Enviar' }))
+    expect(await screen.findByText('Tenés $5.000')).toBeInTheDocument()
+    expect(mocks.invoke).toHaveBeenCalledWith('insights-chat', expect.anything())
+    expect(mocks.invoke).not.toHaveBeenCalledWith('parse-movements', expect.anything())
+    await user.type(screen.getByLabelText('Tu pregunta'), '¿Y en el banco?')
+    await user.click(screen.getByRole('button', { name: 'Enviar' }))
+    await waitFor(() => expect(mocks.invoke).toHaveBeenCalledTimes(2))
+    const body = (mocks.invoke.mock.calls[1]?.[1] as { body: { messages: unknown[] } }).body
+    expect(body.messages).toHaveLength(3)
   })
 })
 
 describe('QuickAdd free plan gate', () => {
-  it('tags photo and voice with Plus and opens the upsell instead of the capability', async () => {
+  it('the chat is Plus: a free user sees the upsell and nothing is sent', async () => {
     plusState.isFree = true
     const { user } = renderQuickAdd()
-    await openMenu(user)
-    expect(screen.getByRole('button', { name: /^Sacar foto.*Plus$/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^Por voz.*Plus$/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^Manual/ })).not.toHaveTextContent('Plus')
-
-    await user.click(screen.getByRole('button', { name: /^Por voz/ }))
-    expect(
-      await screen.findByRole('dialog', { name: /Cargar por voz es de Moni Plus/ }),
-    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Hablá con Moni' }))
+    expect(screen.getByText('El asistente es de Moni Plus')).toBeInTheDocument()
+    expect(mocks.invoke).not.toHaveBeenCalledWith('parse-movements', expect.anything())
   })
 
-  it('does not open the file picker for a free user and keeps A mano free', async () => {
+  it('does not open the file picker for a free user and keeps Manual free', async () => {
     plusState.isFree = true
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
     const { user, openNew } = renderQuickAdd()
-    await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^Sacar foto/ }))
+    await user.click(screen.getByRole('button', { name: 'Foto' }))
     expect(click).not.toHaveBeenCalled()
-    expect(
-      await screen.findByRole('dialog', { name: /Escanear tickets es de Moni Plus/ }),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: /Escanear tickets es de Moni Plus/ })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cerrar' }))
-    await user.click(screen.getByRole('button', { name: 'Nuevo movimiento' }))
-    await user.click(screen.getByRole('button', { name: /^Manual/ }))
+    await user.click(screen.getByRole('button', { name: 'Manual' }))
     expect(openNew).toHaveBeenCalled()
   })
 
@@ -281,8 +235,7 @@ describe('QuickAdd free plan gate', () => {
       ),
     })
     const { user } = renderQuickAdd()
-    await openMenu(user)
-    await user.click(screen.getByRole('button', { name: /^Sacar foto/ }))
+    await user.click(screen.getByRole('button', { name: 'Foto' }))
     pickPhoto()
     expect(
       await screen.findByRole('dialog', { name: /Escanear tickets es de Moni Plus/ }),

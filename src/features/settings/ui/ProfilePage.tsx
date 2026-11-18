@@ -1,50 +1,10 @@
-import {
-  Camera,
-  ChevronLeft,
-  Activity,
-  Images,
-  Lock,
-  Moon,
-  Sun,
-  SunMoon,
-  Wallet,
-  ShoppingBasket,
-  Sparkles,
-  Trash2,
-} from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
-import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { Activity, ChevronRight, Settings } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { signOut } from '@/features/auth/api/authActions'
-import { useAuth } from '@/features/auth/api/authContext'
-import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
-import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
-import { useAccounts } from '@/features/accounts/api/useAccounts'
-import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
 import { useFinancialHealth } from '@/features/health/api/useFinancialHealth'
 import { BAND_LABELS } from '@/features/health/domain/healthScore'
-import { usePendingDebts } from '@/features/debts/api/useDebts'
-import { useFixedExpenses } from '@/features/fixedExpenses/api/useFixedExpenses'
-import { pendingBills } from '@/features/fixedExpenses/domain/fixedExpense'
-import { useSavings } from '@/features/goals/api/useSavings'
-import { cn } from '@/shared/ui/cn'
-import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
-import { SettingCard, SettingRow } from '@/shared/ui/SettingRow'
-import { useProfile } from '@/features/auth/api/useProfile'
-import { useUpdateProfile } from '@/features/auth/api/useUpdateProfile'
-import { displayNameSchema, firstName, initialOf } from '@/features/auth/domain/profile'
-import {
-  updateWeeklyDigest,
-  useWeeklyDigestSettings,
-} from '@/features/insights/mock/digestSettings'
-import { PushNotificationsRow } from '@/features/push/ui/PushNotificationsRow'
 import { AchievementsRow } from '@/features/goals/ui/AchievementsRow'
-import { useSubscriptionState } from '@/features/plus/api/useBilling'
 import { usePlus } from '@/features/plus/api/usePlus'
-import { isCancellable } from '@/features/plus/domain/billing'
-import { CancelPlusSheet } from '@/features/plus/ui/CancelPlusSheet'
-import { formatPlusExpiry } from '@/features/plus/domain/plus'
-import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { useUpdateGoals } from '@/features/onboarding/api/useGoals'
 import {
   GOAL_OPTIONS,
@@ -53,200 +13,91 @@ import {
   sanitizeGoals,
   toggleGoal,
 } from '@/features/onboarding/domain/goals'
-import { loadLocalPreferences } from '@/features/onboarding/domain/localPreferences'
+import { FEATURES } from '@/shared/config/features'
 import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
 import { toUserMessage } from '@/shared/lib/errors'
-import { shareLink } from '@/shared/lib/share'
 import { formatArs } from '@/shared/lib/money'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
-import { AppVersion } from '@/shared/ui/AppVersion'
 import { Button } from '@/shared/ui/Button'
-import { DecisionSheet } from '@/shared/ui/DecisionSheet'
-import { CheckDot, MoniSays, OptionRow, Page, SectionLabel, Toggle } from '@/shared/ui/kit'
+import { CheckDot, MoniSays, Page, SectionLabel } from '@/shared/ui/kit'
+import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
+import { SettingRow } from '@/shared/ui/SettingRow'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
-import { FEATURES } from '@/shared/config/features'
-import { useTheme } from '../api/useTheme'
+import { Sparkles } from 'lucide-react'
 import { updateProfileExtras, useProfileExtras } from '../mock/profileExtrasStore'
-import {
-  ProfileAccessGrid,
-  ProfileMoreTools,
-  type AccessSubtitles,
-} from './ProfileShortcuts'
+import { joinedLabel, useProfileIdentity } from './profileIdentity'
 
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-
-type Sheet = 'edit' | 'income' | 'goals' | 'plus' | 'cancelPlus' | 'signout' | 'delete' | null
-
-function ProfilePhoto({
-  url,
-  initial,
-  size,
-  onCamera,
-}: {
-  url: string | null
-  initial: string
-  size: 'lg' | 'md'
-  onCamera: () => void
-}) {
-  const box = size === 'lg' ? 'size-[110px] text-[48px]' : 'size-[100px] text-[44px]'
+export function ProfileGroup({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative mx-auto w-fit">
-      <PhotoOrInitial
-        url={url}
-        initial={initial}
-        alt="Tu foto de perfil"
-        className={box}
-        fallbackClassName="bg-forest font-display font-extrabold text-cream ring-4 ring-lime/60 ring-offset-2 ring-offset-canvas"
-      />
-      <button
-        type="button"
-        onClick={onCamera}
-        aria-label="Cambiar foto"
-        className="absolute -bottom-1 -right-1 flex size-11 items-center justify-center rounded-full border-4 border-canvas bg-forest text-cream"
-      >
-        <Camera aria-hidden="true" className="size-4" />
-      </button>
-    </div>
+    <div className="divide-y divide-line overflow-hidden rounded-[20px] border border-line bg-card px-4">{children}</div>
   )
 }
 
-// Perfil screens 001-005 — name and sign out are real; photo, income and account deletion are simulated.
+export function GroupLabel({ children }: { children: React.ReactNode }) {
+  return <h2 className="px-1 pt-2 text-[11.5px] font-bold uppercase tracking-[0.14em] text-text-muted">{children}</h2>
+}
+
+type Sheet = 'income' | 'goals' | null
+
+/** Perfil: who you are, your financial health and the way into your data and the app's settings. */
 export function ProfilePage() {
-  const { user } = useAuth()
-  const { data: profile, isLoading, isError } = useProfile()
+  const id = useProfileIdentity()
   const extras = useProfileExtras()
-  const weekly = useWeeklyDigestSettings()
-  const toast = useToast()
-  const [sheet, setSheet] = useState<Sheet>(null)
-  const [isSigningOut, setIsSigningOut] = useState(false)
-  const queryClient = useQueryClient()
   const plus = usePlus()
-  const subscription = useSubscriptionState()
-  const hiddenAmounts = useHiddenAmounts()
-  const accounts = useAccounts()
-  const allowance = useDailyAllowance()
   const health = useFinancialHealth()
-  const fixed = useFixedExpenses()
-  const savings = useSavings()
-  const { debts } = usePendingDebts()
-  const accessSubtitles = useMemo<AccessSubtitles>(() => {
-    const out: AccessSubtitles = {}
-    if (allowance.allowance.kind === 'ok')
-      out.Presupuesto = `${formatArs(Math.max(0, allowance.allowance.spendBudgetCents))} por mes`
-    if (fixed.data) {
-      const count = fixed.data.expenses.filter((e) => e.status !== 'removed').length
-      if (count > 0)
-        out['Gastos fijos'] = `${count} · faltan ${pendingBills(fixed.data).length} este mes`
-    }
-    const activeGoals = savings.data?.goals.filter((g) => g.status === 'active').length ?? 0
-    if (activeGoals > 0)
-      out['Metas de ahorro'] = `${activeGoals} ${activeGoals === 1 ? 'meta activa' : 'metas activas'}`
-    const owed = debts
-      .filter((d) => d.direction === 'owed')
-      .reduce((sum, d) => sum + d.amountCents, 0)
-    if (owed > 0) out.Grupos = `te deben ${formatArs(owed)}`
-    return out
-  }, [allowance.allowance, fixed.data, savings.data, debts])
-
-  const saved = profile?.display_name ?? ''
-  const shortName = firstName(saved) || user?.email?.split('@')[0] || 'Vos'
-  const initial = initialOf(saved, user?.email ?? '')
-  // A photo picked on this device wins; otherwise the Google account photo, then the stored profile one.
-  const photo = extras.photoRemoved
-    ? null
-    : resolveAvatarUrl({
-        uploadedUrl: extras.localPhotoUrl,
-        user,
-        profileUrl: profile?.avatar_url,
-      })
-  const createdAt = (profile as { created_at?: string } | undefined)?.created_at
-  const since = createdAt
-    ? `Desde ${MONTHS[Number(createdAt.slice(5, 7)) - 1]} ${createdAt.slice(0, 4)}`
-    : null
-  const localPrefs = user ? loadLocalPreferences(user.id) : null
-  const usesUsd = (profile?.secondary_currency ?? localPrefs?.secondaryCurrency) === 'USD'
-  const goalCount = sanitizeGoals(profile?.goals).length
-
-  function recommend() {
-    // Web Share API when the device has it, otherwise the link is copied.
-    void shareLink(
-      {
-        url: window.location.origin,
-        text: 'Probá Moni, la app para llevar tus gastos y repartirlos con tus amigos.',
-      },
-      toast,
-    )
-  }
-
-  async function handleSignOut() {
-    setIsSigningOut(true)
-    try {
-      await signOut(queryClient)
-    } catch (e) {
-      toast.show(toUserMessage(e), { tone: 'error' })
-      setIsSigningOut(false)
-    }
-  }
+  const [sheet, setSheet] = useState<Sheet>(null)
+  const goalCount = sanitizeGoals(id.profile?.goals).length
+  const since = joinedLabel(id.createdAt)
 
   return (
-    <Page className="gap-3 pb-10 pt-6">
-      <h1 className="sr-only">Perfil</h1>
+    <Page className="gap-3 pb-6 pt-5">
+      <header className="flex items-center justify-between">
+        <h1 className="font-display text-[28px] font-extrabold tracking-[-0.02em]">Perfil</h1>
+      </header>
 
-      {isLoading ? (
-        <Skeleton className="h-16" />
-      ) : isError ? (
+      {id.isLoading ? (
+        <Skeleton className="h-20" />
+      ) : id.isError ? (
         <p role="alert" className="text-center text-expense">
           No pudimos cargar tu perfil.
         </p>
       ) : (
-        <div className="flex items-center gap-3.5 pt-1">
-          <button
-            type="button"
-            onClick={() => setSheet('edit')}
-            aria-label="Editar perfil"
-            className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
-          >
-            <PhotoOrInitial
-              url={photo}
-              initial={initial}
-              alt="Tu foto de perfil"
-              className="size-[58px]"
-              fallbackClassName="bg-mint-soft font-display text-[20px] font-semibold text-mint-ink"
-            />
-          </button>
+        <div className="flex items-center gap-4">
+          <PhotoOrInitial
+            url={id.photo}
+            initial={id.initial}
+            alt="Tu foto de perfil"
+            className="size-[72px] shrink-0"
+            fallbackClassName="bg-[#2B2A5C] font-display text-[28px] font-extrabold text-[#D9D4F5]"
+          />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate font-display text-[21px] font-semibold tracking-[-0.02em]">
-              {saved.trim() || shortName}
-            </h2>
-            {user?.email && <p className="truncate text-[13px] text-text-muted">{user.email}</p>}
+            <h2 className="truncate font-display text-[22px] font-extrabold leading-tight tracking-[-0.02em]">{id.displayName}</h2>
+            {id.email && <p className="truncate text-[14px] text-text-muted">{id.email}</p>}
+            {plus.isPlus ? (
+              <span className="mt-1.5 inline-block rounded-full border border-[#B88A1E] px-2.5 text-[11px] font-extrabold leading-5 tracking-[0.1em] text-[#B88A1E] dark:border-[#E3B23C] dark:text-[#E3B23C]">
+                PLUS
+              </span>
+            ) : (
+              <span className="mt-1.5 inline-block rounded-full border border-line px-2.5 text-[11px] font-extrabold leading-5 tracking-[0.1em] text-text-muted">
+                GRATIS
+              </span>
+            )}
           </div>
-          {plus.isPlus ? (
-            <span className="rounded-full bg-gold px-2.5 py-1 text-[11.5px] font-bold tracking-[0.06em] text-mint-ink">
-              ✦ PLUS
-            </span>
-          ) : (
-            <span className="rounded-full bg-sand px-2.5 py-1 text-[11.5px] font-bold tracking-[0.06em] text-text-muted">
-              GRATIS
-            </span>
-          )}
         </div>
       )}
 
       <Link
         to="/salud"
-        className="flex items-center gap-3.5 rounded-[26px] bg-mint px-4 py-3.5 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink"
+        className="flex items-center gap-3 rounded-[22px] bg-[linear-gradient(135deg,#1B3A2E,#0F2A20)] px-3.5 py-3 text-[#F1EEDD] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink dark:bg-[linear-gradient(135deg,#2B4A3C,#16291F)]"
       >
-        <span
-          aria-hidden="true"
-          className="flex size-[46px] shrink-0 items-center justify-center rounded-full bg-white/[.18] text-[#FFE58A]"
-        >
-          <Activity className="size-6" strokeWidth={1.75} />
+        <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-[#A99BE3] bg-[#1B3A2E] text-[#F4E6B8]">
+          <Activity className="size-5" strokeWidth={2} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[16px] font-semibold">Salud financiera</span>
-          <span className="block text-[12.5px] text-[#DDF3E6]">
+          <span className="block text-[16px] font-extrabold">Salud financiera</span>
+          <span className="block truncate text-[12.5px] text-[#D4DCCB]">
             {health.score.kind === 'ok'
               ? `${health.score.score} de 100 · ${BAND_LABELS[health.score.band]}`
               : health.isLoading
@@ -254,93 +105,24 @@ export function ProfilePage() {
                 : 'Cargá tus ingresos para medirla'}
           </span>
         </span>
-        <ChevronLeft aria-hidden="true" className="size-[18px] rotate-180 text-[#DDF3E6]" />
+        <ChevronRight aria-hidden="true" className="size-[18px] shrink-0 text-[#D4DCCB]" />
       </Link>
 
-      <ProfileAccessGrid subtitles={accessSubtitles} />
-
-      <SettingCard>
-        <SettingRow
-          icon={<SunMoon className="size-[18px]" strokeWidth={1.75} />}
-          title="Tema de color"
-          trailing={<ThemeSelector />}
-        />
-        <SettingRow
-          icon={<Lock className="size-[18px]" strokeWidth={1.75} />}
-          title="Modo privacidad"
-          trailing={
-            <button
-              type="button"
-              role="switch"
-              aria-checked={hiddenAmounts.hidden}
-              aria-label="Modo privacidad"
-              onClick={hiddenAmounts.toggle}
-              className={cn(
-                'relative h-[26px] w-11 shrink-0 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink motion-reduce:transition-none',
-                hiddenAmounts.hidden ? 'bg-mint' : 'bg-track',
-              )}
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'absolute top-[3px] size-5 rounded-full bg-white transition-all motion-reduce:transition-none',
-                  hiddenAmounts.hidden ? 'right-[3px]' : 'left-[3px]',
-                )}
-              />
-            </button>
-          }
-        />
-        <SettingRow
-          icon={<Wallet className="size-[18px]" strokeWidth={1.75} />}
-          title="Tarjetas y medios de pago"
-          to="/cuentas"
-          trailing={accounts.data ? accounts.data.length : undefined}
-        />
-        <PushNotificationsRow />
-        <SettingRow
-          icon={<Sparkles className="size-[18px]" strokeWidth={1.75} />}
-          title={plus.isPlus ? 'Plan Moni Plus' : 'Pasar a Moni Plus'}
-          subtitle={
-            plus.isPlus && plus.expiresAt
-              ? `Activo hasta el ${formatPlusExpiry(plus.expiresAt, true)}`
-              : undefined
-          }
-          trailing={plus.isPlus ? 'Activo' : 'Gratis'}
-          onClick={() => setSheet('plus')}
-        />
-      </SettingCard>
-
-      {FEATURES.pro && (
-        <Link to="/pro" className="flex items-center gap-4 rounded-[22px] bg-gold px-4 py-4">
-          <ShoppingBasket aria-hidden="true" className="size-7" />
-          <span className="flex-1">
-            <span className="block text-[20px] font-extrabold leading-6">Probá Moni Pro</span>
-            <span className="block text-[15px]">Voz, tickets, bancos y más</span>
-          </span>
-          <ChevronLeft aria-hidden="true" className="size-6 rotate-180" />
-        </Link>
-      )}
-
-      <SectionLabel plain className="mt-3">
-        Mis datos
-      </SectionLabel>
+      <GroupLabel>Mis datos</GroupLabel>
       <ProfileGroup>
-        <OptionRow
-          className="rounded-none border-0"
+        <SettingRow
           title="Datos personales"
-          subtitle={since ? `Nombre, mail y foto · ${since.toLowerCase()}` : 'Nombre, mail y foto'}
-          onClick={() => setSheet('edit')}
+          subtitle={since ? `Nombre, mail y foto · desde ${since.replace(/ de /, ' ')}` : 'Nombre, mail y foto'}
+          to="/perfil/datos"
         />
         {FEATURES.monthlyIncome && (
-          <OptionRow
-            className="rounded-none border-0"
+          <SettingRow
             title="Mis ingresos"
             subtitle={`${formatArs(extras.monthlyIncomeCents)} por mes · solo los ves vos`}
             onClick={() => setSheet('income')}
           />
         )}
-        <OptionRow
-          className="rounded-none border-0"
+        <SettingRow
           title="Mis objetivos"
           subtitle={
             goalCount === 0
@@ -349,149 +131,23 @@ export function ProfilePage() {
           }
           onClick={() => setSheet('goals')}
         />
-        <OptionRow
-          className="rounded-none border-0"
-          title="Moneda"
-          subtitle={usesUsd ? 'Peso argentino (ARS) · también dólares' : 'Peso argentino (ARS)'}
-          chevron={false}
-        />
-        {FEATURES.weeklyDigest && (
-          <OptionRow
-            className="rounded-none border-0"
-            title="Resumen semanal"
-            subtitle={`Los ${weekly.day.toLowerCase()}s, con tus gastos hormiga`}
-            chevron={false}
-            trailing={
-              <Toggle
-                label="Resumen semanal"
-                checked={weekly.enabled}
-                onChange={(enabled) => updateWeeklyDigest({ enabled })}
-              />
-            }
-          />
-        )}
         <AchievementsRow />
       </ProfileGroup>
 
-      <SectionLabel plain className="mt-1">
-        Moni Plus
-      </SectionLabel>
+      <GroupLabel>App</GroupLabel>
       <ProfileGroup>
-        {isCancellable(subscription.data) && (
-          <OptionRow
-            className="rounded-none border-0"
-            title="Cancelar suscripción"
-            subtitle={
-              plus.expiresAt
-                ? `Seguís con Plus hasta el ${formatPlusExpiry(plus.expiresAt, true)}`
-                : 'Seguís con Plus hasta que termine lo que pagaste'
-            }
-            onClick={() => setSheet('cancelPlus')}
-          />
-        )}
-        <OptionRow
-          className="rounded-none border-0"
-          title="Recomendá a un amigo"
-          subtitle="Compartí el link de Moni"
-          onClick={recommend}
-        />
-        <OptionRow
-          className="rounded-none border-0"
-          title="Contactar a soporte"
-          subtitle="Escribinos y mirá tus consultas"
-          to="/soporte"
+        <SettingRow
+          icon={<Settings className="size-[18px]" strokeWidth={1.9} />}
+          title="Configuración"
+          subtitle="Tema, privacidad, plan y ayuda"
+          to="/perfil/configuracion"
         />
       </ProfileGroup>
 
-      <ProfileMoreTools />
-
-      <SectionLabel plain className="mt-1">
-        Cuenta
-      </SectionLabel>
-      <ProfileGroup>
-        <OptionRow
-          className="rounded-none border-0"
-          title="Cerrar sesión"
-          onClick={() => setSheet('signout')}
-        />
-        <OptionRow
-          className="rounded-none border-0 [&_span]:text-expense"
-          title="Eliminar cuenta"
-          onClick={() => setSheet('delete')}
-        />
-      </ProfileGroup>
-
-      <AppVersion />
-
-      {sheet === 'edit' && (
-        <EditProfileSheet
-          name={saved}
-          email={user?.email ?? ''}
-          photo={photo}
-          initial={initial}
-          onClose={() => setSheet(null)}
-        />
-      )}
       {FEATURES.monthlyIncome && sheet === 'income' && (
         <IncomeSheet value={extras.monthlyIncomeCents} onClose={() => setSheet(null)} />
       )}
-      {sheet === 'plus' && <PlusSheet onClose={() => setSheet(null)} />}
-      {sheet === 'cancelPlus' && (
-        <CancelPlusSheet expiresAt={plus.expiresAt} onClose={() => setSheet(null)} />
-      )}
-      {sheet === 'goals' && (
-        <GoalsSheet saved={profile?.goals ?? []} onClose={() => setSheet(null)} />
-      )}
-      {sheet === 'signout' && (
-        <DecisionSheet
-          icon={<ChevronLeft className="size-6" />}
-          iconTone="neutral"
-          title="¿Cerrar sesión?"
-          onClose={() => setSheet(null)}
-          actions={[
-            { label: 'Quedarme', onClick: () => setSheet(null) },
-            {
-              label: isSigningOut ? 'Cerrando…' : 'Cerrar sesión',
-              tone: 'outline',
-              onClick: () => void handleSignOut(),
-              disabled: isSigningOut,
-            },
-          ]}
-        >
-          Tus gastos, metas y grupos quedan guardados. Volvés a entrar con tu cuenta de Google
-          cuando quieras.
-        </DecisionSheet>
-      )}
-      {sheet === 'delete' && (
-        <DecisionSheet
-          icon={<Trash2 className="size-6" />}
-          title="¿Eliminar tu cuenta?"
-          onClose={() => setSheet(null)}
-          actions={[
-            { label: 'Mejor no', onClick: () => setSheet(null) },
-            {
-              label: 'Eliminar mi cuenta',
-              tone: 'danger',
-              onClick: () => {
-                toast.show(
-                  'Por ahora la cuenta se elimina desde soporte. Te avisamos cuando esté en la app.',
-                )
-                setSheet(null)
-              },
-            },
-          ]}
-        >
-          <p>Se borran tus gastos, metas y todo tu historial. No se puede deshacer.</p>
-          <MoniSays
-            className="mt-3"
-            lead={null}
-            icon={<Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}
-          >
-            Si estás en grupos, lo que cargaste queda para los demás hasta que se salden las
-            cuentas.
-          </MoniSays>
-        </DecisionSheet>
-      )}
+      {sheet === 'goals' && <GoalsSheet saved={id.profile?.goals ?? []} onClose={() => setSheet(null)} />}
     </Page>
   )
 }
@@ -549,174 +205,6 @@ function GoalsSheet({ saved, onClose }: { saved: readonly string[]; onClose: () 
       <Button className="mt-4" onClick={() => void save()} disabled={update.isPending}>
         {update.isPending ? 'Guardando…' : 'Guardar'}
       </Button>
-    </BottomSheet>
-  )
-}
-
-const THEME_CHOICES = [
-  { mode: 'light', label: 'Claro', Icon: Sun },
-  { mode: 'dark', label: 'Oscuro', Icon: Moon },
-] as const
-
-/** "Tema de color": sun / moon, saved on this device only. Until one is picked the device's own theme shows as selected. */
-function ThemeSelector() {
-  const { resolved, setMode } = useTheme()
-  return (
-    <span
-      role="radiogroup"
-      aria-label="Tema de color"
-      className="flex gap-0.5 rounded-full bg-sand p-0.5"
-    >
-      {THEME_CHOICES.map(({ mode: m, label, Icon }) => {
-        const selected = resolved === m
-        return (
-          <button
-            key={m}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            aria-label={label}
-            title={label}
-            onClick={() => setMode(m)}
-            className={cn(
-              'flex size-9 items-center justify-center rounded-full transition-colors motion-reduce:transition-none',
-              'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink',
-              selected
-                ? 'bg-forest text-cream shadow-sm dark:bg-gold dark:text-on-bright'
-                : 'text-text-muted',
-            )}
-          >
-            <Icon aria-hidden="true" className="size-[18px]" strokeWidth={selected ? 2.1 : 1.75} />
-          </button>
-        )
-      })}
-    </span>
-  )
-}
-
-function ProfileGroup({ children }: { children: ReactNode }) {
-  return (
-    <div className="divide-y divide-line overflow-hidden rounded-[24px] border border-line bg-card px-1">
-      {children}
-    </div>
-  )
-}
-
-// Perfil 002 — Editar foto y datos. The name is saved in Supabase; the photo stays on this device.
-function EditProfileSheet({
-  name,
-  email,
-  photo,
-  initial,
-  onClose,
-}: {
-  name: string
-  email: string
-  photo: string | null
-  initial: string
-  onClose: () => void
-}) {
-  const toast = useToast()
-  const update = useUpdateProfile()
-  const [draft, setDraft] = useState(name)
-  const [error, setError] = useState<string | null>(null)
-  const cameraRef = useRef<HTMLInputElement>(null)
-  const galleryRef = useRef<HTMLInputElement>(null)
-
-  function pick(file: File | undefined) {
-    if (!file) return
-    updateProfileExtras({ localPhotoUrl: URL.createObjectURL(file), photoRemoved: false })
-    toast.show('Foto actualizada en este dispositivo')
-  }
-
-  async function save() {
-    const parsed = displayNameSchema.safeParse(draft)
-    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? 'Revisá el nombre.')
-    setError(null)
-    try {
-      if (parsed.data !== name) await update.mutateAsync(parsed.data)
-      toast.show('Perfil actualizado')
-      onClose()
-    } catch (e) {
-      setError(toUserMessage(e))
-    }
-  }
-
-  return (
-    <BottomSheet title="Editar perfil" onClose={onClose}>
-      <div className="flex flex-col gap-3">
-        <ProfilePhoto
-          url={photo}
-          initial={initial}
-          size="md"
-          onCamera={() => cameraRef.current?.click()}
-        />
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={() => cameraRef.current?.click()}
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-line bg-card text-[15px] font-extrabold"
-          >
-            <Camera aria-hidden="true" className="size-4" /> Sacar foto
-          </button>
-          <button
-            type="button"
-            onClick={() => galleryRef.current?.click()}
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-line bg-card text-[15px] font-extrabold"
-          >
-            <Images aria-hidden="true" className="size-4" /> Galería
-          </button>
-          <button
-            type="button"
-            onClick={() => updateProfileExtras({ localPhotoUrl: null, photoRemoved: true })}
-            className="flex min-h-12 items-center justify-center gap-1.5 rounded-full border-2 border-line bg-card text-[15px] font-extrabold text-expense"
-          >
-            <Trash2 aria-hidden="true" className="size-4" /> Quitar
-          </button>
-        </div>
-        <input
-          ref={cameraRef}
-          type="file"
-          accept="image/*"
-          capture="user"
-          hidden
-          onChange={(e) => pick(e.target.files?.[0])}
-        />
-        <input
-          ref={galleryRef}
-          type="file"
-          accept="image/*"
-          hidden
-          onChange={(e) => pick(e.target.files?.[0])}
-        />
-        <SectionLabel>Nombre</SectionLabel>
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          aria-label="Nombre"
-          maxLength={60}
-          className="h-14 rounded-[18px] border border-line bg-card px-4 text-[17px]"
-        />
-        <SectionLabel>Mail</SectionLabel>
-        <input
-          value={email}
-          readOnly
-          aria-label="Mail"
-          className="h-14 rounded-[18px] border border-line bg-sand/40 px-4 text-[17px] text-text-muted"
-        />
-        <p className="text-[15px] leading-5 text-text-muted">
-          Tus amigos y tu pareja te ven con este nombre y esta foto en los grupos. El mail es el de
-          tu cuenta de Google.
-        </p>
-        {error && (
-          <p role="alert" className="text-center text-sm text-expense">
-            {error}
-          </p>
-        )}
-        <Button onClick={() => void save()} disabled={update.isPending}>
-          {update.isPending ? 'Guardando…' : 'Guardar'}
-        </Button>
-      </div>
     </BottomSheet>
   )
 }

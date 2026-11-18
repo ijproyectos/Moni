@@ -31,7 +31,7 @@ export function RecurringPage() {
       <MentaHeader
         title={tab === 'suscripciones' ? 'Suscripciones' : 'Gastos fijos'}
         subtitle={tab === 'gastos-fijos' ? (fixedSummary ?? undefined) : undefined}
-        backTo="/perfil"
+        backTo="/mas"
         action={
           <button
             type="button"

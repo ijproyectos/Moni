@@ -1,5 +1,6 @@
-import { Coffee, Repeat, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { ChevronLeft, Coffee, Repeat, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router'
+import { MENTA_CIRCLE } from '@/shared/ui/mentaStyles'
 import mascot from '@/assets/mascot/expresion_feliz.svg'
 import { cn } from '@/shared/ui/cn'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
@@ -118,7 +119,10 @@ export function InsightsPage() {
   return (
     <section className="flex flex-col gap-2.5 px-[18px] pb-4 pt-1.5">
       <header className="flex items-center justify-between gap-3 pb-1">
-        <div>
+        <Link to="/mas" aria-label="Volver" className={MENTA_CIRCLE}>
+          <ChevronLeft aria-hidden="true" className="size-5" strokeWidth={2} />
+        </Link>
+        <div className="min-w-0 flex-1">
           <h1 className="font-display text-[24px] font-semibold tracking-[-0.03em]">Lo que Moni detectó</h1>
           <p className="text-[13px] text-text-muted">Este mes</p>
         </div>

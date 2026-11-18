@@ -54,7 +54,7 @@ export function TripsPage() {
     <Page>
       <PageHeader
         title="Viajes"
-        fallbackTo="/"
+        backTo="/mas"
         action={<HeaderAddButton label="Nuevo viaje" onClick={() => update({ nuevo: 'elegir' })} />}
       />
       <p className="-mt-2 text-[16px] text-text-muted">

@@ -22,11 +22,13 @@ const summary: MonthSummary = {
   recent: [],
 }
 
+vi.mock('@/features/transactions/ui/QuickAdd', () => ({ QuickAdd: () => null }))
+
 describe('HomeScreen: no Metas card', () => {
   it('does not show the Metas summary nor its link to the goals', () => {
     render(
       <MemoryRouter>
-        <HomeScreen summary={summary} initial="J" onAddMovement={vi.fn()} />
+        <HomeScreen summary={summary} initial="J" />
       </MemoryRouter>,
     )
     expect(screen.queryByRole('heading', { name: 'En qué se fue' })).toBeNull()

@@ -131,7 +131,7 @@ export function InstallmentSimulatorPage() {
 
   return (
     <section className="flex flex-col gap-2.5 px-[18px] pb-5 pt-1">
-      <MentaHeader title="Cuotas vs contado" subtitle="Simulación" backTo="/cuentas?tab=tarjetas" />
+      <MentaHeader title="Cuotas vs contado" subtitle="Simulación" backTo="/mas" />
 
       <div className="rounded-[28px] bg-card px-4 py-1.5">
         <Row label="Precio contado">

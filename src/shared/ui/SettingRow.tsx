@@ -4,7 +4,8 @@ import { Link } from 'react-router'
 import { cn } from './cn'
 
 interface SettingRowProps {
-  icon: ReactNode
+  /** Without an icon the row is plain text (Configuración). */
+  icon?: ReactNode
   title: string
   subtitle?: ReactNode
   /** Right side: a value, a switch, swatches. */
@@ -29,12 +30,14 @@ export function SettingRow({
   const leads = Boolean(to || onClick)
   const body = (
     <>
-      <span
-        aria-hidden="true"
-        className="flex size-[38px] shrink-0 items-center justify-center rounded-[12px] bg-sand text-forest dark:text-ink"
-      >
-        {icon}
-      </span>
+      {icon && (
+        <span
+          aria-hidden="true"
+          className="flex size-[38px] shrink-0 items-center justify-center rounded-[12px] bg-sand text-forest dark:text-ink"
+        >
+          {icon}
+        </span>
+      )}
       <span className="min-w-0 text-left">
         <span className="block text-[15px] font-medium text-ink">{title}</span>
         {subtitle && <span className="block text-[12px] leading-4 text-text-muted">{subtitle}</span>}
@@ -46,7 +49,8 @@ export function SettingRow({
     </>
   )
   const cls = cn(
-    'grid min-h-[54px] w-full grid-cols-[38px_1fr_auto] items-center gap-3 py-2',
+    'grid min-h-[54px] w-full items-center gap-3 py-2',
+    icon ? 'grid-cols-[38px_1fr_auto]' : 'grid-cols-[1fr_auto]',
     (to || onClick) && FOCUS,
     className,
   )

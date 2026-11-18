@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BottomSheet } from './BottomSheet'
 import { Button } from './Button'
-import { MoniAddButton } from './MoniAddButton'
 import { themedColor } from './categoryIcons'
 import { KIND_ACTIVE } from './fieldStyles'
 import { OptionRow, Page, SectionLabel } from './kit'
@@ -57,13 +56,6 @@ describe('shared design system', () => {
   it('the Gasto / Ingreso switch uses the semantic colors, not decorative ones', () => {
     expect(KIND_ACTIVE.expense).toContain('bg-expense')
     expect(KIND_ACTIVE.income).toContain('bg-income')
-  })
-
-  it('the cat button is the assistant circle: mint border while its menu is open', () => {
-    const { rerender } = render(<MoniAddButton aria-label="Nuevo movimiento" />)
-    expect(screen.getByRole('button', { name: 'Nuevo movimiento' })).toHaveClass('border-[#F1EEDD]')
-    rerender(<MoniAddButton aria-label="Cerrar" open />)
-    expect(screen.getByRole('button', { name: 'Cerrar' })).toHaveClass('border-[#0B3D2E]')
   })
 
   it('Page has the same 20px side margins on every screen', () => {

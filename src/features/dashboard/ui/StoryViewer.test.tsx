@@ -297,6 +297,26 @@ describe('StoryViewer', () => {
       expect(onClose).toHaveBeenCalledTimes(1)
     })
 
+    it('swiping sideways jumps a whole story: left goes on, right goes back', () => {
+      setup()
+      const area = screen.getByTestId('story-tap-next')
+      expect(screen.getByRole('dialog')).toHaveAccessibleName(/METAS/)
+      fireEvent.pointerDown(area, { clientX: 300, clientY: 300 })
+      fireEvent.pointerUp(area, { clientX: 120, clientY: 310 })
+      expect(screen.getByRole('dialog')).toHaveAccessibleName(/GASTOS/)
+      fireEvent.pointerDown(area, { clientX: 100, clientY: 300 })
+      fireEvent.pointerUp(area, { clientX: 280, clientY: 305 })
+      expect(screen.getByRole('dialog')).toHaveAccessibleName(/METAS/)
+    })
+
+    it('a short sideways drag is not a swipe', () => {
+      setup()
+      const area = screen.getByTestId('story-tap-next')
+      fireEvent.pointerDown(area, { clientX: 200, clientY: 300 })
+      fireEvent.pointerUp(area, { clientX: 170, clientY: 300 })
+      expect(screen.getByRole('dialog')).toHaveAccessibleName(/METAS/)
+    })
+
     it('traps the focus inside the dialog', async () => {
       const { user } = setup()
       const dialog = screen.getByRole('dialog')

@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Camera, Mic, Plus } from 'lucide-react'
 import { AddActionMenu } from './AddActionMenu'
-import { MoniAddButton } from './MoniAddButton'
 
 function setup() {
   const onClose = vi.fn()
@@ -47,26 +46,5 @@ describe('AddActionMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'Sacar foto' })).toHaveFocus()
     await user.keyboard('{Escape}')
     expect(onClose).toHaveBeenCalled()
-  })
-})
-
-describe('MoniAddButton', () => {
-  it('is the cat in a gold circle and announces the menu and its state', () => {
-    const { rerender } = render(<MoniAddButton aria-label="Agregar movimiento" />)
-    const button = screen.getByRole('button', { name: 'Agregar movimiento' })
-    expect(button).toHaveAttribute('aria-haspopup', 'dialog')
-    expect(button).toHaveAttribute('aria-expanded', 'false')
-    expect(button.querySelectorAll('svg')).toHaveLength(1)
-    expect(button).toHaveClass('bg-[#E3B23C]', 'size-[60px]', 'border-[#F1EEDD]')
-    // Nothing moves until it is touched.
-    expect(button.querySelector('svg')).not.toHaveAttribute('data-phase')
-
-    rerender(<MoniAddButton aria-label="Agregar movimiento" open />)
-    expect(button).toHaveAttribute('aria-expanded', 'true')
-    expect(button.querySelector('svg')).toHaveAttribute('data-phase', 'open')
-    expect(button).toHaveClass('border-[#0B3D2E]')
-
-    rerender(<MoniAddButton aria-label="Agregar movimiento" />)
-    expect(button.querySelector('svg')).toHaveAttribute('data-phase', 'close')
   })
 })

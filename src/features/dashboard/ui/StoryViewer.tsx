@@ -22,6 +22,8 @@ const LINE_MS = 1500
 const HOLD_MS = 250
 /** A downward drag longer than this (and more vertical than sideways) closes the viewer. */
 const SWIPE_CLOSE_PX = 80
+/** A sideways drag longer than this (and more horizontal than vertical) moves to the next or previous story. */
+const SWIPE_STORY_PX = 60
 /** Moves under this many pixels still count as a tap. */
 const TAP_SLOP_PX = 10
 
@@ -114,6 +116,20 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
     }
   }, [slideIndex, index])
 
+  /** A swipe sideways jumps a whole story, like on Instagram: left goes on, right goes back. */
+  const nextStory = useCallback(() => {
+    setElapsed(0)
+    setSlideIndex(0)
+    if (index < stories.length - 1) setIndex(index + 1)
+    else onClose()
+  }, [index, stories.length, onClose])
+
+  const previousStory = useCallback(() => {
+    setElapsed(0)
+    setSlideIndex(0)
+    if (index > 0) setIndex(index - 1)
+  }, [index])
+
   // The clock of the current slide.
   useEffect(() => {
     if (!running) return
@@ -159,6 +175,9 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
       const dx = event.clientX - pressedFrom.current.x
       const dy = event.clientY - pressedFrom.current.y
       if (dy > SWIPE_CLOSE_PX && dy > Math.abs(dx)) return closeOnce()
+      if (Math.abs(dx) > SWIPE_STORY_PX && Math.abs(dx) > Math.abs(dy)) {
+        return dx < 0 ? nextStory() : previousStory()
+      }
       const moved = Math.hypot(dx, dy) > TAP_SLOP_PX
       if (!moved && performance.now() - pressedAt.current < HOLD_MS) action()
     },
@@ -186,13 +205,13 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
       <div
         aria-hidden="true"
         data-testid="story-tap-prev"
-        className="absolute inset-y-0 left-0 z-0 w-1/3"
+        className="absolute inset-y-0 left-0 z-0 w-1/3 touch-none"
         {...holdProps(previous)}
       />
       <div
         aria-hidden="true"
         data-testid="story-tap-next"
-        className="absolute inset-y-0 right-0 z-0 w-2/3"
+        className="absolute inset-y-0 right-0 z-0 w-2/3 touch-none"
         {...holdProps(next)}
       />
 
@@ -264,7 +283,10 @@ export function StoryViewer({ stories: initial, startIndex, onClose, onViewed }:
         </div>
       </div>
 
-      <div className="pointer-events-none relative z-10 flex flex-1 flex-col justify-center gap-4 overflow-y-auto px-[18px] pb-4 pt-6">
+      <div
+        key={`${story.id}-${slideIndex}`}
+        className="pointer-events-none relative z-10 flex flex-1 flex-col justify-center gap-4 overflow-y-auto px-[18px] pb-4 pt-6 motion-safe:animate-[story-in_220ms_ease-out]"
+      >
         <div className="flex flex-col gap-2">
           <p
             className="w-fit rounded-full px-3 py-1 text-[12px] font-extrabold uppercase tracking-[0.12em]"

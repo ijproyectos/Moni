@@ -1,3 +1,4 @@
+import type { DraftMovement } from '@/features/ai/domain/draft'
 import { AiError } from '@/features/ai/api/aiRepository'
 import { toUserMessage } from '@/shared/lib/errors'
 
@@ -11,6 +12,8 @@ export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
+  /** A movement Moni understood from the message: reviewed and confirmed by the person before anything is saved. */
+  drafts?: DraftMovement[]
 }
 
 export interface RequestMessage {

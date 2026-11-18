@@ -8,13 +8,12 @@ import { RewardCelebration } from '@/features/goals/ui/RewardCelebration'
 import { PushEnrollmentPrompt } from '@/features/push/ui/PushEnrollmentPrompt'
 import { MyInitialContext } from '@/shared/ui/myInitialContext'
 import { MovementSheetProvider } from '@/features/transactions/ui/MovementSheetProvider'
-import { QuickAdd } from '@/features/transactions/ui/QuickAdd'
 import { BottomNav } from '@/shared/ui/BottomNav'
 import { OfflineBanner } from '@/shared/ui/OfflineBanner'
 import { useKeyboardOpen } from '@/shared/ui/useKeyboardOpen'
 
-/** The bottom bar only lives on the four main tabs; inner screens are full height (designs/). */
-const TAB_PATHS = ['/', '/actividad', '/grupos', '/mas', '/perfil']
+/** The bottom bar only lives on the main tabs; inner screens are full height (designs/). */
+const TAB_PATHS = ['/', '/actividad', '/grupos', '/cuentas', '/mas', '/perfil', '/perfil/configuracion']
 
 export function ShellBottomBar() {
   const { pathname: path } = useLocation()
@@ -24,7 +23,7 @@ export function ShellBottomBar() {
     // In the flow, after <main>: `sticky bottom-0` floats it over the content while scrolling, and at the end of the page it
     // rests in its own place, so the content always ends above it (no padding to guess, nothing can hide behind it).
     <div data-bottom-action className="pointer-events-none sticky bottom-0 z-30 pb-[calc(env(safe-area-inset-bottom)+12px)]">
-      <BottomNav assistant={<QuickAdd key={path} />} />
+      <BottomNav />
     </div>
   )
 }

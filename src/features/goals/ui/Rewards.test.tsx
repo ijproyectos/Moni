@@ -158,7 +158,7 @@ describe('the entry from the profile', () => {
     )
     const link = screen.getByRole('link', { name: /Mis logros/ })
     expect(link).toHaveAttribute('href', '/logros')
-    expect(link).toHaveTextContent('2 de 10 insignias')
+    expect(link).toHaveTextContent('2 de 10')
   })
 })
 

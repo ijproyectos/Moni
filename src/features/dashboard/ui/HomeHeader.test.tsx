@@ -1,6 +1,11 @@
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { HomeHeader } from './HomeHeader'
+
+vi.mock('@/features/plus/ui/PlusSheet', () => ({
+  PlusSheet: () => <div role="dialog" aria-label="Moni Plus activo" />,
+}))
 
 function renderHeader(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
   render(
@@ -13,17 +18,17 @@ function renderHeader(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
 describe('HomeHeader: greeting, bell and avatar', () => {
   it('greets by time of day with the name, and the date below', () => {
     renderHeader({ name: 'Iara', now: new Date(2026, 10, 10, 9, 41) })
-    expect(screen.getByRole('heading', { level: 1, name: 'Buen día, Iara' })).toBeInTheDocument()
-    expect(screen.getByText(/^\S+ \d{1,2} de \S+$/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Iara' })).toBeInTheDocument()
+    expect(screen.getByText('Buen día')).toBeInTheDocument()
     cleanup()
     renderHeader({ name: 'Iara', now: new Date(2026, 10, 10, 15) })
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Buenas tardes, Iara')
+    expect(screen.getByText('Buenas tardes')).toBeInTheDocument()
     cleanup()
     renderHeader({ now: new Date(2026, 10, 10, 22) })
     expect(screen.getByRole('heading', { level: 1, name: 'Buenas noches' })).toBeInTheDocument()
   })
 
-  it('the privacy toggle moved to the hero ("Ocultar"); the header has no bell', () => {
+  it('the privacy toggle lives in the hero (the eye); the header has no bell', () => {
     renderHeader()
     expect(screen.queryByRole('button', { name: 'Ocultar montos' })).toBeNull()
     expect(screen.queryByRole('link', { name: /Avisos/ })).toBeNull()
@@ -34,23 +39,19 @@ describe('HomeHeader: greeting, bell and avatar', () => {
     expect(screen.getByRole('banner')).not.toHaveTextContent(/\$|disponible|Gastos|Ingresos/)
   })
 
-  describe('Moni Plus badge on the avatar', () => {
-    it('shows "✦ PLUS" over the avatar when Plus is active, and the avatar still opens the profile', () => {
+  describe('Moni Plus indicator', () => {
+    it('shows "PLUS" over the avatar when Plus is active, and tapping it opens the plans', async () => {
       renderHeader({ isPlus: true })
-      const profile = screen.getByRole('link', { name: 'Perfil, Moni Plus activo' })
-      expect(profile).toHaveAttribute('href', '/perfil')
-      const badge = profile.querySelector('[data-plus-badge]')
-      expect(badge).toHaveTextContent('✦ PLUS')
-      expect(badge).toHaveClass('bg-gold', 'text-on-bright', 'pointer-events-none')
-      // The photo or initial is still there, not replaced by the badge.
-      expect(profile).toHaveTextContent('I')
+      const plus = screen.getByRole('button', { name: /Moni Plus activo/ })
+      expect(plus.querySelector('[data-plus-badge]')).toHaveTextContent('PLUS')
+      expect(plus).toHaveTextContent('I')
+      await userEvent.click(plus)
+      expect(screen.getByRole('dialog', { name: 'Moni Plus activo' })).toBeInTheDocument()
     })
 
-    it('shows the normal avatar without Plus', () => {
+    it('shows the normal avatar (a link to the profile) without Plus', () => {
       renderHeader()
-      const profile = screen.getByRole('link', { name: 'Perfil' })
-      expect(profile).toHaveAttribute('href', '/perfil')
-      expect(profile.querySelector('[data-plus-badge]')).toBeNull()
+      expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('href', '/perfil')
       expect(screen.queryByText(/PLUS/)).toBeNull()
     })
   })

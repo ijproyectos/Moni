@@ -73,7 +73,7 @@ export function MonthReportPage() {
 
   return (
     <section className="flex flex-col gap-3 px-[18px] pb-4 pt-1">
-      <MentaHeader title="Estadísticas" subtitle={subtitle} fallbackTo="/" />
+      <MentaHeader title="Estadísticas" subtitle={subtitle} backTo="/mas" />
       <SegmentedControl
         label="Período"
         variant="menta"

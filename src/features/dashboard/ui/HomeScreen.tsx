@@ -1,15 +1,9 @@
-import { useState } from 'react'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
-import type { Story } from '../domain/stories'
-import type { Cents } from '@/shared/lib/money'
-import type { DailyAllowanceView } from '../api/useDailyAllowance'
-import { HomeAsk } from './HomeAsk'
 import { HomeHeader } from './HomeHeader'
+import { QuickAdd } from '@/features/transactions/ui/QuickAdd'
+import type { HomeBalance } from '../domain/homeBalance'
 import { HomeHero } from './HomeHero'
 import { RecentMovements, type MovementActions } from './RecentMovements'
-import { StoriesRow } from './StoriesRow'
-import { StoryViewer } from './StoryViewer'
-import { useStorySeen } from './storySeen'
 
 interface HomeScreenProps {
   /** Everything about the current month: totals, categories. */
@@ -21,22 +15,11 @@ interface HomeScreenProps {
   initial: string
   /** First name for the greeting. */
   name?: string | null
-  /** Who is looking: the stories that were already seen are remembered per person. */
-  userId?: string
   photoUrl?: string | null
   /** Moni Plus is running right now: shows the PLUS badge on the avatar. */
   isPlus?: boolean
-  onAddMovement: () => void
-  /** "Tu resumen de hoy": what Moni has to tell, from the person's real data. */
-  stories?: readonly Story[]
-  /** "Hoy podés gastar": the daily allowance of the month. Without it the hero is not drawn. */
-  allowance?: DailyAllowanceView
-  /** "Lo que tenés": the real sum of the payment methods and how many there are. */
-  balance?: { totalCents: Cents; methodCount: number }
-  /** Free plan: the assistant is Plus, so the question field wears the badge. */
-  plusBadge?: boolean
-  /** Empty hero action: starts loading an income. */
-  onAddIncome?: () => void
+  /** "Lo que tenés": the real sum of the payment methods, how many there are and where most of it is. */
+  balance?: HomeBalance
 }
 
 export function HomeScreen({
@@ -45,18 +28,10 @@ export function HomeScreen({
   movementActions,
   initial,
   name = null,
-  userId = 'anonymous',
   photoUrl,
   isPlus,
-  onAddMovement,
-  stories = [],
-  allowance,
   balance = { totalCents: 0, methodCount: 0 },
-  plusBadge = false,
-  onAddIncome,
 }: HomeScreenProps) {
-  const { isSeen, markSeen } = useStorySeen(userId)
-  const [openStory, setOpenStory] = useState<number | null>(null)
   const recent = movements ?? summary.recent
 
   return (
@@ -68,44 +43,25 @@ export function HomeScreen({
         name={name}
       />
 
-      <div className="flex flex-col gap-4 pb-6 pt-1">
-        {allowance && (
-          <HomeHero view={allowance} balance={balance} onAddIncome={onAddIncome ?? onAddMovement} />
-        )}
-
-        {stories.length > 0 && (
-          <section aria-labelledby="today-title" className="mx-[18px]">
-            <h2 id="today-title" className="sr-only">
-              Tu resumen de hoy
-            </h2>
-            <StoriesRow stories={stories} isSeen={isSeen} onOpen={setOpenStory} />
-          </section>
-        )}
-        <HomeAsk plusBadge={plusBadge} />
+      <div className="flex flex-col gap-5 pb-4 pt-1">
+        <HomeHero balance={balance} />
+        <QuickAdd name={name} />
         {recent.length > 0 ? (
           <RecentMovements movements={recent} actions={movementActions} variant="latest" />
         ) : (
           <section aria-labelledby="recent-title" className="mx-[18px] flex flex-col gap-2">
             <h2
               id="recent-title"
-              className="font-display text-[22px] font-extrabold tracking-[-0.02em] text-[#0B3D2E] dark:text-ink"
+              className="font-display text-[17px] font-extrabold tracking-[-0.02em] text-[#0B3D2E] dark:text-ink"
             >
-              Últimos movimientos
+              Movimientos
             </h2>
-            <p className="rounded-[28px] bg-[#FAF8EC] px-5 py-4 text-[15px] text-[#566A5C] dark:bg-card dark:text-text-muted">
+            <p className="rounded-[20px] bg-[#FAF8EC] px-4 py-3 text-[14px] text-[#566A5C] dark:bg-card dark:text-text-muted">
               Todavía no hay movimientos. Cargá tu primer gasto o ingreso y aparece acá.
             </p>
           </section>
         )}
       </div>
-      {openStory !== null && (
-        <StoryViewer
-          stories={stories}
-          startIndex={openStory}
-          onClose={() => setOpenStory(null)}
-          onViewed={markSeen}
-        />
-      )}
     </div>
   )
 }

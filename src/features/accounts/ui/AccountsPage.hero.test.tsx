@@ -26,7 +26,7 @@ vi.mock('@/features/transactions/ui/movementSheetContext', () => ({
 }))
 
 describe('Medios de pago hero and sections', () => {
-  it('sums the accounts without credit cards and groups the rows', () => {
+  it('has no total card and groups the media in stacks', () => {
     render(
       <MemoryRouter>
         <ToastProvider>
@@ -34,9 +34,8 @@ describe('Medios de pago hero and sections', () => {
         </ToastProvider>
       </MemoryRouter>,
     )
-    const hero = screen.getByRole('region', { name: 'Saldo en cuentas' })
-    expect(hero).toHaveTextContent('$663.500')
-    expect(hero).toHaveTextContent('Sin contar tarjetas de crédito')
+    // The total lives in Inicio: no big balance card here.
+    expect(screen.queryByRole('region', { name: 'Saldo en cuentas' })).toBeNull()
     const wallets = screen.getByRole('list', { name: 'Cuentas y billeteras' })
     expect(within(wallets).getAllByRole('button')).toHaveLength(2)
     const cards = screen.getByRole('list', { name: 'Tarjetas de crédito' })

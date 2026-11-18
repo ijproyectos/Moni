@@ -1,5 +1,4 @@
 import { Button } from '@/shared/ui/Button'
-import { Bell } from 'lucide-react'
 import { SettingRow } from '@/shared/ui/SettingRow'
 import { useToast } from '@/shared/ui/toastContext'
 import { getVapidPublicKey, usePushSubscription } from '../api/usePushSubscription'
@@ -42,7 +41,6 @@ function PushRow() {
 
   return (
     <SettingRow
-      icon={<Bell className="size-[18px]" strokeWidth={1.75} />}
       title="Notificaciones"
       subtitle={subtitle}
       trailing={

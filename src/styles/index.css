@@ -216,6 +216,18 @@ html.dark .bg-lime {
   --float-bottom: calc(env(safe-area-inset-bottom) + 5.75rem);
 }
 
+/* A story slide settles in: a short fade and a small rise, so moving between slides feels continuous. */
+@keyframes story-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* The add menu leaves the cat: it grows from the button and settles with a small bounce. */
 @keyframes menu-pop {
   from {

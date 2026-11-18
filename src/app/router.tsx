@@ -62,7 +62,9 @@ import { OnboardingPage } from '@/features/onboarding/ui/OnboardingPage'
 import { SupportPage } from '@/features/support/ui/SupportPage'
 import { WelcomePage } from '@/features/onboarding/ui/WelcomePage'
 import { MorePage } from '@/features/settings/ui/MorePage'
+import { PersonalDataPage } from '@/features/settings/ui/PersonalDataPage'
 import { ProfilePage } from '@/features/settings/ui/ProfilePage'
+import { SettingsPage } from '@/features/settings/ui/SettingsPage'
 import { ActivityPage } from '@/features/transactions/ui/ActivityPage'
 import { BudgetPage } from '@/features/budgets/ui/BudgetPage'
 import type { FeatureFlag } from '@/shared/config/features'
@@ -120,6 +122,8 @@ export const appRoutes = [
   { path: 'cuentas', element: <AccountsPage /> },
   { path: 'categorias', element: <CategoriesPage /> },
   { path: 'perfil', element: <ProfilePage /> },
+  { path: 'perfil/configuracion', element: <SettingsPage /> },
+  { path: 'perfil/datos', element: <PersonalDataPage /> },
   { path: 'soporte', element: <SupportPage /> },
   // Return page of the Mercado Pago checkout (back_url). Lazy: it is only opened once, right after paying.
   {

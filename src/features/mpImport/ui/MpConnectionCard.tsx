@@ -1,7 +1,22 @@
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { Button } from '@/shared/ui/Button'
-import { Card } from '@/shared/ui/Card'
+import { findBrand } from '@/features/accounts/domain/bankCatalog'
+import { BrandLogo } from '@/features/accounts/ui/BrandLogo'
+import type { ButtonHTMLAttributes } from 'react'
 import { connectionNotice, formatLastSync, unimportedNotice, type MpConnection } from '../domain/mpImport'
+
+const MP_BLUE = '#009EE3'
+
+/** Mercado Pago's blue action button. */
+function MpButton(props: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className="min-h-11 w-full rounded-full bg-[#009EE3] px-4 text-[15px] font-extrabold text-white outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#009EE3] enabled:active:brightness-95 disabled:opacity-60"
+    />
+  )
+}
 
 interface MpConnectionCardProps {
   connection: MpConnection | null
@@ -42,21 +57,27 @@ export function MpConnectionCard({
   const unimported = status === 'active' ? unimportedNotice(unimportedCount) : null
 
   if (!status && !isPlus && !isFree) return null
+  const mpBrand = findBrand('mercado-pago')
 
   return (
-    <Card className="flex flex-col gap-3" aria-label="Mercado Pago">
-      <h3 className="font-display text-[20px] font-extrabold leading-6 text-ink">
-        Importar gastos de Mercado Pago
-      </h3>
+    <section aria-label="Mercado Pago" className="overflow-hidden rounded-[22px] border border-[#009EE3]/40 bg-card">
+      <header className="flex items-center gap-3 bg-[linear-gradient(135deg,#009EE3,#00B1EA)] px-4 py-3 text-white">
+        {mpBrand && <BrandLogo brand={mpBrand} size="sm" />}
+        <div className="min-w-0">
+          <h3 className="font-display text-[16px] font-extrabold leading-tight">Importar gastos de Mercado Pago</h3>
+          <p className="text-[12px] opacity-90">{status === 'active' ? 'Conectado' : 'Integración con tu cuenta'}</p>
+        </div>
+      </header>
+      <div className="flex flex-col gap-2.5 px-4 py-3.5" style={{ accentColor: MP_BLUE }}>
 
       {!status && isFree && (
         <>
           <p className="text-[16px] leading-6 text-text-muted">
             Con Moni Plus tus pagos de Mercado Pago aparecen solos como gastos, ya categorizados.
           </p>
-          <Button variant="dark" onClick={onUpgrade}>
+          <MpButton onClick={onUpgrade}>
             Conocer Moni Plus
-          </Button>
+          </MpButton>
         </>
       )}
 
@@ -66,15 +87,14 @@ export function MpConnectionCard({
             Vinculá tu cuenta y Moni carga tus pagos como gastos cada pocos minutos, aunque la app
             esté cerrada.
           </p>
-          <Button variant="dark" onClick={onConnect} disabled={offline || busy === 'connect'}>
+          <MpButton onClick={onConnect} disabled={offline || busy === 'connect'}>
             Vincular Mercado Pago
-          </Button>
+          </MpButton>
         </>
       )}
 
       {status === 'active' && (
         <>
-          <p className="text-[16px] font-extrabold leading-6 text-ink">Conectado</p>
           <p className="text-[15px] leading-5 text-text-muted">
             {lastSync ? `Última actualización: ${lastSync}` : 'Todavía no sincronizó.'}
           </p>
@@ -84,9 +104,9 @@ export function MpConnectionCard({
             </p>
           )}
           {unimported && <p className="text-[15px] leading-5 text-text-muted">{unimported}</p>}
-          <Button variant="dark" onClick={onSync} disabled={offline || busy === 'sync'}>
+          <MpButton onClick={onSync} disabled={offline || busy === 'sync'}>
             {busy === 'sync' ? 'Sincronizando…' : 'Sincronizar ahora'}
-          </Button>
+          </MpButton>
         </>
       )}
 
@@ -96,9 +116,9 @@ export function MpConnectionCard({
             Se cortó la conexión con Mercado Pago. Volvé a vincular tu cuenta para seguir
             importando; tus gastos ya cargados se mantienen.
           </p>
-          <Button variant="dark" onClick={onConnect} disabled={offline || busy === 'connect'}>
+          <MpButton onClick={onConnect} disabled={offline || busy === 'connect'}>
             Volver a vincular
-          </Button>
+          </MpButton>
         </>
       )}
 
@@ -108,9 +128,9 @@ export function MpConnectionCard({
             La importación está en pausa porque terminó tu Moni Plus. Tus gastos ya cargados se
             mantienen y se reanuda sola cuando lo reactives.
           </p>
-          <Button variant="dark" onClick={onUpgrade}>
+          <MpButton onClick={onUpgrade}>
             Reactivar con Moni Plus
-          </Button>
+          </MpButton>
         </>
       )}
 
@@ -125,6 +145,7 @@ export function MpConnectionCard({
         </Button>
       )}
       {offline && <p className="text-center text-sm text-text-muted">{OFFLINE_MESSAGE}</p>}
-    </Card>
+      </div>
+    </section>
   )
 }

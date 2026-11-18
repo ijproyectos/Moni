@@ -1,4 +1,4 @@
-import { ChevronRight, KeyRound, Plus, UsersRound, type LucideIcon } from 'lucide-react'
+import { ChevronRight, KeyRound, UsersRound, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
@@ -11,7 +11,7 @@ import { BigFigure } from '@/shared/ui/BigFigure'
 import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { Kicker } from '@/shared/ui/Kicker'
 import { MentaHeader } from '@/shared/ui/MentaHeader'
-import { MENTA_CIRCLE, MINT_PILL, WHITE_PILL } from '@/shared/ui/mentaStyles'
+import { MINT_PILL, WHITE_PILL } from '@/shared/ui/mentaStyles'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { GROUP_KIND_LABELS, type MyGroup } from '../domain/group'
 import { balanceTotals } from '../domain/groupsOverview'
@@ -110,11 +110,6 @@ export function GroupsScreen({
       backTo={null}
       title="Grupos"
       subtitle="Gastos compartidos"
-      action={
-        <button type="button" aria-label="Nuevo grupo" onClick={onNewGroup} className={MENTA_CIRCLE}>
-          <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />
-        </button>
-      }
     />
   )
 
@@ -145,11 +140,6 @@ export function GroupsScreen({
             backTo={null}
             title="Grupos"
             subtitle="Gastos compartidos"
-            action={
-              <button type="button" aria-label="Nuevo grupo" onClick={onNewGroup} className={MENTA_CIRCLE}>
-                <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />
-              </button>
-            }
           />
           <div className="flex flex-col items-center gap-3.5 px-3 pt-10 text-center">
             <img

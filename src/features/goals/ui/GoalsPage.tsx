@@ -78,7 +78,7 @@ export function GoalsPage() {
             ? `${active.length} ${active.length === 1 ? 'meta activa' : 'metas activas'}`
             : undefined
         }
-        backTo="/perfil"
+        backTo="/mas"
         action={
           <button
             type="button"

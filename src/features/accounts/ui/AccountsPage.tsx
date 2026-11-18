@@ -29,7 +29,6 @@ import { useToast } from '@/shared/ui/toastContext'
 import { useAccounts, useArchiveAccount, useCreateAccount } from '../api/useAccounts'
 import {
   ACCOUNT_KIND_LABELS,
-  availableBalance,
   availableCredit,
   isCreditCard,
   type Account,
@@ -37,10 +36,10 @@ import {
 } from '../domain/account'
 import type { OpeningOrigin } from '../domain/openingOrigin'
 import { brandForAccountName } from '../domain/bankCatalog'
-import { skinForAccountName } from '../domain/cardSkins'
+import { skinForAccountName, skinStyle } from '../domain/cardSkins'
 import { AccountDetail } from './AccountDetail'
 import { AccountForm } from './AccountForm'
-import { BrandBadge } from './BrandCardArt'
+import { BrandBadge, BrandCardArt } from './BrandCardArt'
 import { BrandLogo } from './BrandLogo'
 
 const KIND_SUBTITLES: Record<AccountKind, string> = {
@@ -65,72 +64,149 @@ const KIND_ICONS: Record<AccountKind, { icon: LucideIcon; tile: string }> = {
   credit_card: { icon: CreditCard, tile: 'bg-tint-violet text-[#4A3F96] dark:text-ink' },
 }
 
-/** Row of Medios de pago: tinted icon (or the entity's logo), name, subtitle and balance / card debt. */
-function AccountRow({
+/** Height of a card and how much of each back card stays visible in the stack (px). */
+const CARD_H = 188
+const PEEK = 68
+
+/**
+ * A payment method as a wallet card: the entity's own colors and art when it is in the catalog, Moni's tones otherwise.
+ * The top strip (logo, name, balance) is what shows when it sits behind others; the front card also shows the entity,
+ * the alias for transfers and the rest of its real data. A back card comes to the front when tapped; tapping the front
+ * card opens its detail.
+ */
+function AccountCard({
   account,
-  last,
+  tone,
   reserve,
-  onOpen,
+  front,
+  first,
+  onSelect,
 }: {
   account: Account
-  last: boolean
+  tone: string
   reserve: { reservedCents: number; freeCents: number } | undefined
-  onOpen: (card: HTMLElement | null) => void
+  front: boolean
+  first: boolean
+  onSelect: (card: HTMLElement | null) => void
 }) {
   const brand = brandForAccountName(account.name)
-  // Banks and wallets of the catalog wear their own identity; cash and custom media keep the tinted icon.
+  // Banks and wallets of the catalog wear their own identity; cash and custom media keep Moni's tones.
   const skin = skinForAccountName(account.name)
-  const { icon: Icon, tile } = KIND_ICONS[account.kind] ?? KIND_ICONS.bank
+  const { icon: Icon } = KIND_ICONS[account.kind] ?? KIND_ICONS.bank
   const card = isCreditCard(account)
   const credit = card ? availableCredit(account) : null
+  const reserved = !card ? (reserve?.reservedCents ?? 0) : 0
   return (
-    <li data-account-card className={cn('border-line', !last && 'border-b')}>
-      <button
-        type="button"
-        onClick={(e: MouseEvent<HTMLElement>) => onOpen(e.currentTarget.closest('[data-account-card]'))}
-        aria-label={`Abrir ${account.name}`}
-        className={cn('grid w-full grid-cols-[40px_1fr_auto] items-center gap-3 py-[9px] text-left', FOCUS_RING)}
-      >
-        {brand ? (
-          <span
-            aria-hidden="true"
-            className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white"
-          >
-            {skin ? <BrandBadge brand={brand} skin={skin} size="sm" /> : <BrandLogo brand={brand} size="sm" />}
-          </span>
-        ) : (
-          <span aria-hidden="true" className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', tile)}>
-            <Icon className="size-[18px]" strokeWidth={2} />
-          </span>
+    <li className="relative" style={{ marginTop: first ? 0 : PEEK - CARD_H }} data-front={front || undefined}>
+      <div
+        data-account-card
+        className={cn(
+          'relative overflow-hidden rounded-[22px] shadow-[0_-4px_14px_rgba(6,40,31,0.18)] ring-1 ring-black/10 motion-safe:transition-transform motion-safe:duration-200',
+          front && 'motion-safe:animate-[story-in_200ms_ease-out]',
+          !skin && tone,
         )}
-        <span className="min-w-0">
-          <span className="block truncate text-[15px] font-semibold">{account.name}</span>
-          <span className="block text-[12px] text-text-muted">
-            {KIND_SUBTITLES[account.kind] ?? ACCOUNT_KIND_LABELS[account.kind]}
-            {card && account.closingDay && account.dueDay ? ` · cierra el ${account.closingDay}` : ''}
-          </span>
-          {!card && (reserve?.reservedCents ?? 0) > 0 && (
-            <span className="block text-[12px] font-semibold text-text-muted">
-              Reservado para metas <AmountDisplay cents={reserve?.reservedCents ?? 0} /> ·{' '}
-              {(reserve?.freeCents ?? 0) < 0 ? '⚠ ' : ''}libre <AmountDisplay cents={reserve?.freeCents ?? 0} />
+        style={{ height: CARD_H, ...(skin ? skinStyle(skin) : {}) }}
+      >
+        {skin ? (
+          <BrandCardArt skin={skin} />
+        ) : (
+          <span aria-hidden="true" className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full bg-white/10" />
+        )}
+        <button
+          type="button"
+          onClick={(e: MouseEvent<HTMLElement>) => onSelect(e.currentTarget.closest('[data-account-card]'))}
+          aria-label={`Abrir ${account.name}`}
+          className={cn('relative flex h-full w-full flex-col justify-between px-4 pb-3.5 pt-3.5 text-left', FOCUS_RING)}
+        >
+          <span className="flex items-start gap-3">
+            {brand ? (
+              skin ? (
+                <BrandBadge brand={brand} skin={skin} size="sm" />
+              ) : (
+                <BrandLogo brand={brand} size="sm" />
+              )
+            ) : (
+              <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-white/20">
+                <Icon className="size-4" strokeWidth={2} />
+              </span>
+            )}
+            <span className="min-w-0 flex-1 pt-px">
+              <span className="block truncate text-[16px] font-extrabold leading-tight">{account.name}</span>
+              <span className="block truncate text-[12px] opacity-80">
+                {KIND_SUBTITLES[account.kind] ?? ACCOUNT_KIND_LABELS[account.kind]}
+              </span>
             </span>
-          )}
-        </span>
-        {card ? (
-          <span className="text-right">
-            <span className="block text-[12px] text-text-muted">{account.balanceCents > 0 ? 'A favor' : 'Deuda'}</span>
-            <AmountDisplay cents={Math.abs(account.balanceCents)} className="whitespace-nowrap text-[15px] font-semibold" />
+            <span className="shrink-0 text-right">
+              {card && <span className="block text-[11px] leading-3 opacity-80">{account.balanceCents > 0 ? 'A favor' : 'Deuda'}</span>}
+              <AmountDisplay
+                cents={card ? Math.abs(account.balanceCents) : account.balanceCents}
+                className="whitespace-nowrap text-[17px] font-extrabold leading-tight"
+              />
+            </span>
+          </span>
+          <span className="flex flex-col gap-0.5 text-[12.5px]">
+            {brand && <span className="truncate opacity-90">Entidad: {brand.name}</span>}
+            {account.transferAlias && <span className="truncate font-semibold">Alias: {account.transferAlias}</span>}
+            {card && account.closingDay && account.dueDay && (
+              <span className="opacity-90">Cierra el {account.closingDay} · vence el {account.dueDay}</span>
+            )}
             {credit !== null && (
-              <span className="block text-[12px] text-text-muted">
+              <span className="opacity-90">
                 Disponible <AmountDisplay cents={credit} />
               </span>
             )}
+            {reserved > 0 && (
+              <span className="font-semibold">
+                Reservado para metas <AmountDisplay cents={reserved} /> · {(reserve?.freeCents ?? 0) < 0 ? '⚠ ' : ''}libre{' '}
+                <AmountDisplay cents={reserve?.freeCents ?? 0} />
+              </span>
+            )}
+            <span className="mt-0.5 self-end text-[12px] font-bold opacity-90">{front ? 'Ver detalle ›' : ''}</span>
           </span>
-        ) : (
-          <AmountDisplay cents={account.balanceCents} className="whitespace-nowrap text-[15px] font-semibold" />
-        )}
-      </button>
+        </button>
+      </div>
     </li>
+  )
+}
+
+/** One group of media as a slightly overlapped stack of cards; the one tapped comes to the front. */
+function CardStack({
+  title,
+  items,
+  list,
+  reserve,
+  onOpen,
+}: {
+  title: string
+  items: Account[]
+  list: Account[]
+  reserve: Map<string, { reservedCents: number; freeCents: number }>
+  onOpen: (account: Account, tone: string, card: HTMLElement | null) => void
+}) {
+  const [frontId, setFrontId] = useState<string | null>(null)
+  const frontAccount = items.find((a) => a.id === frontId) ?? items[items.length - 1]
+  const ordered = [...items.filter((a) => a !== frontAccount), ...(frontAccount ? [frontAccount] : [])]
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Kicker as="h2">{title}</Kicker>
+      <ul aria-label={title} className="flex flex-col pt-1">
+        {ordered.map((account, position) => {
+          const tone = CARD_TONES[list.indexOf(account) % 3] ?? 'bg-forest text-cream'
+          const isFront = account === frontAccount
+          return (
+            <AccountCard
+              key={account.id}
+              account={account}
+              tone={tone}
+              reserve={reserve.get(account.id)}
+              front={isFront}
+              first={position === 0}
+              onSelect={(card) => (isFront || items.length === 1 ? onOpen(account, tone, card) : setFrontId(account.id))}
+            />
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 
@@ -205,26 +281,22 @@ export function AccountsPage() {
   }
 
   return (
-    <section className="flex flex-col gap-3 px-[18px] pb-4 pt-1">
+    <section className="flex flex-col gap-2.5 px-[18px] pb-4 pt-1">
       <MentaHeader
         title="Medios de pago"
         subtitle={accounts.data ? `${list.length} ${list.length === 1 ? 'medio' : 'medios'}` : undefined}
-        backTo="/perfil"
+        backTo={null}
         action={
-          <button
-            type="button"
-            onClick={tab === 'cuotas' ? () => setNewPurchase(true) : startCreating}
-            aria-label={
-              tab === 'cuotas'
-                ? 'Nueva compra en cuotas'
-                : tab === 'tarjetas'
-                  ? 'Agregar tarjeta'
-                  : 'Nuevo medio de pago'
-            }
-            className={MENTA_CIRCLE}
-          >
-            <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />
-          </button>
+          tab === 'medios' ? undefined : (
+            <button
+              type="button"
+              onClick={tab === 'cuotas' ? () => setNewPurchase(true) : startCreating}
+              aria-label={tab === 'cuotas' ? 'Nueva compra en cuotas' : 'Agregar tarjeta'}
+              className={MENTA_CIRCLE}
+            >
+              <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />
+            </button>
+          )
         }
       />
       {(hasCards || tab !== 'medios') && (
@@ -270,40 +342,20 @@ export function AccountsPage() {
             />
           ) : (
             <>
-              <section aria-label="Saldo en cuentas" className="flex flex-col gap-1.5 rounded-[30px] bg-mint px-[18px] py-4 text-white">
-                <Kicker as="h2" className="font-medium text-[#CBEBD9]">
-                  Saldo en cuentas
-                </Kicker>
-                <AmountDisplay
-                  cents={availableBalance(list)}
-                  className="text-[42px] font-bold leading-none tracking-[-0.04em]"
-                />
-                <p className="text-[13.5px] text-[#DDF3E6]">Sin contar tarjetas de crédito</p>
-              </section>
               {[
                 { title: 'Cuentas y billeteras', items: list.filter((a) => !isCreditCard(a)) },
                 { title: 'Tarjetas de crédito', items: list.filter(isCreditCard) },
               ]
                 .filter((group) => group.items.length > 0)
                 .map((group) => (
-                  <div key={group.title} className="flex flex-col gap-2">
-                    <Kicker as="h2">{group.title}</Kicker>
-                    <ul aria-label={group.title} className="rounded-[26px] bg-card px-4 py-0.5">
-                      {group.items.map((account, i) => {
-                        const index = list.indexOf(account)
-                        const tone = CARD_TONES[index % 3] ?? 'bg-forest text-cream'
-                        return (
-                          <AccountRow
-                            key={account.id}
-                            account={account}
-                            last={i === group.items.length - 1}
-                            reserve={reserve.get(account.id)}
-                            onOpen={(card) => openDetail(account, tone, card)}
-                          />
-                        )
-                      })}
-                    </ul>
-                  </div>
+                  <CardStack
+                    key={group.title}
+                    title={group.title}
+                    items={group.items}
+                    list={list}
+                    reserve={reserve}
+                    onOpen={openDetail}
+                  />
                 ))}
             </>
           )}

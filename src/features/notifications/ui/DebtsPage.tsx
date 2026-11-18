@@ -37,7 +37,7 @@ export function DebtsPage() {
 
   return (
     <Page>
-      <PageHeader title="Deudas" />
+      <PageHeader title="Deudas" backTo="/mas" />
       <section className="rounded-[28px] bg-forest p-5 text-cream">
         <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
           Tu saldo en grupos

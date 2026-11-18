@@ -4,57 +4,46 @@ import { MemoryRouter } from 'react-router'
 import { ShellBottomBar } from '@/app/AppShell'
 import { BottomNav } from './BottomNav'
 
-vi.mock('@/features/transactions/ui/QuickAdd', () => ({
-  QuickAdd: () => <button type="button">Nuevo movimiento</button>,
-}))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: null }) }))
 
 function renderNav(path = '/') {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <BottomNav assistant={<button type="button">Asistente</button>} />
+      <BottomNav />
     </MemoryRouter>,
   )
 }
 
 describe('BottomNav', () => {
-  it('is a navigation landmark with Hoy, Grupos, Herramientas and the profile avatar', () => {
+  it('has Inicio, Grupos, Tarjetas, Herramientas and the profile avatar', () => {
     renderNav()
     const nav = screen.getByRole('navigation', { name: 'Navegación principal' })
     const links = Array.from(nav.querySelectorAll('a'))
-    expect(links.map((a) => a.textContent)).toEqual(['Hoy', 'Grupos', 'Herramientas', 'V'])
-    expect(links.map((a) => a.getAttribute('href'))).toEqual([
-      '/',
-      '/grupos',
-      '/mas',
-      '/perfil',
-    ])
+    expect(links.map((a) => a.getAttribute('aria-label'))).toEqual(['Inicio', 'Grupos', 'Tarjetas', 'Herramientas', 'Perfil'])
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/grupos', '/cuentas', '/mas', '/perfil'])
   })
 
-  it('marks only the current tab with aria-current and the dark pill', () => {
+  it('only the current tab is marked and shows its name; the others are icons', () => {
     renderNav('/grupos')
     expect(screen.getByRole('link', { name: 'Grupos' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('link', { name: 'Grupos' })).toHaveClass('bg-[#0B3D2E]')
-    expect(screen.getByRole('link', { name: 'Hoy' })).not.toHaveAttribute('aria-current')
-    expect(screen.getByRole('link', { name: 'Herramientas' })).not.toHaveClass('bg-[#0B3D2E]')
+    expect(screen.getByRole('link', { name: 'Grupos' })).toHaveTextContent('Grupos')
+    expect(screen.getByRole('link', { name: 'Inicio' })).not.toHaveAttribute('aria-current')
+    expect(screen.getByRole('link', { name: 'Inicio' })).toHaveTextContent('')
   })
 
-  it('Hoy is only active on the exact root', () => {
+  it('Inicio is only active on the exact root', () => {
     renderNav('/grupos')
-    expect(screen.getByRole('link', { name: 'Hoy' })).not.toHaveAttribute('aria-current')
-    expect(screen.getByRole('link', { name: 'Grupos' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Inicio' })).not.toHaveAttribute('aria-current')
   })
 
-  it('shows the assistant button apart from the tabs, outside the landmark', () => {
-    renderNav()
-    const nav = screen.getByRole('navigation', { name: 'Navegación principal' })
-    expect(nav).not.toContainElement(screen.getByRole('button', { name: 'Asistente' }))
+  it('Tarjetas is active anywhere in Medios de pago', () => {
+    renderNav('/cuentas')
+    expect(screen.getByRole('link', { name: 'Tarjetas' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('keeps the assistant slot clickable: the bar container ignores pointer events', () => {
+  it('has no add button: adding lives in Inicio', () => {
     renderNav()
-    // ShellBottomBar's wrapper is pointer-events-none, so every interactive child must opt back in.
-    expect(screen.getByTestId('assistant-slot')).toHaveClass('pointer-events-auto')
+    expect(screen.queryByRole('button')).toBeNull()
   })
 })
 
@@ -69,7 +58,7 @@ describe('ShellBottomBar', () => {
   }
 
   it('lives on the tab routes and declares itself as a bottom action', () => {
-    for (const path of ['/', '/actividad', '/grupos', '/mas', '/perfil']) {
+    for (const path of ['/', '/actividad', '/grupos', '/cuentas', '/mas', '/perfil']) {
       const { container, unmount } = renderBar(path)
       expect(container.querySelector('[data-bottom-action]')).not.toBeNull()
       unmount()

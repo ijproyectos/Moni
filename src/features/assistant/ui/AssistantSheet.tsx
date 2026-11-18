@@ -3,12 +3,24 @@ import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { SHEET_SUGGESTIONS } from '../domain/chat'
 import { AssistantConversation } from './AssistantConversation'
 
-/** "Preguntale a Moni" as a sheet over Inicio: the same assistant as the Asistente page, without leaving the screen. */
-export function AssistantSheet({ name, onClose }: { name?: string | null; onClose: () => void }) {
+/** "Hablá con Moni" as a sheet over Inicio: the one chat (questions and movements), without leaving the screen. */
+export function AssistantSheet({
+  name,
+  initialQuestion,
+  initialDraft,
+  onClose,
+}: {
+  name?: string | null
+  /** A question sent as soon as the chat opens. */
+  initialQuestion?: string
+  /** Text left typed in the box for the person to finish. */
+  initialDraft?: string
+  onClose: () => void
+}) {
   return (
     <BottomSheet
-      title="Preguntale a Moni"
-      subtitle="Respondo con los números de tu cuenta"
+      title="Hablá con Moni"
+      subtitle="Preguntame o contame un gasto"
       icon={
         <span
           aria-hidden="true"
@@ -22,8 +34,10 @@ export function AssistantSheet({ name, onClose }: { name?: string | null; onClos
       <div className="flex flex-col gap-4">
         <AssistantConversation
           inSheet
+          initialQuestion={initialQuestion}
+          initialDraft={initialDraft}
           suggestions={SHEET_SUGGESTIONS}
-          greeting={`${name ? `Hola, ${name}.` : 'Hola.'} Preguntame lo que quieras sobre tus gastos, ingresos, deudas y suscripciones.`}
+          greeting={`${name ? `Hola, ${name}.` : 'Hola.'} Preguntame por tus gastos, ingresos, saldos, metas o deudas, o contame un gasto («Gasté $18.000 en el chino») y lo anoto con tu confirmación.`}
         />
       </div>
     </BottomSheet>

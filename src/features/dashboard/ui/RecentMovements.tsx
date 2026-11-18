@@ -1,5 +1,4 @@
 import { Link } from 'react-router'
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import { useState } from 'react'
 import { addsToBalance, groupKindLabel, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
 import { formatLongDate, formatLongDay, formatRelativeDay } from '@/shared/lib/dates'
@@ -35,6 +34,9 @@ function subtitleOf(m: RecentMovement): string {
   return `${m.categoryName ?? 'Sin categoría'} · ${m.accountName}`
 }
 
+/** How many of the newest movements (any date) the Hoy card lists. */
+const LATEST_COUNT = 5
+
 /** How many movements Inicio lists before "Ver más movimientos". */
 const COLLAPSED_COUNT = 5
 
@@ -60,7 +62,7 @@ export function RecentMovements({
   actions?: MovementActions
   /** Today, to say "Hoy" and "Ayer" on the day headings (a prop so it can be tested). */
   today?: string
-  /** `latest` is Hoy: the two newest movements, in a card. `list` is the full grouped list. */
+  /** `latest` is Hoy: the 5 newest movements (any date, newest first), in a card. `list` is the full grouped list. */
   variant?: 'list' | 'latest'
 }) {
   const [pending, setPending] = useState<RecentMovement | null>(null)
@@ -68,7 +70,7 @@ export function RecentMovements({
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
   const latest = variant === 'latest'
-  const shown = latest ? movements.slice(0, 2) : expanded ? movements : movements.slice(0, COLLAPSED_COUNT)
+  const shown = latest ? movements.slice(0, LATEST_COUNT) : expanded ? movements : movements.slice(0, COLLAPSED_COUNT)
   const canExpand = !latest && movements.length > COLLAPSED_COUNT
   const days = groupMovementsByDay(shown)
   const anySwipe = !latest && actions ? movements.some((m) => actions.canEdit(m) || actions.canVoid(m)) : false
@@ -89,49 +91,49 @@ export function RecentMovements({
 
   if (latest) {
     return (
-      <section aria-labelledby="recent-title" className="mx-[18px] flex flex-col gap-2.5">
-        <div className="flex items-center justify-between px-1">
-          <h2 id="recent-title" className="font-display text-[clamp(18px,5.6vw,22px)] font-extrabold tracking-[-0.02em] text-[#0B3D2E] dark:text-ink">
-            Últimos movimientos
+      <section aria-labelledby="recent-title" className="mx-[18px] flex flex-col">
+        <div className="flex items-center justify-between border-b border-[#DCD8BF] pb-1 dark:border-line">
+          <h2 id="recent-title" className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#566A5C] dark:text-text-muted">
+            Movimientos
           </h2>
           <Link
             to="/actividad"
-            className="flex min-h-11 shrink-0 items-center whitespace-nowrap text-[clamp(14px,4vw,16px)] font-bold text-[#566A5C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B3D2E] dark:text-text-muted"
+            className="flex min-h-9 shrink-0 items-center whitespace-nowrap text-[14px] font-extrabold text-[#0C2418] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B3D2E] dark:text-[#F1EEDD]"
           >
-            Ver todos →
+            Ver todos
           </Link>
         </div>
-        <ul className="divide-y divide-[#DCD8BF] overflow-hidden rounded-[28px] border border-[#DCD8BF] bg-[#FAF8EC] dark:divide-line dark:border-line dark:bg-card">
+        <ul className="divide-y divide-[#DCD8BF] dark:divide-line">
           {shown.map((m) => {
             const edit = actions?.canEdit(m) ? () => actions.onEdit(m) : undefined
             const isIncome = addsToBalance(m.kind)
-            const Icon = isIncome ? ArrowDownLeft : ArrowUpRight
             const when = formatRelativeDay(m.occurredOn, today).toLowerCase()
+            const title = titleOf(m)
             return (
               <li key={m.id}>
                 <button
                   type="button"
                   onClick={edit}
                   disabled={!edit}
-                  aria-label={edit ? `Editar ${titleOf(m)}` : undefined}
-                  className="grid min-h-[84px] w-full grid-cols-[44px_1fr_auto] items-center gap-3 px-4 py-3 min-[380px]:grid-cols-[48px_1fr_auto] min-[380px]:gap-4 min-[380px]:px-5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0B3D2E]"
+                  aria-label={edit ? `Editar ${title}` : undefined}
+                  className="grid min-h-[64px] w-full grid-cols-[44px_1fr_auto] items-center gap-3 py-2 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0B3D2E]"
                 >
                   <span
                     aria-hidden="true"
-                    className={`flex size-11 items-center justify-center rounded-full min-[380px]:size-12 ${isIncome ? 'bg-[#D9E6D6] text-[#1B7F4E]' : 'bg-[#EEDDD3] text-[#B5382A]'}`}
+                    className={`flex size-11 items-center justify-center rounded-[14px] font-display text-[18px] font-extrabold ${isIncome ? 'bg-[#D3E6D2] text-[#0B3D2E] dark:bg-[#1F3A2C] dark:text-[#CFE9D6]' : 'bg-[#CFE0EA] text-[#0B3D2E] dark:bg-[#1E3140] dark:text-[#CFE0EA]'}`}
                   >
-                    <Icon className="size-5" strokeWidth={2.6} />
+                    {title.trim().charAt(0).toUpperCase()}
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-[clamp(17px,5vw,20px)] font-extrabold leading-tight text-[#0B3D2E] dark:text-ink">{titleOf(m)}</span>
-                    <span className="block truncate text-[clamp(13px,3.9vw,16px)] text-[#566A5C] dark:text-text-muted">
+                    <span className="block truncate text-[17px] font-extrabold leading-tight text-[#0C2418] dark:text-[#F1EEDD]">{title}</span>
+                    <span className="block truncate text-[13px] text-[#566A5C] dark:text-text-muted">
                       {subtitleOf(m)} · {when}
                     </span>
                   </span>
                   <AmountDisplay
                     cents={isIncome ? m.amountCents : -m.amountCents}
                     signed
-                    className={`text-[clamp(17px,5vw,20px)] font-extrabold ${isIncome ? 'text-[#1B7F4E] dark:text-income' : 'text-[#B5382A] dark:text-expense'}`}
+                    className={`text-[17px] font-extrabold ${isIncome ? 'text-[#1B7F4E] dark:text-[#6FD3A0]' : 'text-[#B5382A] dark:text-expense'}`}
                   />
                 </button>
               </li>

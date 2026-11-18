@@ -1,4 +1,4 @@
-import { OptionRow } from '@/shared/ui/kit'
+import { SettingRow } from '@/shared/ui/SettingRow'
 import { useRewards } from '../api/useSavings'
 import { BADGES, earnedCount } from '../domain/badges'
 
@@ -7,14 +7,9 @@ export function AchievementsRow() {
   const rewards = useRewards()
   const count = rewards.data ? earnedCount(rewards.data.badges) : null
   return (
-    <OptionRow
-      className="rounded-none border-0"
+    <SettingRow
       title="Mis logros"
-      subtitle={
-        count === null
-          ? 'Tus insignias por cumplir metas'
-          : `${count} de ${BADGES.length} insignias`
-      }
+      trailing={count === null ? undefined : `${count} de ${BADGES.length}`}
       to="/logros"
     />
   )

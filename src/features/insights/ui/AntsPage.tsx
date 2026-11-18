@@ -33,7 +33,7 @@ export function AntsPage() {
 
   return (
     <section className="flex flex-col gap-3 px-[18px] pb-4 pt-1">
-      <MentaHeader title="Gastos hormiga" subtitle={monthNameOf(month)} />
+      <MentaHeader title="Gastos hormiga" subtitle={monthNameOf(month)} backTo="/mas" />
       <SegmentedControl
         label="Período"
         variant="menta"

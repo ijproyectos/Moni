@@ -87,11 +87,12 @@ describe('Medios de pago: opening a card', () => {
     expect(screen.queryByRole('button', { name: 'Eliminar medio de pago' })).toBeNull()
   })
 
-  it('"Transferir entre medios" and "Nuevo medio de pago" keep working', async () => {
+  it('"Transferir entre medios" and "Agregar otro medio" keep working (the header + is gone)', async () => {
     const user = renderPage()
     await user.click(screen.getByRole('button', { name: 'Transferir entre medios' }))
     expect(openNew).toHaveBeenCalledWith('transfer')
-    await user.click(screen.getByRole('button', { name: 'Nuevo medio de pago' }))
+    expect(screen.queryByRole('button', { name: 'Nuevo medio de pago' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Agregar otro medio' }))
     // Creating still uses the form, with the type selector (it is a new medium).
     expect(screen.getByRole('group', { name: 'Tipo de cuenta' })).toBeVisible()
   })

@@ -1,35 +1,19 @@
-import { ChevronDown, ChevronRight, Gift, HandCoins, Plug, ShoppingBasket } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { ChevronRight, Gift, HandCoins, Plug, type LucideIcon } from 'lucide-react'
+import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { useAccounts } from '@/features/accounts/api/useAccounts'
-import { skinBackground, skinForAccountName } from '@/features/accounts/domain/cardSkins'
-import { useAuth } from '@/features/auth/api/authContext'
-import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
-import { useProfile } from '@/features/auth/api/useProfile'
-import { initialOf } from '@/features/auth/domain/profile'
+import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { useAnts } from '@/features/insights/api/useAnts'
-import { useEnabledFeatures } from '@/features/onboarding/api/useGoals'
-import type { AppFeature } from '@/features/onboarding/domain/goals'
-import { usePlus } from '@/features/plus/api/usePlus'
-import { PlusPill } from '@/features/plus/ui/PlusPill'
 import { useSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
 import { useTrips } from '@/features/trips/api/useTrips'
 import { summarizeTrip, tripStatus, tripTimeLabel } from '@/features/trips/domain/trip'
 import { FEATURES } from '@/shared/config/features'
-import { formatMonthName } from '@/shared/lib/dates'
-import { monthStart, todayIso } from '@/shared/lib/month'
+import { formatArs } from '@/shared/lib/money'
+import { todayIso } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
-import { CompactHeader } from '@/shared/ui/CompactHeader'
-import { useScrolledPast } from '@/shared/ui/useScrolledPast'
 import { cn } from '@/shared/ui/cn'
-import { themedColor } from '@/shared/ui/categoryIcons'
-import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
-
-/** Fallback chip colors for payment media without a brand of their own. */
-const MEDIUM_TONES = ['#2f4a3b', '#c75a1f', '#6b3fd4', '#2f78a8']
 
 /** Date of today's trip headline: the ongoing trip, else the nearest one that has not started. */
 function nextTrip<T extends { startsOn: string; endsOn: string; archivedAt: string | null }>(
@@ -50,73 +34,60 @@ function tripLabelOf(
   return tripTimeLabel(trip, summarizeTrip(trip, [], today), today)
 }
 
-interface Entry {
-  key: string
-  feature?: AppFeature
-  node: ReactNode
-  wide?: boolean
-}
+const CARD =
+  'flex min-h-[148px] w-[min(78%,300px)] min-w-[232px] shrink-0 snap-start flex-col justify-between gap-3 rounded-[26px] p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink'
 
-type Tone = 'sage' | 'dark' | 'paper' | 'moss'
-
-const TONES: Record<Tone, string> = {
-  sage: 'bg-[#dfe5cc] text-ink dark:bg-sand',
-  dark: 'bg-[#2f7048] text-cream',
-  paper: 'bg-card text-ink',
-  moss: 'bg-[#cfdcb7] text-ink dark:bg-[#2c4430]',
-}
-
-function MoreCard({
-  to,
-  title,
-  tone,
-  children,
-  className,
-}: {
-  to: string
-  title: string
-  tone: Tone
-  children?: ReactNode
-  className?: string
-}) {
+function CarouselCard({ to, title, tone, children }: { to: string; title: string; tone: 'violet' | 'paper' | 'green'; children: ReactNode }) {
+  const tones = {
+    violet: 'bg-[#E3DFF5] text-[#2B2A5C] dark:bg-[#2A2A55] dark:text-[#D9D4F5]',
+    paper: 'border border-line bg-card text-ink',
+    green: 'bg-[#D3E6D2] text-[#0B3D2E] dark:bg-[#1F3A2C] dark:text-[#CFE9D6]',
+  }
   return (
-    <Link
-      to={to}
-      className={cn(
-        'flex h-full min-h-[150px] flex-col justify-between gap-3 rounded-[28px] p-4 min-[380px]:p-5',
-        TONES[tone],
-        className,
-      )}
-    >
-      <span className="font-display text-[clamp(17px,5.4vw,21px)] font-extrabold leading-7">
-        {title}
-      </span>
+    <Link to={to} className={cn(CARD, tones[tone])}>
+      <span className="font-display text-[17px] font-extrabold leading-tight">{title}</span>
       {children}
     </Link>
   )
 }
 
-const muted = (tone: Tone) => (tone === 'dark' ? 'text-[#c9e2bd]' : 'text-text-muted')
+function ExploreRow({ to, title, value }: { to: string; title: string; value: ReactNode }) {
+  return (
+    <li>
+      <Link
+        to={to}
+        className="flex min-h-[56px] items-center gap-3 py-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mint-ink"
+      >
+        <span className="min-w-0 flex-1 truncate font-display text-[19px] font-extrabold tracking-[-0.01em]">{title}</span>
+        <span className="min-w-0 max-w-[55%] truncate text-right text-[14px] text-text-muted">{value}</span>
+        <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-muted" strokeWidth={2.25} />
+      </Link>
+    </li>
+  )
+}
+
+function SectionTitle({ children }: { children: ReactNode }) {
+  return <h2 className="px-1 text-[12px] font-bold uppercase tracking-[0.14em] text-text-muted">{children}</h2>
+}
+
+interface Item {
+  key: string
+  /** Carousel card, when it has one. */
+  card?: ReactNode
+  /** Compact row of Explorar (and of "Más herramientas" when the goals left it out). */
+  row: { to: string; title: string; value: ReactNode }
+}
 
 export function MorePage() {
-  const { user } = useAuth()
-  const { data: profile, isLoading, isError } = useProfile()
-  const plus = usePlus()
-  const displayName = profile?.display_name ?? user?.email ?? ''
-  const initial = initialOf(profile?.display_name, user?.email ?? '')
-  const { has } = useEnabledFeatures()
-  const [showMore, setShowMore] = useState(false)
-  const [sentinel, scrolled] = useScrolledPast<HTMLDivElement>()
   const today = todayIso()
 
-  const accounts = useAccounts()
   const savings = useSavings()
   const subscriptions = useSubscriptions()
   const categories = useCategories()
   const trips = useTrips()
   const ants = useAnts(today)
+  const budget = useDailyAllowance()
 
-  const media = accounts.data ?? []
   const goalTotals = activeTotals(savings.data?.goals ?? [])
   const goalShare =
     goalTotals.targetCents > 0
@@ -127,360 +98,155 @@ export function MorePage() {
     (s) => s.status === 'active' && s.period === 'monthly',
   )
   const monthlyTotal = monthlySubs.reduce((sum, s) => sum + s.amountCents, 0)
-  const colors = (categories.data ?? []).slice(0, 5).map((c) => c.color)
   const trip = useMemo(() => nextTrip(trips.data ?? [], today), [trips.data, today])
   const tripLabel = trip ? tripLabelOf(trip, today) : null
   const antsTotal = ants.data?.monthTotalCents ?? 0
+  const allowance = budget.allowance
+  const budgetValue =
+    allowance.kind === 'ok'
+      ? allowance.overCents > 0
+        ? `te pasaste ${formatArs(allowance.overCents)}`
+        : `${formatArs(Math.max(0, allowance.spendBudgetCents))} por mes`
+      : 'Consultá y administrá'
 
-  const entries: Entry[] = [
-    {
-      key: 'medios',
-      wide: true,
-      node: (
-        <MoreCard to="/cuentas" title="Medios de pago" tone="sage" className="min-h-[170px]">
-          <span className="-mt-2 text-[17px] text-text-muted">
-            Administrá tus cuentas y tarjetas
-          </span>
-          <span className="flex items-end justify-between gap-3">
-            <span aria-hidden="true" className="flex min-w-0 overflow-hidden">
-              {media.slice(0, 4).map((a, i) => {
-                const skin = skinForAccountName(a.name)
-                return (
-                  <span
-                    key={a.id}
-                    className="-ml-3 h-8 w-12 shrink-0 rounded-[10px] ring-2 ring-[#dfe5cc] first:ml-0 dark:ring-sand"
-                    style={{
-                      background: skin
-                        ? skinBackground(skin)
-                        : (MEDIUM_TONES[i % MEDIUM_TONES.length] as string),
-                    }}
-                  />
-                )
-              })}
-            </span>
-            {media.length > 0 && (
-              <span className="whitespace-nowrap font-display text-[clamp(17px,5.4vw,21px)] font-extrabold">
-                {media.length} {media.length === 1 ? 'medio' : 'medios'}
-              </span>
-            )}
-          </span>
-        </MoreCard>
-      ),
-    },
-    {
-      key: 'metas',
-      feature: 'savings',
-      node: (
-        <MoreCard to="/metas" title="Metas de ahorro" tone="sage">
-          {goalShare !== null ? (
-            <span>
-              <span className="block font-display text-[36px] font-extrabold leading-9">
-                {goalShare}%
-              </span>
-              <span className="block text-[15px] leading-5 text-text-muted">
-                <AmountDisplay cents={goalTotals.reservedCents} /> de{' '}
-                <AmountDisplay cents={goalTotals.targetCents} />
-              </span>
-            </span>
-          ) : (
-            <span className="text-[15px] leading-5 text-text-muted">Límites y ahorro</span>
-          )}
-        </MoreCard>
-      ),
-    },
+  const carousel: Item[] = [
     {
       key: 'recurrentes',
-      feature: 'recurring',
-      node: (
-        <MoreCard to="/recurrentes" title="Pagos recurrentes" tone="dark">
-          {monthlySubs.length > 0 ? (
-            <span>
-              <AmountDisplay
-                cents={monthlyTotal}
-                className="block font-display text-[30px] font-extrabold leading-9"
-              />
-              <span className={cn('block text-[15px] leading-5', muted('dark'))}>
-                por mes · {monthlySubs.length} {monthlySubs.length === 1 ? 'activa' : 'activas'}
-              </span>
-            </span>
-          ) : (
-            <span className={cn('text-[15px] leading-5', muted('dark'))}>
-              Suscripciones y gastos fijos
-            </span>
-          )}
-        </MoreCard>
-      ),
-    },
-    {
-      key: 'categorias',
-      node: (
-        <MoreCard to="/categorias" title="Categorías" tone="paper">
+      card: (
+        <CarouselCard to="/recurrentes" title="Pagos recurrentes" tone="violet">
           <span>
-            {colors.length > 0 && (
-              <span aria-hidden="true" className="mb-3 flex gap-2">
-                {colors.map((c, i) => (
-                  <span
-                    key={i}
-                    className="size-[18px] rounded-full"
-                    style={{ backgroundColor: themedColor(c) }}
-                  />
-                ))}
-              </span>
+            {monthlySubs.length > 0 && (
+              <span className="block font-display text-[48px] font-extrabold leading-[48px]">{monthlySubs.length}</span>
             )}
-            <span className="block text-[15px] leading-5 text-text-muted">
-              Creá y editá las tuyas
+            <span className="mt-1 block text-[15px] font-bold leading-5">
+              {monthlySubs.length > 0 ? (
+                <>
+                  {monthlySubs.length === 1 ? 'cobro' : 'cobros'} por mes · <AmountDisplay cents={monthlyTotal} />
+                </>
+              ) : (
+                'Sin cobros cargados'
+              )}
             </span>
+            <span className="block text-[14px] leading-5 opacity-80">Suscripciones y gastos fijos</span>
           </span>
-        </MoreCard>
+        </CarouselCard>
       ),
-    },
-    {
-      key: 'viajes',
-      feature: 'trips',
-      node: (
-        <MoreCard to="/viajes" title="Viajes" tone="sage">
-          {trip && tripLabel ? (
-            <span>
-              <span className="line-clamp-2 break-words font-display text-[clamp(17px,5.4vw,21px)] font-extrabold leading-7">
-                {trip.name}
-              </span>
-              <span className="block text-[15px] leading-5 text-text-muted">{tripLabel}</span>
-            </span>
-          ) : (
-            <span className="text-[15px] leading-5 text-text-muted">Presupuesto y gastos</span>
-          )}
-        </MoreCard>
-      ),
-    },
-    {
-      key: 'hormigas',
-      feature: 'ants',
-      node: (
-        <MoreCard to="/hormigas" title="Gastos hormiga" tone="moss">
-          <span>
-            {antsTotal > 0 ? (
-              <>
-                <AmountDisplay
-                  cents={antsTotal}
-                  className="block font-display text-[clamp(17px,5.4vw,21px)] font-extrabold leading-7"
-                />
-                <span className="block text-[15px] leading-5 text-text-muted">este mes</span>
-              </>
-            ) : (
-              <>
-                <span className="block font-display text-[clamp(17px,5.4vw,21px)] font-extrabold leading-7">
-                  Sin hormigas
-                </span>
-                <span className="block text-[15px] leading-5 text-text-muted">
-                  Esos gustitos que suman
-                </span>
-              </>
-            )}
-          </span>
-        </MoreCard>
-      ),
+      row: { to: '/recurrentes', title: 'Pagos recurrentes', value: 'Suscripciones y gastos fijos' },
     },
     {
       key: 'informes',
-      feature: 'reports',
-      node: (
-        <MoreCard to="/este-mes" title="Informes" tone="paper">
+      card: (
+        <CarouselCard to="/este-mes" title="Informes" tone="paper">
           <span>
-            <span aria-hidden="true" className="mb-3 flex h-10 items-end gap-2">
+            <span aria-hidden="true" className="mb-3 flex h-12 items-end gap-2.5">
               {[40, 70, 50, 100, 36].map((h, i) => (
                 <span
                   key={i}
-                  className={cn('w-4 rounded-full', i === 3 ? 'bg-[#a8cf9a]' : 'bg-forest')}
+                  className={cn('w-4 rounded-full', i === 3 ? 'bg-[#7CCB8F]' : 'bg-forest/20 dark:bg-white/10')}
                   style={{ height: `${h}%` }}
                 />
               ))}
             </span>
-            <span className="block text-[15px] leading-5 text-text-muted">Tu mes y tu año</span>
+            <span className="block text-[14px] text-text-muted">Tu mes y tu año</span>
           </span>
-        </MoreCard>
+        </CarouselCard>
       ),
+      row: { to: '/este-mes', title: 'Informes', value: 'Tu mes y tu año' },
     },
-    ...(FEATURES.pro
-      ? [
-          {
-            key: 'integraciones',
-            node: (
-              <PlainCard
-                to="/pro"
-                title="Integraciones"
-                subtitle="Billeteras y bancos"
-                icon={Plug}
-              />
-            ),
-          },
-        ]
-      : []),
+    {
+      key: 'metas',
+      card: (
+        <CarouselCard to="/metas" title="Metas de ahorro" tone="green">
+          {goalShare !== null ? (
+            <span>
+              <span className="block font-display text-[48px] font-extrabold leading-[48px]">{goalShare}%</span>
+              <span className="mt-1 block text-[14px] leading-5 opacity-80">
+                <AmountDisplay cents={goalTotals.reservedCents} /> de <AmountDisplay cents={goalTotals.targetCents} />
+              </span>
+            </span>
+          ) : (
+            <span className="text-[14px] opacity-80">Límites y ahorro</span>
+          )}
+        </CarouselCard>
+      ),
+      row: { to: '/metas', title: 'Metas de ahorro', value: goalShare !== null ? `${goalShare}%` : 'Límites y ahorro' },
+    },
     ...(FEATURES.debts
-      ? [
-          {
-            key: 'deudas',
-            feature: 'debts' as AppFeature,
-            node: (
-              <PlainCard
-                to="/deudas"
-                title="Deudas"
-                subtitle="Lo que debés y te deben"
-                icon={HandCoins}
-              />
-            ),
-          },
-        ]
+      ? [{
+          key: 'deudas',
+          card: <PlainCard to="/deudas" title="Deudas" subtitle="Lo que debés y te deben" icon={HandCoins} />,
+          row: { to: '/deudas', title: 'Deudas', value: 'Lo que debés y te deben' },
+        }]
       : []),
     ...(FEATURES.aguinaldo
-      ? [
-          {
-            key: 'aguinaldo',
-            feature: 'aguinaldo' as AppFeature,
-            node: <PlainCard to="/aguinaldo" title="Aguinaldo" subtitle="Repartilo" icon={Gift} />,
-          },
-        ]
+      ? [{
+          key: 'aguinaldo',
+          card: <PlainCard to="/aguinaldo" title="Aguinaldo" subtitle="Repartilo" icon={Gift} />,
+          row: { to: '/aguinaldo', title: 'Aguinaldo', value: 'Repartilo' },
+        }]
+      : []),
+    ...(FEATURES.pro
+      ? [{
+          key: 'integraciones',
+          card: <PlainCard to="/pro" title="Integraciones" subtitle="Billeteras y bancos" icon={Plug} />,
+          row: { to: '/pro', title: 'Integraciones', value: 'Billeteras y bancos' },
+        }]
       : []),
   ]
-  const featured = entries.filter((e) => !e.feature || has(e.feature))
-  const others = entries.filter((e) => e.feature && !has(e.feature))
+  const explore: Item[] = [
+    { key: 'categorias', row: { to: '/categorias', title: 'Categorías', value: (categories.data ?? []).length > 0 ? 'Editar' : 'Creá las tuyas' } },
+    {
+      key: 'viajes',
+      row: { to: '/viajes', title: 'Viajes', value: trip && tripLabel ? `${trip.name} · ${tripLabel}` : 'Presupuesto' },
+    },
+    {
+      key: 'hormigas',
+      row: { to: '/hormigas', title: 'Gastos hormiga', value: antsTotal > 0 ? <>{formatArs(antsTotal)} este mes</> : 'Sin hormigas' },
+    },
+    { key: 'presupuesto', row: { to: '/presupuesto', title: 'Presupuesto', value: budgetValue } },
+    { key: 'insights', row: { to: '/insights', title: 'Avisos de Moni', value: 'Lo que detectó en tus gastos' } },
+    { key: 'simulador', row: { to: '/tarjetas/simulador', title: 'Simulador de cuotas', value: 'Simulá una compra' } },
+  ]
 
   return (
     <section className="pb-4">
-      <CompactHeader title="Más" subtitle={formatMonthName(monthStart(today))} visible={scrolled} />
-      <header className="px-5 pt-6">
-        <p className="text-[16px] text-text-muted">Tu cuenta</p>
-        <h1 className="font-display text-[clamp(28px,8.5vw,32px)] font-extrabold leading-tight">
-          Más
-        </h1>
+      <header className="flex items-start justify-between gap-3 px-5 pt-6">
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold text-text-muted">Todo en un lugar</p>
+          <h1 className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight tracking-[-0.02em]">Herramientas</h1>
+        </div>
       </header>
-      <div ref={sentinel} aria-hidden="true" className="h-px" />
 
-      <div className="mt-4 flex flex-col gap-3 px-5">
-        <Link
-          to="/perfil"
-          aria-label="Ver mi perfil"
-          className="flex items-center gap-4 rounded-[32px] bg-forest p-5 text-cream"
-        >
-          <PhotoOrInitial
-            url={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
-            initial={initial}
-            alt="Tu foto de perfil"
-            className="size-[72px] shrink-0"
-            fallbackClassName="bg-[#f4f3e4] font-display text-3xl font-extrabold text-on-bright"
-          />
-          <div className="min-w-0 flex-1">
-            {isLoading ? (
-              <p className="text-text-muted-on-dark">Cargando perfil…</p>
-            ) : isError ? (
-              <p className="text-expense-on-dark">No pudimos cargar tu perfil.</p>
-            ) : (
-              <p className="truncate font-display text-[24px] font-extrabold leading-8">
-                {displayName}
-              </p>
-            )}
-            {!plus.isLoading &&
-              (plus.isPlus ? (
-                <PlusPill className="mt-1" />
-              ) : (
-                <span className="mt-1 inline-block rounded-full bg-white/10 px-3 py-1 text-[13px] font-extrabold uppercase tracking-[0.12em] text-[#c9e2bd]">
-                  Plan gratis
-                </span>
-              ))}
-          </div>
-          <ChevronRight aria-hidden="true" className="size-6 shrink-0" strokeWidth={2} />
-        </Link>
+      <div className="mt-4 flex flex-col gap-4">
+        <ul aria-label="Herramientas destacadas" className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-5 px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {carousel.map((i) => (
+            <li key={i.key} className="contents">
+              {i.card}
+            </li>
+          ))}
+        </ul>
 
-        {FEATURES.pro && (
-          <Link to="/pro" className="flex items-center gap-4 rounded-[28px] bg-gold px-5 py-4">
-            <ShoppingBasket aria-hidden="true" className="size-7" strokeWidth={2} />
-            <span className="flex-1">
-              <span className="block text-[20px] font-extrabold leading-6">Probá Moni Pro</span>
-              <span className="block text-[15px]">Voz, tickets, bancos y más</span>
-            </span>
-            <ChevronRight aria-hidden="true" className="size-6" />
-          </Link>
-        )}
-        {FEATURES.referral && (
-          <Link
-            to="/recomendar"
-            className="flex items-center gap-4 rounded-[28px] border border-lime bg-tint-green px-5 py-4"
-          >
-            <Gift aria-hidden="true" className="size-7" strokeWidth={2} />
-            <span className="flex-1">
-              <span className="block text-[20px] font-extrabold leading-6">Recomendá Moni</span>
-              <span className="block text-[15px]">Los dos ganan 2 meses de Pro</span>
-            </span>
-            <ChevronRight aria-hidden="true" className="size-6" />
-          </Link>
-        )}
-
-        <CardGrid entries={featured} />
-
-        {others.length > 0 && (
-          <>
-            <button
-              type="button"
-              aria-expanded={showMore}
-              aria-controls="mas-herramientas"
-              onClick={() => setShowMore((v) => !v)}
-              className="mt-1 flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card font-display text-[16px] font-extrabold text-ink"
-            >
-              Más herramientas
-              <ChevronDown
-                aria-hidden="true"
-                className={cn('size-5 transition-transform', showMore && 'rotate-180')}
-                strokeWidth={2.25}
-              />
-            </button>
-            {showMore && (
-              <div id="mas-herramientas">
-                <p className="mb-3 px-1 text-center text-[14px] text-text-muted">
-                  No las elegiste como objetivo, pero están acá cuando las necesites. Podés cambiar
-                  tus objetivos desde Perfil.
-                </p>
-                <CardGrid entries={others} />
-              </div>
-            )}
-          </>
-        )}
+        <div className="flex flex-col gap-1 px-5">
+          <SectionTitle>Explorar</SectionTitle>
+          <ul className="divide-y divide-line">
+            {explore.map((i) => (
+              <ExploreRow key={i.key} {...i.row} />
+            ))}
+          </ul>
+        </div>
       </div>
+
     </section>
   )
 }
 
-function CardGrid({ entries }: { entries: Entry[] }) {
+function PlainCard({ to, title, subtitle, icon: Icon }: { to: string; title: string; subtitle: string; icon: LucideIcon }) {
   return (
-    <ul className="grid grid-cols-2 gap-3">
-      {entries.map((e) => (
-        <li key={e.key} className={e.wide ? 'col-span-2' : undefined}>
-          {e.node}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function PlainCard({
-  to,
-  title,
-  subtitle,
-  icon: Icon,
-}: {
-  to: string
-  title: string
-  subtitle: string
-  icon: typeof Plug
-}) {
-  return (
-    <MoreCard to={to} title={title} tone="paper">
+    <CarouselCard to={to} title={title} tone="paper">
       <span>
-        <Icon
-          aria-hidden="true"
-          className="mb-2 size-7 text-mint-ink dark:text-lime"
-          strokeWidth={2}
-        />
-        <span className="block text-[15px] leading-5 text-text-muted">{subtitle}</span>
+        <Icon aria-hidden="true" className="mb-2 size-7 text-mint-ink dark:text-lime" strokeWidth={2} />
+        <span className="block text-[14px] text-text-muted">{subtitle}</span>
       </span>
-    </MoreCard>
+    </CarouselCard>
   )
 }

@@ -211,7 +211,7 @@ describe('RecentMovements: groups by day and expands', () => {
     expect(screen.getByRole('link', { name: 'Ver los 40' })).toHaveAttribute('href', '/actividad')
   })
 
-  it('the "latest" variant (Hoy) shows the two newest movements in a card, no day headings', () => {
+  it('the "latest" variant (Hoy) shows the two newest movements as plain rows, no day headings', () => {
     render(
       <MemoryRouter>
         <RecentMovements
@@ -221,11 +221,11 @@ describe('RecentMovements: groups by day and expands', () => {
         />
       </MemoryRouter>,
     )
-    expect(screen.getByRole('heading', { name: 'Últimos movimientos' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Movimientos' })).toBeInTheDocument()
     expect(screen.getByText('ChatGPT')).toBeInTheDocument()
     expect(screen.getByText('Belleza')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 3 })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Ver todos →' })).toHaveAttribute('href', '/actividad')
+    expect(screen.getByRole('link', { name: 'Ver todos' })).toHaveAttribute('href', '/actividad')
   })
 
   it('tells group movements apart: the kind, the group and the account used', () => {
@@ -243,5 +243,18 @@ describe('RecentMovements: groups by day and expands', () => {
     )
     expect(screen.getByText(/Gasto grupal · IJ · Mercado Pago/)).toBeInTheDocument()
     expect(screen.getByText(/Cobro de deuda · IJ · Mercado Pago/)).toBeInTheDocument()
+  })
+
+  it('the Hoy card lists the 5 newest movements as given (any date), not only today\'s', () => {
+    const all = Array.from({ length: 7 }, (_, n) =>
+      movement({ id: `m${n}`, note: `Mov ${n}`, occurredOn: `2026-10-${String(20 - n).padStart(2, '0')}` }),
+    )
+    render(
+      <MemoryRouter>
+        <RecentMovements variant="latest" today="2026-11-05" movements={all} />
+      </MemoryRouter>,
+    )
+    expect(screen.getAllByText(/^Mov \d$/).map((e) => e.textContent)).toEqual(['Mov 0', 'Mov 1', 'Mov 2', 'Mov 3', 'Mov 4'])
+    expect(screen.getByRole('link', { name: 'Ver todos' })).toHaveAttribute('href', '/actividad')
   })
 })

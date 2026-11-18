@@ -76,7 +76,7 @@ export function AguinaldoPage() {
 
   return (
     <Page>
-      <PageHeader title="Tu aguinaldo" />
+      <PageHeader title="Tu aguinaldo" backTo="/mas" />
       <MoniCalcCard
         label="Moni te acompaña"
         mascot={mascotUrl}

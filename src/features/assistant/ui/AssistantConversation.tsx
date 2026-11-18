@@ -1,6 +1,14 @@
 import { ArrowUp, Mic } from 'lucide-react'
-import { Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useSpeechRecognition } from '@/features/ai/ui/useSpeechRecognition'
+import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { useParseMovements } from '@/features/ai/api/useParseMovements'
+import { warningsNotice, type DraftMovement } from '@/features/ai/domain/draft'
+import { useCategories } from '@/features/categories/api/useCategories'
+import { prepareDrafts } from '@/features/transactions/domain/prepareDrafts'
+import { looksLikeMovement } from '@/features/transactions/domain/talkIntent'
+import { DraftConfirmation } from '@/features/transactions/ui/DraftConfirmation'
+import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { usePlus } from '@/features/plus/api/usePlus'
 import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { Button } from '@/shared/ui/Button'
@@ -52,6 +60,8 @@ interface AssistantConversationProps {
   inSheet?: boolean
   /** A question typed in Inicio: it is sent once when the conversation opens (Plus only; Free sees the upsell). */
   initialQuestion?: string
+  /** Text left typed in the box (not sent). */
+  initialDraft?: string
 }
 
 /** The conversation with Moni (suggestions, log, input, Plus gate): shared by the Asistente page and the Inicio sheet. */
@@ -60,22 +70,67 @@ export function AssistantConversation({
   greeting,
   inSheet = false,
   initialQuestion,
+  initialDraft,
 }: AssistantConversationProps) {
   const plus = usePlus()
   const chat = useAssistantChat()
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useState(initialDraft ?? '')
   const [upsell, setUpsell] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
   const speech = useSpeechRecognition({ onTranscript: setDraft })
   const initialSent = useRef(false)
-  const { send } = chat
+  const { send, append } = chat
   const isFree = plus.isFree
+  const parse = useParseMovements()
+  const accountsQuery = useAccounts()
+  const categoriesQuery = useCategories()
+  const [reviewing, setReviewing] = useState<{ drafts: DraftMovement[]; notice: string | null } | null>(null)
+  const [parsePlus, setParsePlus] = useState(false)
+
+  /** One chat for everything: a movement ("Gasté $18.000 en el chino") is read and confirmed; the rest goes to the assistant. */
+  const ask = useCallback(
+    (text: string): boolean => {
+      if (!isSendable(text) || chat.isPending || parse.isPending) return false
+      if (!looksLikeMovement(text)) return send(text)
+      const said = text.trim()
+      append('user', said)
+      parse.mutate(said, {
+        onSuccess: (response) => {
+          const drafts = prepareDrafts(response, accountsQuery.data ?? [], categoriesQuery.data ?? [])
+          if (drafts.length === 0) {
+            append(
+              'assistant',
+              'No encontré gastos ni ingresos en lo que me contaste. ¿Me lo escribís con el monto? Por ejemplo: «Gasté $18.000 en el chino».',
+            )
+            return
+          }
+          const missing = drafts.some((d) => d.accountId === '' || d.categoryId === '')
+          const summary = drafts
+            .map((d) => `${d.kind === 'income' ? 'Ingreso' : 'Gasto'} de $${d.amount}${d.note ? ` · ${d.note}` : ''}`)
+            .join('\n')
+          append(
+            'assistant',
+            `Entendí:\n${summary}\n${missing ? 'Me faltan datos (cuenta o categoría): elegilos al revisar. ' : ''}Revisalo y confirmá para guardarlo; hasta entonces no se guarda nada.`,
+            drafts,
+          )
+          const notice = warningsNotice(response.warnings)
+          if (notice) append('assistant', notice)
+        },
+        onError: (error) => {
+          if (isPlusRequired(error)) setParsePlus(true)
+          else append('assistant', toUserMessage(error))
+        },
+      })
+      return true
+    },
+    [accountsQuery.data, append, categoriesQuery.data, chat.isPending, parse, send],
+  )
 
   useEffect(() => {
     if (!initialQuestion || initialSent.current || isFree) return
     initialSent.current = true
-    send(initialQuestion)
-  }, [initialQuestion, isFree, send])
+    ask(initialQuestion)
+  }, [initialQuestion, isFree, ask])
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' })
@@ -83,7 +138,7 @@ export function AssistantConversation({
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    if (chat.send(draft)) setDraft('')
+    if (ask(draft)) setDraft('')
   }
 
   // The client gate is only UX (shown after the server said "free"); the function enforces it anyway.
@@ -113,20 +168,32 @@ export function AssistantConversation({
               return (
                 <Fragment key={m.id}>
                   <Bubble message={m} />
+                  {m.drafts && (
+                    <button
+                      type="button"
+                      onClick={() => setReviewing({ drafts: m.drafts as DraftMovement[], notice: null })}
+                      className={cn(
+                        'min-h-11 self-start rounded-full bg-[#E3B23C] px-4 text-[14px] font-extrabold text-[#2A1E00]',
+                        FOCUS_RING,
+                      )}
+                    >
+                      Revisar y guardar
+                    </button>
+                  )}
                   {purchase && <PurchaseVerdictCard request={purchase} message={m.content} />}
                 </Fragment>
               )
             })}
           </div>
 
-          {chat.isPending && (
+          {(chat.isPending || parse.isPending) && (
             <p role="status" className="flex items-center gap-2 text-[15px] text-text-muted">
               <span aria-hidden="true" className="flex gap-1">
                 <span className="size-2 animate-pulse rounded-full bg-text-muted" />
                 <span className="size-2 animate-pulse rounded-full bg-text-muted [animation-delay:150ms]" />
                 <span className="size-2 animate-pulse rounded-full bg-text-muted [animation-delay:300ms]" />
               </span>
-              Moni está mirando tus datos…
+              {parse.isPending ? 'Moni está leyendo tu movimiento…' : 'Moni está mirando tus datos…'}
             </p>
           )}
 
@@ -153,8 +220,8 @@ export function AssistantConversation({
               <button
                 key={question}
                 type="button"
-                disabled={chat.isPending}
-                onClick={() => chat.send(question)}
+                disabled={chat.isPending || parse.isPending}
+                onClick={() => ask(question)}
                 className={cn(
                   'min-h-11 shrink-0 whitespace-nowrap rounded-full bg-card px-[13px] text-[13px] font-medium text-ink disabled:opacity-60',
                   FOCUS_RING,
@@ -178,7 +245,7 @@ export function AssistantConversation({
                 onChange={(e) => setDraft(e.target.value)}
                 maxLength={ASSISTANT_LIMITS.maxChars}
                 aria-label="Tu pregunta"
-                placeholder="Preguntale a Moni…"
+                placeholder="Preguntale a Moni o contale un gasto…"
                 autoComplete="off"
                 className="min-w-0 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-[#8A9A90]"
               />
@@ -200,7 +267,7 @@ export function AssistantConversation({
               <button
                 type="submit"
                 aria-label="Enviar"
-                disabled={chat.isPending || !isSendable(draft)}
+                disabled={chat.isPending || parse.isPending || !isSendable(draft)}
                 className={cn(
                   'flex size-[38px] shrink-0 items-center justify-center rounded-full bg-mint text-white disabled:opacity-60',
                   FOCUS_RING,
@@ -223,6 +290,14 @@ export function AssistantConversation({
             setUpsell(false)
             if (chat.plusRequired) chat.clear()
           }}
+        />
+      )}
+      {parsePlus && <PlusSheet reason="voice" onClose={() => setParsePlus(false)} />}
+      {reviewing && (
+        <DraftConfirmation
+          initialDrafts={reviewing.drafts}
+          notice={reviewing.notice}
+          onClose={() => setReviewing(null)}
         />
       )}
     </>

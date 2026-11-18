@@ -97,6 +97,7 @@ async function setup(entries: string[]) {
       ),
       children: [
         { path: '/', element: <Link to="/viajes">Ir a Viajes</Link> },
+        { path: '/mas', element: <p>herramientas</p> },
         { path: '/grupos', element: <p>lista de grupos</p> },
         { path: '/grupos/:id', element: <GroupStub /> },
         { path: '/grupos/:id/personas', element: <GroupSubPageStub /> },
@@ -130,24 +131,24 @@ describe('Back navigation in Viajes', () => {
     await user.click(screen.getByRole('link', { name: 'Ir a Viajes' }))
     await user.click(await screen.findByRole('link', { name: /Semana en Salta/ }))
     await waitFor(() => expect(where()).toBe('/viajes/t1'))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByLabelText('Volver'))
     await waitFor(() => expect(where()).toBe('/viajes'))
     expect(screen.getByRole('heading', { name: 'Viajes' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
-    await waitFor(() => expect(where()).toBe('/'))
+    await user.click(screen.getByLabelText('Volver'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 
   it('opening trip after trip never stacks or loops: every back retraces the same path', async () => {
     const { where, user } = await setup(['/', '/viajes'])
     await user.click(await screen.findByRole('link', { name: /Semana en Salta/ }))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByLabelText('Volver'))
     await user.click(await screen.findByRole('link', { name: /Finde en Bariloche/ }))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByLabelText('Volver'))
     await user.click(await screen.findByRole('link', { name: /Semana en Salta/ }))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByLabelText('Volver'))
     await waitFor(() => expect(where()).toBe('/viajes'))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
-    await waitFor(() => expect(where()).toBe('/'))
+    await user.click(screen.getByLabelText('Volver'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 
   it("the browser back button does exactly what Moni's back button does", async () => {
@@ -171,14 +172,14 @@ describe('Back navigation in Viajes', () => {
     expect(screen.getByRole('link', { name: /Mar del Plata/ })).toBeInTheDocument()
     // Changing tabs replaces the entry: one back still leaves Viajes.
     await user.click(screen.getByRole('button', { name: 'Mis viajes' }))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
-    await waitFor(() => expect(where()).toBe('/'))
+    await user.click(screen.getByLabelText('Volver'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 
   it('a page inside a group goes back to the group without leaving a loop behind', async () => {
     const { where, user } = await setup(['/', '/viajes', '/grupos/g1'])
     await user.click(screen.getByRole('link', { name: 'Personas' }))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByLabelText('Volver'))
     await waitFor(() => expect(where()).toBe('/grupos/g1'))
     await user.click(screen.getByRole('button', { name: 'Volver del grupo' }))
     await waitFor(() => expect(where()).toBe('/viajes'))
@@ -196,8 +197,8 @@ describe('Back navigation in Viajes', () => {
     await waitFor(() => expect(where()).toBe('/viajes?nuevo=elegir'))
     await user.click(screen.getByRole('button', { name: 'Cerrar' }))
     await waitFor(() => expect(where()).toBe('/viajes'))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
-    await waitFor(() => expect(where()).toBe('/'))
+    await user.click(screen.getByLabelText('Volver'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 
   it('a trip just created opens, and back from it lands on the clean list (not on the open sheet)', async () => {
@@ -214,18 +215,18 @@ describe('Back navigation in Viajes', () => {
     await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
     expect(await screen.findByText('Cataratas', { selector: 'h1' })).toBeVisible()
     await waitFor(() => expect(where()).toBe('/viajes/t9'))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByLabelText('Volver'))
     await waitFor(() => expect(where()).toBe('/viajes'))
     expect(screen.queryByRole('dialog')).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
-    await waitFor(() => expect(where()).toBe('/'))
+    await user.click(screen.getByLabelText('Volver'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 
   it('a trip opened directly (no history) goes back to Viajes, then to Inicio, without bouncing', async () => {
     const { where, user } = await setup(['/viajes/t1'])
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
+    await user.click(screen.getByLabelText('Volver'))
     await waitFor(() => expect(where()).toBe('/viajes'))
-    await user.click(screen.getByRole('button', { name: 'Volver' }))
-    await waitFor(() => expect(where()).toBe('/'))
+    await user.click(screen.getByLabelText('Volver'))
+    await waitFor(() => expect(where()).toBe('/mas'))
   })
 })
