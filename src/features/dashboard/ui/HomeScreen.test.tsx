@@ -4,7 +4,10 @@ import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import { HomeScreen } from './HomeScreen'
 
 vi.mock('@/features/transactions/ui/QuickAdd', () => ({
-  QuickAdd: () => <section aria-label="Hablá con Moni" />,
+  QuickAdd: () => <section aria-label="Cargar un movimiento" />,
+}))
+vi.mock('@/features/assistant/ui/MoniAgent', () => ({
+  MoniAgent: () => <div data-testid="moni-agent" />,
 }))
 vi.mock('@/features/plus/ui/PlusSheet', () => ({ PlusSheet: () => null }))
 
@@ -89,6 +92,11 @@ describe('HomeScreen (Inicio)', () => {
     expect(screen.getByRole('link', { name: 'Ver todos' })).toHaveAttribute('href', '/actividad')
   })
 
+  it('has one floating Moni, outside the page flow', () => {
+    renderHome(withData)
+    expect(screen.getAllByTestId('moni-agent')).toHaveLength(1)
+  })
+
   it('without movements it says so honestly', () => {
     renderHome(empty)
     expect(screen.getByRole('heading', { name: 'Movimientos' })).toBeInTheDocument()
@@ -105,24 +113,25 @@ describe('HomeScreen (Inicio)', () => {
     expect(screen.queryByRole('heading', { name: 'Tu resumen de hoy' })).toBeNull()
   })
 
-  it('the PLUS indicator follows the Plus status it is given', () => {
+  it('the Plus crown follows the Plus status it is given', () => {
     renderHome(withData, true)
-    expect(screen.getByRole('button', { name: /Moni Plus activo/ })).toHaveTextContent('PLUS')
+    expect(screen.getByRole('button', { name: /Moni Plus activo/ })).toBeInTheDocument()
   })
 
-  it('there is no PLUS indicator on Free, and the avatar opens the profile', () => {
+  it('there is no crown on Free, and the avatar still opens Moni Plus (not the profile)', () => {
     renderHome(withData)
-    expect(screen.queryByText('PLUS')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('href', '/perfil')
+    expect(screen.queryByRole('button', { name: /Moni Plus activo/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver Moni Plus' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Perfil' })).toBeNull()
   })
 
-  it('keeps the order of the design: hero, Hablá con Moni, movements', () => {
+  it('keeps the order: hero, the three loading buttons, movements (the cat floats apart)', () => {
     renderHome(withData, false, [movement('m1', '2026-10-31', 'Cena')], {
       balance: { totalCents: 635_000_00, methodCount: 2, top: { name: 'Galicia', percent: 97 } },
     })
     const order = [
       screen.getByRole('region', { name: 'Lo que tenés' }),
-      screen.getByRole('region', { name: 'Hablá con Moni' }),
+      screen.getByRole('region', { name: 'Cargar un movimiento' }),
       screen.getByRole('heading', { name: 'Movimientos' }),
     ]
     order.slice(1).forEach((el, i) => {

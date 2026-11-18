@@ -69,9 +69,9 @@ describe('MpImportSection', () => {
   it('free user sees the upsell and the Plus sheet, never a broken connect button', async () => {
     plus.value = { isPlus: false, isFree: true }
     const user = renderSection()
-    await user.click(await screen.findByRole('button', { name: 'Conocer Moni Plus' }))
+    await user.click(await screen.findByRole('button', { name: 'Vincular Mercado Pago' }))
     expect(screen.getByRole('dialog', { name: 'plus-sheet' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Vincular Mercado Pago' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Vincular con Mercado Pago' })).toBeNull()
     expect(repo.connectMp).not.toHaveBeenCalled()
   })
 

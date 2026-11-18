@@ -2,6 +2,7 @@ import { ChevronLeft, Moon, Sparkles, Sun, Trash2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { clearAssistantMemory } from '@/features/assistant/api/useAssistantChat'
 import { signOut } from '@/features/auth/api/authActions'
 import { useWeeklyDigestSettings, updateWeeklyDigest } from '@/features/insights/mock/digestSettings'
 import { PushNotificationsRow } from '@/features/push/ui/PushNotificationsRow'
@@ -79,6 +80,7 @@ export function SettingsPage() {
   async function handleSignOut() {
     setIsSigningOut(true)
     try {
+      clearAssistantMemory()
       await signOut(queryClient)
     } catch (e) {
       toast.show(toUserMessage(e), { tone: 'error' })

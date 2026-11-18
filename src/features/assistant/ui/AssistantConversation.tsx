@@ -62,6 +62,8 @@ interface AssistantConversationProps {
   initialQuestion?: string
   /** Text left typed in the box (not sent). */
   initialDraft?: string
+  /** Keeps the conversation in memory under this key (the chat sheet: closing and opening it does not lose it). */
+  memoryKey?: string
 }
 
 /** The conversation with Moni (suggestions, log, input, Plus gate): shared by the Asistente page and the Inicio sheet. */
@@ -71,9 +73,10 @@ export function AssistantConversation({
   inSheet = false,
   initialQuestion,
   initialDraft,
+  memoryKey,
 }: AssistantConversationProps) {
   const plus = usePlus()
-  const chat = useAssistantChat()
+  const chat = useAssistantChat(memoryKey)
   const [draft, setDraft] = useState(initialDraft ?? '')
   const [upsell, setUpsell] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
@@ -156,6 +159,8 @@ export function AssistantConversation({
         </Panel>
       ) : (
         <>
+          {/* In the sheet only the messages scroll: the header stays on top and the box stays at the bottom. */}
+          <div className={inSheet ? 'flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain' : 'contents'}>
           <div
             role="log"
             aria-label="Conversación con Moni"
@@ -210,7 +215,9 @@ export function AssistantConversation({
             </div>
           )}
           <div ref={endRef} />
+          </div>
 
+          <div className={inSheet ? 'flex shrink-0 flex-col gap-2 pt-1' : 'contents'}>
           <div
             role="group"
             aria-label="Preguntas sugeridas"
@@ -280,6 +287,7 @@ export function AssistantConversation({
           <p className="text-center text-[13px] text-text-muted">
             Moni puede equivocarse y no da asesoramiento financiero.
           </p>
+          </div>
         </>
       )}
 

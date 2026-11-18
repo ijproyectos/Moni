@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { Button } from '@/shared/ui/Button'
 import { findBrand } from '@/features/accounts/domain/bankCatalog'
@@ -59,39 +60,32 @@ export function MpConnectionCard({
   if (!status && !isPlus && !isFree) return null
   const mpBrand = findBrand('mercado-pago')
 
+  // Not linked yet: one compact row. Free goes to the Plus upsell, Plus to the linking sheet.
+  if (!status) {
+    return (
+      <button
+        type="button"
+        onClick={isFree ? onUpgrade : onConnect}
+        disabled={!isFree && (offline || busy === 'connect')}
+        className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-[#009EE3]/40 bg-card px-4 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#009EE3] enabled:active:brightness-95 disabled:opacity-60"
+      >
+        {mpBrand && <BrandLogo brand={mpBrand} size="sm" />}
+        <span className="flex-1 text-[16px] font-extrabold text-ink">Vincular Mercado Pago</span>
+        <ChevronRight aria-hidden="true" className="size-5 text-[#009EE3]" strokeWidth={2.5} />
+      </button>
+    )
+  }
+
   return (
     <section aria-label="Mercado Pago" className="overflow-hidden rounded-[22px] border border-[#009EE3]/40 bg-card">
       <header className="flex items-center gap-3 bg-[linear-gradient(135deg,#009EE3,#00B1EA)] px-4 py-3 text-white">
         {mpBrand && <BrandLogo brand={mpBrand} size="sm" />}
         <div className="min-w-0">
-          <h3 className="font-display text-[16px] font-extrabold leading-tight">Importar gastos de Mercado Pago</h3>
-          <p className="text-[12px] opacity-90">{status === 'active' ? 'Conectado' : 'Integración con tu cuenta'}</p>
+          <h3 className="font-display text-[16px] font-extrabold leading-tight">Mercado Pago</h3>
+          <p className="text-[12px] opacity-90">{status === 'active' ? 'Conectado' : 'Vinculado'}</p>
         </div>
       </header>
       <div className="flex flex-col gap-2.5 px-4 py-3.5" style={{ accentColor: MP_BLUE }}>
-
-      {!status && isFree && (
-        <>
-          <p className="text-[16px] leading-6 text-text-muted">
-            Con Moni Plus tus pagos de Mercado Pago aparecen solos como gastos, ya categorizados.
-          </p>
-          <MpButton onClick={onUpgrade}>
-            Conocer Moni Plus
-          </MpButton>
-        </>
-      )}
-
-      {!status && isPlus && (
-        <>
-          <p className="text-[16px] leading-6 text-text-muted">
-            Vinculá tu cuenta y Moni carga tus pagos como gastos cada pocos minutos, aunque la app
-            esté cerrada.
-          </p>
-          <MpButton onClick={onConnect} disabled={offline || busy === 'connect'}>
-            Vincular Mercado Pago
-          </MpButton>
-        </>
-      )}
 
       {status === 'active' && (
         <>

@@ -1,4 +1,5 @@
-import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
 import { MorePage } from './MorePage'
@@ -40,6 +41,9 @@ vi.mock('@/features/dashboard/api/useDailyAllowance', () => ({
   useDailyAllowance: () => ({ isLoading: false, allowance: budgetData.current, status: null, pace: null }),
 }))
 const plusState = vi.hoisted(() => ({ isPlus: false, isLoading: false }))
+vi.mock('@/features/assistant/ui/AssistantSheet', () => ({
+  AssistantSheet: ({ initialDraft }: { initialDraft?: string }) => <div role="dialog" aria-label="moni-chat">{initialDraft}</div>,
+}))
 vi.mock('@/features/plus/api/usePlus', () => ({
   usePlus: () => ({ ...plusState, isFree: !plusState.isPlus, expiresAt: null }),
 }))
@@ -52,7 +56,7 @@ function renderPage() {
   )
 }
 
-describe('Herramientas', () => {
+describe('Explorar', () => {
   beforeEach(() => {
     accountsData.current = []
     subsData.current = []
@@ -60,24 +64,33 @@ describe('Herramientas', () => {
     budgetData.current = { kind: 'sin-datos' }
   })
 
-  it('has the header, the carousel, Explorar and Con Moni', () => {
+  it('has the header and the six sections, each a whole link to its tool', () => {
     renderPage()
-    expect(screen.getByRole('heading', { name: 'Herramientas' })).toBeInTheDocument()
-    expect(screen.getByText('Todo en un lugar')).toBeInTheDocument()
-    const carousel = screen.getByRole('list', { name: 'Herramientas destacadas' })
-    expect(within(carousel).getByRole('link', { name: /Pagos recurrentes/ })).toHaveAttribute('href', '/recurrentes')
-    expect(within(carousel).getByRole('link', { name: /Informes/ })).toHaveAttribute('href', '/este-mes')
-    expect(within(carousel).getByRole('link', { name: /Metas de ahorro/ })).toHaveAttribute('href', '/metas')
-    expect(screen.getByRole('link', { name: /^Categorías/ })).toHaveAttribute('href', '/categorias')
-    expect(screen.getByRole('link', { name: /^Viajes/ })).toHaveAttribute('href', '/viajes')
-    expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveAttribute('href', '/hormigas')
-    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveAttribute('href', '/presupuesto')
-    expect(screen.queryByRole('link', { name: 'Ver mi perfil' })).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Explorar' })).toBeInTheDocument()
+    expect(screen.getByText('Tu plata de un vistazo')).toBeInTheDocument()
+    const link = (re: RegExp, href: string) => expect(screen.getByRole('link', { name: re })).toHaveAttribute('href', href)
+    link(/^Metas de ahorro/, '/metas')
+    link(/^Presupuesto/, '/presupuesto')
+    link(/^Pagos recurrentes/, '/recurrentes')
+    link(/^Gastos hormiga/, '/hormigas')
+    link(/^Informes/, '/este-mes')
+    link(/^Viajes/, '/viajes')
+    expect(screen.getByRole('button', { name: 'Hablá con Moni' })).toBeInTheDocument()
   })
 
-  it('has no standalone cards tile (Tarjetas is in the bottom bar)', () => {
+  it('"Más" keeps Categorías, ¿Me conviene?, the simulator (no Avisos de Moni)', () => {
     renderPage()
+    expect(screen.getByRole('heading', { name: 'Más' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^Categorías/ })).toHaveAttribute('href', '/categorias')
+    expect(screen.getByRole('link', { name: /Simulador de cuotas/ })).toHaveAttribute('href', '/tarjetas/simulador')
+    expect(screen.queryByRole('link', { name: /Avisos de Moni/ })).toBeNull()
     expect(screen.queryByRole('link', { name: /Tarjetas de crédito|^Medios de pago/ })).toBeNull()
+  })
+
+  it('"¿Me conviene?" opens Moni with that question', async () => {
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: /¿Me conviene\?/ }))
+    expect(screen.getByRole('dialog', { name: 'moni-chat' })).toHaveTextContent('¿Me conviene?')
   })
 
   it('"Pagos recurrentes" adds up only the active monthly subscriptions', () => {
@@ -88,35 +101,29 @@ describe('Herramientas', () => {
       { id: 'd', status: 'paused', period: 'monthly', amountCents: 7_000_00 },
     ]
     renderPage()
-    const tile = screen.getByRole('link', { name: /Pagos recurrentes/ })
-    expect(tile).toHaveTextContent('2')
-    expect(tile).toHaveTextContent('cobros por mes · $15.000')
+    const tile = screen.getByRole('link', { name: /^Pagos recurrentes/ })
+    expect(tile).toHaveTextContent('$15.000')
+    expect(tile).toHaveTextContent('2 cobros por mes')
   })
 
-  it('shows real secondary info: ants, budget', () => {
+  it('shows the real ants and a budget that was exceeded', () => {
     antsData.current = 12_500_00
-    budgetData.current = { kind: 'ok', spendBudgetCents: 800_000_00, overCents: 75_000_00 }
+    budgetData.current = { kind: 'ok', spendBudgetCents: 800_000_00, overCents: 75_000_00, remainingCents: -75_000_00 }
     renderPage()
-    expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('$12.500 este mes')
-    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('te pasaste $75.000')
+    expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('$12.500este mes')
+    const budget = screen.getByRole('link', { name: /^Presupuesto/ })
+    expect(budget).toHaveTextContent('-$75.000te pasaste')
   })
 
-  it('says "Sin hormigas" and does not invent a budget without data', () => {
+  it('shows what is left of the budget when it was not exceeded', () => {
+    budgetData.current = { kind: 'ok', spendBudgetCents: 800_000_00, overCents: 0, remainingCents: 120_000_00 }
     renderPage()
-    expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('Sin hormigas')
-    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('Consultá y administrá')
+    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('$120.000te queda')
   })
 
-  it('has no "Con Moni" chips nor Pro / referral cards below Explorar', () => {
+  it('says "sin hormigas" and does not invent a budget without data', () => {
     renderPage()
-    expect(screen.queryByText('Con Moni')).toBeNull()
-    expect(screen.queryByRole('button', { name: '¿Me conviene?' })).toBeNull()
-  })
-
-  it('has no "Más herramientas": every tool is in the carousel or in Explorar, including insights and the simulator', () => {
-    renderPage()
-    expect(screen.queryByRole('button', { name: /Más herramientas/ })).toBeNull()
-    expect(screen.getByRole('link', { name: /Avisos de Moni/ })).toHaveAttribute('href', '/insights')
-    expect(screen.getByRole('link', { name: /Simulador de cuotas/ })).toHaveAttribute('href', '/tarjetas/simulador')
+    expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('sin hormigas')
+    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('armá tu presupuesto')
   })
 })

@@ -561,3 +561,36 @@ html.dark .bg-lime {
     opacity: 1;
   }
 }
+
+/* Moni blinks now and then: the lids show for a moment (a quick double blink once in a while). */
+@keyframes moni-blink {
+  0%,
+  60%,
+  62.5%,
+  100% {
+    opacity: 0;
+  }
+  60.5%,
+  62% {
+    opacity: 1;
+  }
+  90%,
+  93% {
+    opacity: 0;
+  }
+  90.5%,
+  92.5% {
+    opacity: 1;
+  }
+}
+
+/* Moni Agent floats gently while it is not being dragged. */
+@keyframes moni-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}

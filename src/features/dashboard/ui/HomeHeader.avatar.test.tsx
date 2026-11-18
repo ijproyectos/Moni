@@ -20,11 +20,10 @@ describe('HomeHeader: the avatar of the signed-in account is the only picture', 
     expect(screen.getByRole('banner').querySelector('img[src*="mascot"]')).toBeNull()
   })
 
-  it('with Plus the avatar carries the PLUS indicator', () => {
+  it('with Plus the crown sits on the avatar; both open Moni Plus', () => {
     setup({ isPlus: true })
-    const plus = screen.getByRole('button', { name: /Moni Plus activo/ })
-    expect(plus).toHaveTextContent('I')
-    expect(plus.querySelector('[data-plus-badge]')).toHaveTextContent('PLUS')
+    expect(screen.getByRole('button', { name: /Moni Plus activo/ })).toHaveAttribute('data-plus-crown')
+    expect(screen.getByRole('button', { name: 'Ver Moni Plus' })).toHaveTextContent('I')
   })
 
   it('shows the account photo when there is one', () => {

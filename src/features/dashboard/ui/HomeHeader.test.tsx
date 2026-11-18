@@ -15,44 +15,50 @@ function renderHeader(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
   )
 }
 
-describe('HomeHeader: greeting, bell and avatar', () => {
-  it('greets by time of day with the name, and the date below', () => {
-    renderHeader({ name: 'Iara', now: new Date(2026, 10, 10, 9, 41) })
-    expect(screen.getByRole('heading', { level: 1, name: 'Iara' })).toBeInTheDocument()
-    expect(screen.getByText('Buen día')).toBeInTheDocument()
-    cleanup()
-    renderHeader({ name: 'Iara', now: new Date(2026, 10, 10, 15) })
-    expect(screen.getByText('Buenas tardes')).toBeInTheDocument()
-    cleanup()
-    renderHeader({ now: new Date(2026, 10, 10, 22) })
-    expect(screen.getByRole('heading', { level: 1, name: 'Buenas noches' })).toBeInTheDocument()
-  })
-
-  it('the privacy toggle lives in the hero (the eye); the header has no bell', () => {
-    renderHeader()
-    expect(screen.queryByRole('button', { name: 'Ocultar montos' })).toBeNull()
-    expect(screen.queryByRole('link', { name: /Avisos/ })).toBeNull()
-  })
-
-  it('is a plain greeting row: the money moved to the hero and the totals card', () => {
+describe('HomeHeader: "Hola, nombre", crown and avatar', () => {
+  it('says "Hola, [nombre]" on one line, with no time-of-day greeting', () => {
     renderHeader({ name: 'Iara' })
+    expect(screen.getByRole('heading', { level: 1, name: 'Hola, Iara' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveClass('whitespace-nowrap')
+    expect(screen.queryByText(/Buen(as|os)? (día|tardes|noches)/)).toBeNull()
+    cleanup()
+    renderHeader()
+    expect(screen.getByRole('heading', { level: 1, name: 'Hola' })).toBeInTheDocument()
+  })
+
+  it('has no bell, no privacy toggle and no money', () => {
+    renderHeader({ name: 'Iara' })
+    expect(screen.queryByRole('link', { name: /Avisos/ })).toBeNull()
     expect(screen.getByRole('banner')).not.toHaveTextContent(/\$|disponible|Gastos|Ingresos/)
   })
 
-  describe('Moni Plus indicator', () => {
-    it('shows "PLUS" over the avatar when Plus is active, and tapping it opens the plans', async () => {
+  it('the avatar opens Moni Plus (plans and benefits), never the profile, with or without Plus', async () => {
+    renderHeader()
+    expect(screen.queryByRole('link', { name: 'Perfil' })).toBeNull()
+    expect(screen.queryByRole('link')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Ver Moni Plus' }))
+    expect(screen.getByRole('dialog', { name: 'Moni Plus activo' })).toBeInTheDocument()
+  })
+
+  describe('Moni Plus crown', () => {
+    it('shows a small gold crown only with Plus, and tapping it opens the benefits', async () => {
       renderHeader({ isPlus: true })
-      const plus = screen.getByRole('button', { name: /Moni Plus activo/ })
-      expect(plus.querySelector('[data-plus-badge]')).toHaveTextContent('PLUS')
-      expect(plus).toHaveTextContent('I')
-      await userEvent.click(plus)
+      const crown = screen.getByRole('button', { name: /Moni Plus activo/ })
+      expect(crown.querySelector('svg')).not.toBeNull()
+      // Worn on top of the avatar: centered, with no circle or border around it.
+      expect(crown).toHaveClass('left-1/2', '-translate-x-1/2')
+      expect(crown.className).not.toMatch(/rounded-full|ring-|border|bg-/)
+      expect(screen.queryByText('PLUS')).toBeNull()
+      // The avatar opens Moni Plus too, and nothing in the header goes to the profile.
+      expect(screen.getByRole('button', { name: 'Ver Moni Plus' })).toBeInTheDocument()
+      expect(screen.queryByRole('link')).toBeNull()
+      await userEvent.click(crown)
       expect(screen.getByRole('dialog', { name: 'Moni Plus activo' })).toBeInTheDocument()
     })
 
-    it('shows the normal avatar (a link to the profile) without Plus', () => {
+    it('has no crown without Plus', () => {
       renderHeader()
-      expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('href', '/perfil')
-      expect(screen.queryByText(/PLUS/)).toBeNull()
+      expect(document.querySelector('[data-plus-crown]')).toBeNull()
     })
   })
 })

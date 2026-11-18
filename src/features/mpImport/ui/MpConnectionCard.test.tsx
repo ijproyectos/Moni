@@ -38,12 +38,12 @@ describe('MpConnectionCard', () => {
     expect(onConnect).toHaveBeenCalled()
   })
 
-  it('Free users see the upsell, not a connect button', async () => {
+  it('Free users: the row opens the Plus upsell, not the connection', async () => {
     const { user, onUpgrade } = setup({ isPlus: false, isFree: true })
-    expect(screen.queryByRole('button', { name: 'Vincular Mercado Pago' })).toBeNull()
-    expect(screen.getByText(/aparecen solos como gastos/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Conocer Moni Plus' }))
+    expect(screen.queryByText(/aparecen solos como gastos/)).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Vincular Mercado Pago' }))
     expect(onUpgrade).toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Conocer Moni Plus' })).toBeNull()
   })
 
   it('renders nothing while the plan is unknown and there is no connection', () => {

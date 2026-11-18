@@ -211,20 +211,30 @@ describe('RecentMovements: groups by day and expands', () => {
     expect(screen.getByRole('link', { name: 'Ver los 40' })).toHaveAttribute('href', '/actividad')
   })
 
-  it('the "latest" variant (Hoy) shows the two newest movements as plain rows, no day headings', () => {
+  it('the "latest" variant groups by day, each date once, newest first', () => {
     render(
       <MemoryRouter>
         <RecentMovements
           variant="latest"
-          today="2026-11-05"
-          movements={[movement(), movement({ id: 'm2', note: 'Belleza' })]}
+          today="2026-11-18"
+          movements={[
+            movement({ id: 'a', note: 'Café', occurredOn: '2026-11-18' }),
+            movement({ id: 'b', note: 'Súper', occurredOn: '2026-11-18' }),
+            movement({ id: 'c', note: 'Nafta', occurredOn: '2026-11-17' }),
+            movement({ id: 'd', note: 'Cena', occurredOn: '2026-11-16' }),
+          ]}
         />
       </MemoryRouter>,
     )
     expect(screen.getByRole('heading', { name: 'Movimientos' })).toBeInTheDocument()
-    expect(screen.getByText('ChatGPT')).toBeInTheDocument()
-    expect(screen.getByText('Belleza')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { level: 3 })).toBeNull()
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Hoy',
+      'Ayer',
+      'Lunes 16 de noviembre',
+    ])
+    const today = screen.getByRole('region', { name: 'Hoy' })
+    expect(within(today).getByText('Café')).toBeInTheDocument()
+    expect(within(today).getByText('Súper')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ver todos' })).toHaveAttribute('href', '/actividad')
   })
 
@@ -245,16 +255,31 @@ describe('RecentMovements: groups by day and expands', () => {
     expect(screen.getByText(/Cobro de deuda · IJ · Mercado Pago/)).toBeInTheDocument()
   })
 
-  it('the Hoy card lists the 5 newest movements as given (any date), not only today\'s', () => {
-    const all = Array.from({ length: 7 }, (_, n) =>
-      movement({ id: `m${n}`, note: `Mov ${n}`, occurredOn: `2026-10-${String(20 - n).padStart(2, '0')}` }),
+  it('lists the 9 newest movements of any date, completing today with earlier days', () => {
+    const all = Array.from({ length: 12 }, (_, n) =>
+      movement({
+        id: `m${n}`,
+        note: `Mov ${n}`,
+        occurredOn: n < 2 ? '2026-11-05' : `2026-10-${String(30 - n).padStart(2, '0')}`,
+      }),
     )
     render(
       <MemoryRouter>
         <RecentMovements variant="latest" today="2026-11-05" movements={all} />
       </MemoryRouter>,
     )
-    expect(screen.getAllByText(/^Mov \d$/).map((e) => e.textContent)).toEqual(['Mov 0', 'Mov 1', 'Mov 2', 'Mov 3', 'Mov 4'])
-    expect(screen.getByRole('link', { name: 'Ver todos' })).toHaveAttribute('href', '/actividad')
+    expect(screen.getAllByText(/^Mov \d+$/).map((e) => e.textContent)).toEqual(
+      Array.from({ length: 9 }, (_, n) => `Mov ${n}`),
+    )
+    expect(screen.getByRole('heading', { level: 3, name: 'Hoy' })).toBeInTheDocument()
+  })
+
+  it('shows only what exists when there are fewer than 9', () => {
+    render(
+      <MemoryRouter>
+        <RecentMovements variant="latest" today="2026-11-05" movements={[movement({ id: 'only', note: 'Único' })]} />
+      </MemoryRouter>,
+    )
+    expect(screen.getAllByText('Único')).toHaveLength(1)
   })
 })

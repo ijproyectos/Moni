@@ -94,7 +94,10 @@ function setup() {
 }
 
 vi.mock('@/features/transactions/ui/QuickAdd', () => ({
-  QuickAdd: () => <section aria-label="Hablá con Moni" />,
+  QuickAdd: () => <section aria-label="Cargar un movimiento" />,
+}))
+vi.mock('@/features/assistant/ui/MoniAgent', () => ({
+  MoniAgent: () => <div data-testid="moni-agent" />,
 }))
 
 describe('Hoy: estructura del diseño', () => {
@@ -122,10 +125,10 @@ describe('Hoy: estructura del diseño', () => {
     expect(screen.queryByRole('button', { name: /Mes (anterior|siguiente)/ })).toBeNull()
   })
 
-  it('draws the hero, Hablá con Moni, and no question field nor shared card', () => {
+  it('draws the hero, the loading buttons, and no question field nor shared card', () => {
     setup()
     expect(screen.getByRole('region', { name: 'Lo que tenés' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Hablá con Moni' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Cargar un movimiento' })).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Preguntale a Moni' })).toBeNull()
     expect(screen.queryByRole('region', { name: 'Gastos compartidos' })).toBeNull()
   })

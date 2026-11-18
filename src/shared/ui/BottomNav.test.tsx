@@ -15,11 +15,11 @@ function renderNav(path = '/') {
 }
 
 describe('BottomNav', () => {
-  it('has Inicio, Grupos, Tarjetas, Herramientas and the profile avatar', () => {
+  it('has Inicio, Grupos, Tarjetas, Explorar and the profile avatar', () => {
     renderNav()
     const nav = screen.getByRole('navigation', { name: 'Navegación principal' })
     const links = Array.from(nav.querySelectorAll('a'))
-    expect(links.map((a) => a.getAttribute('aria-label'))).toEqual(['Inicio', 'Grupos', 'Tarjetas', 'Herramientas', 'Perfil'])
+    expect(links.map((a) => a.getAttribute('aria-label'))).toEqual(['Inicio', 'Grupos', 'Tarjetas', 'Explorar', 'Perfil'])
     expect(links.map((a) => a.getAttribute('href'))).toEqual(['/', '/grupos', '/cuentas', '/mas', '/perfil'])
   })
 

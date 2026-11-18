@@ -134,14 +134,12 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('QuickAdd (Hablá con Moni, Foto, Manual)', () => {
-  it('shows the cat to talk to Moni and the Foto and Manual buttons', () => {
+describe('QuickAdd (Foto, Manual, Voz)', () => {
+  it('shows the three ways to load a movement and no cat', () => {
     renderQuickAdd()
-    const section = screen.getByRole('region', { name: 'Hablá con Moni' })
-    expect(within(section).getByRole('button', { name: 'Hablá con Moni' })).toHaveAttribute('aria-haspopup', 'dialog')
-    expect(within(section).getByRole('button', { name: 'Foto' })).toBeInTheDocument()
-    expect(within(section).getByRole('button', { name: 'Manual' })).toBeInTheDocument()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    const section = screen.getByRole('region', { name: 'Cargar un movimiento' })
+    for (const name of ['Foto', 'Manual', 'Voz']) expect(within(section).getByRole('button', { name })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Hablá con Moni' })).toBeNull()
   })
 
   it('"Manual" opens the usual new-movement form', async () => {
@@ -162,57 +160,19 @@ describe('QuickAdd (Hablá con Moni, Foto, Manual)', () => {
     expect(input).toHaveAttribute('capture', 'environment')
   })
 
-  it('the cat opens the one chat; a written expense is read and offered for review (nothing is saved yet)', async () => {
-    mocks.invoke.mockImplementation(async (name: string) =>
-      name === 'parse-movements'
-        ? {
-            data: {
-              movements: [
-                { kind: 'expense', amountCents: 18_000_00, note: 'Chino', categoryId: FOOD_ID, accountId: null, occurredOn: '2026-10-27', confidence: 0.9 },
-              ],
-              warnings: [],
-            },
-            error: null,
-          }
-        : { data: { reply: 'ok' }, error: null },
-    )
+  it('"Voz" opens the existing voice capture', async () => {
     const { user } = renderQuickAdd()
-    await user.click(screen.getByRole('button', { name: 'Hablá con Moni' }))
-    expect(screen.getByRole('dialog', { name: 'Hablá con Moni' })).toBeInTheDocument()
-    await user.type(screen.getByLabelText('Tu pregunta'), 'Gasté $18.000 en el chino')
-    await user.click(screen.getByRole('button', { name: 'Enviar' }))
-    expect(await screen.findByText(/Entendí:/)).toBeInTheDocument()
-    expect(mocks.invoke).toHaveBeenCalledWith('parse-movements', expect.anything())
-    expect(mocks.createTransaction).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Revisar y guardar' }))
-    expect(await screen.findByText('Revisá y guardá')).toBeInTheDocument()
-    expect(mocks.createTransaction).not.toHaveBeenCalled()
-  })
-
-  it('a question goes to the assistant in the same chat and a follow-up keeps the history', async () => {
-    mocks.invoke.mockResolvedValue({ data: { reply: 'Tenés $5.000' }, error: null })
-    const { user } = renderQuickAdd()
-    await user.click(screen.getByRole('button', { name: 'Hablá con Moni' }))
-    await user.type(screen.getByLabelText('Tu pregunta'), '¿Cuánto tengo?')
-    await user.click(screen.getByRole('button', { name: 'Enviar' }))
-    expect(await screen.findByText('Tenés $5.000')).toBeInTheDocument()
-    expect(mocks.invoke).toHaveBeenCalledWith('insights-chat', expect.anything())
-    expect(mocks.invoke).not.toHaveBeenCalledWith('parse-movements', expect.anything())
-    await user.type(screen.getByLabelText('Tu pregunta'), '¿Y en el banco?')
-    await user.click(screen.getByRole('button', { name: 'Enviar' }))
-    await waitFor(() => expect(mocks.invoke).toHaveBeenCalledTimes(2))
-    const body = (mocks.invoke.mock.calls[1]?.[1] as { body: { messages: unknown[] } }).body
-    expect(body.messages).toHaveLength(3)
+    await user.click(screen.getByRole('button', { name: 'Voz' }))
+    expect(screen.getByRole('dialog', { name: 'Carga por voz' })).toBeInTheDocument()
   })
 })
 
 describe('QuickAdd free plan gate', () => {
-  it('the chat is Plus: a free user sees the upsell and nothing is sent', async () => {
+  it('"Voz" opens the Plus upsell for a free user', async () => {
     plusState.isFree = true
     const { user } = renderQuickAdd()
-    await user.click(screen.getByRole('button', { name: 'Hablá con Moni' }))
-    expect(screen.getByText('El asistente es de Moni Plus')).toBeInTheDocument()
-    expect(mocks.invoke).not.toHaveBeenCalledWith('parse-movements', expect.anything())
+    await user.click(screen.getByRole('button', { name: 'Voz' }))
+    expect(await screen.findByRole('dialog', { name: /Cargar por voz es de Moni Plus/ })).toBeInTheDocument()
   })
 
   it('does not open the file picker for a free user and keeps Manual free', async () => {

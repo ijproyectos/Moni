@@ -1,5 +1,6 @@
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import { HomeHeader } from './HomeHeader'
+import { MoniAgent } from '@/features/assistant/ui/MoniAgent'
 import { QuickAdd } from '@/features/transactions/ui/QuickAdd'
 import type { HomeBalance } from '../domain/homeBalance'
 import { HomeHero } from './HomeHero'
@@ -36,6 +37,7 @@ export function HomeScreen({
 
   return (
     <div>
+      <MoniAgent name={name} />
       <HomeHeader
         initial={initial}
         photoUrl={photoUrl}
@@ -43,9 +45,9 @@ export function HomeScreen({
         name={name}
       />
 
-      <div className="flex flex-col gap-5 pb-4 pt-1">
+      <div className="flex flex-col gap-4 pb-4 pt-1">
         <HomeHero balance={balance} />
-        <QuickAdd name={name} />
+        <QuickAdd />
         {recent.length > 0 ? (
           <RecentMovements movements={recent} actions={movementActions} variant="latest" />
         ) : (

@@ -23,9 +23,10 @@ interface BottomSheetProps {
   children: ReactNode
   /**
    * `sheet` is the classic sheet; `menta` the assistant sheet of the Menta design (36px corners, smaller grabber,
-   * white close circle); `screen` a full-height screen that still behaves as a modal (X on the left, title centered).
+   * white close circle); `chat` the same look but with the header fixed and only the body scrolling, as tall as its content
+   * (up to 88% of the screen); `screen` a full-height screen that still behaves as a modal (X on the left, title centered).
    */
-  variant?: 'sheet' | 'menta' | 'screen'
+  variant?: 'sheet' | 'menta' | 'screen' | 'chat'
   /** `screen` only: no header at all. The title stays in the dialog name for screen readers. */
   bare?: boolean
   /** Replaces the sheet's background (e.g. the cream of Inicio). */
@@ -114,12 +115,15 @@ export function BottomSheet({
         tabIndex={-1}
         style={drag > 0 ? { transform: `translateY(${drag}px)`, transition: 'none' } : undefined}
         className={cn(
-          'relative w-full max-w-[430px] overflow-y-auto bg-canvas outline-none motion-safe:animate-[sheet-in_220ms_ease-out]',
+          'relative w-full max-w-[430px] bg-canvas outline-none motion-safe:animate-[sheet-in_220ms_ease-out]',
+          variant === 'chat' ? 'overflow-hidden' : 'overflow-y-auto',
           surfaceClassName,
           variant === 'sheet' &&
             'max-h-[min(92dvh,100%)] rounded-t-[32px] px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-3',
           variant === 'menta' &&
             'max-h-[min(92dvh,100%)] rounded-t-[36px] px-[18px] pb-[max(env(safe-area-inset-bottom),22px)] pt-3',
+          variant === 'chat' &&
+            'flex max-h-[min(88dvh,100%)] flex-col rounded-t-[36px] px-[18px] pb-[max(env(safe-area-inset-bottom),14px)] pt-3',
           variant === 'screen' &&
             'flex h-full flex-col px-[18px] pb-[max(env(safe-area-inset-bottom),20px)] pt-[max(env(safe-area-inset-top),4px)]',
         )}
@@ -134,13 +138,13 @@ export function BottomSheet({
             onPointerCancel={onDragEnd}
             className={cn(
               'flex touch-none justify-center pt-3',
-              variant === 'menta' ? '-mt-3 pb-3.5' : '-mt-3 pb-3',
+              variant === 'menta' || variant === 'chat' ? '-mt-3 pb-3.5' : '-mt-3 pb-3',
             )}
           >
             <div
               className={cn(
                 'rounded-full',
-                variant === 'menta' ? 'h-[5px] w-10 bg-[#C7D6CB]' : 'h-1.5 w-12 bg-sand',
+                variant === 'menta' || variant === 'chat' ? 'h-[5px] w-10 bg-[#C7D6CB]' : 'h-1.5 w-12 bg-sand',
               )}
             />
           </div>
@@ -175,8 +179,8 @@ export function BottomSheet({
               <span aria-hidden="true" />
             </div>
           )
-        ) : variant === 'menta' ? (
-          <div className="mb-3.5 flex items-center gap-3">
+        ) : variant === 'menta' || variant === 'chat' ? (
+          <div className="mb-3 flex shrink-0 items-center gap-3">
             {icon}
             <div className="min-w-0 flex-1">
               <h2

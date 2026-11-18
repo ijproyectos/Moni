@@ -1,9 +1,13 @@
-import { MoniCat } from '@/shared/ui/MoniCat'
+import moniCat from '@/assets/mascot/moni-gato-fortuna-animado.svg'
+import { useAuth } from '@/features/auth/api/authContext'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { SHEET_SUGGESTIONS } from '../domain/chat'
 import { AssistantConversation } from './AssistantConversation'
 
-/** "Hablá con Moni" as a sheet over Inicio: the one chat (questions and movements), without leaving the screen. */
+/**
+ * Moni's chat as a sheet over Inicio: it opens small, with the little cat in the header, and grows as the conversation goes
+ * (the one chat: questions and movements). The header (cat, title and X) and the box stay fixed; only the messages scroll. The conversation is kept while the app is open, so it survives closing the sheet.
+ */
 export function AssistantSheet({
   name,
   initialQuestion,
@@ -17,23 +21,19 @@ export function AssistantSheet({
   initialDraft?: string
   onClose: () => void
 }) {
+  const { user } = useAuth()
   return (
     <BottomSheet
-      title="Hablá con Moni"
+      variant="chat"
+      title="Moni"
       subtitle="Preguntame o contame un gasto"
-      icon={
-        <span
-          aria-hidden="true"
-          className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e3ebd3] dark:bg-sand"
-        >
-          <MoniCat className="w-8" />
-        </span>
-      }
+      icon={<img src={moniCat} alt="" draggable={false} className="size-12 shrink-0 object-contain" />}
       onClose={onClose}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
         <AssistantConversation
           inSheet
+          memoryKey={`sheet:${user?.id ?? 'anon'}`}
           initialQuestion={initialQuestion}
           initialDraft={initialDraft}
           suggestions={SHEET_SUGGESTIONS}

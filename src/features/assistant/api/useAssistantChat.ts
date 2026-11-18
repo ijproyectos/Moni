@@ -6,12 +6,33 @@ import { isSendable, normalizeQuestion, toRequestMessages, type ChatMessage } fr
 import { askAssistant } from './assistantRepository'
 
 /**
- * The conversation lives only in this hook's state: never persisted, gone when the screen unmounts (and so on
- * sign-out). `send` appends the question and calls insights-chat; `retry` repeats the last question after a failure.
+ * Conversations kept in memory while the app is open, so closing the chat sheet and opening it again does not lose it.
+ * Never written to storage: a reload or "Cerrar sesión" (`clearAssistantMemory`) empties it.
  */
-export function useAssistantChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const counter = useRef(0)
+const memory = new Map<string, ChatMessage[]>()
+
+export function clearAssistantMemory(): void {
+  memory.clear()
+}
+
+/**
+ * The conversation: never persisted to storage (the Asistente page loses it when it unmounts; the chat sheet keeps it in
+ * memory under `memoryKey`). `send` appends the question and calls insights-chat; `retry` repeats the last question.
+ */
+export function useAssistantChat(memoryKey?: string) {
+  const [messages, setMessagesState] = useState<ChatMessage[]>(() => (memoryKey ? (memory.get(memoryKey) ?? []) : []))
+  const latest = useRef(messages)
+  // Written outside the state updater, so a reply that arrives after the sheet closed still lands in the memory.
+  const setMessages = useCallback(
+    (update: ChatMessage[] | ((current: ChatMessage[]) => ChatMessage[])) => {
+      const next = typeof update === 'function' ? update(latest.current) : update
+      latest.current = next
+      if (memoryKey) memory.set(memoryKey, next)
+      setMessagesState(next)
+    },
+    [memoryKey],
+  )
+  const counter = useRef(messages.length)
   const nextId = () => `m${++counter.current}`
 
   const mutation = useMutation({
@@ -32,7 +53,7 @@ export function useAssistantChat() {
       mutate(next)
       return true
     },
-    [isPending, messages, mutate],
+    [isPending, messages, mutate, setMessages],
   )
 
   const retry = useCallback(() => {
@@ -43,12 +64,12 @@ export function useAssistantChat() {
   /** Adds a message without asking the assistant (a movement written in the chat, and Moni's reading of it). */
   const append = useCallback((role: ChatMessage['role'], content: string, drafts?: DraftMovement[]) => {
     setMessages((current) => [...current, { id: nextId(), role, content, drafts }])
-  }, [])
+  }, [setMessages])
 
   const clear = useCallback(() => {
     setMessages([])
     reset()
-  }, [reset])
+  }, [reset, setMessages])
 
   return {
     messages,

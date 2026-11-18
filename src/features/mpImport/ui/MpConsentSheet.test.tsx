@@ -11,10 +11,10 @@ function setup(props: Partial<React.ComponentProps<typeof MpConsentSheet>> = {})
 const connect = () => screen.getByRole('button', { name: 'Vincular con Mercado Pago' })
 
 describe('MpConsentSheet', () => {
-  it('names the Claude API and says only merchant names are sent', () => {
+  it('shows the three short points and no data-use details', () => {
     setup()
-    expect(screen.getByText(/Claude API/)).toBeInTheDocument()
-    expect(screen.getByText(/solo el texto del comercio de cada compra/i)).toBeInTheDocument()
+    expect(screen.getByText(/Nunca guardamos tu usuario/)).toBeInTheDocument()
+    expect(screen.queryByText(/Ver detalles/)).toBeNull()
   })
 
   it('keeps the connect button disabled until the checkbox is ticked', async () => {

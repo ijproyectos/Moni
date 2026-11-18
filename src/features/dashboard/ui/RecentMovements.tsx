@@ -34,11 +34,19 @@ function subtitleOf(m: RecentMovement): string {
   return `${m.categoryName ?? 'Sin categoría'} · ${m.accountName}`
 }
 
-/** How many of the newest movements (any date) the Hoy card lists. */
-const LATEST_COUNT = 5
+/** How many of the newest movements (any date) Inicio lists, grouped by day. */
+const LATEST_COUNT = 9
 
 /** How many movements Inicio lists before "Ver más movimientos". */
 const COLLAPSED_COUNT = 5
+
+/** "Hoy", "Ayer" or "Lunes 16 de noviembre" (with the year when it is not this one). */
+function dayLabel(date: string, today: string): string {
+  const relative = formatRelativeDay(date, today)
+  if (relative === 'Hoy' || relative === 'Ayer') return relative
+  const long = formatLongDay(date).replace(',', '')
+  return date.slice(0, 4) === today.slice(0, 4) ? long : `${long} de ${date.slice(0, 4)}`
+}
 
 /** "Hoy, 5 de noviembre", "Ayer, 4 de noviembre" or "1 de noviembre" (with the year when it is not this one). */
 function dayHeading(date: string, today: string): string {
@@ -103,43 +111,45 @@ export function RecentMovements({
             Ver todos
           </Link>
         </div>
-        <ul className="divide-y divide-[#DCD8BF] dark:divide-line">
-          {shown.map((m) => {
-            const edit = actions?.canEdit(m) ? () => actions.onEdit(m) : undefined
-            const isIncome = addsToBalance(m.kind)
-            const when = formatRelativeDay(m.occurredOn, today).toLowerCase()
-            const title = titleOf(m)
-            return (
-              <li key={m.id}>
-                <button
-                  type="button"
-                  onClick={edit}
-                  disabled={!edit}
-                  aria-label={edit ? `Editar ${title}` : undefined}
-                  className="grid min-h-[64px] w-full grid-cols-[44px_1fr_auto] items-center gap-3 py-2 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0B3D2E]"
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`flex size-11 items-center justify-center rounded-[14px] font-display text-[18px] font-extrabold ${isIncome ? 'bg-[#D3E6D2] text-[#0B3D2E] dark:bg-[#1F3A2C] dark:text-[#CFE9D6]' : 'bg-[#CFE0EA] text-[#0B3D2E] dark:bg-[#1E3140] dark:text-[#CFE0EA]'}`}
-                  >
-                    {title.trim().charAt(0).toUpperCase()}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-[17px] font-extrabold leading-tight text-[#0C2418] dark:text-[#F1EEDD]">{title}</span>
-                    <span className="block truncate text-[13px] text-[#566A5C] dark:text-text-muted">
-                      {subtitleOf(m)} · {when}
-                    </span>
-                  </span>
-                  <AmountDisplay
-                    cents={isIncome ? m.amountCents : -m.amountCents}
-                    signed
-                    className={`text-[17px] font-extrabold ${isIncome ? 'text-[#1B7F4E] dark:text-[#6FD3A0]' : 'text-[#B5382A] dark:text-expense'}`}
-                  />
-                </button>
-              </li>
-            )
-          })}
-        </ul>
+        {days.map((day) => (
+          <section key={day.date} aria-label={dayLabel(day.date, today)} className="mt-2">
+            <h3 className="py-1 text-[12.5px] font-bold text-[#566A5C] dark:text-text-muted">{dayLabel(day.date, today)}</h3>
+            <ul className="divide-y divide-[#DCD8BF] dark:divide-line">
+              {day.movements.map((m) => {
+                const edit = actions?.canEdit(m) ? () => actions.onEdit(m) : undefined
+                const isIncome = addsToBalance(m.kind)
+                const title = titleOf(m)
+                return (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      onClick={edit}
+                      disabled={!edit}
+                      aria-label={edit ? `Editar ${title}` : undefined}
+                      className="grid min-h-[52px] w-full grid-cols-[36px_1fr_auto] items-center gap-3 py-1.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0B3D2E]"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`flex size-9 items-center justify-center rounded-[11px] font-display text-[16px] font-extrabold ${isIncome ? 'bg-[#D3E6D2] text-[#0B3D2E] dark:bg-[#1F3A2C] dark:text-[#CFE9D6]' : 'bg-[#EFD9D2] text-[#7A2A1F] dark:bg-[#3A2420] dark:text-[#F2C9C0]'}`}
+                      >
+                        {title.trim().charAt(0).toUpperCase()}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[15px] font-extrabold leading-tight text-[#0C2418] dark:text-[#F1EEDD]">{title}</span>
+                        <span className="block truncate text-[12px] text-[#566A5C] dark:text-text-muted">{subtitleOf(m)}</span>
+                      </span>
+                      <AmountDisplay
+                        cents={isIncome ? m.amountCents : -m.amountCents}
+                        signed
+                        className={`whitespace-nowrap text-[15px] font-extrabold ${isIncome ? 'text-[#1B7F4E] dark:text-[#6FD3A0]' : 'text-[#B5382A] dark:text-expense'}`}
+                      />
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        ))}
       </section>
     )
   }

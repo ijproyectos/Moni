@@ -50,7 +50,7 @@ const NAV_ITEMS: readonly NavItem[] = [
   { to: '/', label: 'Inicio', icon: House, end: true },
   { to: '/grupos', label: 'Grupos', icon: GroupsIcon },
   { to: '/cuentas', match: '/cuentas', label: 'Tarjetas', icon: CardIcon },
-  { to: '/mas', label: 'Herramientas', icon: ToolsIcon },
+  { to: '/mas', label: 'Explorar', icon: ToolsIcon },
 ]
 
 const RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B3D2E] dark:focus-visible:outline-mint-ink'
