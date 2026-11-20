@@ -37,6 +37,9 @@ export function toTransaction(
     installmentNumber: row.installment_number ?? null,
     installmentsTotal: row.installments_total ?? null,
     tripId: row.trip_id ?? null,
+    originalAmountCents: row.original_amount == null ? null : toCents(row.original_amount),
+    originalCurrency: row.original_currency ?? null,
+    fxRate: row.fx_rate ?? null,
     createdAt: row.created_at,
   }
 }
@@ -79,6 +82,26 @@ export async function listTransactions(
   return (data as unknown as Parameters<typeof toTransaction>[0][]).map(toTransaction)
 }
 
+type CurrencyValues = Pick<TransactionFormValues, 'currency' | 'fxRate' | 'originalAmountCents'>
+
+function isUsd(values: CurrencyValues): boolean {
+  return (
+    values.currency === 'USD' &&
+    values.fxRate !== undefined &&
+    values.originalAmountCents !== undefined
+  )
+}
+
+/** The USD columns, only for a movement in dollars (`amount` is then the ARS equivalent). */
+function usdColumns(values: CurrencyValues) {
+  if (!isUsd(values)) return {}
+  return {
+    original_amount: toNumeric(values.originalAmountCents as number),
+    original_currency: 'USD' as const,
+    fx_rate: values.fxRate as number,
+  }
+}
+
 /** A new movement; an expense may also belong to one of the person's trips (`tripId`). */
 export type NewTransaction = TransactionFormValues & { tripId?: string | null }
 
@@ -88,7 +111,9 @@ export interface CreatedTransaction {
   installmentPlanId: string | null
 }
 
-export async function createTransaction(values: NewTransaction): Promise<CreatedTransaction | null> {
+export async function createTransaction(
+  values: NewTransaction,
+): Promise<CreatedTransaction | null> {
   const { data, error } = await getSupabase()
     .from('transactions')
     .insert({
@@ -100,6 +125,7 @@ export async function createTransaction(values: NewTransaction): Promise<Created
       note: values.note,
       // Only sent when set, so everything else keeps working on a database without trips.
       ...(values.tripId ? { trip_id: values.tripId } : {}),
+      ...usdColumns(values),
     })
     .select('id, installment_plan_id')
     .single()
@@ -124,6 +150,10 @@ export async function updateTransaction(
       note: values.note,
       // Only sent when it changes: linking is an UPDATE of the same movement (no copy, no new charge).
       ...(tripId !== undefined ? { trip_id: tripId } : {}),
+      // An edit always rewrites them: a peso edit clears a previous USD figure.
+      ...(isUsd(values)
+        ? usdColumns(values)
+        : { original_amount: null, original_currency: null, fx_rate: null }),
     })
     .eq('id', id)
   if (error) throw error

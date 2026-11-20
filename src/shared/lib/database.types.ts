@@ -159,6 +159,10 @@ export interface Database {
           installments_total?: number | null
           /** Personal trip this expense belongs to (migration 20261109000000). */
           trip_id?: string | null
+          /** Amount typed in a foreign currency (USD) with the rate used; all null for pesos (migration 20261121000000). */
+          original_amount?: number | null
+          original_currency?: 'USD' | null
+          fx_rate?: number | null
           created_at: string
           updated_at: string
         }
@@ -170,6 +174,9 @@ export interface Database {
           occurred_on?: string
           note?: string | null
           trip_id?: string | null
+          original_amount?: number | null
+          original_currency?: 'USD' | null
+          fx_rate?: number | null
         }
         Update: {
           account_id?: string
@@ -179,6 +186,9 @@ export interface Database {
           note?: string | null
           status?: RowStatus
           trip_id?: string | null
+          original_amount?: number | null
+          original_currency?: 'USD' | null
+          fx_rate?: number | null
         }
         Relationships: []
       }

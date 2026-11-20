@@ -36,6 +36,12 @@ export function formatArs(cents: Cents, options: { signed?: boolean } = {}): str
   return `${sign}$${abs}`
 }
 
+/** Formats cents of US dollars the es-AR way: 2000 -> "US$ 20", 2050 -> "US$ 20,50". */
+export function formatUsd(cents: Cents): string {
+  const formatter = cents % 100 === 0 ? wholeFormatter : fractionFormatter
+  return `${cents < 0 ? '-' : ''}US$ ${formatter.format(Math.abs(cents) / 100)}`
+}
+
 /** Splits an amount into equal integer-cent shares; leftover cents go to the first shares. */
 export function splitEqually(total: Cents, parts: number): Cents[] {
   if (!Number.isInteger(total) || total < 0)

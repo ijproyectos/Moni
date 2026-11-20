@@ -1,4 +1,4 @@
-import { formatArs, formatCompact, type Cents } from '@/shared/lib/money'
+import { formatArs, formatCompact, formatUsd, type Cents } from '@/shared/lib/money'
 import { cn } from './cn'
 import { useHiddenAmounts } from './hiddenAmountsContext'
 
@@ -11,11 +11,20 @@ interface AmountDisplayProps {
   /** Number only, without sign or "$" (the caller renders them). */
   bare?: boolean
   compact?: boolean
+  /** `cents` are US dollars ('US$ 20'). */
+  usd?: boolean
   className?: string
 }
 
 /** Renders money, or a mask when the user chose to hide amounts. */
-export function AmountDisplay({ cents, signed, bare, compact, className }: AmountDisplayProps) {
+export function AmountDisplay({
+  cents,
+  signed,
+  bare,
+  compact,
+  usd,
+  className,
+}: AmountDisplayProps) {
   const { hidden } = useHiddenAmounts()
 
   if (hidden) {
@@ -26,10 +35,12 @@ export function AmountDisplay({ cents, signed, bare, compact, className }: Amoun
     )
   }
 
-  const text = compact
-    ? formatCompact(cents)
-    : bare
-      ? formatArs(Math.abs(cents)).slice(1)
-      : formatArs(cents, { signed })
+  const text = usd
+    ? formatUsd(cents)
+    : compact
+      ? formatCompact(cents)
+      : bare
+        ? formatArs(Math.abs(cents)).slice(1)
+        : formatArs(cents, { signed })
   return <span className={cn('tabular-nums', className)}>{text}</span>
 }
