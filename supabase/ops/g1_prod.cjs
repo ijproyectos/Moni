@@ -196,7 +196,7 @@ async function preflight(c) {
   }
   const noOwner = (await q(c, "select count(*)::int n from public.groups g where not exists (select 1 from public.group_members m where m.group_id=g.id and m.role='owner' and m.left_at is null)"))[0].n
   if (noOwner !== 0) issues.push(`${noOwner} grupo(s) sin administrador activo`)
-  const unknownKinds = await q(c, "select distinct kind from public.groups where kind not in ('casa','viaje','pareja','amigos')")
+  const unknownKinds = await q(c, "select distinct kind from public.groups where kind not in ('casa','hogar','viaje','pareja','amigos')")
   if (unknownKinds.length) issues.push('tipos de grupo inesperados')
   for (const [v, n] of MIGRATIONS) {
     const f = path.join(ROOT, 'supabase', 'migrations', `${v}_${n}.sql`)
