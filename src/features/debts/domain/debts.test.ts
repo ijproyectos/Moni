@@ -228,19 +228,27 @@ describe('notices and statuses', () => {
 
   it('says who asks, how much and from which group', () => {
     expect(noticeText(notice('debt_reminder'))).toBe(
-      'Ana te recuerda que le debés $30.000 del grupo Casa.',
+      'Ana te recordó que tenés un pago pendiente de $30.000.',
     )
     expect(noticeText(notice('payment_reported'))).toContain(
-      'Ana informó que te pagó $30.000 del grupo Casa',
+      'Ana indicó que te pagó $30.000. ¿Recibiste el dinero?',
     )
     expect(noticeText(notice('payment_confirmed'))).toContain(
-      'Ana confirmó que recibió tu pago de $30.000',
+      'Ana confirmó tu pago de $30.000',
     )
-    expect(noticeText(notice('payment_rejected'))).toContain('todavía no recibió tu pago')
+    expect(noticeText(notice('payment_rejected'))).toContain('todavía no confirmó tu pago de $30.000')
   })
 
   it('labels the states of a payment', () => {
     expect(reportStatusLabel('reported')).toBe('Pago informado')
     expect(reportStatusLabel('confirmed')).toBe('Saldada')
+  })
+})
+
+describe('recurring expense notice', () => {
+  it('says there is a recurring expense to register, with its name', () => {
+    const n = { id: 'n', kind: 'recurring_due', groupId: 'g', groupName: 'Hogar', actorId: 'a', actorName: 'Moni', amountCents: 0, reportId: null,
+      transferLabel: null, transferAlias: null, transferCbu: null, createdAt: '', readAt: null, subject: 'Alquiler' } as const
+    expect(noticeText(n)).toBe('Tenés un gasto recurrente para registrar: Alquiler.')
   })
 })

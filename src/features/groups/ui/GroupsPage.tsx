@@ -14,6 +14,9 @@ import { expenseIcon } from './expenseIcon'
 import { overlayDeltaFor } from '../domain/ledger'
 import { useGroupOverlays } from '../api/useGroupGuests'
 import { useGroupPhotos } from '../api/useGroupPhotos'
+import { HiddenGroupsEntry } from './HiddenGroups'
+import { PendingInvitations } from './PendingInvitations'
+import { PendingRequests } from './PendingRequests'
 import { GroupsScreen, type ListedGroup } from './GroupsScreen'
 
 export function GroupsPage() {
@@ -42,8 +45,11 @@ export function GroupsPage() {
     [groups.data, overlays, photos, user?.id],
   )
 
+  // The groups I hid leave the list, not my accounts: totals and debts keep counting them.
+  const visible = useMemo(() => listed?.filter((g) => !g.hiddenAt), [listed])
+
   // "Último en <grupo>": the latest real expense of the group with the most recent activity.
-  const recent = listed ? mostRecentGroup(listed) : undefined
+  const recent = visible ? mostRecentGroup(visible) : undefined
   const recentData = useGroupLedger(recent?.id)
   const templates = useCategoryTemplates()
   const lastExpense = useMemo(() => {
@@ -65,13 +71,19 @@ export function GroupsPage() {
     <>
       <GroupsScreen
         lastExpense={lastExpense}
-        groups={listed}
+        groups={visible}
+        totalsFrom={listed}
         isLoading={groups.isLoading}
         isError={groups.isError}
         onRetry={() => void groups.refetch()}
         onNewGroup={() => navigate('/grupos/nuevo')}
         onOpenDebts={setDebtsTab}
       />
+      <div className="px-[18px]">
+        <PendingInvitations />
+        <PendingRequests />
+      </div>
+      <HiddenGroupsEntry />
       {debtsTab && <GroupDebtsSheet initialTab={debtsTab} onClose={() => setDebtsTab(null)} />}
     </>
   )

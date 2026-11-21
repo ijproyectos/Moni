@@ -18,7 +18,7 @@ import { useReferralLink } from '@/features/pro/ui/useReferralLink'
 import { useAddGuest, useLinkGuest, useRemoveGuest, useUpdateGuest } from '../api/useGroupGuests'
 import { useGroupLedger } from '../api/useGroupLedger'
 import { useNewMemberNotice } from '../api/useNewMemberNotice'
-import { useCreateInvite, useGroupInvites } from '../api/useGroups'
+import { useCreateInvite, useGroupInvites, useIsGroupAdmin } from '../api/useGroups'
 import { isInviteActive } from '../domain/group'
 import { inviteLink } from '../domain/groupView'
 import type { Person } from '../domain/ledger'
@@ -44,6 +44,7 @@ export function PeoplePage() {
   const removeGuest = useRemoveGuest()
   const linkGuest = useLinkGuest()
   useNewMemberNotice(groupId)
+  const isAdmin = useIsGroupAdmin(groupId, meId)
   const invites = useGroupInvites(groupId)
   const createInvite = useCreateInvite()
   const [sheet, setSheet] = useState<Sheet>(null)
@@ -165,6 +166,8 @@ export function PeoplePage() {
 
       {sheet?.type === 'add' && (
         <AddPersonSheet
+          canInvite={isAdmin}
+          groupId={groupId}
           code={code}
           groupName={name}
           onClose={() => setSheet(null)}
@@ -198,7 +201,7 @@ export function PeoplePage() {
             if (ok) setSheet(null)
           }}
           onLink={() => setSheet({ type: 'link', person: sheet.person })}
-          onInvite={() => setSheet({ type: 'invite', person: sheet.person })}
+          onInvite={isAdmin ? () => setSheet({ type: 'invite', person: sheet.person }) : undefined}
           onRemove={() => setSheet({ type: 'remove', person: sheet.person })}
         />
       )}
@@ -304,7 +307,7 @@ function EditPersonSheet({
   onClose: () => void
   onSave: (name: string, alias: string) => void
   onLink: () => void
-  onInvite: () => void
+  onInvite?: () => void
   onRemove: () => void
 }) {
   const [name, setName] = useState(person.name)
@@ -358,17 +361,19 @@ function EditPersonSheet({
           >
             <Link2 aria-hidden="true" className="size-5 shrink-0" /> Vincular con una cuenta de Moni
           </button>
-          <button
-            type="button"
-            onClick={onInvite}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[16px] font-extrabold"
-          >
-            <UserPlus aria-hidden="true" className="size-5" /> Invitarla
-          </button>
+          {onInvite && (
+            <button
+              type="button"
+              onClick={onInvite}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[16px] font-extrabold"
+            >
+              <UserPlus aria-hidden="true" className="size-5" /> Invitarla
+            </button>
+          )}
           <button
             type="button"
             onClick={onRemove}
-            className="flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[16px] font-extrabold text-expense"
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-line bg-card text-[16px] font-extrabold text-expense ${onInvite ? '' : 'col-span-2'}`}
           >
             <Trash2 aria-hidden="true" className="size-5" /> Quitar del grupo
           </button>

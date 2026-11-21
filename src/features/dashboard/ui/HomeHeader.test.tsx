@@ -44,7 +44,7 @@ describe('HomeHeader: "Hola, nombre", crown and avatar', () => {
     it('shows a small gold crown only with Plus, and tapping it opens the benefits', async () => {
       renderHeader({ isPlus: true })
       const crown = screen.getByRole('button', { name: /Moni Plus activo/ })
-      expect(crown.querySelector('svg')).not.toBeNull()
+      expect(crown.querySelector('img')?.getAttribute('src')).toMatch(/F3DC96|corona_moni/)
       // Worn on top of the avatar: centered, with no circle or border around it.
       expect(crown).toHaveClass('left-1/2', '-translate-x-1/2')
       expect(crown.className).not.toMatch(/rounded-full|ring-|border|bg-/)

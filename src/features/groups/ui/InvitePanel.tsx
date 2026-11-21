@@ -22,9 +22,9 @@ interface InvitePanelProps {
 const actionClass =
   'flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[16px] font-extrabold aria-disabled:opacity-50 disabled:opacity-50'
 
-/** Invite message the other person receives (name, code and join link). */
+/** The invite message: the group's name, one single link and the code to type by hand. The link is not sent apart again. */
 function inviteMessage(groupName: string, code: string, link: string): string {
-  return `¡Hola! Te invito a mi grupo “${groupName}” en Moni para dividir gastos. Entrá con este link: ${link} o ingresá el código ${prettyCode(code)}.`
+  return `Te invito a unirte a nuestro grupo ${groupName} en Moni.\n\nEntrá desde este enlace:\n${link}\n\nO ingresá este código en Moni:\n${prettyCode(code)}`
 }
 
 /**
@@ -86,7 +86,8 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
 
   async function share() {
     try {
-      await navigator.share({ title: 'Moni', text: message, url: link })
+      // The link is already inside the message: passing it as `url` too made the receiver see it twice.
+      await navigator.share({ title: 'Moni', text: message })
     } catch {
       // Closed the share dialog.
     }

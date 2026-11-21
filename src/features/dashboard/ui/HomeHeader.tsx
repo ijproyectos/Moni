@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import plusCrown from '@/assets/brand/corona_moni.svg'
 import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { PhotoOrInitial } from '@/shared/ui/PhotoOrInitial'
 
@@ -14,14 +15,16 @@ interface HomeHeaderProps {
 
 const RING = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B3D2E] dark:focus-visible:outline-[#F1EEDD]'
 
-/** A simple classic crown in Moni Plus gold: three points over a band. */
+/** The Moni Plus crown: the brand's own drawing (designs/corona_moni.svg), at its original 3:2 proportions. */
 function GoldCrown() {
   return (
-    <svg viewBox="0 0 26 18" aria-hidden="true" className="h-[18px] w-[26px] drop-shadow-[0_1px_1px_rgba(90,60,0,0.35)]">
-      <path d="M2 14 L1 4.5 L8 9 L13 1.5 L18 9 L25 4.5 L24 14 Z" fill="#E3B23C" stroke="#B88A1E" strokeWidth="1.4" strokeLinejoin="round" />
-      <rect x="2" y="14.4" width="22" height="2.6" rx="1.2" fill="#F0C75A" stroke="#B88A1E" strokeWidth="1.2" />
-      <circle cx="13" cy="1.8" r="1.5" fill="#F7DC8B" stroke="#B88A1E" strokeWidth="0.9" />
-    </svg>
+    <img
+      src={plusCrown}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      className="h-[19px] w-[28px] drop-shadow-[0_1px_1px_rgba(90,60,0,0.35)]"
+    />
   )
 }
 
@@ -56,7 +59,7 @@ export function HomeHeader({ initial, photoUrl = null, isPlus = false, name = nu
             aria-label="Moni Plus activo, ver beneficios"
             aria-haspopup="dialog"
             data-plus-crown
-            className={`absolute -top-[13px] left-1/2 z-10 flex h-[18px] w-[26px] -translate-x-1/2 items-end justify-center rounded-sm before:absolute before:-inset-x-3 before:-inset-y-2 before:content-[''] ${RING}`}
+            className={`absolute -top-[13px] left-1/2 z-10 flex h-[19px] w-[28px] -translate-x-1/2 items-end justify-center rounded-sm before:absolute before:-inset-x-3 before:-inset-y-2 before:content-[''] ${RING}`}
           >
             <GoldCrown />
           </button>

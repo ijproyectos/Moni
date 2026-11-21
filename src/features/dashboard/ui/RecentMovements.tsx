@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { addsToBalance, groupKindLabel, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
 import { formatLongDate, formatLongDay, formatRelativeDay } from '@/shared/lib/dates'
 import { todayIso } from '@/shared/lib/month'
@@ -18,6 +18,9 @@ export interface MovementActions {
   onEdit: (movement: RecentMovement) => void
   /** Rejects with a message fit for the person to read. */
   onVoid: (movement: RecentMovement) => Promise<void>
+  /** Opens the read-only detail (the same one as Actividad) instead of going straight to the edit form. */
+  canOpen?: (movement: RecentMovement) => boolean
+  renderDetail?: (movement: RecentMovement, api: { onClose: () => void; onDelete: () => void }) => ReactNode
 }
 
 function titleOf(m: RecentMovement): string {
@@ -77,6 +80,7 @@ export function RecentMovements({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
+  const [opened, setOpened] = useState<RecentMovement | null>(null)
   const latest = variant === 'latest'
   const shown = latest ? movements.slice(0, LATEST_COUNT) : expanded ? movements : movements.slice(0, COLLAPSED_COUNT)
   const canExpand = !latest && movements.length > COLLAPSED_COUNT
@@ -116,7 +120,8 @@ export function RecentMovements({
             <h3 className="py-1 text-[12.5px] font-bold text-[#566A5C] dark:text-text-muted">{dayLabel(day.date, today)}</h3>
             <ul className="divide-y divide-[#DCD8BF] dark:divide-line">
               {day.movements.map((m) => {
-                const edit = actions?.canEdit(m) ? () => actions.onEdit(m) : undefined
+                const detail = actions?.renderDetail && actions.canOpen?.(m) ? () => setOpened(m) : undefined
+                const edit = detail ?? (actions?.canEdit(m) ? () => actions.onEdit(m) : undefined)
                 const isIncome = addsToBalance(m.kind)
                 const title = titleOf(m)
                 return (
@@ -125,7 +130,7 @@ export function RecentMovements({
                       type="button"
                       onClick={edit}
                       disabled={!edit}
-                      aria-label={edit ? `Editar ${title}` : undefined}
+                      aria-label={edit ? (detail ? `Ver detalle de ${title}` : `Editar ${title}`) : undefined}
                       className="grid min-h-[52px] w-full grid-cols-[36px_1fr_auto] items-center gap-3 py-1.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0B3D2E]"
                     >
                       <span
@@ -175,6 +180,7 @@ export function RecentMovements({
                 const isIncome = addsToBalance(m.kind)
                 const canEdit = actions?.canEdit(m) ?? false
                 const canVoid = actions?.canVoid(m) ?? false
+                const canOpen = Boolean(actions?.renderDetail && actions.canOpen?.(m))
                 const row = (
                   <div className="flex min-h-[60px] items-center gap-3 px-5 py-2">
                     <span className="min-w-0 flex-1">
@@ -198,9 +204,9 @@ export function RecentMovements({
                 )
                 return (
                   <li key={m.id}>
-                    {actions && (canEdit || canVoid) ? (
+                    {actions && (canEdit || canVoid || canOpen) ? (
                       <SwipeRow
-                        onPress={canEdit ? () => actions.onEdit(m) : undefined}
+                        onPress={canOpen ? () => setOpened(m) : canEdit ? () => actions.onEdit(m) : undefined}
                         // Swiping right voids (with its confirmation); swiping left edits. Both are real buttons too.
                         leadingAction={
                           canVoid
@@ -252,6 +258,14 @@ export function RecentMovements({
           Deslizá un movimiento a la derecha para anularlo o a la izquierda para editarlo.
         </p>
       )}
+      {opened && actions?.renderDetail &&
+        actions.renderDetail(opened, {
+          onClose: () => setOpened(null),
+          onDelete: () => {
+            setPending(opened)
+            setOpened(null)
+          },
+        })}
       {pending && actions && (
         <ConfirmDialog
           title={

@@ -1,3 +1,4 @@
+import { formatArs } from '@/shared/lib/money'
 import type { Cents } from '@/shared/lib/money'
 import type { GroupOverlay, SimAmount } from '../mock/overlayStore'
 import { memberLabel, type GroupMember, type MemberBalance, type SharedExpense } from './group'
@@ -171,6 +172,26 @@ export function splitByWeights(
     leftover -= extra
     return { personId, cents: (bases[i] ?? 0) + extra }
   })
+}
+
+/**
+ * "Jonatan le debe $15.000 a Iara": real names for both people. The person using the app is "Vos" in the ledger, so their
+ * profile name replaces it; without a name the sentence is written in the second person ("Jonatan te debe…", "Le debés…").
+ */
+export function debtSentence(
+  people: readonly Person[],
+  transfer: { fromUserId: string; toUserId: string; amountCents: number },
+  myName: string | null,
+): string {
+  const from = people.find((p) => p.id === transfer.fromUserId)
+  const to = people.find((p) => p.id === transfer.toUserId)
+  const amount = formatArs(transfer.amountCents)
+  const nameOf = (p: Person | undefined) => (p?.isMe ? myName : (p?.name ?? 'Alguien'))
+  const a = nameOf(from)
+  const b = nameOf(to)
+  if (from?.isMe) return a ? `${a} le debe ${amount} a ${b}` : `Le debés ${amount} a ${b}`
+  if (to?.isMe) return b ? `${a} le debe ${amount} a ${b}` : `${a} te debe ${amount}`
+  return `${a} le debe ${amount} a ${b}`
 }
 
 export function personName(people: readonly Person[], id: string): string {

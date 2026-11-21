@@ -26,6 +26,8 @@ export interface ListedGroup extends MyGroup {
 
 interface GroupsScreenProps {
   groups: readonly ListedGroup[] | undefined
+  /** Every group of mine, hidden ones included: the green box adds up all of them. Defaults to `groups`. */
+  totalsFrom?: readonly ListedGroup[]
   isLoading: boolean
   isError: boolean
   onRetry: () => void
@@ -97,6 +99,7 @@ const PILL = `flex min-h-12 items-center gap-2.5 rounded-[18px] bg-sand p-3 text
 // Screens 015 / 028 — Grupos.
 export function GroupsScreen({
   groups,
+  totalsFrom,
   isLoading,
   isError,
   onRetry,
@@ -104,7 +107,7 @@ export function GroupsScreen({
   onOpenDebts,
   lastExpense,
 }: GroupsScreenProps) {
-  const { owedCents: owed, oweCents: owe } = balanceTotals(groups ?? [])
+  const { owedCents: owed, oweCents: owe } = balanceTotals(totalsFrom ?? groups ?? [])
   const header = (
     <MentaHeader
       backTo={null}
@@ -134,7 +137,7 @@ export function GroupsScreen({
             action={<Button onClick={onRetry}>Reintentar</Button>}
           />
         </>
-      ) : groups.length === 0 ? (
+      ) : (totalsFrom ?? groups).length === 0 ? (
         <>
           <MentaHeader
             backTo={null}

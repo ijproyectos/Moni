@@ -5,10 +5,16 @@ import type { Cents } from '@/shared/lib/money'
 import { isIsoDate, type IsoDate } from '@/shared/lib/month'
 
 /** Kinds offered when creating a group. 'viaje' still exists in the database, so old groups keep displaying. */
-export const GROUP_KINDS: readonly GroupKind[] = ['casa', 'pareja', 'amigos']
+export const GROUP_KINDS: readonly GroupKind[] = ['hogar', 'pareja', 'amigos']
+
+/** 'casa' was renamed 'hogar': a value coming from an old cache or row is shown (and treated) as 'hogar'. */
+export function normalizeKind(kind: GroupKind): GroupKind {
+  return kind === 'casa' ? 'hogar' : kind
+}
 
 export const GROUP_KIND_LABELS: Record<GroupKind, string> = {
-  casa: 'Casa',
+  casa: 'Hogar',
+  hogar: 'Hogar',
   // Legacy kind: no longer offered, shown with a neutral label.
   viaje: 'Grupo',
   pareja: 'Pareja',
@@ -24,6 +30,14 @@ export interface MyGroup {
   /** Positive: the group owes me. Negative: I owe the group. */
   myNetCents: Cents
   lastActivity: string
+  /** I removed it from my list: it stays mine (debts, totals, reminders), only the list hides it. */
+  hiddenAt?: string | null
+}
+
+/** A group I removed from my account or that was archived for everybody (still readable: the history is kept). */
+export interface HiddenGroup extends MyGroup {
+  hiddenAt: string | null
+  archivedAt: string | null
 }
 
 export interface Group {
@@ -117,7 +131,7 @@ export function memberLabel(member: { displayName: string | null }): string {
 
 export const groupFormSchema = z.object({
   name: z.string().trim().min(1, 'Ponele un nombre al grupo.').max(60, 'Máximo 60 caracteres.'),
-  kind: z.enum(['casa', 'viaje', 'pareja', 'amigos'], { message: 'Elegí un tipo de grupo.' }),
+  kind: z.enum(['hogar', 'viaje', 'pareja', 'amigos'], { message: 'Elegí un tipo de grupo.' }),
 })
 
 export type GroupFormInput = z.input<typeof groupFormSchema>
@@ -265,3 +279,119 @@ export type SettlementFormValues = z.output<typeof settlementFormSchema>
 export function netDirection(netCents: Cents): 'owed' | 'owes' | 'even' {
   return netCents > 0 ? 'owed' : netCents < 0 ? 'owes' : 'even'
 }
+
+/** A person who asked to join a group (what the administrators see). */
+export interface JoinRequest {
+  id: string
+  userId: string
+  displayName: string | null
+  avatarUrl: string | null
+  createdAt: string
+}
+
+/** A request I made to join a group: still pending, or recently rejected. */
+export interface MyJoinRequest {
+  id: string
+  groupId: string
+  groupName: string
+  status: 'pending' | 'rejected'
+  createdAt: string
+}
+
+/** What asking to join with a code answers: in the group already, waiting for an administrator, or in right away (an old code). */
+export type JoinOutcome = { kind: 'joined'; groupId: string } | { kind: 'already_member'; groupId: string } | { kind: 'pending'; groupId: string | null }
+
+/** A real Moni user I shared a group with: only a name and a photo are ever known about them. */
+export interface Contact {
+  userId: string
+  displayName: string | null
+  avatarUrl: string | null
+}
+
+export interface HiddenContact extends Contact {
+  hidden: boolean
+  blocked: boolean
+}
+
+export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'expired'
+
+/** What an administrator sees about someone they invited. */
+export interface GroupInvitation {
+  id: string
+  userId: string
+  displayName: string | null
+  avatarUrl: string | null
+  status: InvitationStatus
+  createdAt: string
+}
+
+/** An invitation I received and have not answered. */
+export interface MyInvitation {
+  id: string
+  groupId: string
+  groupName: string
+  invitedByName: string
+  createdAt: string
+}
+
+export type RecurringPeriod = 'monthly' | 'bimonthly' | 'yearly'
+export type RecurringStatus = 'active' | 'paused'
+
+export const RECURRING_PERIOD_LABELS: Record<RecurringPeriod, string> = {
+  monthly: 'Todos los meses',
+  bimonthly: 'Cada 2 meses',
+  yearly: 'Una vez al año',
+}
+
+/** What a home group repeats (rent, utilities…): the saved definition, from Supabase. */
+export interface GroupRecurring {
+  id: string
+  name: string
+  templateSlug: string | null
+  amountCents: Cents
+  period: RecurringPeriod
+  anchorOn: IsoDate
+  nextDueOn: IsoDate
+  paidBy: string
+  paidByName: string
+  splitMethod: SplitMethod
+  status: RecurringStatus
+  participants: { userId: string; name: string; percent: number | null }[]
+}
+
+/** One period of a recurring expense: waiting for the one-tap confirmation, registered (it has its shared expense) or skipped. */
+export interface RecurringOccurrence {
+  id: string
+  recurringId: string
+  periodKey: IsoDate
+  dueOn: IsoDate
+  amountCents: Cents
+  status: 'pending' | 'registered' | 'skipped'
+  expenseId: string | null
+  resolvedAt: string | null
+}
+
+/** The values of the recurring expense form. Amounts are in pesos as typed; the repository converts them. */
+export interface RecurringFormValues {
+  name: string
+  templateSlug: string | null
+  amountCents: Cents
+  period: RecurringPeriod
+  anchorOn: IsoDate
+  paidBy: string
+  splitMethod: SplitMethod
+  participants: { userId: string; percent: number | null }[]
+}
+
+/** Quick picks for the name of a home expense. */
+export const HOME_EXPENSE_NAMES: readonly { name: string; templateSlug: string | null }[] = [
+  { name: 'Alquiler', templateSlug: 'hogar' },
+  { name: 'Expensas', templateSlug: 'hogar' },
+  { name: 'Luz', templateSlug: 'hogar' },
+  { name: 'Gas', templateSlug: 'hogar' },
+  { name: 'Agua', templateSlug: 'hogar' },
+  { name: 'Internet', templateSlug: 'suscripciones' },
+  { name: 'Supermercado', templateSlug: 'super' },
+  { name: 'Limpieza', templateSlug: 'hogar' },
+  { name: 'Otro gasto', templateSlug: 'otros' },
+]

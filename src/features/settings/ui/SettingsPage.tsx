@@ -27,6 +27,7 @@ import { Link } from 'react-router'
 import { ShoppingBasket } from 'lucide-react'
 import { useTheme } from '../api/useTheme'
 import { GroupLabel, ProfileGroup } from './ProfilePage'
+import { GroupNoticePrefs } from './GroupNoticePrefs'
 
 const THEME_CHOICES = [
   { mode: 'light', label: 'Claro', Icon: Sun },
@@ -129,6 +130,7 @@ export function SettingsPage() {
           to="/cuentas"
           trailing={accounts.data ? accounts.data.length : undefined}
         />
+        <SettingRow title="Categorías" subtitle="Creá, editá, colores e íconos" to="/categorias" />
         <SettingRow
           title={plus.isPlus ? 'Plan Moni Plus' : 'Pasar a Moni Plus'}
           subtitle={plus.isPlus && plus.expiresAt ? `Hasta el ${formatPlusExpiry(plus.expiresAt, true)}` : undefined}
@@ -159,6 +161,8 @@ export function SettingsPage() {
           />
         )}
       </ProfileGroup>
+
+      <GroupNoticePrefs />
 
       {FEATURES.pro && (
         <Link to="/pro" className="flex items-center gap-4 rounded-[20px] bg-gold px-4 py-3.5 text-on-bright">

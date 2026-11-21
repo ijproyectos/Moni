@@ -4,6 +4,7 @@ import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { InviteCodeCard } from '@/shared/ui/InviteCodeCard'
 import { inviteLink } from '../domain/groupView'
 import { prettyCode } from '../domain/inviteCode'
+import { ContactsInvite } from './ContactsInvite'
 import { GuestsFormSheet, type AddGuestResult } from './GuestsFormSheet'
 
 interface AddPersonSheetProps {
@@ -20,6 +21,10 @@ interface AddPersonSheetProps {
   onAdded?: (names: string[]) => void
   /** Only one person can be added (the partner of a couple). */
   single?: boolean
+  /** Only administrators can share the group's code; for anybody else the code card is not shown. */
+  canInvite?: boolean
+  /** The group already exists: its administrators can invite their Moni contacts from here. */
+  groupId?: string
   /** Pronoun for the guest copy ("La sumás" vs "Lo sumás"). */
   feminine?: boolean
 }
@@ -35,6 +40,8 @@ export function AddPersonSheet({
   onAdded,
   single,
   feminine,
+  canInvite = true,
+  groupId,
 }: AddPersonSheetProps) {
   const [guest, setGuest] = useState(false)
   if (guest) {
@@ -52,6 +59,8 @@ export function AddPersonSheet({
   return (
     <BottomSheet title={title} onClose={onClose}>
       <div className="flex flex-col gap-3">
+        {canInvite && groupId && <ContactsInvite groupId={groupId} />}
+        {canInvite && (
         <div className="rounded-[24px] border border-line bg-card p-4">
           <div className="flex items-start gap-3">
             <UserPlus aria-hidden="true" className="mt-1 size-6 shrink-0" />
@@ -80,6 +89,7 @@ export function AddPersonSheet({
             </p>
           )}
         </div>
+        )}
         <button
           type="button"
           onClick={() => setGuest(true)}

@@ -27,6 +27,10 @@ const SPEECH_MESSAGES: Record<SpeechError, string> = {
   denied: 'No pude usar el micrófono. Podés escribirme lo que gastaste o cobraste.',
   no_speech: 'No te escuché. ¿Probamos de nuevo o me lo escribís?',
   unavailable: 'El dictado no está disponible ahora. Podés escribirme lo que gastaste o cobraste.',
+  service: 'El dictado del dispositivo no está activo. Podés escribirme lo que gastaste o cobraste.',
+  no_mic: 'No encuentro un micrófono. Podés escribirme lo que gastaste o cobraste.',
+  network: 'No hay conexión con el servicio de voz. Probá de nuevo o escribime lo que gastaste o cobraste.',
+  unsupported: 'Este navegador no permite dictar. Podés escribirme lo que gastaste o cobraste.',
 }
 
 /** Waits this long without new words before it stops by itself: room to think between expenses. */

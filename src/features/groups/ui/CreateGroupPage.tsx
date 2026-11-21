@@ -22,14 +22,16 @@ import { Avatar, SectionLabel, SplitBar, Toggle } from '@/shared/ui/kit'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
 import type { GroupKind } from '@/shared/lib/database.types'
+import { normalizeKind, type GroupFormValues } from '../domain/group'
 import { useCreateGroup } from '../api/useGroups'
-import { DEFAULT_RECURRING, patchOverlay, type Recurring } from '../mock/overlayStore'
+import { patchOverlay, type Recurring } from '../mock/overlayStore'
 import { useAddGuest } from '../api/useGroupGuests'
 import { useSetGroupPhoto } from '../api/useGroupPhotos'
 import { optimizePhoto } from '@/shared/lib/imageOptimize'
 import { GroupPhotoPicker } from './GroupPhotoPicker'
 import { FEATURES } from '@/shared/config/features'
 import { AddPersonSheet } from './AddPersonSheet'
+import { ContactsInvite } from './ContactsInvite'
 import { InvitePanel } from './InvitePanel'
 import { fieldClass } from './styles'
 
@@ -52,8 +54,8 @@ const OPTIONS: {
     icon: UsersRound,
   },
   {
-    kind: 'casa',
-    title: 'Casa',
+    kind: 'hogar',
+    title: 'Hogar',
     text: 'Con quienes vivís: alquiler, expensas, luz e internet. Se repite todos los meses.',
     icon: House,
   },
@@ -119,13 +121,15 @@ interface PendingGuest {
 const TITLES: Record<GroupKind, string> = {
   pareja: 'Gastos de pareja',
   amigos: 'Grupo de amigos',
-  casa: 'Gastos de casa',
+  casa: 'Gastos del hogar',
+  hogar: 'Gastos del hogar',
   viaje: 'Viaje en grupo',
 }
 const DEFAULT_NAMES: Record<GroupKind, string> = {
   pareja: 'Nosotros',
   amigos: '',
   casa: '',
+  hogar: '',
   viaje: '',
 }
 const RECURRING_ICONS = { house: House, plug: Plug, refresh: RefreshCw }
@@ -160,7 +164,6 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
   const [guests, setGuests] = useState<PendingGuest[]>([])
   const [adding, setAdding] = useState(false)
   const [split, setSplit] = useState<'half' | 'income'>('half')
-  const [recurring, setRecurring] = useState<Recurring[]>(DEFAULT_RECURRING)
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<{ id: string; name: string } | null>(null)
   // Free plan: the server rejects a second active group; show the Plus upsell instead of an error.
@@ -172,7 +175,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
     setError(null)
     if (!name.trim()) return setError('Ponele un nombre al grupo.')
     try {
-      const groupId = await create.mutateAsync({ name: name.trim(), kind })
+      const groupId = await create.mutateAsync({ name: name.trim(), kind: normalizeKind(kind) as GroupFormValues['kind'] })
       // The group exists from here on: a person that could not be added is reported, not a reason to lose the group.
       const failed: string[] = []
       for (const g of guests) {
@@ -184,7 +187,6 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
       }
       patchOverlay(groupId, {
         coupleSplit: split,
-        recurring: kind === 'casa' ? recurring : [],
       })
       let photoFailed = false
       if (photo) {
@@ -218,7 +220,10 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
     }
     return (
       <BottomSheet title="Invitá a la gente" onClose={finish}>
-        <InvitePanel groupId={created.id} groupName={created.name} onDone={finish} />
+        <div className="flex flex-col gap-5">
+          <ContactsInvite groupId={created.id} />
+          <InvitePanel groupId={created.id} groupName={created.name} onDone={finish} />
+        </div>
       </BottomSheet>
     )
   }
@@ -250,7 +255,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
           onChange={(e) => setName(e.target.value)}
           aria-label="Nombre"
           maxLength={60}
-          placeholder={kind === 'casa' ? 'Ej: Depto Palermo' : 'Ej: Asado del viernes'}
+          placeholder={kind === 'hogar' ? 'Ej: Depto Palermo' : 'Ej: Asado del viernes'}
           className={fieldClass}
         />
         <SectionLabel>
@@ -342,7 +347,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
         ) : (
           <>
             <SectionLabel className="mt-1">
-              {kind === 'casa' ? 'Quiénes viven' : 'Quiénes están'}
+              {kind === 'hogar' ? 'Quiénes viven' : 'Quiénes están'}
             </SectionLabel>
             <div className="rounded-[24px] border border-line bg-card px-4 py-2">
               <ul className="divide-y divide-line">
@@ -377,11 +382,10 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
                 <Plus aria-hidden="true" className="size-5" /> Agregar persona
               </button>
             </div>
-            {kind === 'casa' && recurring.length > 0 && (
-              <>
-                <SectionLabel className="mt-1">Gastos que se repiten cada mes</SectionLabel>
-                <RecurringList items={recurring} onChange={setRecurring} />
-              </>
+            {kind === 'hogar' && (
+              <p className="text-[15px] leading-5 text-text-muted">
+                Después de crear el grupo podés cargar tus gastos recurrentes (alquiler, expensas, servicios) desde Editar grupo.
+              </p>
             )}
             <p className="text-[15px] leading-5 text-text-muted">
               Cuando crees el grupo te damos un código para los que tienen Moni. A los que no, los

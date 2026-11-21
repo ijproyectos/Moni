@@ -26,6 +26,14 @@ vi.mock('../api/useGroupGuests', () => ({
 }))
 vi.mock('../api/useNewMemberNotice', () => ({ useNewMemberNotice: () => undefined }))
 vi.mock('../api/useGroups', () => ({
+  useIsGroupAdmin: () => true,
+  useContacts: () => ({ data: [] }),
+  useHiddenContacts: () => ({ data: [] }),
+  useGroupMembers: () => ({ data: [] }),
+  useGroupInvitations: () => ({ data: [] }),
+  useInviteContact: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCancelInvitation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useSetContactPref: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useGroupInvites: () => ({
     data: [
       {

@@ -17,6 +17,14 @@ describe('createGroup free plan limit', () => {
   it('keeps other errors untouched', async () => {
     const error = { code: '22023', message: 'invalid_group_name' }
     rpc.mockResolvedValue({ data: null, error })
-    await expect(createGroup({ name: ' ', kind: 'casa' })).rejects.toBe(error)
+    await expect(createGroup({ name: ' ', kind: 'hogar' })).rejects.toBe(error)
+  })
+
+  it('sends Hogar as "casa": the database takes it before and after the rename (publishing order does not matter)', async () => {
+    rpc.mockResolvedValue({ data: 'g1', error: null })
+    await createGroup({ name: 'Depto', kind: 'hogar' })
+    expect(rpc).toHaveBeenLastCalledWith('create_group', { p_name: 'Depto', p_kind: 'casa' })
+    await createGroup({ name: 'Amigos', kind: 'amigos' })
+    expect(rpc).toHaveBeenLastCalledWith('create_group', { p_name: 'Amigos', p_kind: 'amigos' })
   })
 })

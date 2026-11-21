@@ -13,8 +13,19 @@ const state = vi.hoisted(() => ({
   confirm: vi.fn(),
   reject: vi.fn(),
 }))
+vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'me' } }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({
   useAccounts: () => ({ data: [], isLoading: false }),
+}))
+const joinAnswer = vi.hoisted(() => ({
+  approve: vi.fn().mockResolvedValue('g1'),
+  reject: vi.fn().mockResolvedValue(undefined),
+  respond: vi.fn().mockResolvedValue('g1'),
+}))
+vi.mock('@/features/groups/api/useGroups', () => ({
+  useApproveJoinRequest: () => ({ mutateAsync: joinAnswer.approve, isPending: false }),
+  useRejectJoinRequest: () => ({ mutateAsync: joinAnswer.reject, isPending: false }),
+  useRespondInvitation: () => ({ mutateAsync: joinAnswer.respond, isPending: false }),
 }))
 vi.mock('../api/useDebts', () => ({
   useNotices: () => state.notices,
@@ -71,7 +82,7 @@ describe('Avisos de grupos', () => {
   it('a reminder says who asks, how much and which group, and opens the group', () => {
     state.notices = { data: [notice()], isLoading: false, isError: false }
     renderPage()
-    expect(screen.getByText('Ana te recuerda que le debés $30.000 del grupo Casa.')).toBeVisible()
+    expect(screen.getByText('Ana te recordó que tenés un pago pendiente de $30.000.')).toBeVisible()
     expect(screen.getByRole('link', { name: 'Abrir el grupo' })).toHaveAttribute(
       'href',
       '/grupos/g1',
@@ -166,7 +177,7 @@ describe('Avisos de grupos', () => {
     }
     state.reports = { data: [report] }
     const user = renderPage()
-    expect(screen.getByText(/Ana informó que te pagó \$30\.000/)).toBeVisible()
+    expect(screen.getByText(/Ana indicó que te pagó \$30\.000/)).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Confirmar recepción' }))
     // Nothing is credited yet: the receiver must choose an account (there is no way to skip it).
     expect(state.confirm).not.toHaveBeenCalled()
@@ -200,7 +211,115 @@ describe('Avisos de grupos', () => {
       isError: false,
     }
     renderPage()
-    expect(screen.getByText(/Ana confirmó que recibió tu pago/)).toBeVisible()
-    expect(screen.getByText(/todavía no recibió tu pago/)).toBeVisible()
+    expect(screen.getByText(/Ana confirmó tu pago de/)).toBeVisible()
+    expect(screen.getByText(/todavía no confirmó tu pago/)).toBeVisible()
+  })
+})
+
+describe('Avisos de grupos: solicitudes de ingreso', () => {
+  beforeEach(() => {
+    joinAnswer.approve.mockClear()
+    joinAnswer.reject.mockClear()
+  })
+
+  it('an administrator can accept or refuse a request right from the notice', async () => {
+    state.notices = {
+      data: [notice({ id: 'j1', kind: 'join_request', actorName: 'Dani', groupName: 'Hogar', amountCents: 0, requestId: 'req-1' })],
+      isLoading: false,
+      isError: false,
+    }
+    const user = renderPage()
+    expect(screen.getByText('Dani quiere entrar al grupo Hogar.')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: /Aceptar/ }))
+    expect(joinAnswer.approve).toHaveBeenCalledWith('req-1')
+    await user.click(screen.getByRole('button', { name: 'No aceptar' }))
+    expect(joinAnswer.reject).toHaveBeenCalledWith('req-1')
+  })
+
+  it('tells the person their request was accepted (and opens the group) or refused (and offers nothing of the group)', () => {
+    state.notices = {
+      data: [
+        notice({ id: 'a', kind: 'join_approved', actorName: 'Ana', groupName: 'Hogar', amountCents: 0 }),
+        notice({ id: 'r', kind: 'join_rejected', actorName: 'Ana', groupName: 'Viaje', amountCents: 0 }),
+      ],
+      isLoading: false,
+      isError: false,
+    }
+    renderPage()
+    expect(screen.getByText('Ana te aceptó en el grupo Hogar. Ya podés verlo.')).toBeVisible()
+    expect(screen.getByText('Tu solicitud para entrar al grupo Viaje no fue aceptada.')).toBeVisible()
+    // Only the accepted one links to the group: the refused person has no access to it.
+    expect(screen.getAllByRole('link', { name: /Abrir el grupo/ })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: /Aceptar/ })).toBeNull()
+  })
+})
+
+describe('Avisos de grupos: invitaciones directas', () => {
+  it('the invited person accepts or declines from the notice; nothing of the group is offered before', async () => {
+    joinAnswer.respond.mockClear()
+    state.notices = {
+      data: [notice({ id: 'i1', kind: 'group_invitation', actorName: 'Ana', groupName: 'Hogar', amountCents: 0, invitationId: 'inv-1' })],
+      isLoading: false,
+      isError: false,
+    }
+    const user = renderPage()
+    expect(screen.getByText('Ana te invitó al grupo Hogar.')).toBeVisible()
+    expect(screen.queryByRole('link', { name: /Abrir el grupo/ })).toBeNull()
+    await user.click(screen.getByRole('button', { name: /Aceptar/ }))
+    expect(joinAnswer.respond).toHaveBeenCalledWith({ invitationId: 'inv-1', accept: true })
+    await user.click(screen.getByRole('button', { name: 'No, gracias' }))
+    expect(joinAnswer.respond).toHaveBeenCalledWith({ invitationId: 'inv-1', accept: false })
+  })
+
+  it('the administrator is told when it was accepted and can open the group', () => {
+    state.notices = {
+      data: [notice({ id: 'i2', kind: 'invitation_accepted', actorName: 'Beto', groupName: 'Hogar', amountCents: 0 })],
+      isLoading: false,
+      isError: false,
+    }
+    renderPage()
+    expect(screen.getByText('Beto aceptó tu invitación al grupo Hogar.')).toBeVisible()
+    expect(screen.getByRole('link', { name: /Abrir el grupo/ })).toBeInTheDocument()
+  })
+})
+
+describe('Avisos de grupos: pagos por confirmar y enlace desde el push', () => {
+  const report = (over: Record<string, unknown> = {}) => ({
+    id: 'rep-1', groupId: 'g1', fromUserId: 'ana', toUserId: 'me', amountCents: 15_000_00, status: 'reported',
+    reportedAt: '2026-11-21T10:00:00Z', resolvedAt: null, ...over,
+  })
+
+  it('tells the creditor how many payments wait for their confirmation', () => {
+    state.notices = { data: [notice({ id: 'p1', kind: 'payment_reported', reportId: 'rep-1' })], isLoading: false, isError: false }
+    state.reports = { data: [report()] }
+    renderPage()
+    expect(screen.getByText('Tenés un pago pendiente de confirmar')).toBeVisible()
+    state.reports = { data: [] }
+  })
+
+  it('does not say that something is pending once it was answered or when the payment was made by me', () => {
+    state.notices = { data: [notice({ id: 'p1', kind: 'payment_reported', reportId: 'rep-1' })], isLoading: false, isError: false }
+    state.reports = { data: [report({ status: 'confirmed' }), report({ id: 'rep-2', fromUserId: 'me', toUserId: 'ana' })] }
+    renderPage()
+    expect(screen.queryByText(/pendiente de confirmar|pendientes de confirmar/)).toBeNull()
+    state.reports = { data: [] }
+  })
+
+  it('a push opens the tray on its notice (?aviso=<id>): it is highlighted and the group is shown on the card', () => {
+    state.notices = {
+      data: [notice({ id: 'a', groupName: 'Hogar' }), notice({ id: 'b', kind: 'payment_reported', groupName: 'Viaje' })],
+      isLoading: false,
+      isError: false,
+    }
+    render(
+      <MemoryRouter initialEntries={['/grupos/avisos?aviso=b']}>
+        <ToastProvider>
+          <GroupNoticesPage />
+        </ToastProvider>
+      </MemoryRouter>,
+    )
+    expect(document.getElementById('aviso-b')).toHaveClass('ring-2')
+    expect(document.getElementById('aviso-a')).not.toHaveClass('ring-2')
+    expect(screen.getByText('Grupo: Viaje')).toBeInTheDocument()
   })
 })

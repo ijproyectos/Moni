@@ -1,6 +1,6 @@
 import { Bell, Check, Copy } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import mascotUrl from '@/assets/mascot/expresion_feliz.svg'
 import { formatRelativeDay } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
@@ -12,7 +12,9 @@ import { EmptyState } from '@/shared/ui/EmptyState'
 import { Avatar, Page } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { Skeleton } from '@/shared/ui/Skeleton'
+import { useAuth } from '@/features/auth/api/authContext'
 import { useToast } from '@/shared/ui/toastContext'
+import { useApproveJoinRequest, useRejectJoinRequest, useRespondInvitation } from '@/features/groups/api/useGroups'
 import {
   useConfirmPayment,
   useMarkNoticesRead,
@@ -37,8 +39,15 @@ export function GroupNoticesPage() {
   const confirm = useConfirmPayment()
   const [confirming, setConfirming] = useState<string | null>(null)
   const reject = useRejectPayment()
+  const approveJoin = useApproveJoinRequest()
+  const rejectJoin = useRejectJoinRequest()
+  const respondInvitation = useRespondInvitation()
   const [paying, setPaying] = useState<Notice | null>(null)
   const today = todayIso()
+  const { user } = useAuth()
+  // A tapped push opens this tray with the notice it is about (?aviso=<id>): it is scrolled into view and highlighted.
+  const target = useSearchParams()[0].get('aviso')
+  const toConfirm = (reports.data ?? []).filter((r) => r.status === 'reported' && r.toUserId === user?.id).length
   // What was unread when the page opened stays highlighted while the person reads it.
   const fresh = useRef<Set<string> | null>(null)
   if (fresh.current === null && notices.data) {
@@ -67,6 +76,11 @@ export function GroupNoticesPage() {
   return (
     <Page>
       <PageHeader title="Avisos de grupos" fallbackTo="/grupos" />
+      {toConfirm > 0 && (
+        <p role="status" className="rounded-[20px] bg-tint-gold px-4 py-3 text-[16px] font-extrabold leading-6 text-ink">
+          {toConfirm === 1 ? 'Tenés un pago pendiente de confirmar' : `Tenés ${toConfirm} pagos pendientes de confirmar`}
+        </p>
+      )}
       {notices.isLoading ? (
         <div role="status" aria-label="Cargando avisos" className="flex flex-col gap-3">
           <Skeleton className="h-28" />
@@ -92,15 +106,18 @@ export function GroupNoticesPage() {
             return (
               <li
                 key={n.id}
+                id={`aviso-${n.id}`}
+                ref={n.id === target ? (el) => el?.scrollIntoView?.({ block: 'center' }) : undefined}
                 className={cn(
                   'rounded-[24px] border bg-card p-4',
-                  fresh.current?.has(n.id) ? 'border-ink' : 'border-line',
+                  n.id === target ? 'border-2 border-ink ring-2 ring-lime' : fresh.current?.has(n.id) ? 'border-ink' : 'border-line',
                 )}
               >
                 <div className="flex items-start gap-3">
                   <Avatar name={n.actorName} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[17px] font-extrabold leading-6">{noticeText(n)}</p>
+                    <p className="text-[13px] font-bold text-text-muted">Grupo: {n.groupName}</p>
                     <p className="flex items-center gap-2 text-[14px] text-text-muted">
                       {formatRelativeDay(n.createdAt.slice(0, 10), today)}
                       {fresh.current?.has(n.id) && (
@@ -175,12 +192,76 @@ export function GroupNoticesPage() {
                       </button>
                     </>
                   )}
-                  <Link
-                    to={`/grupos/${n.groupId}`}
-                    className={cn(pill, 'border-2 border-line bg-card text-ink')}
-                  >
-                    <Bell aria-hidden="true" className="size-4" /> Abrir el grupo
-                  </Link>
+                  {n.kind === 'join_request' && n.requestId && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={approveJoin.isPending || rejectJoin.isPending}
+                        onClick={() =>
+                          void run(
+                            () => approveJoin.mutateAsync(n.requestId as string),
+                            `${n.actorName} ya es parte del grupo`,
+                          )
+                        }
+                        className={cn(pill, 'bg-lime')}
+                      >
+                        <Check aria-hidden="true" className="size-4" /> Aceptar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={approveJoin.isPending || rejectJoin.isPending}
+                        onClick={() =>
+                          void run(() => rejectJoin.mutateAsync(n.requestId as string), 'Rechazaste la solicitud')
+                        }
+                        className={cn(pill, 'border-2 border-line bg-card text-ink')}
+                      >
+                        No aceptar
+                      </button>
+                    </>
+                  )}
+                  {n.kind === 'group_invitation' && n.invitationId && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={respondInvitation.isPending}
+                        onClick={() =>
+                          void run(
+                            () => respondInvitation.mutateAsync({ invitationId: n.invitationId as string, accept: true }),
+                            `Ya sos parte de ${n.groupName}`,
+                          )
+                        }
+                        className={cn(pill, 'bg-lime')}
+                      >
+                        <Check aria-hidden="true" className="size-4" /> Aceptar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={respondInvitation.isPending}
+                        onClick={() =>
+                          void run(
+                            () => respondInvitation.mutateAsync({ invitationId: n.invitationId as string, accept: false }),
+                            'Rechazaste la invitación',
+                          )
+                        }
+                        className={cn(pill, 'border-2 border-line bg-card text-ink')}
+                      >
+                        No, gracias
+                      </button>
+                    </>
+                  )}
+                  {n.kind === 'recurring_due' && (
+                    <Link to={`/grupos/${n.groupId}/recurrentes`} className={cn(pill, 'bg-lime')}>
+                      <Check aria-hidden="true" className="size-4" /> Revisar y registrar
+                    </Link>
+                  )}
+                  {n.kind !== 'join_rejected' && n.kind !== 'group_invitation' && n.kind !== 'recurring_due' && (
+                    <Link
+                      to={`/grupos/${n.groupId}`}
+                      className={cn(pill, 'border-2 border-line bg-card text-ink')}
+                    >
+                      <Bell aria-hidden="true" className="size-4" /> Abrir el grupo
+                    </Link>
+                  )}
                 </div>
               </li>
             )

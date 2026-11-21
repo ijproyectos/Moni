@@ -1,10 +1,7 @@
 import { ChevronRight } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { AssistantSheet } from '@/features/assistant/ui/AssistantSheet'
-import { useProfile } from '@/features/auth/api/useProfile'
 import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
-import { useCategories } from '@/features/categories/api/useCategories'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { useAnts } from '@/features/insights/api/useAnts'
@@ -112,12 +109,9 @@ const BARS = [40, 70, 50, 100, 36]
 
 export function MorePage() {
   const today = todayIso()
-  const profile = useProfile()
-  const [asking, setAsking] = useState(false)
 
   const savings = useSavings()
   const subscriptions = useSubscriptions()
-  const categories = useCategories()
   const trips = useTrips()
   const ants = useAnts(today)
   const budget = useDailyAllowance()
@@ -136,6 +130,8 @@ export function MorePage() {
   const tripLabel = trip ? tripLabelOf(trip, today) : null
   const antsTotal = ants.data?.monthTotalCents ?? 0
   const allowance = budget.allowance
+
+  const moreRows = FEATURES.debts || FEATURES.aguinaldo || FEATURES.pro
 
   const budgetCell: { value: string; sub: string; tone?: 'bad' } =
     allowance.kind === 'ok'
@@ -201,24 +197,18 @@ export function MorePage() {
           />
         </ul>
 
+        {moreRows && (
+          <>
         <h2 className="mt-7 text-[13px] font-bold uppercase tracking-[0.14em] text-text-muted">Más</h2>
         <ul className="mt-1 divide-y divide-line">
-          <MoreRow to="/categorias" title="Categorías" value={(categories.data ?? []).length > 0 ? 'Editar' : 'Creá las tuyas'} />
-          <MoreRow title="¿Me conviene?" value="Preguntale a Moni" onClick={() => setAsking(true)} />
-          <MoreRow to="/tarjetas/simulador" title="Simulador de cuotas" value="Simulá una compra" />
           {FEATURES.debts && <MoreRow to="/deudas" title="Deudas" value="Lo que debés y te deben" />}
           {FEATURES.aguinaldo && <MoreRow to="/aguinaldo" title="Aguinaldo" value="Repartilo" />}
           {FEATURES.pro && <MoreRow to="/pro" title="Integraciones" value="Billeteras y bancos" />}
         </ul>
+          </>
+        )}
       </div>
 
-      {asking && (
-        <AssistantSheet
-          name={profile.data?.display_name ?? null}
-          initialDraft="Quiero comprar algo de $ ¿Me conviene?"
-          onClose={() => setAsking(false)}
-        />
-      )}
     </section>
   )
 }

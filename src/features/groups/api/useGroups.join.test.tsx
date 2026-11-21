@@ -10,7 +10,7 @@ const OLD = '11111111-1111-4111-8111-111111111111'
 const NEW = '22222222-2222-4222-8222-222222222222'
 
 const repo = vi.hoisted(() => ({
-  joinGroup: vi.fn(),
+  requestJoinGroup: vi.fn(),
   listMyGroups: vi.fn(),
 }))
 vi.mock('./groupsRepository', () => repo)
@@ -38,7 +38,7 @@ function setup() {
 
 describe('useJoinGroup', () => {
   beforeEach(() => {
-    repo.joinGroup.mockReset()
+    repo.requestJoinGroup.mockReset()
     repo.listMyGroups.mockReset()
   })
 
@@ -47,9 +47,9 @@ describe('useJoinGroup', () => {
     repo.listMyGroups.mockImplementation(async () =>
       joined ? [group(OLD), group(NEW)] : [group(OLD)],
     )
-    repo.joinGroup.mockImplementation(async () => {
+    repo.requestJoinGroup.mockImplementation(async () => {
       joined = true
-      return NEW
+      return { kind: 'joined', groupId: NEW }
     })
     const { client, result } = setup()
     // A previously loaded (and still "fresh") list that lacks the new group.
@@ -60,7 +60,7 @@ describe('useJoinGroup', () => {
       outcome = await result.current.mutateAsync('ABCD2345')
     })
 
-    expect(outcome).toEqual({ groupId: NEW, alreadyMember: false })
+    expect(outcome).toEqual({ groupId: NEW, alreadyMember: false, pending: false })
     await waitFor(() =>
       expect(client.getQueryData<MyGroup[]>(groupKeys.list(USER))?.map((g) => g.id)).toEqual([
         OLD,
@@ -71,23 +71,23 @@ describe('useJoinGroup', () => {
 
   it('flags a code used by someone who is already a member', async () => {
     repo.listMyGroups.mockResolvedValue([group(OLD)])
-    repo.joinGroup.mockResolvedValue(OLD)
+    repo.requestJoinGroup.mockResolvedValue({ kind: 'already_member', groupId: OLD })
     const { result } = setup()
     let outcome: unknown
     await act(async () => {
       outcome = await result.current.mutateAsync('ABCD2345')
     })
-    expect(outcome).toEqual({ groupId: OLD, alreadyMember: true })
+    expect(outcome).toEqual({ groupId: OLD, alreadyMember: true, pending: false })
   })
 
   it('still joins when the membership check cannot load', async () => {
     repo.listMyGroups.mockRejectedValue(new Error('network'))
-    repo.joinGroup.mockResolvedValue(NEW)
+    repo.requestJoinGroup.mockResolvedValue({ kind: 'joined', groupId: NEW })
     const { result } = setup()
     let outcome: unknown
     await act(async () => {
       outcome = await result.current.mutateAsync('ABCD2345')
     })
-    expect(outcome).toEqual({ groupId: NEW, alreadyMember: false })
+    expect(outcome).toEqual({ groupId: NEW, alreadyMember: false, pending: false })
   })
 })

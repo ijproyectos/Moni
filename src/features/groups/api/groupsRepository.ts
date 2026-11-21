@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type {
   Group as GroupRow,
+  GroupRole,
   SettlementRow,
   SharedExpenseRow,
   SharedExpenseSplitRow,
@@ -13,6 +14,20 @@ import type {
   GroupFormValues,
   GroupInvite,
   GroupMember,
+  Contact,
+  GroupInvitation,
+  GroupRecurring,
+  RecurringFormValues,
+  RecurringOccurrence,
+  RecurringPeriod,
+  RecurringStatus,
+  HiddenContact,
+  HiddenGroup,
+  InvitationStatus,
+  MyInvitation,
+  JoinOutcome,
+  JoinRequest,
+  MyJoinRequest,
   MemberBalance,
   MyGroup,
   Settlement,
@@ -20,6 +35,7 @@ import type {
   SharedExpense,
   SharedExpenseFormValues,
 } from '../domain/group'
+import { normalizeKind } from '../domain/group'
 
 const toNumeric = (cents: number) => Number(fromCents(cents))
 
@@ -43,7 +59,7 @@ function toGroup(row: GroupRow): Group {
   return {
     id: row.id,
     name: row.name,
-    kind: row.kind,
+    kind: normalizeKind(row.kind),
     createdBy: row.created_by,
     archivedAt: row.archived_at,
     createdAt: row.created_at,
@@ -92,12 +108,54 @@ export async function listMyGroups(): Promise<MyGroup[]> {
   return data.map((row) => ({
     id: row.id,
     name: row.name,
-    kind: row.kind,
+    kind: normalizeKind(row.kind),
     role: row.role,
     memberCount: row.member_count,
     myNetCents: toCents(row.my_net),
     lastActivity: row.last_activity,
+    hiddenAt: row.hidden_at ?? null,
   }))
+}
+
+export async function listHiddenAndArchivedGroups(): Promise<HiddenGroup[]> {
+  const { data, error } = await getSupabase().rpc('get_my_hidden_and_archived_groups')
+  if (error) throw error
+  return data.map((row) => ({
+    id: row.id,
+    name: row.name,
+    kind: normalizeKind(row.kind),
+    role: row.role,
+    memberCount: row.member_count,
+    myNetCents: toCents(row.my_net),
+    lastActivity: row.last_activity,
+    hiddenAt: row.hidden_at,
+    archivedAt: row.archived_at,
+  }))
+}
+
+/** Removes the group from MY account only: I stay a member and nothing changes for the others. */
+export async function hideGroup(groupId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('hide_group_for_me', { p_group: groupId })
+  if (error) throw error
+}
+
+export async function restoreGroup(groupId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('restore_group_for_me', { p_group: groupId })
+  if (error) throw error
+}
+
+/** Administrators only. Archives (never deletes); the server refuses it while there are debts or unresolved payments. */
+export async function archiveGroup(groupId: string, nameConfirmation: string): Promise<void> {
+  const { error } = await getSupabase().rpc('archive_group_for_all', {
+    p_group: groupId,
+    p_name_confirmation: nameConfirmation,
+  })
+  if (error) throw error
+}
+
+export async function setMemberRole(groupId: string, userId: string, role: GroupRole): Promise<void> {
+  const { error } = await getSupabase().rpc('set_member_role', { p_group: groupId, p_user: userId, p_role: role })
+  if (error) throw error
 }
 
 export async function getGroup(groupId: string): Promise<Group | null> {
@@ -193,7 +251,9 @@ export async function listSettlements(groupId: string): Promise<Settlement[]> {
 export async function createGroup(values: GroupFormValues): Promise<string> {
   const { data, error } = await getSupabase().rpc('create_group', {
     p_name: values.name,
-    p_kind: values.kind,
+    // "Hogar" is sent with its old name: the database accepts 'casa' before and after the rename (it stores it as 'hogar'), so
+    // the app works the same whichever side is published first.
+    p_kind: values.kind === 'hogar' ? 'casa' : values.kind,
   })
   // Free plan: a second active group raises 'plus_required' (see 20261106000000_moni_plus.sql).
   if (error) throw mapPlusRequired(error)
@@ -219,6 +279,272 @@ export async function joinGroup(code: string): Promise<string> {
   // exception would roll back); surface it as the uniform 'invite_invalid' error.
   if (!data) throw new Error('invite_invalid')
   return data
+}
+
+/** True when the database does not have the function yet (it is applied together with the app that uses it). */
+const isMissingFunction = (error: { code?: string }) => error.code === 'PGRST202' || error.code === '42883'
+
+/**
+ * Asks to join a group with a code. Codes that need approval leave a pending request (the person is NOT in the group, and sees
+ * nothing of it, until an administrator accepts); old codes still join right away. Against a database without the requests
+ * (not applied yet) it falls back to the direct join, so the app keeps working.
+ */
+export async function requestJoinGroup(code: string): Promise<JoinOutcome> {
+  const { data, error } = await getSupabase().rpc('request_join_group', { p_code: code })
+  if (error) {
+    if (isMissingFunction(error)) return { kind: 'joined', groupId: await joinGroup(code) }
+    throw error
+  }
+  const row = data[0]
+  if (!row || row.result === 'invalid') throw new Error('invite_invalid')
+  if (row.result === 'pending') return { kind: 'pending', groupId: row.group_id }
+  return { kind: row.result === 'already_member' ? 'already_member' : 'joined', groupId: row.group_id as string }
+}
+
+/** The requests I made (pending, or rejected in the last week). Empty if the database does not have them yet. */
+export async function listMyJoinRequests(): Promise<MyJoinRequest[]> {
+  const { data, error } = await getSupabase().rpc('get_my_join_requests')
+  if (error) {
+    if (isMissingFunction(error)) return []
+    throw error
+  }
+  return data.map((r) => ({
+    id: r.request_id,
+    groupId: r.group_id,
+    groupName: r.group_name,
+    status: r.status === 'rejected' ? 'rejected' : 'pending',
+    createdAt: r.created_at,
+  }))
+}
+
+/** Pending requests of a group: administrators only (the server refuses anybody else). */
+export async function listJoinRequests(groupId: string): Promise<JoinRequest[]> {
+  const { data, error } = await getSupabase().rpc('get_join_requests', { p_group: groupId })
+  if (error) {
+    if (isMissingFunction(error)) return []
+    throw error
+  }
+  return data.map((r) => ({
+    id: r.request_id,
+    userId: r.user_id,
+    displayName: r.display_name,
+    avatarUrl: r.avatar_url,
+    createdAt: r.created_at,
+  }))
+}
+
+export async function approveJoinRequest(requestId: string): Promise<string | null> {
+  const { data, error } = await getSupabase().rpc('approve_join_request', { p_request: requestId })
+  if (error) throw error
+  return data
+}
+
+export async function rejectJoinRequest(requestId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('reject_join_request', { p_request: requestId })
+  if (error) throw error
+}
+
+export async function cancelJoinRequest(requestId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('cancel_join_request', { p_request: requestId })
+  if (error) throw error
+}
+
+/** My contacts: real people I shared a group with (name and photo only). Empty if the database does not have them yet. */
+export async function listContacts(): Promise<Contact[]> {
+  const { data, error } = await getSupabase().rpc('get_my_contacts')
+  if (error) {
+    if (isMissingFunction(error)) return []
+    throw error
+  }
+  return data.map((r) => ({ userId: r.user_id, displayName: r.display_name, avatarUrl: r.avatar_url }))
+}
+
+export async function listHiddenContacts(): Promise<HiddenContact[]> {
+  const { data, error } = await getSupabase().rpc('get_hidden_contacts')
+  if (error) {
+    if (isMissingFunction(error)) return []
+    throw error
+  }
+  return data.map((r) => ({
+    userId: r.user_id,
+    displayName: r.display_name,
+    avatarUrl: r.avatar_url,
+    hidden: r.hidden,
+    blocked: r.blocked,
+  }))
+}
+
+/** Hides or blocks a contact (both false: shows it again). Blocking also stops that person from inviting me. */
+export async function setContactPref(contactId: string, hidden: boolean, blocked: boolean): Promise<void> {
+  const { error } = await getSupabase().rpc('set_contact_pref', { p_contact: contactId, p_hidden: hidden, p_blocked: blocked })
+  if (error) throw error
+}
+
+/** Administrators only. The person gets a notice and decides: nobody is added without accepting. */
+export async function inviteContact(groupId: string, userId: string): Promise<string> {
+  const { data, error } = await getSupabase().rpc('invite_contact', { p_group: groupId, p_user: userId })
+  if (error) throw error
+  return data
+}
+
+/** Answers an invitation I received. Returns the group id when I accepted, null otherwise. */
+export async function respondInvitation(invitationId: string, accept: boolean): Promise<string | null> {
+  const { data, error } = await getSupabase().rpc('respond_group_invitation', { p_invitation: invitationId, p_accept: accept })
+  if (error) throw error
+  return data
+}
+
+export async function cancelInvitation(invitationId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('cancel_group_invitation', { p_invitation: invitationId })
+  if (error) throw error
+}
+
+export async function listGroupInvitations(groupId: string): Promise<GroupInvitation[]> {
+  const { data, error } = await getSupabase().rpc('get_group_invitations', { p_group: groupId })
+  if (error) {
+    if (isMissingFunction(error)) return []
+    throw error
+  }
+  return data.map((r) => ({
+    id: r.invitation_id,
+    userId: r.user_id,
+    displayName: r.display_name,
+    avatarUrl: r.avatar_url,
+    status: (['accepted', 'declined', 'expired'].includes(r.status) ? r.status : 'pending') as InvitationStatus,
+    createdAt: r.created_at,
+  }))
+}
+
+export async function listMyInvitations(): Promise<MyInvitation[]> {
+  const { data, error } = await getSupabase().rpc('get_my_group_invitations')
+  if (error) {
+    if (isMissingFunction(error)) return []
+    throw error
+  }
+  return data.map((r) => ({
+    id: r.invitation_id,
+    groupId: r.group_id,
+    groupName: r.group_name,
+    invitedByName: r.invited_by_name,
+    createdAt: r.created_at,
+  }))
+}
+
+/** Administrators only: saves the new name in Supabase (every member sees it). Resolves only when the server confirmed it. */
+export async function updateGroupName(groupId: string, name: string): Promise<void> {
+  const { error } = await getSupabase().rpc('update_group_name', { p_group: groupId, p_name: name })
+  if (error) throw error
+}
+
+const splitArrays = (values: RecurringFormValues) => ({
+  participants: values.participants.map((p) => p.userId),
+  percents: values.splitMethod === 'percent' ? values.participants.map((p) => p.percent ?? 0) : null,
+})
+
+/** The recurring expenses of a home group (the saved definition). Empty if the database does not have them yet. */
+export async function listGroupRecurring(groupId: string): Promise<GroupRecurring[]> {
+  const { data, error } = await getSupabase().rpc('get_group_recurring', { p_group: groupId })
+  if (error) {
+    if (isMissingFunction(error)) return []
+    throw error
+  }
+  return data.map((r) => ({
+    id: r.id,
+    name: r.name,
+    templateSlug: r.template_slug,
+    amountCents: toCents(r.amount),
+    period: r.period as RecurringPeriod,
+    anchorOn: r.anchor_on,
+    nextDueOn: r.next_due_on,
+    paidBy: r.paid_by,
+    paidByName: r.paid_by_name,
+    splitMethod: r.split_method as GroupRecurring['splitMethod'],
+    status: r.status as RecurringStatus,
+    participants: r.participants.map((p) => ({ userId: p.user_id, name: p.name, percent: p.percent })),
+  }))
+}
+
+/** Pending periods and the history of the last year. */
+export async function listRecurringOccurrences(groupId: string): Promise<RecurringOccurrence[]> {
+  const { data, error } = await getSupabase().rpc('get_group_recurring_occurrences', { p_group: groupId })
+  if (error) {
+    if (isMissingFunction(error)) return []
+    throw error
+  }
+  return data.map((o) => ({
+    id: o.id,
+    recurringId: o.recurring_id,
+    periodKey: o.period_key,
+    dueOn: o.due_on,
+    amountCents: toCents(o.amount),
+    status: o.status as RecurringOccurrence['status'],
+    expenseId: o.expense_id,
+    resolvedAt: o.resolved_at,
+  }))
+}
+
+/** Creates the pending periods that are due (never an expense) and tells who pays. Safe to call every time the screen opens. */
+export async function processGroupRecurring(groupId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('process_group_recurring', { p_group: groupId })
+  if (error && !isMissingFunction(error)) throw error
+}
+
+/** `requestKey` makes a double tap or a retry after a lost connection create it only once. */
+export async function createGroupRecurring(groupId: string, values: RecurringFormValues, requestKey: string): Promise<string> {
+  const { participants, percents } = splitArrays(values)
+  const { data, error } = await getSupabase().rpc('create_group_recurring', {
+    p_group: groupId,
+    p_name: values.name,
+    p_template_slug: values.templateSlug,
+    p_amount: toNumeric(values.amountCents),
+    p_period: values.period,
+    p_anchor_on: values.anchorOn,
+    p_paid_by: values.paidBy,
+    p_split_method: values.splitMethod,
+    p_participants: participants,
+    p_percents: percents,
+    p_request_key: requestKey,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function updateGroupRecurring(id: string, values: RecurringFormValues): Promise<void> {
+  const { participants, percents } = splitArrays(values)
+  const { error } = await getSupabase().rpc('update_group_recurring', {
+    p_id: id,
+    p_name: values.name,
+    p_template_slug: values.templateSlug,
+    p_amount: toNumeric(values.amountCents),
+    p_period: values.period,
+    p_anchor_on: values.anchorOn,
+    p_paid_by: values.paidBy,
+    p_split_method: values.splitMethod,
+    p_participants: participants,
+    p_percents: percents,
+  })
+  if (error) throw error
+}
+
+export async function setGroupRecurringStatus(id: string, status: RecurringStatus | 'removed'): Promise<void> {
+  const { error } = await getSupabase().rpc('set_group_recurring_status', { p_id: id, p_status: status })
+  if (error) throw error
+}
+
+/** The one-tap confirmation: registers the shared expense (the existing logic) with this period's amount. Safe to repeat. */
+export async function confirmRecurringOccurrence(occurrenceId: string, amountCents: number | null): Promise<string> {
+  const { data, error } = await getSupabase().rpc('confirm_group_recurring_occurrence', {
+    p_occurrence: occurrenceId,
+    p_amount: amountCents === null ? null : toNumeric(amountCents),
+    p_payer_account_id: null,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function skipRecurringOccurrence(occurrenceId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('skip_group_recurring_occurrence', { p_occurrence: occurrenceId })
+  if (error) throw error
 }
 
 /** What a code says about its group before the person confirms: the real name, none (not valid) or not available yet. */

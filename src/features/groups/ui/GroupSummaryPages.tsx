@@ -34,7 +34,7 @@ import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
 import { useGroupLedger } from '../api/useGroupLedger'
-import { personName, type Ledger, type Person } from '../domain/ledger'
+import { debtSentence, personName, type Ledger, type Person } from '../domain/ledger'
 import { buildSummaryModel, summaryText } from '../domain/summaryShare'
 import { renderSummaryImage } from '../lib/summaryImage'
 import { patchOverlay } from '../mock/overlayStore'
@@ -67,6 +67,8 @@ function sentence(ledger: Ledger, meId: string, from: string, to: string, cents:
 export function GroupSummaryPage() {
   const navigate = useNavigate()
   const { groupId, ledger, name, aliasOf } = useSummaryData()
+  const { data: me } = useProfile()
+  const myName = firstName(me?.display_name) || null
   const dates = ledger.expenses.map((e) => e.occurredOn).sort()
   const last = dates[dates.length - 1]
   const when = last ? formatLongDay(last) : ''
@@ -75,7 +77,7 @@ export function GroupSummaryPage() {
       <PageHeader title="Resumen" fallbackTo={`/grupos/${groupId}`} />
       <article className="rounded-[24px] border border-line bg-card p-4 shadow-sm">
         <header className="flex items-center gap-3">
-          <img src={mascotUrl} alt="" className="size-12 rounded-[12px] bg-lime p-1" />
+          <img src={mascotUrl} alt="" className="size-12 rounded-[12px] bg-lime object-contain p-1" />
           <div>
             <h2 className="text-[24px] font-extrabold leading-7">{name}</h2>
             <p className="text-[15px] text-text-muted">
@@ -101,16 +103,13 @@ export function GroupSummaryPage() {
                   />
                   <span className="flex-1">
                     <span className="block text-[18px] font-extrabold">
-                      {personName(ledger.people, t.fromUserId)} → {to?.isMe ? 'vos' : to?.name}
+                      {debtSentence(ledger.people, t, myName)}
                     </span>
                     {aliasOf(to) && (
                       <span className="flex items-center gap-1 text-[14px] text-text-muted">
                         <Copy aria-hidden="true" className="size-3.5" /> {aliasOf(to)}
                       </span>
                     )}
-                  </span>
-                  <span className="text-[24px] font-extrabold text-income">
-                    {formatArs(t.amountCents)}
                   </span>
                 </li>
               )

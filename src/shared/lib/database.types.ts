@@ -14,7 +14,8 @@ export type TransactionKind =
   | 'adjustment_out'
   | 'opening_in'
 export type RowStatus = 'posted' | 'voided'
-export type GroupKind = 'casa' | 'viaje' | 'pareja' | 'amigos'
+/** 'casa' is the old name of 'hogar': the database no longer stores it, but old data and caches may still carry it. */
+export type GroupKind = 'casa' | 'hogar' | 'viaje' | 'pareja' | 'amigos'
 export type GroupRole = 'owner' | 'member'
 export type SplitMethod = 'equal' | 'percent'
 
@@ -224,13 +225,28 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          kind: 'debt_reminder' | 'payment_reported' | 'payment_confirmed' | 'payment_rejected'
+          kind:
+            | 'debt_reminder'
+            | 'payment_reported'
+            | 'payment_confirmed'
+            | 'payment_rejected'
+            | 'join_request'
+            | 'join_approved'
+            | 'join_rejected'
+            | 'group_invitation'
+            | 'invitation_accepted'
+            | 'recurring_due'
           group_id: string
           group_name: string
           actor_id: string
           actor_name: string
-          amount: number
+          /** Null for the group notices (join requests), which carry no amount. */
+          amount: number | null
           report_id: string | null
+          request_id: string | null
+          invitation_id: string | null
+          occurrence_id: string | null
+          subject: string | null
           transfer_label: string | null
           transfer_alias: string | null
           transfer_cbu: string | null
@@ -1016,6 +1032,194 @@ export interface Database {
         Args: { p_group: string }
         Returns: undefined
       }
+      update_group_name: {
+        Args: { p_group: string; p_name: string }
+        Returns: undefined
+      }
+      create_group_recurring: {
+        Args: {
+          p_group: string
+          p_name: string
+          p_template_slug: string | null
+          p_amount: number
+          p_period: string
+          p_anchor_on: string
+          p_paid_by: string
+          p_split_method: string
+          p_participants: string[]
+          p_percents: number[] | null
+          p_request_key: string | null
+        }
+        Returns: string
+      }
+      update_group_recurring: {
+        Args: {
+          p_id: string
+          p_name: string
+          p_template_slug: string | null
+          p_amount: number
+          p_period: string
+          p_anchor_on: string
+          p_paid_by: string
+          p_split_method: string
+          p_participants: string[]
+          p_percents: number[] | null
+        }
+        Returns: undefined
+      }
+      set_group_recurring_status: {
+        Args: { p_id: string; p_status: string }
+        Returns: undefined
+      }
+      process_group_recurring: {
+        Args: { p_group: string }
+        Returns: number
+      }
+      confirm_group_recurring_occurrence: {
+        Args: { p_occurrence: string; p_amount: number | null; p_payer_account_id: string | null }
+        Returns: string
+      }
+      skip_group_recurring_occurrence: {
+        Args: { p_occurrence: string }
+        Returns: undefined
+      }
+      get_group_recurring: {
+        Args: { p_group: string }
+        Returns: {
+          id: string
+          name: string
+          template_slug: string | null
+          amount: number
+          period: string
+          anchor_on: string
+          next_due_on: string
+          paid_by: string
+          paid_by_name: string
+          split_method: string
+          status: string
+          participants: { user_id: string; name: string; percent: number | null }[]
+        }[]
+      }
+      get_group_recurring_occurrences: {
+        Args: { p_group: string }
+        Returns: {
+          id: string
+          recurring_id: string
+          period_key: string
+          due_on: string
+          amount: number
+          status: string
+          expense_id: string | null
+          resolved_at: string | null
+        }[]
+      }
+      get_my_notification_prefs: {
+        Args: Record<never, never>
+        Returns: { debt_reminders: boolean; payments_reported: boolean; payments_answered: boolean; hide_details: boolean }[]
+      }
+      set_notification_prefs: {
+        Args: { p_debt_reminders: boolean; p_payments_reported: boolean; p_payments_answered: boolean; p_hide_details: boolean }
+        Returns: undefined
+      }
+      get_my_contacts: {
+        Args: Record<never, never>
+        Returns: { user_id: string; display_name: string | null; avatar_url: string | null }[]
+      }
+      get_hidden_contacts: {
+        Args: Record<never, never>
+        Returns: { user_id: string; display_name: string | null; avatar_url: string | null; hidden: boolean; blocked: boolean }[]
+      }
+      set_contact_pref: {
+        Args: { p_contact: string; p_hidden: boolean; p_blocked: boolean }
+        Returns: undefined
+      }
+      invite_contact: {
+        Args: { p_group: string; p_user: string }
+        Returns: string
+      }
+      respond_group_invitation: {
+        Args: { p_invitation: string; p_accept: boolean }
+        Returns: string | null
+      }
+      cancel_group_invitation: {
+        Args: { p_invitation: string }
+        Returns: undefined
+      }
+      get_group_invitations: {
+        Args: { p_group: string }
+        Returns: {
+          invitation_id: string
+          user_id: string
+          display_name: string | null
+          avatar_url: string | null
+          status: string
+          created_at: string
+        }[]
+      }
+      get_my_group_invitations: {
+        Args: Record<never, never>
+        Returns: { invitation_id: string; group_id: string; group_name: string; invited_by_name: string; created_at: string }[]
+      }
+      request_join_group: {
+        Args: { p_code: string }
+        Returns: { result: 'joined' | 'pending' | 'already_member' | 'invalid'; group_id: string | null }[]
+      }
+      approve_join_request: {
+        Args: { p_request: string }
+        Returns: string | null
+      }
+      reject_join_request: {
+        Args: { p_request: string }
+        Returns: undefined
+      }
+      cancel_join_request: {
+        Args: { p_request: string }
+        Returns: undefined
+      }
+      get_join_requests: {
+        Args: { p_group: string }
+        Returns: {
+          request_id: string
+          user_id: string
+          display_name: string | null
+          avatar_url: string | null
+          created_at: string
+        }[]
+      }
+      get_my_join_requests: {
+        Args: Record<never, never>
+        Returns: { request_id: string; group_id: string; group_name: string; status: string; created_at: string }[]
+      }
+      hide_group_for_me: {
+        Args: { p_group: string }
+        Returns: undefined
+      }
+      restore_group_for_me: {
+        Args: { p_group: string }
+        Returns: undefined
+      }
+      archive_group_for_all: {
+        Args: { p_group: string; p_name_confirmation: string }
+        Returns: undefined
+      }
+      set_member_role: {
+        Args: { p_group: string; p_user: string; p_role: GroupRole }
+        Returns: undefined
+      }
+      get_my_hidden_and_archived_groups: {
+        Args: Record<never, never>
+        Returns: {
+          id: string
+          name: string
+          kind: GroupKind
+          role: GroupRole
+          member_count: number
+          my_net: number
+          last_activity: string
+          hidden_at: string | null
+          archived_at: string | null
+        }[]
+      }
       get_group_members: {
         Args: { p_group: string }
         Returns: {
@@ -1092,6 +1296,7 @@ export interface Database {
           member_count: number
           my_net: number
           last_activity: string
+          hidden_at: string | null
         }[]
       }
       is_group_member: {

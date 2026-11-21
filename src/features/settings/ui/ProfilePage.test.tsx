@@ -39,6 +39,8 @@ vi.mock('@/features/health/api/useFinancialHealth', () => ({
 }))
 vi.mock('@/features/debts/api/useDebts', () => ({
   usePendingDebts: () => ({ debts: [{ direction: 'owed', amountCents: 577_00 }] }),
+  useNoticePrefs: () => ({ data: null }),
+  useSetNoticePrefs: () => ({ mutate: vi.fn() }),
 }))
 vi.mock('@/features/fixedExpenses/api/useFixedExpenses', () => ({
   useFixedExpenses: () => ({ data: undefined }),

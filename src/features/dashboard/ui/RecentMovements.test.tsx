@@ -101,6 +101,28 @@ describe('RecentMovements', () => {
     expect(full.onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 'm1' }))
   })
 
+  it('tapping a row opens the read-only detail first; Editar and Eliminar live there', async () => {
+    const onEdit = vi.fn()
+    const { user, full } = setup([movement()], {
+      canOpen: () => true,
+      renderDetail: (m, api) => (
+        <div role="dialog" aria-label="detalle">
+          {m.note}
+          <button onClick={onEdit}>Editar</button>
+          <button onClick={api.onDelete}>Eliminar</button>
+          <button onClick={api.onClose}>Cerrar</button>
+        </div>
+      ),
+    })
+    await user.click(screen.getByText('ChatGPT'))
+    expect(full.onEdit).not.toHaveBeenCalled()
+    expect(screen.getByRole('dialog', { name: 'detalle' })).toHaveTextContent('ChatGPT')
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }))
+    expect(screen.queryByRole('dialog', { name: 'detalle' })).toBeNull()
+    expect(screen.getByText('¿Anular este movimiento?')).toBeInTheDocument()
+    expect(full.onVoid).not.toHaveBeenCalled()
+  })
+
   it('has the hint and the swipe actions behind each row, reachable without a gesture', async () => {
     const { user, full } = setup([movement()])
     expect(

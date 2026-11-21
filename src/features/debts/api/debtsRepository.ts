@@ -1,7 +1,7 @@
 import type { NotificationRow, PaymentReportRow } from '@/shared/lib/database.types'
 import { fromCents, toCents } from '@/shared/lib/money'
 import { getSupabase } from '@/shared/lib/supabase'
-import type { Notice, PaymentReport, ReceiveAccount } from '../domain/debts'
+import { DEFAULT_NOTICE_PREFS, type Notice, type NoticePrefs, type PaymentReport, type ReceiveAccount } from '../domain/debts'
 
 const toNumeric = (cents: number) => Number(fromCents(cents))
 
@@ -26,8 +26,11 @@ function toNotice(row: NotificationRow): Notice {
     groupName: row.group_name,
     actorId: row.actor_id,
     actorName: row.actor_name,
-    amountCents: toCents(row.amount),
+    amountCents: toCents(row.amount ?? 0),
     reportId: row.report_id,
+    requestId: row.request_id,
+    invitationId: row.invitation_id,
+    subject: row.subject,
     transferLabel: row.transfer_label,
     transferAlias: row.transfer_alias,
     transferCbu: row.transfer_cbu,
@@ -126,5 +129,32 @@ export async function rejectPaymentReport(reportId: string): Promise<void> {
 
 export async function cancelPaymentReport(reportId: string): Promise<void> {
   const { error } = await getSupabase().rpc('cancel_payment_report', { p_report: reportId })
+  if (error) throw error
+}
+
+/** My push preferences for the groups. Null when the database does not have them yet (the section is then not shown). */
+export async function getNoticePrefs(): Promise<NoticePrefs | null> {
+  const { data, error } = await getSupabase().rpc('get_my_notification_prefs')
+  if (error) {
+    if (error.code === 'PGRST202' || error.code === '42883') return null
+    throw error
+  }
+  const row = data[0]
+  if (!row) return DEFAULT_NOTICE_PREFS
+  return {
+    debtReminders: row.debt_reminders,
+    paymentsReported: row.payments_reported,
+    paymentsAnswered: row.payments_answered,
+    hideDetails: row.hide_details,
+  }
+}
+
+export async function setNoticePrefs(prefs: NoticePrefs): Promise<void> {
+  const { error } = await getSupabase().rpc('set_notification_prefs', {
+    p_debt_reminders: prefs.debtReminders,
+    p_payments_reported: prefs.paymentsReported,
+    p_payments_answered: prefs.paymentsAnswered,
+    p_hide_details: prefs.hideDetails,
+  })
   if (error) throw error
 }

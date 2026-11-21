@@ -55,6 +55,7 @@ import {
   JoinGroupPage,
   JoinWithCodePage,
 } from '@/features/groups/ui/JoinGroupPage'
+import { GroupRecurringPage } from '@/features/groups/ui/GroupRecurringPage'
 import { PeoplePage } from '@/features/groups/ui/PeoplePage'
 import { PersonalTripPage } from '@/features/trips/ui/PersonalTripPage'
 import { TripsPage } from '@/features/trips/ui/TripsPage'
@@ -112,6 +113,7 @@ export const appRoutes = [
   { path: 'grupos/unirse', element: <JoinWithCodePage /> },
   { path: 'grupos/:id', element: <GroupDetailPage /> },
   { path: 'grupos/:id/personas', element: <PeoplePage /> },
+  { path: 'grupos/:id/recurrentes', element: <GroupRecurringPage /> },
   { path: 'grupos/:id/resumen', element: <GroupSummaryPage /> },
   { path: 'grupos/:id/compartir', element: <ShareSummaryPage /> },
   { path: 'grupos/:id/avisados', element: <NoticesSentPage /> },

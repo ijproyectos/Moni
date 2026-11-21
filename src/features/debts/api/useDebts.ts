@@ -8,11 +8,13 @@ import { transactionKeys } from '@/features/transactions/api/queryKeys'
 import { useMyGroups } from '@/features/groups/api/useGroups'
 import { useGroupOverlays } from '@/features/groups/api/useGroupGuests'
 import { balancesWithGuests } from '@/features/groups/domain/ledger'
-import { buildPendingDebts, type GroupBalances } from '../domain/debts'
+import { buildPendingDebts, type GroupBalances, type NoticePrefs } from '../domain/debts'
 import { debtKeys } from './queryKeys'
 import {
   cancelPaymentReport,
   confirmPaymentReport,
+  getNoticePrefs,
+  setNoticePrefs,
   listNotices,
   listPaymentReports,
   markNoticesRead,
@@ -131,5 +133,36 @@ export function useMarkNoticesRead() {
   return useMutation({
     mutationFn: markNoticesRead,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: debtKeys.notices(user?.id) }),
+  })
+}
+
+/** My push preferences for the groups (null while the database does not have them: the section is hidden). */
+export function useNoticePrefs() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: debtKeys.prefs(user?.id),
+    enabled: Boolean(user),
+    queryFn: getNoticePrefs,
+    retry: false,
+  })
+}
+
+/** Saves the preferences in Supabase; the screen shows the new value at once and goes back if the server refuses. */
+export function useSetNoticePrefs() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: (prefs: NoticePrefs) => setNoticePrefs(prefs),
+    onMutate: async (prefs) => {
+      const key = debtKeys.prefs(user?.id)
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<NoticePrefs | null>(key)
+      queryClient.setQueryData(key, prefs)
+      return { previous }
+    },
+    onError: (_error, _prefs, context) => {
+      queryClient.setQueryData(debtKeys.prefs(user?.id), context?.previous)
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: debtKeys.prefs(user?.id) }),
   })
 }

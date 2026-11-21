@@ -15,6 +15,7 @@ import {
   useTransactions,
   useVoidTransaction,
 } from '@/features/transactions/api/useTransactions'
+import { MovementDetail } from '@/features/transactions/ui/MovementDetail'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
 import { toUserMessage } from '@/shared/lib/errors'
 import { useToast } from '@/shared/ui/toastContext'
@@ -86,6 +87,8 @@ export function HomePage() {
   const movementActions = useMemo<MovementActions>(() => {
     const byId = new Map((transactions.data ?? []).map((t) => [t.id, t]))
     const find = (m: RecentMovement) => byId.get(m.id)
+    const categoryById = new Map((categories.data ?? []).map((c) => [c.id, c]))
+    const accountNameById = new Map((accounts.data ?? []).map((a) => [a.id, a.name]))
     return {
       canEdit: (m) => {
         const t = find(m)
@@ -96,6 +99,25 @@ export function HomePage() {
       onEdit: (m) => {
         const t = find(m)
         if (t) openEdit(t)
+      },
+      canOpen: (m) => Boolean(find(m)),
+      renderDetail: (m, api) => {
+        const t = find(m)
+        if (!t) return null
+        return (
+          <MovementDetail
+            transaction={t}
+            category={t.categoryId ? categoryById.get(t.categoryId) : undefined}
+            accountName={accountNameById.get(t.accountId)}
+            history={transactions.data ?? []}
+            onClose={api.onClose}
+            onEdit={() => {
+              api.onClose()
+              openEdit(t)
+            }}
+            onDelete={api.onDelete}
+          />
+        )
       },
       onVoid: async (m) => {
         const t = find(m)
@@ -108,7 +130,7 @@ export function HomePage() {
         toast.show(t?.installmentPlanId ? 'Compra en cuotas anulada' : 'Movimiento anulado')
       },
     }
-  }, [transactions.data, openEdit, voidPlan, voidTransaction, toast])
+  }, [transactions.data, categories.data, accounts.data, openEdit, voidPlan, voidTransaction, toast])
 
   if (summary.isLoading) return <HomeSkeleton />
   if (summary.isError || !summary.data) {
