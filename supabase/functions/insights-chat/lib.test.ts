@@ -299,7 +299,7 @@ describe('prompt and request body', () => {
     const base = { model: 'm', system: 's', messages: [user('x')] }
     expect(buildRequestBody({ ...base, final: false }).tool_choice).toEqual({ type: 'auto' })
     expect(buildRequestBody({ ...base, final: true }).tool_choice).toEqual({ type: 'none' })
-    expect(buildRequestBody({ ...base, final: false }).tools).toHaveLength(7)
+    expect(buildRequestBody({ ...base, final: false }).tools).toHaveLength(8)
   })
   it('exposes only read-only tools', () => {
     const names = buildRequestBody({ model: 'm', system: 's', messages: [], final: false }).tools.map((t) => t.name)
@@ -511,5 +511,39 @@ describe('executeTool (fake client)', () => {
     const r = await executeTool(db, 'get_period_summary', { from: 'ayer' }, ctx)
     expect(r.isError).toBe(true)
     expect(calls).toHaveLength(0)
+  })
+
+  it('get_installment_comparison never touches the database and answers "me conviene en cuotas"', async () => {
+    const { db, calls } = fakeDb({})
+    const r = await executeTool(
+      db,
+      'get_installment_comparison',
+      { cash_price: 100_000, installments: 12, installment_amount: 10_000, monthly_inflation_percent: 8 },
+      ctx,
+    )
+    expect(calls).toHaveLength(0)
+    expect(r.isError).toBe(false)
+    const parsed = JSON.parse(r.content)
+    expect(parsed.verdict).toBe('cuotas')
+    expect(Array.isArray(parsed.explanation)).toBe(true)
+  })
+
+  it('get_installment_comparison defaults the inflation estimate and rejects a bad combination', async () => {
+    const { db } = fakeDb({})
+    const withDefault = await executeTool(
+      db,
+      'get_installment_comparison',
+      { cash_price: 100_000, installments: 3, installment_amount: 35_000 },
+      ctx,
+    )
+    expect(withDefault.isError).toBe(false)
+
+    const missingAmount = await executeTool(
+      db,
+      'get_installment_comparison',
+      { cash_price: 100_000, installments: 3 },
+      ctx,
+    )
+    expect(missingAmount.isError).toBe(true)
   })
 })

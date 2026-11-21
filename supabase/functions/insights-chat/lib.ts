@@ -16,6 +16,7 @@ import {
   serverToday,
   weekdayName,
 } from '../parse-movements/lib.ts'
+import { DEFAULT_MONTHLY_INFLATION_PERCENT, MAX_INSTALLMENTS } from '../_shared/installments.ts'
 
 export {
   addDays,
@@ -229,6 +230,7 @@ export type ToolName =
   | 'get_subscriptions'
   | 'get_group_balances'
   | 'get_small_expenses'
+  | 'get_installment_comparison'
 
 const DATE_PROP = { type: 'string', description: 'YYYY-MM-DD (Argentina time).' } as const
 
@@ -302,6 +304,27 @@ export const TOOL_DEFINITIONS = [
       additionalProperties: false,
     },
   },
+  {
+    name: 'get_installment_comparison',
+    description:
+      '"¿Me conviene en cuotas o en efectivo?" — pure math, no database: compares the cash price (with its discount, if any) against N monthly installments, bringing the installments to today\'s money with an estimated monthly inflation (there is no real inflation index in the app; ask the user or use the 2.5% default). Returns the verdict (cuotas / contado / similar), the implied monthly financing rate and a short Spanish explanation already written out — relay it, don\'t recompute it.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        cash_price: { type: 'number', description: 'ARS, list/cash price before any cash discount.' },
+        cash_discount_percent: { type: 'number', description: 'Cash/transfer discount in percent, e.g. 10. Default 0.' },
+        installments: { type: 'integer', minimum: 1, maximum: MAX_INSTALLMENTS, description: 'Number of monthly installments.' },
+        installment_amount: { type: 'number', description: 'ARS per installment. Give this or total_financed, not both.' },
+        total_financed: { type: 'number', description: 'ARS, sum of all installments. Give this or installment_amount.' },
+        monthly_inflation_percent: {
+          type: 'number',
+          description: `Estimated inflation per month, in percent. Default ${DEFAULT_MONTHLY_INFLATION_PERCENT} when the user has no better estimate.`,
+        },
+      },
+      required: ['cash_price', 'installments'],
+      additionalProperties: false,
+    },
+  },
 ] as const
 
 export type ToolArgs =
@@ -321,6 +344,15 @@ export type ToolArgs =
   | { name: 'get_subscriptions' }
   | { name: 'get_group_balances' }
   | { name: 'get_small_expenses'; month: string; threshold: number | null }
+  | {
+      name: 'get_installment_comparison'
+      cashPriceCents: number
+      installments: number
+      installmentCents: number | null
+      totalFinancedCents: number | null
+      monthlyInflationPercent: number
+      cashDiscountPercent: number
+    }
 
 export type ToolInputResult = { ok: true; args: ToolArgs } | { ok: false; error: string }
 
@@ -420,6 +452,49 @@ export function parseToolInput(name: string, raw: unknown, today: string): ToolI
       const threshold = optionalAmount(input.threshold)
       if (threshold === 'invalid' || threshold === 0) return { ok: false, error: 'invalid_threshold' }
       return { ok: true, args: { name, month, threshold } }
+    }
+    case 'get_installment_comparison': {
+      const cashPrice = input.cash_price
+      if (typeof cashPrice !== 'number' || !Number.isFinite(cashPrice) || cashPrice <= 0) {
+        return { ok: false, error: 'invalid_price' }
+      }
+      const installmentsRaw = input.installments
+      if (
+        typeof installmentsRaw !== 'number' ||
+        !Number.isInteger(installmentsRaw) ||
+        installmentsRaw < 1 ||
+        installmentsRaw > MAX_INSTALLMENTS
+      ) {
+        return { ok: false, error: 'invalid_count' }
+      }
+      const installmentAmount = input.installment_amount
+      const totalFinanced = input.total_financed
+      const hasInstallmentAmount = typeof installmentAmount === 'number' && Number.isFinite(installmentAmount) && installmentAmount > 0
+      const hasTotalFinanced = typeof totalFinanced === 'number' && Number.isFinite(totalFinanced) && totalFinanced > 0
+      if (!hasInstallmentAmount && !hasTotalFinanced) return { ok: false, error: 'invalid_installment' }
+      const inflationRaw = input.monthly_inflation_percent
+      const inflation =
+        inflationRaw === undefined || inflationRaw === null ? DEFAULT_MONTHLY_INFLATION_PERCENT : inflationRaw
+      if (typeof inflation !== 'number' || !Number.isFinite(inflation) || inflation < 0 || inflation > 100) {
+        return { ok: false, error: 'invalid_inflation' }
+      }
+      const discountRaw = input.cash_discount_percent
+      const discount = discountRaw === undefined || discountRaw === null ? 0 : discountRaw
+      if (typeof discount !== 'number' || !Number.isFinite(discount) || discount < 0 || discount >= 100) {
+        return { ok: false, error: 'invalid_discount' }
+      }
+      return {
+        ok: true,
+        args: {
+          name,
+          cashPriceCents: Math.round(cashPrice * 100),
+          installments: installmentsRaw,
+          installmentCents: hasInstallmentAmount ? Math.round(installmentAmount * 100) : null,
+          totalFinancedCents: hasTotalFinanced ? Math.round(totalFinanced * 100) : null,
+          monthlyInflationPercent: inflation,
+          cashDiscountPercent: discount,
+        },
+      }
     }
     default:
       return { ok: false, error: 'unknown_tool' }
@@ -734,7 +809,7 @@ Today is ${today} (${weekday}), Argentina time (America/Argentina/Buenos_Aires).
 
 How to work:
 - Use the tools to read the person's real data before answering any question about their money. Never invent numbers. If a tool returns nothing or fails, say so plainly ("no encontré...", "no pude consultar eso ahora").
-- Prefer the fewest tool calls. get_period_summary for totals, list_transactions for specific movements, get_upcoming_dues for vencimientos, get_installments for cuotas, get_small_expenses for gastos hormiga, get_group_balances for groups.
+- Prefer the fewest tool calls. get_period_summary for totals, list_transactions for specific movements, get_upcoming_dues for vencimientos, get_installments for cuotas, get_small_expenses for gastos hormiga, get_group_balances for groups, get_installment_comparison for "¿me conviene en cuotas o en efectivo?" (ask for the numbers you're missing instead of guessing them; it needs no database access).
 - If the question is outside personal finances or your tools (other people's data, advice on investments, taxes, legal topics), say briefly that you can only help with the person's own Moni data.
 - You cannot create, edit or delete anything. If asked to, explain they can do it from the app.
 - Do not give financial, investment or legal advice and do not promise outcomes. You may point out simple facts and patterns you see in the data.
