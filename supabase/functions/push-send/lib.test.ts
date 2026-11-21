@@ -232,7 +232,7 @@ describe('the nightly reminder request', () => {
       },
     })
   })
-  it.each(['plus_expiry', 'support'])('accepts the %s kind', (kind) => {
+  it.each(['plus_expiry', 'support', 'expense'])('accepts the %s kind', (kind) => {
     expect(parsePushRequest({ ...valid, kind }).ok).toBe(true)
   })
 })
