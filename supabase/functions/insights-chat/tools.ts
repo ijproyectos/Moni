@@ -18,6 +18,7 @@ import {
   toDueItems,
   type ToolRunResult,
 } from './lib.ts'
+import { analyzeInstallments } from '../_shared/installments.ts'
 
 export interface DbResult {
   data: unknown
@@ -262,6 +263,28 @@ export async function executeTool(
           await db.rpc('get_ant_expenses', { p_month: args.month, p_max_amount: args.threshold }),
         )
         return serializeToolResult(shapeAnts(data))
+      }
+      case 'get_installment_comparison': {
+        // Pure math, no database: the only tool here that ignores `db` entirely.
+        const a = analyzeInstallments({
+          cashPriceCents: args.cashPriceCents,
+          installments: args.installments,
+          installmentCents: args.installmentCents ?? undefined,
+          totalFinancedCents: args.totalFinancedCents ?? undefined,
+          monthlyInflationPercent: args.monthlyInflationPercent,
+          cashDiscountPercent: args.cashDiscountPercent,
+        })
+        return serializeToolResult({
+          verdict: a.verdict,
+          cash_pay: a.cashPayCents / 100,
+          installment_amount: a.installmentCents / 100,
+          total_nominal: a.totalNominalCents / 100,
+          present_value: a.presentValueCents / 100,
+          effective_cost: a.effectiveCostCents / 100,
+          effective_cost_percent: Math.round(a.effectiveCostPercent * 10) / 10,
+          implied_monthly_rate_percent: Math.round(a.impliedMonthlyRate * 1000) / 10,
+          explanation: a.explanation,
+        })
       }
     }
   } catch (error) {

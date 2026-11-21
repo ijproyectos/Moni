@@ -8,6 +8,7 @@ export const PUSH_KINDS = [
   'reminder',
   'plus_expiry',
   'support',
+  'expense',
 ] as const
 export type PushKind = (typeof PUSH_KINDS)[number]
 
