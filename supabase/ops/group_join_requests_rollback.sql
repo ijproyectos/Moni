@@ -1,4 +1,4 @@
--- Rollback de 20261127000000_group_join_requests.sql (G2).
+-- Rollback de 20261130000000_group_join_requests.sql (G2).
 -- SE BORRAN (únicas filas que se eliminan, ninguna es financiera): las solicitudes de ingreso (group_join_requests) y los avisos
 -- join_request / join_approved / join_rejected. Los integrantes ya aprobados SIGUEN en sus grupos (la membresía no se toca).
 -- No toca grupos, movimientos, gastos, pagos ni saldos. Los códigos vuelven a entrar directo.

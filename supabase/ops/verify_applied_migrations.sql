@@ -34,11 +34,11 @@ select * from (
   union all select '20261123000000_debt_reminder_push',
          exists (select 1 from pg_trigger where tgname = 'notifications_push_debt_reminder')
   -- Las tres de G1 (deben dar false hasta que se apliquen):
-  union all select '20261126000000_group_hide_archive_roles (G1)',
+  union all select '20261129000000_group_hide_archive_roles (G1)',
          exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'group_members' and column_name = 'hidden_at')
-  union all select '20261126000100_group_kind_hogar (G1)',
+  union all select '20261129000100_group_kind_hogar (G1)',
          not exists (select 1 from public.groups where kind = 'casa') and exists (select 1 from public.groups where kind = 'hogar')
-  union all select '20261126000200_shared_category_otros (G1)',
+  union all select '20261129000200_shared_category_otros (G1)',
          exists (select 1 from public.category_templates where slug = 'otros')
 ) t
 order by migracion;

@@ -1,4 +1,4 @@
--- Rollback de 20261126000200_group_kind_hogar.sql: vuelve a 'casa' y restaura create_group de 20261106000000.
+-- Rollback de 20261129000200_group_kind_hogar.sql: vuelve a 'casa' y restaura create_group de 20261106000000.
 begin;
 alter table public.groups drop constraint groups_kind_check;
 update public.groups set kind = 'casa' where kind = 'hogar';

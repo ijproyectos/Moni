@@ -66,7 +66,7 @@ alter table public.notifications add constraint notifications_amount_check check
   or (kind not in ('join_request', 'join_approved', 'join_rejected') and amount is not null and amount > 0));
 
 -- 4. Codes: new ones require approval; the old entry point never lets an approval code in -------------------------
--- Same body as 20261126000100_group_admin_enforcement.sql plus requires_approval = true.
+-- Same body as 20261129000100_group_admin_enforcement.sql plus requires_approval = true.
 create or replace function public.create_group_invite(p_group uuid)
 returns text
 language plpgsql

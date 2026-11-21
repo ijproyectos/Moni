@@ -1,4 +1,4 @@
--- Rollback de 20261129000000_group_payment_notices.sql (G4).
+-- Rollback de 20261130000200_group_payment_notices.sql (G4).
 -- Se borran las preferencias de avisos (notification_prefs: la tabla nueva). Los avisos, los pagos y los saldos no se tocan.
 -- Se restauran los push de recordatorio (20261123) y de avisos de grupo (G3) y se quita el push de pagos.
 begin;

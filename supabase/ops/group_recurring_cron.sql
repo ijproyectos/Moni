@@ -1,5 +1,5 @@
 -- Daily job for the recurring expenses of Hogar groups. PREPARED, NOT ACTIVE: it is not a migration and nothing runs it by itself.
--- Run it by hand, and only AFTER 20261130000000_group_recurring_expenses.sql is applied and with the owner's authorization.
+-- Run it by hand, and only AFTER 20261130000300_group_recurring_expenses.sql is applied and with the owner's authorization.
 --
 -- What it does: once a day it asks the server to create the PENDING periods that are due and to tell the person who pays
 -- (a notice inside Moni and, if they have push on, a push that respects "ocultar detalles"). It NEVER creates an expense or a

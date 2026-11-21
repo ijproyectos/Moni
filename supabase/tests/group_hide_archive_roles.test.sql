@@ -1,4 +1,4 @@
--- pgTAP: `supabase test db` en un stack local, después de aplicar 20261126000000, 20261126000100 y 20261126000200.
+-- pgTAP: `supabase test db` en un stack local, después de aplicar 20261129000000, 20261129000100 y 20261129000200.
 -- (Las mismas comprobaciones se ejecutaron también en PGlite con la cadena completa de migraciones.)
 begin;
 create extension if not exists pgtap with schema extensions;

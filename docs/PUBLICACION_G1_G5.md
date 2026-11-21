@@ -1,8 +1,8 @@
 # Publicación conjunta de G1–G5 (procedimiento preparado — NADA publicado ni aplicado todavía)
 
-Estado verificado (solo lectura sobre producción) el 2026-11-21: aplicado únicamente el **lote A de G1** (`20261126000000`).
-Pendiente de aplicar, en este orden: **B** (`20261126000100`, `…000200`, `…000300`) → **G2** (`20261127000000`) → **G3**
-(`20261128000000`) → **G4** (`20261129000000`) → **G5** (`20261130000000`). Script: `supabase/ops/g1_prod.cjs` (lotes A–F).
+Estado verificado (solo lectura sobre producción) el 2026-11-21: aplicado únicamente el **lote A de G1** (`20261129000000`).
+Pendiente de aplicar, en este orden: **B** (`20261129000100`, `…000200`, `…000300`) → **G2** (`20261130000000`) → **G3**
+(`20261130000100`) → **G4** (`20261130000200`) → **G5** (`20261130000300`). Script: `supabase/ops/g1_prod.cjs` (lotes A–F).
 
 ## 0. Qué se probó de forma integrada
 - Toda la cadena de migraciones del repositorio (incluidas las 4 que ya están en producción) se aplica en orden sin errores, y una

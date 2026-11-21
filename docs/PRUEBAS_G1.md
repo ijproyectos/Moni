@@ -1,7 +1,7 @@
 # Procedimiento de pruebas de G1 (usuarios y grupos de PRUEBA)
 
 **Regla:** nunca con grupos o personas reales. Hacerlo en un entorno de prueba (proyecto Supabase de staging o base local),
-con las migraciones `20261126000000`, `20261126000100` y `20261126000200` aplicadas **solo ahí**. Producción no se toca hasta tu autorización.
+con las migraciones `20261129000000`, `20261129000100` y `20261129000200` aplicadas **solo ahí**. Producción no se toca hasta tu autorización.
 
 ## 0. Preparación
 1. Crear 4 cuentas de prueba: **Ana** (administradora), **Beto** (integrante), **Cami** (integrante), **Dani** (ajena al grupo).

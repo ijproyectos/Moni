@@ -1,4 +1,4 @@
--- Rollback de 20261128000000_group_contacts_invitations.sql (G3).
+-- Rollback de 20261130000100_group_contacts_invitations.sql (G3).
 -- SE BORRAN (únicas filas que se eliminan, ninguna financiera): las preferencias de contactos (ocultos/bloqueados), las invitaciones
 -- directas y los avisos group_invitation / invitation_accepted. Las personas que ya aceptaron SIGUEN en sus grupos (la membresía no
 -- se toca). No toca grupos, movimientos, gastos, pagos ni saldos.

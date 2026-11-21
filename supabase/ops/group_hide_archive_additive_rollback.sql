@@ -1,4 +1,4 @@
--- Rollback de 20261126000000_group_hide_archive_additive.sql (lote A).
+-- Rollback de 20261129000000_group_hide_archive_additive.sql (lote A).
 -- No toca ninguna fila financiera. Pierde solo el estado «oculto» de cada integrante (hidden_at: esos grupos vuelven a verse en
 -- la lista; sus deudas nunca dejaron de contar). Los grupos ARCHIVADOS con archive_group_for_all siguen archivados (no se borró nada):
 -- para reabrir alguno a mano: update public.groups set archived_at = null where id = '…'.

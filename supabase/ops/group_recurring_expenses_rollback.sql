@@ -1,4 +1,4 @@
--- Rollback de 20261130000000_group_recurring_expenses.sql (G5).
+-- Rollback de 20261130000300_group_recurring_expenses.sql (G5).
 -- SE BORRAN (únicas filas que se eliminan): la configuración de gastos recurrentes, sus participantes y sus ocurrencias (los
 -- períodos pendientes y el historial de períodos), y los avisos recurring_due. LOS GASTOS COMPARTIDOS YA REGISTRADOS NO SE TOCAN:
 -- siguen en el grupo con sus saldos (solo se pierde el vínculo «de qué recurrencia vino»). Nombres de grupo ya cambiados: se conservan.

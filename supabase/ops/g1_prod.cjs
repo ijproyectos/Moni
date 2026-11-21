@@ -21,20 +21,20 @@ const ROOT = path.resolve(__dirname, '..', '..')
 // Lote A: ADITIVO, compatible con la app publicada (se puede aplicar antes de publicar el front).
 // Lote B: cambia funciones existentes / datos visibles: solo junto con la publicación del front nuevo (y después del lote A).
 const BATCHES = {
-  A: [['20261126000000', 'group_hide_archive_additive']],
+  A: [['20261129000000', 'group_hide_archive_additive']],
   B: [
-    ['20261126000100', 'group_admin_enforcement'],
-    ['20261126000200', 'group_kind_hogar'],
-    ['20261126000300', 'shared_category_otros'],
+    ['20261129000100', 'group_admin_enforcement'],
+    ['20261129000200', 'group_kind_hogar'],
+    ['20261129000300', 'shared_category_otros'],
   ],
   // G2 (solicitudes de ingreso): después del lote B y junto con el front nuevo.
-  C: [['20261127000000', 'group_join_requests']],
+  C: [['20261130000000', 'group_join_requests']],
   // G3 (personas de Moni e invitaciones directas): después de G2 y junto con el front nuevo.
-  D: [['20261128000000', 'group_contacts_invitations']],
+  D: [['20261130000100', 'group_contacts_invitations']],
   // G4 (pagos y avisos de grupos): después de G3 y junto con el front nuevo.
-  E: [['20261129000000', 'group_payment_notices']],
+  E: [['20261130000200', 'group_payment_notices']],
   // G5 (nombre del grupo y gastos recurrentes de Hogar): después de G4 y junto con el front nuevo.
-  F: [['20261130000000', 'group_recurring_expenses']],
+  F: [['20261130000300', 'group_recurring_expenses']],
 }
 const batchArg = (process.argv.find((a) => a.startsWith('--lote=')) || '--lote=A').split('=')[1].toUpperCase()
 if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E o F')

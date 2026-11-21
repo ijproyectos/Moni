@@ -1,4 +1,4 @@
--- Rollback de 20261126000100_group_admin_enforcement.sql (lote B): vuelve a «cualquier integrante crea y lee códigos; el creador o un
+-- Rollback de 20261129000100_group_admin_enforcement.sql (lote B): vuelve a «cualquier integrante crea y lee códigos; el creador o un
 -- administrador los revoca» y a la versión anterior de leave_group. No toca ninguna fila financiera.
 begin;
 drop policy if exists "group_invites_select_admin" on public.group_invites;
