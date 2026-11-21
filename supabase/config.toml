@@ -55,6 +55,14 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/mp-webhook/index.ts"
 
+# verify_jwt is OFF on purpose: RevenueCat calls this URL server-to-server with no Supabase JWT. The request is
+# authenticated by comparing the `Authorization` header against REVENUECAT_WEBHOOK_AUTH_TOKEN (constant time),
+# before any database work. See supabase/functions/revenuecat-webhook/index.ts.
+[functions.revenuecat-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/revenuecat-webhook/index.ts"
+
 [functions.mp-oauth]
 enabled = true
 verify_jwt = true
