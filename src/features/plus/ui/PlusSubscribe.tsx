@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import { useState } from 'react'
 import { toUserMessage } from '@/shared/lib/errors'
 import { cn } from '@/shared/ui/cn'
@@ -9,14 +10,25 @@ import {
   useSubscriptionState,
 } from '../api/useBilling'
 import { PLUS_PRICE_DISPLAY, SUBSCRIBE_LABEL } from '../domain/billing'
+import { PlusSubscribeNative } from './PlusSubscribeNative'
 
 /**
- * The Mercado Pago signup block of the Plus sheet ("signup page" of the without-plan-pending contract). It handles
- * every subscription state: none and cancelled offer the subscribe button, pending explains the open payment and lets
- * the person retry, authorized confirms the renewal, paused offers to reactivate. The price shown here is display
- * only: the amount charged is decided by the server.
+ * The signup block of the Plus sheet: RevenueCat (StoreKit / Play Billing) inside the native app, Mercado Pago on
+ * web — Apple/Google do not allow offering an alternative payment option inside an app downloaded from their
+ * stores. Both write the same plus_entitlements row server-side (see revenueCat.ts), so this is purely which
+ * checkout to show, never a different notion of "is Plus".
  */
 export function PlusSubscribe() {
+  return Capacitor.isNativePlatform() ? <PlusSubscribeNative /> : <PlusSubscribeWeb />
+}
+
+/**
+ * The Mercado Pago signup block ("signup page" of the without-plan-pending contract). It handles every subscription
+ * state: none and cancelled offer the subscribe button, pending explains the open payment and lets the person
+ * retry, authorized confirms the renewal, paused offers to reactivate. The price shown here is display only: the
+ * amount charged is decided by the server.
+ */
+function PlusSubscribeWeb() {
   const subscription = useSubscriptionState()
   const checkout = useStartCheckout()
   const reactivate = useReactivateSubscription()
