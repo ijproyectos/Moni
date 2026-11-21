@@ -68,6 +68,14 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/mp-oauth/index.ts"
 
+# verify_jwt is OFF on purpose: Meta calls this URL server-to-server with no Supabase JWT. GET is Meta's
+# subscription handshake (hub.verify_token must match WHATSAPP_VERIFY_TOKEN). POST is authenticated by
+# X-Hub-Signature-256 (HMAC-SHA256 of the raw body, WHATSAPP_APP_SECRET), checked before any database work.
+[functions.whatsapp-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/whatsapp-webhook/index.ts"
+
 # verify_jwt is OFF on purpose: public/mp/callback.html may reach this function without a usable session. The function
 # requires a session JWT itself (session_required otherwise) and a single-use state bound to that user.
 [functions.mp-oauth-callback]
