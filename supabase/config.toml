@@ -83,6 +83,15 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/mp-oauth-callback/index.ts"
 
+# verify_jwt is OFF on purpose: Twilio calls this URL server-to-server with no Supabase JWT. Authenticated by
+# X-Twilio-Signature (HMAC-SHA1 over TWILIO_WEBHOOK_URL + every POST param, TWILIO_AUTH_TOKEN), checked before any
+# database work. Same product as whatsapp-webhook (Meta Cloud API), different transport — see
+# supabase/functions/_shared/whatsappExpense.ts, which both call into.
+[functions.twilio-whatsapp-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/twilio-whatsapp-webhook/index.ts"
+
 # verify_jwt is OFF on purpose: pg_cron (via pg_net) and mp-oauth `sync` call this function server-to-server with no
 # user JWT. The function compares the `x-moni-cron-secret` header with its Edge secret (constant time) before any
 # database or Mercado Pago work.
