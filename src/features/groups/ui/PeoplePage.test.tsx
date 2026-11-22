@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
   updateGuest: vi.fn(),
   removeGuest: vi.fn(),
   linkGuest: vi.fn(),
+  members: [] as unknown[],
 }))
 
 vi.mock('../api/useGroupGuests', () => ({
@@ -29,7 +30,7 @@ vi.mock('../api/useGroups', () => ({
   useIsGroupAdmin: () => true,
   useContacts: () => ({ data: [] }),
   useHiddenContacts: () => ({ data: [] }),
-  useGroupMembers: () => ({ data: [] }),
+  useGroupMembers: () => ({ data: state.members }),
   useGroupInvitations: () => ({ data: [] }),
   useInviteContact: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCancelInvitation: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -87,6 +88,7 @@ function setup() {
 }
 
 beforeEach(() => {
+  state.members = []
   Object.values(state).forEach((v) => typeof v === 'function' && 'mockReset' in v && v.mockReset())
   state.addGuest.mockResolvedValue('new')
   state.updateGuest.mockResolvedValue(undefined)
@@ -242,5 +244,29 @@ describe('Personas del grupo (con y sin cuenta)', () => {
     const sheet = within(screen.getByRole('dialog'))
     expect(sheet.queryByRole('button', { name: /Vincular/ })).toBeNull()
     expect(sheet.getByText(/Tiene cuenta de Moni/)).toBeInTheDocument()
+  })
+})
+
+describe('Admin tag', () => {
+  it('marks only the real owners: "Vos · Admin" for me and "Admin" for another one; nobody else', () => {
+    state.members = [
+      { userId: ME, role: 'owner', leftAt: null },
+      { userId: BETO, role: 'owner', leftAt: null },
+    ]
+    setup()
+    const rows = screen.getAllByRole('listitem')
+    const row = (name: string) => rows.find((r) => within(r).queryByText(name)) as HTMLElement
+    expect(row('Vos')).toHaveTextContent(/Vos\s*·\s*Admin/)
+    expect(row('Beto')).toHaveTextContent('Admin')
+    expect(row('Fran')).not.toHaveTextContent('Admin')
+  })
+
+  it('shows no tag for plain members', () => {
+    state.members = [
+      { userId: ME, role: 'member', leftAt: null },
+      { userId: BETO, role: 'owner', leftAt: '2026-11-01T00:00:00Z' },
+    ]
+    setup()
+    expect(screen.queryByText('Admin')).toBeNull()
   })
 })

@@ -236,6 +236,7 @@ export interface Database {
             | 'group_invitation'
             | 'invitation_accepted'
             | 'recurring_due'
+            | 'group_archived'
           group_id: string
           group_name: string
           actor_id: string

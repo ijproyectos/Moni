@@ -1,0 +1,68 @@
+/**
+ * Moni's lucky cat as inline markup (the same drawing as assets/mascot/moni-gato-fortuna-animado.svg, part for part) so its
+ * parts can move on their own: the head and ears, the eyes and lids, the tail and the breathing. The waving paw keeps the animation
+ * of the original drawing. The motion itself lives in styles/index.css (`.mc-*`), and nothing moves with reduced motion.
+ */
+export const CAT_MARKUP = `<ellipse cx="530" cy="932" rx="300" ry="26" fill="#1d4a3a" opacity="0.12"/>
+  <g class="mc-tail"><path d="M700 870 Q835 875 835 775" fill="none" stroke="#1d4a3a" stroke-width="80" stroke-linecap="round"/>
+  <path d="M700 870 Q835 875 835 775" fill="none" stroke="#fcf1dc" stroke-width="28" stroke-linecap="round"/>
+  </g>
+<g class="mc-breath">
+<g class="mc-paw"><g class="pata">
+    <animateTransform attributeName="transform" type="rotate" dur="1.3s" repeatCount="indefinite" values="-0.00 700 640;-0.00 700 640;-0.05 700 640;-0.23 700 640;-0.62 700 640;-1.24 700 640;-2.00 700 640;-2.76 700 640;-3.38 700 640;-3.77 700 640;-3.95 700 640;-4.00 700 640;-4.00 700 640;-4.00 700 640;-3.95 700 640;-3.77 700 640;-3.38 700 640;-2.76 700 640;-2.00 700 640;-1.24 700 640;-0.62 700 640;-0.23 700 640;-0.05 700 640;-0.00 700 640;-0.00 700 640"/>
+    <path d="M705 650 L812 480" stroke="#1d4a3a" stroke-width="172" stroke-linecap="round"/>
+    <path d="M705 650 L812 480" stroke="#fcf1dc" stroke-width="120" stroke-linecap="round"/>
+    <ellipse cx="818" cy="400" rx="72" ry="70" fill="#fcf1dc" stroke="#1d4a3a" stroke-width="26">
+      <animate attributeName="cy" dur="1.3s" repeatCount="indefinite" values="422.0;422.0;422.4;423.6;426.4;430.7;436.0;441.3;445.6;448.4;449.6;450.0;450.0;450.0;449.6;448.4;445.6;441.3;436.0;430.7;426.4;423.6;422.4;422.0;422.0"/>
+      <animate attributeName="ry" dur="1.3s" repeatCount="indefinite" values="70.0;70.0;69.6;68.4;65.6;61.3;56.0;50.7;46.4;43.6;42.4;42.0;42.0;42.0;42.4;43.6;46.4;50.7;56.0;61.3;65.6;68.4;69.6;70.0;70.0"/>
+    </ellipse>
+    <g>
+      <animateTransform attributeName="transform" type="translate" dur="1.3s" repeatCount="indefinite" values="0 22.0;0 22.0;0 22.4;0 23.6;0 26.4;0 30.7;0 36.0;0 41.3;0 45.6;0 48.4;0 49.6;0 50.0;0 50.0;0 50.0;0 49.6;0 48.4;0 45.6;0 41.3;0 36.0;0 30.7;0 26.4;0 23.6;0 22.4;0 22.0;0 22.0"/>
+      <g><animate attributeName="opacity" dur="1.3s" repeatCount="indefinite" values="1.00;1.00;0.97;0.87;0.66;0.32;0.00;0.00;0.00;0.00;0.00;0.00;0.00;0.00;0.00;0.00;0.00;0.00;0.00;0.32;0.66;0.87;0.97;1.00;1.00"/>
+      <ellipse cx="818" cy="414" rx="22" ry="18" fill="#edb8b4"/>
+      <circle cx="790" cy="378" r="10" fill="#edb8b4"/><circle cx="818" cy="368" r="10" fill="#edb8b4"/><circle cx="846" cy="378" r="10" fill="#edb8b4"/>
+      </g>
+    </g>
+    <g opacity="0">
+      <animate attributeName="opacity" dur="1.3s" repeatCount="indefinite" values="0.00;0.00;0.00;0.00;0.00;0.00;0.09;0.44;0.72;0.89;0.98;1.00;1.00;1.00;0.98;0.89;0.72;0.44;0.09;0.00;0.00;0.00;0.00;0.00;0.00"/>
+      <animateTransform attributeName="transform" type="translate" dur="1.3s" repeatCount="indefinite" values="0 352.0;0 352.0;0 352.7;0 355.3;0 360.8;0 369.4;0 380.0;0 390.6;0 399.2;0 404.7;0 407.3;0 408.0;0 408.0;0 408.0;0 407.3;0 404.7;0 399.2;0 390.6;0 380.0;0 369.4;0 360.8;0 355.3;0 352.7;0 352.0;0 352.0"/>
+      <path d="M800 10 v18 M836 10 v18" stroke="#1d4a3a" stroke-width="10" stroke-linecap="round"/>
+    </g>
+  </g>
+  </g>
+<path d="M325 420 Q268 600 268 785 Q268 905 410 905 L614 905 Q756 905 756 785 Q756 600 699 420 Z"
+    fill="#fcf1dc" stroke="#1d4a3a" stroke-width="26" stroke-linejoin="round"/>
+  <ellipse cx="420" cy="900" rx="58" ry="30" fill="#fcf1dc" stroke="#1d4a3a" stroke-width="20"/>
+  <path d="M406 884 v18 M434 884 v18" stroke="#1d4a3a" stroke-width="10" stroke-linecap="round"/>
+  <ellipse cx="610" cy="900" rx="58" ry="30" fill="#fcf1dc" stroke="#1d4a3a" stroke-width="20"/>
+  <path d="M596 884 v18 M624 884 v18" stroke="#1d4a3a" stroke-width="10" stroke-linecap="round"/>
+  <g class="mc-head"><g transform="translate(174 -92) scale(0.66)">
+    <path d="M222 205 L392 272 Q512 232 632 272 L802 205 L788 340 Q885 470 885 600 Q885 845 512 848 Q140 845 140 600 Q140 470 236 340 Z"
+      fill="#fcf1dc" stroke="#1d4a3a" stroke-width="44" stroke-linejoin="round"/>
+    <g class="mc-ear mc-ear-l"><path d="M256 262 L352 318 L264 372 Z" fill="#edb8b4" stroke="#edb8b4" stroke-width="14" stroke-linejoin="round"/></g>
+    <g class="mc-ear mc-ear-r"><path d="M768 262 L672 318 L760 372 Z" fill="#edb8b4" stroke="#edb8b4" stroke-width="14" stroke-linejoin="round"/></g>
+    <ellipse cx="258" cy="690" rx="66" ry="42" fill="#edb8b4"/>
+    <ellipse cx="766" cy="690" rx="66" ry="42" fill="#edb8b4"/>
+    <g class="mc-eyes"><path d="M288 500 a8 8 0 0 1 8 -8 h160 a8 8 0 0 1 8 8 v35 a88 88 0 0 1 -176 0 z" fill="#1d4a3a"/>
+    <path d="M560 500 a8 8 0 0 1 8 -8 h160 a8 8 0 0 1 8 8 v35 a88 88 0 0 1 -176 0 z" fill="#1d4a3a"/>
+    <circle cx="422" cy="537" r="15" fill="#fcf1dc"/>
+    <circle cx="694" cy="537" r="15" fill="#fcf1dc"/><g class="mc-lids"><rect x="280" y="486" width="192" height="146" rx="22" fill="#fcf1dc"/><rect x="552" y="486" width="192" height="146" rx="22" fill="#fcf1dc"/><path d="M302 572 Q376 606 450 572 M574 572 Q648 606 722 572" fill="none" stroke="#1d4a3a" stroke-width="17" stroke-linecap="round"/></g></g>
+    <path d="M478 616 L548 616 L513 648 Z" fill="#1d4a3a" stroke="#1d4a3a" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M442 660 Q476 704 512 660 Q548 704 582 660" fill="none" stroke="#1d4a3a" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  </g></g>
+  <path d="M306 462 Q512 535 718 462" fill="none" stroke="#1d4a3a" stroke-width="62" stroke-linecap="round"/>
+  <path d="M306 462 Q512 535 718 462" fill="none" stroke="#c3ea8a" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="512" cy="530" r="36" fill="#f6ca5a" stroke="#1d4a3a" stroke-width="18"/>
+  <path d="M485 530 h54" stroke="#1d4a3a" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="512" cy="548" r="6" fill="#1d4a3a"/>
+  <circle cx="420" cy="720" r="122" fill="#f6ca5a" stroke="#1d4a3a" stroke-width="26"/>
+  <circle cx="420" cy="720" r="84" fill="none" stroke="#d9a53a" stroke-width="12"/>
+  <path d="M452 676 Q430 656 404 664 Q376 674 384 698 Q390 714 420 720 Q452 728 456 748 Q460 772 430 778 Q402 784 382 764"
+    fill="none" stroke="#1d4a3a" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M420 640 v30 M420 770 v30" stroke="#1d4a3a" stroke-width="18" stroke-linecap="round"/>
+  <ellipse cx="470" cy="815" rx="64" ry="48" fill="#fcf1dc" stroke="#1d4a3a" stroke-width="22"/>
+  <path d="M452 790 v22 M488 790 v22" stroke="#1d4a3a" stroke-width="10" stroke-linecap="round"/>
+</g>`
+
+/** The same markup without the drawing's own paw animation (for people who prefer reduced motion). */
+export const CAT_MARKUP_STILL = CAT_MARKUP.replace(/<animate(?:Transform)?\b[^>]*\/>/g, '')

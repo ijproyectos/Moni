@@ -120,17 +120,22 @@ export async function listMyGroups(): Promise<MyGroup[]> {
 export async function listHiddenAndArchivedGroups(): Promise<HiddenGroup[]> {
   const { data, error } = await getSupabase().rpc('get_my_hidden_and_archived_groups')
   if (error) throw error
-  return data.map((row) => ({
-    id: row.id,
-    name: row.name,
-    kind: normalizeKind(row.kind),
-    role: row.role,
-    memberCount: row.member_count,
-    myNetCents: toCents(row.my_net),
-    lastActivity: row.last_activity,
-    hiddenAt: row.hidden_at,
-    archivedAt: row.archived_at,
-  }))
+  return (
+    data
+      // A group archived for everybody that I already removed from my list is gone from my view (the server keeps my choice in hidden_at).
+      .filter((row) => !(row.archived_at && row.hidden_at))
+      .map((row) => ({
+        id: row.id,
+        name: row.name,
+        kind: normalizeKind(row.kind),
+        role: row.role,
+        memberCount: row.member_count,
+        myNetCents: toCents(row.my_net),
+        lastActivity: row.last_activity,
+        hiddenAt: row.hidden_at,
+        archivedAt: row.archived_at,
+      }))
+  )
 }
 
 /** Removes the group from MY account only: I stay a member and nothing changes for the others. */

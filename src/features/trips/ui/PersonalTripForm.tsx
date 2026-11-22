@@ -75,7 +75,7 @@ export function PersonalTripForm({
           onChange={(e) => setName(e.target.value)}
           aria-label="Destino"
           maxLength={60}
-          placeholder="Ej: Semana en Salta"
+          placeholder="Ej: París, Francia"
           className={tripFieldClass}
         />
         <TripDatesBudget

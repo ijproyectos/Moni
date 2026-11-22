@@ -102,14 +102,13 @@ describe('GoalsPage (real goals)', () => {
     expect(screen.getByRole('button', { name: /^Auto, 12% reservado/ })).toBeInTheDocument()
   })
 
-  it('keeps paused, completed and archived goals out of the main list, one tap away', async () => {
+  it('keeps paused and archived goals one tap away and lists the completed ones under "Metas cumplidas"', async () => {
     const user = setup(overview)
     expect(screen.queryByRole('button', { name: /^Pausada/ })).toBeNull()
-    await user.click(
-      screen.getByRole('button', { name: /Ver pausadas, completadas y archivadas \(2\)/ }),
-    )
-    expect(screen.getByRole('button', { name: /^Pausada/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Metas cumplidas' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Hecha/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Ver pausadas y archivadas \(1\)/ }))
+    expect(screen.getByRole('button', { name: /^Pausada/ })).toBeInTheDocument()
   })
 
   it('opens a goal', async () => {

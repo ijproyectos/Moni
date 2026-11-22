@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { formatArs } from '@/shared/lib/money'
 import { ProgressBar } from '@/shared/ui/kit'
 import { rangeLabel } from '../domain/dates'
+import { DestinationGlyph } from './DestinationGlyph'
 import { tripTimeLabel, type PersonalTrip, type TripSummary } from '../domain/trip'
 
 /** A personal trip in the list: destination, dates and how much of the budget is spent (real movements). */
@@ -39,7 +40,13 @@ export function PersonalTripCard({
           {tripTimeLabel(trip, summary, today)}
         </span>
       </div>
-      <div className="mt-3">
+      <div className="mt-3 flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className={`flex size-12 shrink-0 items-center justify-center rounded-full ${ended ? 'bg-tint-green text-ink' : 'bg-white/15 text-cream'}`}
+        >
+          <DestinationGlyph name={trip.name} size={26} />
+        </span>
         <span className="min-w-0 flex-1">
           <span className="block break-words font-display text-[26px] font-extrabold leading-8">
             {trip.name}

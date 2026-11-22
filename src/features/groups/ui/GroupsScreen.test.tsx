@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { ShoppingCart } from 'lucide-react'
+import { ReceiptText, ShoppingCart } from 'lucide-react'
 import { GroupsScreen, type LastExpenseRow, type ListedGroup } from './GroupsScreen'
 
 const group = (over: Partial<ListedGroup> = {}): ListedGroup => ({
@@ -100,8 +100,22 @@ describe('Grupos: the green hero "Te deben" / "Debés"', () => {
     expect(screen.queryByText(/Último en/)).toBeNull()
   })
 
+  it('asks to review the category of the last expense when it does not fit, opening the group', () => {
+    renderScreen(vi.fn(), undefined, {
+      groupId: 'g1',
+      needsReview: true,
+      groupName: 'IJ Society',
+      description: 'Remera · dividido entre 3',
+      meta: 'Pagaste vos · hoy · Revisá la categoría',
+      deltaCents: 0,
+      icon: ReceiptText,
+    })
+    expect(screen.getByRole('link', { name: /Remera/ })).toHaveAttribute('href', '/grupos/g1')
+  })
+
   it('shows the last real expense of the group', () => {
     renderScreen(vi.fn(), undefined, {
+      groupId: 'g1',
       groupName: 'Casa',
       description: 'Coto · dividido 50/50',
       meta: 'Pagaste vos · ayer',

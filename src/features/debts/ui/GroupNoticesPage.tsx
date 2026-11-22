@@ -259,7 +259,7 @@ export function GroupNoticesPage() {
                       to={`/grupos/${n.groupId}`}
                       className={cn(pill, 'border-2 border-line bg-card text-ink')}
                     >
-                      <Bell aria-hidden="true" className="size-4" /> Abrir el grupo
+                      <Bell aria-hidden="true" className="size-4" /> {n.kind === 'group_archived' ? 'Ver historial' : 'Abrir el grupo'}
                     </Link>
                   )}
                 </div>

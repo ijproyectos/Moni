@@ -84,7 +84,21 @@ function GroupRowIcon({ group }: { group: ListedGroup }) {
   )
 }
 
+/** The row is a link only when it asks for a review; otherwise a plain block. */
+function Wrapper({ to, className, children }: { to: string | null; className: string; children: React.ReactNode }) {
+  return to ? (
+    <Link to={to} className={className}>
+      {children}
+    </Link>
+  ) : (
+    <div className={className}>{children}</div>
+  )
+}
+
 export interface LastExpenseRow {
+  groupId: string
+  /** The saved category does not fit the description: the row asks to review it (it opens the group, where the expense is edited). */
+  needsReview?: boolean
   groupName: string
   description: string
   /** Second line: "Pagaste vos · ayer". */
@@ -248,7 +262,7 @@ export function GroupsScreen({
                 Último en {lastExpense.groupName}
               </h2>
               <div className="rounded-[26px] bg-card px-4 py-0.5">
-                <div className="grid grid-cols-[38px_1fr_auto] items-center gap-3 py-2">
+                <Wrapper to={lastExpense.needsReview ? `/grupos/${lastExpense.groupId}` : null} className="grid grid-cols-[38px_1fr_auto] items-center gap-3 py-2">
                   <span
                     aria-hidden="true"
                     className="flex size-[38px] items-center justify-center rounded-full bg-sand text-ink"
@@ -269,7 +283,7 @@ export function GroupsScreen({
                       )}
                     />
                   )}
-                </div>
+                </Wrapper>
               </div>
             </div>
           )}

@@ -7,6 +7,7 @@ import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import type { RecentMovement } from '../domain/monthSummary'
 import { groupMovementsByDay } from '../domain/recentMovements'
+import { CategoryIconCircle } from '@/shared/ui/IconCircle'
 import { SwipeRow } from '@/shared/ui/SwipeRow'
 
 /** What can be done with a movement from Inicio; the page decides it from the real transaction. */
@@ -133,12 +134,11 @@ export function RecentMovements({
                       aria-label={edit ? (detail ? `Ver detalle de ${title}` : `Editar ${title}`) : undefined}
                       className="grid min-h-[52px] w-full grid-cols-[36px_1fr_auto] items-center gap-3 py-1.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#0B3D2E]"
                     >
-                      <span
-                        aria-hidden="true"
-                        className={`flex size-9 items-center justify-center rounded-[11px] font-display text-[16px] font-extrabold ${isIncome ? 'bg-[#D3E6D2] text-[#0B3D2E] dark:bg-[#1F3A2C] dark:text-[#CFE9D6]' : 'bg-[#EFD9D2] text-[#7A2A1F] dark:bg-[#3A2420] dark:text-[#F2C9C0]'}`}
-                      >
-                        {title.trim().charAt(0).toUpperCase()}
-                      </span>
+                      <CategoryIconCircle
+                        iconName={m.categoryIcon}
+                        color={m.categoryColor}
+                        className="size-9 rounded-[11px]"
+                      />
                       <span className="min-w-0">
                         <span className="block truncate text-[15px] font-extrabold leading-tight text-[#0C2418] dark:text-[#F1EEDD]">{title}</span>
                         <span className="block truncate text-[12px] text-[#566A5C] dark:text-text-muted">{subtitleOf(m)}</span>

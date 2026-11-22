@@ -3,7 +3,6 @@ import { useState } from 'react'
 import mascotAlert from '@/assets/mascot/personaje_alerta-de-presupuesto.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { toUserMessage } from '@/shared/lib/errors'
-import { cn } from '@/shared/ui/cn'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import { SectionLabel } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
@@ -16,7 +15,6 @@ import {
   useRejectJoinRequest,
   useSetMemberRole,
 } from '../api/useGroups'
-import { fieldClass } from './styles'
 
 /** Administrators of the group: who they are, and (for an administrator) who else can become one. */
 export function AdminMembersSection({ groupId, meId }: { groupId: string; meId: string | undefined }) {
@@ -67,7 +65,7 @@ export function AdminMembersSection({ groupId, meId }: { groupId: string; meId: 
   )
 }
 
-/** "Quitar de mi cuenta": only I stop seeing the group. Debts and the others' access do not change. */
+/** "Eliminar para mí": only I stop seeing the group. Debts, movements and the others' access do not change. */
 export function HideGroupSheet({ groupId, name, onClose, onDone }: { groupId: string; name: string; onClose: () => void; onDone: () => void }) {
   const toast = useToast()
   const hide = useHideGroup()
@@ -75,17 +73,17 @@ export function HideGroupSheet({ groupId, name, onClose, onDone }: { groupId: st
     <DecisionSheet
       icon={<EyeOff className="size-6" />}
       iconTone="neutral"
-      title={`¿Quitar “${name}” de tu cuenta?`}
+      title={`¿Eliminar “${name}” para vos?`}
       onClose={onClose}
       actions={[
         {
-          label: 'Quitar de mi cuenta',
+          label: 'Eliminar para mí',
           disabled: hide.isPending,
           onClick: () =>
             void hide
               .mutateAsync(groupId)
               .then(() => {
-                toast.show('Grupo quitado de tu cuenta', { mascotUrl: mascotHappy })
+                toast.show('Grupo eliminado de tu lista', { mascotUrl: mascotHappy })
                 onDone()
               })
               .catch((e: unknown) => toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert })),
@@ -94,56 +92,71 @@ export function HideGroupSheet({ groupId, name, onClose, onDone }: { groupId: st
       ]}
     >
       <p>
-        Dejás de verlo en tu lista, pero seguís siendo parte del grupo: tus deudas siguen sumando en tus totales, seguís
-        recibiendo recordatorios y avisos de pagos, y los demás no se enteran. Lo restaurás en «Ocultos y archivados».
+        Desaparece de tu lista. Los demás siguen con acceso, no se borra nada y tus deudas siguen contando. Lo recuperás
+        en «Ocultos y archivados».
       </p>
     </DecisionSheet>
   )
 }
 
-/** "Eliminar para todos": administrators only. It archives the group (history kept) and the server refuses it with debts. */
-export function ArchiveGroupSheet({ groupId, name, onClose, onDone }: { groupId: string; name: string; onClose: () => void; onDone: () => void }) {
+/**
+ * "Eliminar para todos": administrators only. It archives the group (history kept) and the server refuses it with debts or unconfirmed
+ * payments. One tap confirms: the server still receives the group's own name as the confirmation it has always asked for, so nobody types it.
+ */
+export function ArchiveGroupSheet({
+  groupId,
+  name,
+  serverName,
+  onClose,
+  onDone,
+}: {
+  groupId: string
+  /** The name shown to the person (it may be a local rename). */
+  name: string
+  /** The group's name on the server, which is what the operation checks; falls back to `name`. */
+  serverName?: string
+  onClose: () => void
+  onDone: () => void
+}) {
   const toast = useToast()
   const archive = useArchiveGroup()
-  const [typed, setTyped] = useState('')
-  const matches = typed.trim().toLowerCase() === name.trim().toLowerCase()
+  const [busy, setBusy] = useState(false)
+  const working = busy || archive.isPending
+
+  async function confirm() {
+    if (working) return
+    setBusy(true)
+    try {
+      await archive.mutateAsync({ groupId, name: serverName ?? name })
+      toast.show('Grupo eliminado para todos. El historial queda guardado.', { mascotUrl: mascotHappy })
+      onDone()
+    } catch (e) {
+      toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert })
+      setBusy(false)
+    }
+  }
+
   return (
     <DecisionSheet
       icon={<Archive className="size-6" />}
       title={`¿Eliminar “${name}” para todos?`}
-      onClose={onClose}
+      onClose={() => {
+        if (!working) onClose()
+      }}
       actions={[
         {
-          label: 'Eliminar para todos',
+          label: working ? 'Eliminando…' : 'Eliminar para todos',
           tone: 'danger',
-          disabled: !matches || archive.isPending,
-          onClick: () =>
-            void archive
-              .mutateAsync({ groupId, name: typed })
-              .then(() => {
-                toast.show('Grupo eliminado para todos. El historial queda guardado.', { mascotUrl: mascotHappy })
-                onDone()
-              })
-              .catch((e: unknown) => toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert })),
+          disabled: working,
+          onClick: () => void confirm(),
         },
-        { label: 'Cancelar', tone: 'outline', onClick: onClose },
+        { label: 'Cancelar', tone: 'outline', disabled: working, onClick: onClose },
       ]}
     >
       <p>
-        El grupo se archiva para todas las personas: queda solo para consultar, nadie puede cargar gastos nuevos y se cierran
-        los códigos de invitación. Los gastos y pagos no se borran. Solo se puede si no hay deudas ni pagos sin confirmar.
+        Se cierra para todos: nadie podrá cargar gastos nuevos y el historial se conserva. Solo se puede si no hay deudas ni
+        pagos sin confirmar.
       </p>
-      <label className="mt-3 flex flex-col gap-1.5 text-[14px] font-bold">
-        Escribí el nombre del grupo para confirmar
-        <input
-          value={typed}
-          onChange={(e) => setTyped(e.target.value)}
-          aria-label="Nombre del grupo para confirmar"
-          placeholder={name}
-          autoComplete="off"
-          className={cn(fieldClass, 'font-normal')}
-        />
-      </label>
     </DecisionSheet>
   )
 }

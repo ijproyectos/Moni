@@ -130,7 +130,6 @@ export function SettingsPage() {
           to="/cuentas"
           trailing={accounts.data ? accounts.data.length : undefined}
         />
-        <SettingRow title="Categorías" subtitle="Creá, editá, colores e íconos" to="/categorias" />
         <SettingRow
           title={plus.isPlus ? 'Plan Moni Plus' : 'Pasar a Moni Plus'}
           subtitle={plus.isPlus && plus.expiresAt ? `Hasta el ${formatPlusExpiry(plus.expiresAt, true)}` : undefined}

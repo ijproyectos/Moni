@@ -103,7 +103,7 @@ describe('Explorar', () => {
     renderPage()
     expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('$12.500este mes')
     const budget = screen.getByRole('link', { name: /^Presupuesto/ })
-    expect(budget).toHaveTextContent('-$75.000te pasaste')
+    expect(budget).toHaveTextContent('-$75.000te pasaste este mes')
   })
 
   it('shows what is left of the budget when it was not exceeded', () => {
@@ -115,6 +115,11 @@ describe('Explorar', () => {
   it('says "sin hormigas" and does not invent a budget without data', () => {
     renderPage()
     expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('sin hormigas')
-    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('armá tu presupuesto')
+    expect(screen.getByRole('link', { name: /^Metas de ahorro/ })).toHaveTextContent('Creá tu primera meta')
+    expect(screen.getByRole('link', { name: /^Viajes/ })).toHaveTextContent('todavía no tenés viajes')
+    expect(screen.getByRole('link', { name: /^Pagos recurrentes/ })).toHaveTextContent('no tenés pagos próximos')
+    // None of the example figures of the design may show up as if they were real.
+    expect(document.body).not.toHaveTextContent(/201\.866|Bariloche|\$30\.000/)
+    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('Configurá tu presupuesto')
   })
 })

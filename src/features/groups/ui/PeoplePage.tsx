@@ -18,7 +18,7 @@ import { useReferralLink } from '@/features/pro/ui/useReferralLink'
 import { useAddGuest, useLinkGuest, useRemoveGuest, useUpdateGuest } from '../api/useGroupGuests'
 import { useGroupLedger } from '../api/useGroupLedger'
 import { useNewMemberNotice } from '../api/useNewMemberNotice'
-import { useCreateInvite, useGroupInvites, useIsGroupAdmin } from '../api/useGroups'
+import { useCreateInvite, useGroupInvites, useGroupMembers, useIsGroupAdmin } from '../api/useGroups'
 import { isInviteActive } from '../domain/group'
 import { inviteLink } from '../domain/groupView'
 import type { Person } from '../domain/ledger'
@@ -45,6 +45,9 @@ export function PeoplePage() {
   const linkGuest = useLinkGuest()
   useNewMemberNotice(groupId)
   const isAdmin = useIsGroupAdmin(groupId, meId)
+  // The real roles of Supabase: only an active member with the `owner` role is shown as admin.
+  const members = useGroupMembers(groupId)
+  const adminIds = new Set((members.data ?? []).filter((m) => m.role === 'owner' && !m.leftAt).map((m) => m.userId))
   const invites = useGroupInvites(groupId)
   const createInvite = useCreateInvite()
   const [sheet, setSheet] = useState<Sheet>(null)
@@ -99,6 +102,12 @@ export function PeoplePage() {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2 text-[19px] font-extrabold">
                     {p.name}
+                    {adminIds.has(p.id) && (
+                      <span className="text-[13px] font-bold text-text-muted">
+                        {p.isMe && '· '}
+                        <span className="rounded-full bg-tint-green px-2 py-0.5 text-[12px] text-ink">Admin</span>
+                      </span>
+                    )}
                     {!p.hasMoni && (
                       <span className="rounded-full bg-tint-gold px-2 py-0.5 text-[12px]">
                         Sin cuenta

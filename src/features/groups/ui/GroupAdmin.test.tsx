@@ -81,38 +81,47 @@ beforeEach(() => {
 })
 
 describe('ArchiveGroupSheet ("Eliminar para todos")', () => {
-  it('needs the group name typed, explains that it is archived (not deleted), then archives', async () => {
+  it('explains that it is archived (not deleted), has no name field and archives with one tap', async () => {
     const onDone = vi.fn()
-    render(<ArchiveGroupSheet groupId={GROUP} name="Depto" onClose={vi.fn()} onDone={onDone} />)
+    render(<ArchiveGroupSheet groupId={GROUP} name="Depto" serverName="Depto Palermo" onClose={vi.fn()} onDone={onDone} />)
     const user = userEvent.setup()
-    expect(screen.getByText(/Los gastos y pagos no se borran/)).toBeInTheDocument()
-    const confirm = screen.getByRole('button', { name: 'Eliminar para todos' })
-    expect(confirm).toBeDisabled()
-    await user.type(screen.getByLabelText('Nombre del grupo para confirmar'), 'depto')
-    expect(confirm).toBeEnabled()
-    await user.click(confirm)
-    expect(archive).toHaveBeenCalledWith({ groupId: GROUP, name: 'depto' })
+    expect(screen.getByRole('heading', { name: /Depto/ })).toBeInTheDocument()
+    expect(screen.getByText(/el historial se conserva/)).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Eliminar para todos' }))
+    expect(archive).toHaveBeenCalledTimes(1)
+    expect(archive).toHaveBeenCalledWith({ groupId: GROUP, name: 'Depto Palermo' })
     await waitFor(() => expect(onDone).toHaveBeenCalled())
   })
 
-  it('does not say it worked when the server refuses (debts): nothing closes', async () => {
+  it('does not send twice while it is processing', async () => {
+    archive.mockReturnValue(new Promise(() => {}))
+    render(<ArchiveGroupSheet groupId={GROUP} name="Depto" onClose={vi.fn()} onDone={vi.fn()} />)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Eliminar para todos' }))
+    expect(screen.getByRole('button', { name: 'Eliminando…' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Eliminando…' }))
+    expect(archive).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not say it worked when the server refuses (debts): nothing closes and it can be retried', async () => {
     archive.mockRejectedValue({ message: 'group_has_open_balances' })
     const onDone = vi.fn()
     render(<ArchiveGroupSheet groupId={GROUP} name="Depto" onClose={vi.fn()} onDone={onDone} />)
     const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Nombre del grupo para confirmar'), 'Depto')
     await user.click(screen.getByRole('button', { name: 'Eliminar para todos' }))
     await waitFor(() => expect(archive).toHaveBeenCalled())
     expect(onDone).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Eliminar para todos' })).toBeEnabled())
   })
 })
 
-describe('HideGroupSheet ("Quitar de mi cuenta")', () => {
+describe('HideGroupSheet ("Eliminar para mí")', () => {
   it('says that only I stop seeing it, then hides it', async () => {
     const onDone = vi.fn()
     render(<HideGroupSheet groupId={GROUP} name="Depto" onClose={vi.fn()} onDone={onDone} />)
-    expect(screen.getByText(/seguís siendo parte del grupo/)).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Quitar de mi cuenta' }))
+    expect(screen.getByText(/Los demás siguen con acceso/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar para mí' }))
     expect(hide).toHaveBeenCalledWith(GROUP)
     await waitFor(() => expect(onDone).toHaveBeenCalled())
   })
@@ -121,7 +130,7 @@ describe('HideGroupSheet ("Quitar de mi cuenta")', () => {
     hide.mockRejectedValue(new Error('x'))
     const onDone = vi.fn()
     render(<HideGroupSheet groupId={GROUP} name="Depto" onClose={vi.fn()} onDone={onDone} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Quitar de mi cuenta' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar para mí' }))
     await waitFor(() => expect(hide).toHaveBeenCalled())
     expect(onDone).not.toHaveBeenCalled()
   })

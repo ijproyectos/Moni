@@ -599,13 +599,233 @@ html.dark .bg-lime {
   }
 }
 
-/* Moni Agent floats gently while it is not being dragged. */
+/* Moni Agent floats gently and sways a little from its base (rotation only, so the drawing never deforms). */
 @keyframes moni-float {
   0%,
   100% {
-    transform: translateY(0);
+    transform: translateY(0) rotate(-0.8deg);
   }
   50% {
-    transform: translateY(-7px);
+    transform: translateY(-7px) rotate(0.8deg);
+  }
+}
+
+/* Moni's piggy jar (goals): at 100 % the raised paw waves and the sparkles pop; nothing moves with reduced motion. */
+.moni-piggy .mp-arm {
+  transform-box: view-box;
+  transform-origin: 288px 262px;
+}
+.moni-piggy .mp-spark {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .moni-piggy[data-party] .mp-arm {
+    animation: mp-wave 0.9s ease-in-out infinite;
+  }
+  .moni-piggy[data-party] .mp-spark {
+    animation: mp-spark 1.6s ease-in-out infinite;
+  }
+}
+@keyframes mp-wave {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+@keyframes mp-spark {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/*
+ * Moni Agent's cat (MoniCatLive): every part has its own period (4–11 s), so they drift in and out of step and the cat never
+ * looks like one rigid piece. Only rotations, tiny shifts and the lids' opacity: the drawing is never stretched. Reduced motion: still.
+ */
+.moni-live .mc-breath,
+.moni-live .mc-tail,
+.moni-live .mc-paw,
+.moni-live .mc-head,
+.moni-live .mc-eyes {
+  transform-box: view-box;
+}
+.moni-live .mc-breath {
+  transform-origin: 512px 905px;
+}
+.moni-live .mc-tail {
+  transform-origin: 700px 870px;
+}
+.moni-live .mc-paw {
+  transform-origin: 705px 650px;
+}
+.moni-live .mc-head {
+  transform-origin: 512px 470px;
+}
+.moni-live .mc-ear {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.moni-live .mc-lids {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .moni-live .mc-breath {
+    animation: mc-breathe 4.2s ease-in-out infinite;
+  }
+  .moni-live .mc-tail {
+    animation: mc-tail 5.1s ease-in-out infinite;
+  }
+  .moni-live .mc-paw {
+    animation: mc-paw 4.7s ease-in-out infinite;
+  }
+  .moni-live .mc-head {
+    animation: mc-head 9s ease-in-out infinite;
+  }
+  .moni-live .mc-ear-l {
+    animation: mc-ear-l 6.5s ease-in-out infinite;
+  }
+  .moni-live .mc-ear-r {
+    animation: mc-ear-r 8.3s ease-in-out infinite;
+  }
+  .moni-live .mc-eyes {
+    animation: mc-glance 11s ease-in-out infinite;
+  }
+  .moni-live .mc-lids {
+    animation: mc-lids 5.4s linear infinite;
+  }
+}
+@keyframes mc-breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.004, 1.012);
+  }
+}
+@keyframes mc-tail {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  45% {
+    transform: rotate(5deg);
+  }
+  70% {
+    transform: rotate(1deg);
+  }
+}
+@keyframes mc-paw {
+  0%,
+  28%,
+  60%,
+  100% {
+    transform: rotate(0deg);
+  }
+  38% {
+    transform: rotate(3.5deg);
+  }
+  48% {
+    transform: rotate(-2deg);
+  }
+  80% {
+    transform: rotate(1.5deg);
+  }
+}
+@keyframes mc-head {
+  0%,
+  16%,
+  46%,
+  100% {
+    transform: rotate(0deg) translate(0, 0);
+  }
+  24%,
+  38% {
+    transform: rotate(-4.5deg) translate(-4px, 1px);
+  }
+  62%,
+  72% {
+    transform: rotate(3deg) translate(3px, 0);
+  }
+  82% {
+    transform: rotate(0deg) translate(0, 0);
+  }
+}
+@keyframes mc-ear-l {
+  0%,
+  78%,
+  100% {
+    transform: rotate(0deg);
+  }
+  82% {
+    transform: rotate(-8deg);
+  }
+  86% {
+    transform: rotate(2deg);
+  }
+  90% {
+    transform: rotate(-4deg);
+  }
+  94% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes mc-ear-r {
+  0%,
+  52%,
+  100% {
+    transform: rotate(0deg);
+  }
+  56% {
+    transform: rotate(7deg);
+  }
+  61% {
+    transform: rotate(-2deg);
+  }
+  66% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes mc-glance {
+  0%,
+  30%,
+  50%,
+  82%,
+  100% {
+    transform: translate(0, 0);
+  }
+  35%,
+  45% {
+    transform: translate(-12px, 2px);
+  }
+  70%,
+  78% {
+    transform: translate(12px, 0);
+  }
+}
+@keyframes mc-lids {
+  0%,
+  28%,
+  29.6%,
+  60%,
+  62.5%,
+  100% {
+    opacity: 0;
+  }
+  28.4%,
+  29.2%,
+  60.5%,
+  62% {
+    opacity: 1;
   }
 }

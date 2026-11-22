@@ -47,7 +47,7 @@ export function ConvertToPersonalSheet({
       ?.name?.toLowerCase()
     return categories.find((c) => c.name.toLowerCase() === name)?.id ?? ''
   }, [templatesQuery.data, categories, expense.templateSlug])
-  const chosenCategory = categoryId || suggested || categories[0]?.id || ''
+  const chosenCategory = categoryId || suggested
   const chosenAccount = accountId || accounts[0]?.id || ''
 
   const loading = accountsQuery.isLoading || categoriesQuery.isLoading || templatesQuery.isLoading
@@ -111,6 +111,11 @@ export function ConvertToPersonalSheet({
                 value={chosenCategory}
                 onChange={(e) => setCategoryId(e.target.value)}
               >
+                {!chosenCategory && (
+                  <option value="" disabled>
+                    Elegí una categoría
+                  </option>
+                )}
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}

@@ -1,3 +1,4 @@
+import { DestinationGlyph } from './DestinationGlyph'
 import { Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router'
@@ -86,10 +87,13 @@ export function PersonalTripPage() {
           </button>
         }
       />
-      <p className="-mt-2 text-[16px] text-text-muted">
-        {rangeLabel(trip.startsOn, trip.endsOn)} · {summary.totalDays}{' '}
-        {summary.totalDays === 1 ? 'día' : 'días'}
-      </p>
+      <div className="-mt-2 flex items-center gap-3">
+        <DestinationGlyph name={trip.name} size={28} className="size-12 shrink-0 rounded-full bg-tint-green" />
+        <p className="text-[16px] text-text-muted">
+          {rangeLabel(trip.startsOn, trip.endsOn)} · {summary.totalDays}{' '}
+          {summary.totalDays === 1 ? 'día' : 'días'}
+        </p>
+      </div>
       <section
         aria-label="Presupuesto del viaje"
         className="rounded-[28px] bg-forest p-5 text-cream"

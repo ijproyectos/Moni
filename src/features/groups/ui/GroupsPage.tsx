@@ -10,6 +10,7 @@ import { useGroupLedger } from '../api/useGroupLedger'
 import { useMyGroups } from '../api/useGroups'
 import { lastExpenseView, mostRecentGroup, splitShortLabel } from '../domain/groupsOverview'
 import { personName } from '../domain/ledger'
+import { categorySeemsWrong } from '../domain/categoryCheck'
 import { expenseIcon } from './expenseIcon'
 import { overlayDeltaFor } from '../domain/ledger'
 import { useGroupOverlays } from '../api/useGroupGuests'
@@ -59,9 +60,11 @@ export function GroupsPage() {
     const payer = view.paidByMe ? 'Pagaste vos' : `Pagó ${personName(recentData.ledger.people, view.payerId)}`
     const split = splitShortLabel(view.methodLabel, recentData.ledger.expenses[0]?.shares.length ?? 0)
     return {
+      groupId: recent.id,
+      needsReview: categorySeemsWrong(view.description, view.templateSlug),
       groupName: recent.name,
       description: `${view.description} · dividido ${split}`,
-      meta: `${payer} · ${formatRelativeDay(view.occurredOn, todayIso()).toLowerCase()}`,
+      meta: `${payer} · ${formatRelativeDay(view.occurredOn, todayIso()).toLowerCase()}${categorySeemsWrong(view.description, view.templateSlug) ? ' · Revisá la categoría' : ''}`,
       deltaCents: view.myDeltaCents,
       icon: expenseIcon(templates.data ?? [], view.templateSlug),
     }

@@ -80,7 +80,7 @@ describe('TransactionForm', () => {
     const group = screen.getByRole('group', { name: 'Categoría' })
     const chip = within(group).getByRole('button', { name: 'Comida' })
     expect(chip).toHaveAttribute('aria-pressed', 'false')
-    expect(chip.querySelector('svg')).not.toBeNull()
+    expect(chip.querySelector('[aria-hidden="true"]')).not.toBeNull()
     await user.click(chip)
     expect(chip).toHaveAttribute('aria-pressed', 'true')
   })

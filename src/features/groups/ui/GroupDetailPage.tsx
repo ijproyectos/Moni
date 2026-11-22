@@ -57,6 +57,7 @@ import { GroupDetailHeader } from './GroupDetailHeader'
 import { ContactsInvite } from './ContactsInvite'
 import { InvitePanel } from './InvitePanel'
 import { ExpenseDetailSheet } from './ExpenseDetailSheet'
+import { categorySeemsWrong } from '../domain/categoryCheck'
 import { expenseIcon } from './expenseIcon'
 import { AvatarStack } from './groupVisuals'
 import { GroupBalanceHero, GroupExpenseRows, GroupPaidCards, type GroupExpenseRowData } from './GroupDetailBlocks'
@@ -107,7 +108,7 @@ export function GroupDetailPage() {
   const [sheet, setSheet] = useState<Sheet>(null)
   const [undo, setUndo] = useState<GuestExpenseInput | null>(null)
 
-  const { ledger, meId, overlay, name } = data
+  const { ledger, meId, overlay, name, group: groupQuery } = data
   const isAdmin = useIsGroupAdmin(groupId, meId)
   const kind = data.group.data?.kind ?? 'amigos'
   const templateList = templates.data ?? []
@@ -198,7 +199,7 @@ export function GroupDetailPage() {
     return {
       id: e.id,
       title: e.description,
-      meta: `${payer} · ${split} · ${formatRelativeDay(e.occurredOn, todayIso()).toLowerCase()}`,
+      meta: `${payer} · ${split} · ${formatRelativeDay(e.occurredOn, todayIso()).toLowerCase()}${categorySeemsWrong(e.description, e.templateSlug) ? ' · Revisá la categoría' : ''}`,
       amountCents: e.amountCents,
       balanceLabel:
         delta > 0
@@ -625,6 +626,7 @@ export function GroupDetailPage() {
         <ArchiveGroupSheet
           groupId={groupId}
           name={name}
+          serverName={groupQuery.data?.name}
           onClose={() => setSheet(null)}
           onDone={() => navigate('/grupos', { replace: true })}
         />

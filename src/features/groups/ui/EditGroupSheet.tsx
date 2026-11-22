@@ -159,7 +159,7 @@ export function EditGroupSheet({
         {isAdmin && <JoinRequestsSection groupId={groupId} />}
         {isAdmin && <AdminMembersSection groupId={groupId} meId={meId} />}
 
-        <SectionLabel>Salir u ocultar</SectionLabel>
+        <SectionLabel>Salir o eliminar</SectionLabel>
         <div className="flex flex-col divide-y divide-line rounded-[20px] bg-card px-4">
           <DangerRow
             icon={<ChevronLeft aria-hidden="true" className="size-5" />}
@@ -169,15 +169,15 @@ export function EditGroupSheet({
           />
           <DangerRow
             icon={<EyeOff aria-hidden="true" className="size-5" />}
-            title="Quitar de mi cuenta"
-            text="Solo vos dejás de verlo. Seguís en el grupo y tus deudas no cambian."
+            title="Eliminar para mí"
+            text="Solo desaparece de tu lista."
             onClick={onHide}
           />
           {isAdmin && (
             <DangerRow
               icon={<Archive aria-hidden="true" className="size-5" />}
               title="Eliminar para todos"
-              text="Se archiva para todas las personas. El historial se conserva."
+              text="Se cierra para todos y se les avisa."
               tone="danger"
               onClick={onArchive}
             />
