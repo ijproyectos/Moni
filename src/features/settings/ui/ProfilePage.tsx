@@ -131,6 +131,7 @@ export function ProfilePage() {
           }
           onClick={() => setSheet('goals')}
         />
+        <SettingRow title="Categorías" subtitle="Creá, editá, colores e íconos" to="/categorias" />
         <AchievementsRow />
       </ProfileGroup>
 

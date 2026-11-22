@@ -146,7 +146,7 @@ export function CategoriesPage() {
       <MentaHeader
         title="Categorías"
         subtitle={`${list.length} ${list.length === 1 ? 'categoría' : 'categorías'} · ${formatMonthName(monthStart(todayIso())).toLowerCase()}`}
-        backTo="/mas"
+        backTo="/perfil"
         action={
           <button type="button" onClick={() => startEditing()} aria-label="Nueva categoría" className={MENTA_CIRCLE}>
             <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />
@@ -181,7 +181,7 @@ export function CategoriesPage() {
           description="Creá la primera para ordenar tus movimientos."
         />
       ) : (
-        <ul aria-label="Categorías" className="grid grid-cols-3 gap-2.5">
+        <ul aria-label="Categorías" className="grid grid-cols-2 gap-2.5">
           {list.map((category) => {
             const spent = spentById.get(category.id) ?? 0
             const budget = budgetsByCategory.get(category.id)
@@ -192,16 +192,16 @@ export function CategoriesPage() {
                   type="button"
                   onClick={() => startEditing(category)}
                   aria-label={`Editar ${category.name}`}
-                  className={cn('flex w-full min-w-0 flex-col gap-2.5 rounded-3xl bg-card px-3 py-3.5 text-left', FOCUS_RING)}
+                  className={cn('flex w-full min-w-0 items-center gap-3 rounded-3xl bg-card px-3 py-3 text-left', FOCUS_RING)}
                 >
                   <span
                     aria-hidden="true"
-                    className="flex size-[42px] shrink-0 items-center justify-center rounded-[14px]"
+                    className="flex size-[46px] shrink-0 items-center justify-center rounded-[15px]"
                     style={{ backgroundColor: tint(category.color), color: themedColor(category.color) }}
                   >
-                    <Icon className="size-[19px]" strokeWidth={2} />
+                    <Icon className="size-[22px]" strokeWidth={2} />
                   </span>
-                  <span className="min-w-0">
+                  <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14.5px] font-bold">{category.name}</span>
                     <span className="block truncate text-[12.5px] text-text-muted">
                       {spent > 0 ? (
@@ -223,7 +223,7 @@ export function CategoriesPage() {
               type="button"
               onClick={() => startEditing()}
               className={cn(
-                'flex min-h-[116px] w-full flex-col items-center justify-center gap-1.5 rounded-3xl border-[1.5px] border-dashed border-[#9DB5A5] text-[13px] font-medium text-[#4F6157] dark:text-text-muted',
+                'flex min-h-[70px] w-full items-center justify-center gap-2 rounded-3xl border-[1.5px] border-dashed border-[#9DB5A5] text-[13px] font-medium text-[#4F6157] dark:text-text-muted',
                 FOCUS_RING,
               )}
             >

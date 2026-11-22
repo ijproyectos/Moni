@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
-import moniCat from '@/assets/mascot/moni-gato-fortuna-animado.svg'
+import { MoniCatLive } from './MoniCatLive'
 import { cn } from '@/shared/ui/cn'
 import { CAT_VISIBLE, clampToArea, nextInterval, nextPhrase } from '../domain/moniPhrases'
 import { AssistantSheet } from './AssistantSheet'
@@ -331,31 +331,11 @@ export function MoniAgent({ name = null }: { name?: string | null }) {
               <span
                 aria-hidden="true"
                 className={cn(
-                  'pointer-events-none relative block size-full',
+                  'pointer-events-none relative block size-full origin-bottom',
                   !dragging && 'motion-safe:animate-[moni-float_3.6s_ease-in-out_infinite]',
                 )}
               >
-                {/* The drawing already waves its paw on a loop; the eyes are static, so the lids are drawn over them. */}
-                <img
-                  src={moniCat}
-                  alt=""
-                  draggable={false}
-                  className="pointer-events-none size-full object-contain drop-shadow-[0_8px_10px_rgba(17,34,24,0.22)]"
-                />
-                <svg
-                  viewBox="0 0 1024 1024"
-                  data-testid="moni-blink"
-                  className="pointer-events-none absolute inset-0 size-full opacity-0 motion-safe:animate-[moni-blink_5.4s_linear_infinite]"
-                >
-                  <g fill="#fcf1dc">
-                    <rect x="358" y="229" width="128" height="94" rx="14" />
-                    <rect x="538" y="229" width="128" height="94" rx="14" />
-                  </g>
-                  <g fill="none" stroke="#1d4a3a" strokeWidth="11" strokeLinecap="round">
-                    <path d="M372 290 Q422 312 472 290" />
-                    <path d="M552 290 Q602 312 652 290" />
-                  </g>
-                </svg>
+                <MoniCatLive className="pointer-events-none size-full object-contain drop-shadow-[0_8px_10px_rgba(17,34,24,0.22)]" />
               </span>
             </button>
           </div>

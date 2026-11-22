@@ -1,4 +1,4 @@
-import { Bell, ClipboardPaste, Gift, Lock, Search, Sparkles, UsersRound } from 'lucide-react'
+import { Bell, ClipboardPaste, Gift, Hourglass, Lock, Search, Sparkles, UsersRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
@@ -13,7 +13,7 @@ import { Avatar, MoniSays, Page, SectionLabel } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { useInvitePreview } from '../api/useInvitePreview'
-import { useJoinGroup } from '../api/useGroups'
+import { useCancelJoinRequest, useJoinGroup, useMyJoinRequests } from '../api/useGroups'
 import {
   cleanCodeInput,
   extractInviteCode,
@@ -144,6 +144,10 @@ export function JoinGroupPage() {
   const { data: profile } = useProfile()
   const [error, setError] = useState<string | null>(null)
   const [joined, setJoined] = useState<{ id: string; alreadyMember: boolean } | null>(null)
+  // The code needs an administrator's approval: a request was left. Only the group's name (already shown) is known.
+  const [pendingName, setPendingName] = useState<string | null>(null)
+  const myRequests = useMyJoinRequests()
+  const cancelRequest = useCancelJoinRequest()
   const me = firstName(profile?.display_name) || 'Vos'
 
   if (!validCode) {
@@ -156,6 +160,49 @@ export function JoinGroupPage() {
         <Link to="/grupos/unirse" className="text-[17px] font-extrabold underline">
           Escribir el código
         </Link>
+      </Page>
+    )
+  }
+
+  if (pendingName !== null) {
+    const mine = (myRequests.data ?? []).find((r) => r.status === 'pending' && r.groupName === pendingName)
+    return (
+      <Page className="pt-24">
+        <MascotTile size="lg" />
+        <h1 className="text-center font-display text-[30px] font-extrabold">Solicitud enviada</h1>
+        <p className="flex items-center justify-center gap-2 text-center text-[17px] font-extrabold">
+          <Hourglass aria-hidden="true" className="size-5" /> Esperando que te acepten
+        </p>
+        <p className="text-center text-[16px] leading-6 text-text-muted">
+          Un administrador de {pendingName ? `“${pendingName}”` : 'el grupo'} tiene que aceptarte. Hasta entonces no ves nada del
+          grupo. Te avisamos apenas responda.
+        </p>
+        {error && (
+          <p role="alert" className="text-center text-[15px] text-expense">
+            {error}
+          </p>
+        )}
+        <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto flex w-full max-w-[430px] flex-col gap-2 px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+          <Button onClick={() => navigate('/grupos', { replace: true })}>Listo</Button>
+          {mine && (
+            <button
+              type="button"
+              disabled={cancelRequest.isPending}
+              onClick={() =>
+                void cancelRequest
+                  .mutateAsync(mine.id)
+                  .then(() => {
+                    toast.show('Cancelaste tu solicitud')
+                    navigate('/grupos', { replace: true })
+                  })
+                  .catch((e: unknown) => setError(toUserMessage(e)))
+              }
+              className="min-h-12 rounded-full border-2 border-line bg-card text-[16px] font-extrabold disabled:opacity-60"
+            >
+              Cancelar solicitud
+            </button>
+          )}
+        </div>
       </Page>
     )
   }
@@ -222,6 +269,11 @@ export function JoinGroupPage() {
     setError(null)
     try {
       const result = await join.mutateAsync(code)
+      if (result.pending || !result.groupId) {
+        setPendingName(groupName ?? '')
+        void myRequests.refetch()
+        return
+      }
       restoreGroupOverlay(result.groupId)
       setJoined({ id: result.groupId, alreadyMember: result.alreadyMember })
       if (!result.alreadyMember) {

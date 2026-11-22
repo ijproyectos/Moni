@@ -13,8 +13,12 @@ const preview = vi.hoisted(() => ({
   },
 }))
 
+const myRequests = vi.hoisted(() => ({ data: [] as unknown[], refetch: vi.fn() }))
+const cancelRequest = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 vi.mock('../api/useGroups', () => ({
   useJoinGroup: () => ({ mutateAsync, isPending: false }),
+  useMyJoinRequests: () => myRequests,
+  useCancelJoinRequest: () => ({ mutateAsync: cancelRequest, isPending: false }),
 }))
 vi.mock('../api/useInvitePreview', () => ({ useInvitePreview: () => preview.current }))
 vi.mock('@/features/auth/api/useProfile', () => ({ useProfile: () => ({ data: null }) }))
@@ -40,6 +44,8 @@ function renderAt(url: string) {
 describe('JoinGroupPage', () => {
   beforeEach(() => {
     mutateAsync.mockReset()
+    cancelRequest.mockClear()
+    myRequests.data = []
     preview.current = { data: { status: 'found', groupName: 'Viaje a Brasil' }, isLoading: false }
     patchOverlay(GROUP, { deleted: false })
   })
@@ -68,6 +74,27 @@ describe('JoinGroupPage', () => {
     expect(await screen.findByRole('heading', { name: 'Ya estás en el grupo' })).toBeVisible()
     await user.click(screen.getByRole('button', { name: /Ver el grupo/ }))
     expect(await screen.findByText('detalle del grupo')).toBeVisible()
+  })
+
+  it('with a code that needs approval it leaves a request: the person is NOT in the group and sees nothing of it', async () => {
+    mutateAsync.mockResolvedValue({ groupId: null, alreadyMember: false, pending: true })
+    myRequests.data = [{ id: 'r1', groupId: GROUP, groupName: 'Asado', status: 'pending', createdAt: '2026-11-21T00:00:00Z' }]
+    const user = renderAt('/unirse/ABCD-2345')
+    await user.click(screen.getByRole('button', { name: 'Sumarme al grupo' }))
+    expect(await screen.findByRole('heading', { name: 'Solicitud enviada' })).toBeVisible()
+    expect(screen.getByText(/Esperando que te acepten/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: /Ver el grupo/ })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Ya estás en el grupo' })).toBeNull()
+  })
+
+  it('the person can cancel the pending request', async () => {
+    mutateAsync.mockResolvedValue({ groupId: null, alreadyMember: false, pending: true })
+    preview.current = { data: { status: 'found', groupName: 'Asado' }, isLoading: false }
+    myRequests.data = [{ id: 'r1', groupId: GROUP, groupName: 'Asado', status: 'pending', createdAt: '2026-11-21T00:00:00Z' }]
+    const user = renderAt('/unirse/ABCD-2345')
+    await user.click(screen.getByRole('button', { name: 'Sumarme al grupo' }))
+    await user.click(await screen.findByRole('button', { name: 'Cancelar solicitud' }))
+    expect(cancelRequest).toHaveBeenCalledWith('r1')
   })
 
   it('tells a member who uses a code again that they are already in', async () => {

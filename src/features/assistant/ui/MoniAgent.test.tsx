@@ -123,9 +123,12 @@ describe('MoniAgent (the floating cat)', () => {
   it('is one cat, the full-body animated one, floating over the page', () => {
     renderAgent()
     expect(screen.getAllByRole('button', { name: 'Hablá con Moni' })).toHaveLength(1)
-    expect(cat().querySelector('img')?.getAttribute('src')).toMatch(/moni-gato-fortuna-animado.*\.svg/)
-    expect(cat().querySelector('img')?.parentElement).toHaveClass('motion-safe:animate-[moni-float_3.6s_ease-in-out_infinite]')
-    expect(screen.getByTestId('moni-blink')).toHaveClass('motion-safe:animate-[moni-blink_5.4s_linear_infinite]')
+    const live = screen.getByTestId('moni-cat-live')
+    expect(live.parentElement).toHaveClass('motion-safe:animate-[moni-float_3.6s_ease-in-out_infinite]')
+    // Parts that move on their own, so the cat is not one rigid piece.
+    for (const part of ['mc-head', 'mc-ear-l', 'mc-ear-r', 'mc-eyes', 'mc-lids', 'mc-tail', 'mc-breath', 'mc-paw']) {
+      expect(live.querySelector(`.${part}`)).not.toBeNull()
+    }
   })
 
   it('a tap opens the chat; a drag moves the cat and does not open it', async () => {

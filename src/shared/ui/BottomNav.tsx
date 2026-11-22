@@ -19,8 +19,10 @@ const SOFT = 'opacity-45'
 function GroupsIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="1.5 1.5 21 21" aria-hidden="true" className={className} fill="currentColor">
-      <circle cx="14.5" cy="12" r="5.5" className={SOFT} />
-      <circle cx="9.5" cy="12" r="5.5" />
+      <circle cx="16.8" cy="8.6" r="3" className={SOFT} />
+      <path d="M16 13.4a5.4 5.4 0 0 1 5.5 5.4v1.7h-4.1v-1.3A7.6 7.6 0 0 0 14.8 14z" className={SOFT} />
+      <circle cx="9" cy="8.2" r="3.8" />
+      <path d="M2.5 20.5v-1.2a6.5 6.5 0 0 1 13 0v1.2z" />
     </svg>
   )
 }

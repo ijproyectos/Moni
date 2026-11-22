@@ -3,10 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
-  House,
-  Plug,
   Plus,
-  RefreshCw,
   Sparkles,
   Trash2,
   Upload,
@@ -26,7 +23,6 @@ import { useGoBack } from '@/shared/lib/useGoBack'
 import { monthStart, todayIso } from '@/shared/lib/month'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
-import { cn } from '@/shared/ui/cn'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import { EmptyState } from '@/shared/ui/EmptyState'
@@ -38,6 +34,7 @@ import { useGroupLedger } from '../api/useGroupLedger'
 import { useNewMemberNotice } from '../api/useNewMemberNotice'
 import { useGroupTrips } from '@/features/trips/api/useTrips'
 import {
+  useIsGroupAdmin,
   useLeaveGroup,
   useSettlements,
   useVoidSettlement,
@@ -48,7 +45,6 @@ import { canVoidExpense, canRecordReceipt, canVoidSettlement } from '../domain/g
 import { balanceHeadline, reminderMessage, splitShortLabel } from '../domain/groupsOverview'
 import { personName, type LedgerExpense } from '../domain/ledger'
 import { expensePaidPhrase, settlementPhrase } from '../domain/phrases'
-import { patchOverlay } from '../mock/overlayStore'
 import type { GuestExpenseInput } from '../api/guestsRepository'
 import {
   useCreateGuestExpense,
@@ -58,12 +54,16 @@ import {
 import { useGroupPhoto } from '../api/useGroupPhotos'
 import { EditGroupSheet } from './EditGroupSheet'
 import { GroupDetailHeader } from './GroupDetailHeader'
+import { ContactsInvite } from './ContactsInvite'
 import { InvitePanel } from './InvitePanel'
 import { ExpenseDetailSheet } from './ExpenseDetailSheet'
+import { categorySeemsWrong } from '../domain/categoryCheck'
 import { expenseIcon } from './expenseIcon'
 import { AvatarStack } from './groupVisuals'
 import { GroupBalanceHero, GroupExpenseRows, GroupPaidCards, type GroupExpenseRowData } from './GroupDetailBlocks'
+import { ArchiveGroupSheet, HideGroupSheet } from './GroupAdminSections'
 import { PhraseText } from './PhraseText'
+import { RecurringSummaryCard } from './RecurringSummaryCard'
 import { ReceiptSheet } from './ReceiptSheet'
 import { SettleUpSheet } from './SettleUpSheet'
 import { SharedExpenseSheet } from './SharedExpenseSheet'
@@ -77,13 +77,12 @@ type Sheet =
   | { type: 'group' }
   | { type: 'leave' }
   | { type: 'invite' }
-  | { type: 'remove-group' }
+  | { type: 'hide' }
+  | { type: 'archive' }
   | { type: 'void-settlement'; settlement: Settlement }
   | { type: 'void-guest-settlement'; id: string }
   | { type: 'receipt'; id: string }
   | null
-
-const RECURRING_ICONS = { house: House, plug: Plug, refresh: RefreshCw }
 
 // Screens 040 / 052 / 060 / 093 / 103 / 131 — grupo.
 export function GroupDetailPage() {
@@ -109,7 +108,8 @@ export function GroupDetailPage() {
   const [sheet, setSheet] = useState<Sheet>(null)
   const [undo, setUndo] = useState<GuestExpenseInput | null>(null)
 
-  const { ledger, meId, overlay, name } = data
+  const { ledger, meId, overlay, name, group: groupQuery } = data
+  const isAdmin = useIsGroupAdmin(groupId, meId)
   const kind = data.group.data?.kind ?? 'amigos'
   const templateList = templates.data ?? []
   const month = monthStart(todayIso())
@@ -199,7 +199,7 @@ export function GroupDetailPage() {
     return {
       id: e.id,
       title: e.description,
-      meta: `${payer} · ${split} · ${formatRelativeDay(e.occurredOn, todayIso()).toLowerCase()}`,
+      meta: `${payer} · ${split} · ${formatRelativeDay(e.occurredOn, todayIso()).toLowerCase()}${categorySeemsWrong(e.description, e.templateSlug) ? ' · Revisá la categoría' : ''}`,
       amountCents: e.amountCents,
       balanceLabel:
         delta > 0
@@ -280,7 +280,7 @@ export function GroupDetailPage() {
         photoUrl={photoUrl}
         extra={kind === 'pareja' ? <AvatarStack people={ledger.people} size="md" /> : null}
         onBack={goBack}
-        onInvite={() => setSheet({ type: 'invite' })}
+        onInvite={isAdmin ? () => setSheet({ type: 'invite' }) : undefined}
         onOptions={() => setSheet({ type: 'group' })}
       />
 
@@ -365,50 +365,11 @@ export function GroupDetailPage() {
         </div>
       )}
 
-      {kind === 'casa' && overlay.recurring.some((r) => r.enabled) && (
-        <section className="rounded-[24px] border border-line bg-card px-4 py-3">
-          <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
-            Se repiten cada mes
-          </p>
-          <ul className="mt-1 divide-y divide-line">
-            {overlay.recurring
-              .filter((r) => r.enabled)
-              .map((r) => {
-                const Icon = RECURRING_ICONS[r.icon]
-                const loaded = monthExpenses.some((e) =>
-                  e.description
-                    .toLowerCase()
-                    .includes(r.name.toLowerCase().split(' ')[0] ?? r.name),
-                )
-                return (
-                  <li key={r.id} className="flex items-center gap-3 py-2">
-                    <span className="flex size-11 items-center justify-center rounded-full bg-lime/35">
-                      <Icon aria-hidden="true" className="size-5" />
-                    </span>
-                    <span className="flex-1">
-                      <span className="block text-[17px] font-extrabold">{r.name}</span>
-                      <span className="block text-[14px] text-text-muted">
-                        {loaded ? `Se carga el ${r.day} · ya está` : `Vence el ${r.day}`}
-                      </span>
-                    </span>
-                    <span
-                      className={cn(
-                        'rounded-full px-3 py-0.5 text-[13px] font-extrabold',
-                        loaded ? 'bg-tint-green' : 'bg-sand',
-                      )}
-                    >
-                      {loaded ? 'Cargado' : 'Pendiente'}
-                    </span>
-                  </li>
-                )
-              })}
-          </ul>
-        </section>
-      )}
+      {kind === 'hogar' && groupId && <RecurringSummaryCard groupId={groupId} />}
 
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h2 className="text-[17px] font-bold tracking-[-0.02em]">Gastos del grupo</h2>
-        {kind === 'casa' || kind === 'pareja' ? (
+        {kind === 'hogar' || kind === 'pareja' ? (
           <span className="text-[13.5px] text-[#4F6157] dark:text-text-muted">
             {formatMonthName(month)}
           </span>
@@ -424,7 +385,7 @@ export function GroupDetailPage() {
       </div>
 
       <GroupExpenseRows
-        rows={(kind === 'casa' || kind === 'pareja' ? monthExpenses : ledger.expenses).map(
+        rows={(kind === 'hogar' || kind === 'pareja' ? monthExpenses : ledger.expenses).map(
           (e) => expenseRow(e),
         )}
         onOpen={(id) => setSheet({ type: 'detail', id })}
@@ -535,7 +496,7 @@ export function GroupDetailPage() {
         >
           <Plus aria-hidden="true" className="mr-2 size-5" strokeWidth={2.5} /> Agregar gasto
         </Button>
-        {kind === 'casa' ? (
+        {kind === 'hogar' ? (
           <Button
             variant="ghost"
             className="h-14 flex-1 whitespace-nowrap rounded-full border-2 border-line bg-card px-3 text-ink max-[359px]:text-[16px]"
@@ -596,7 +557,10 @@ export function GroupDetailPage() {
       )}
       {sheet?.type === 'invite' && (
         <BottomSheet title="Invitar al grupo" onClose={() => setSheet(null)}>
-          <InvitePanel groupId={groupId} groupName={name} />
+          <div className="flex flex-col gap-5">
+            <ContactsInvite groupId={groupId} />
+            <InvitePanel groupId={groupId} groupName={name} />
+          </div>
         </BottomSheet>
       )}
       {sheet?.type === 'settle' && (
@@ -617,7 +581,10 @@ export function GroupDetailPage() {
           overlay={overlay}
           onClose={() => setSheet(null)}
           onLeave={() => setSheet({ type: 'leave' })}
-          onRemove={() => setSheet({ type: 'remove-group' })}
+          isAdmin={isAdmin}
+          meId={meId}
+          onHide={() => setSheet({ type: 'hide' })}
+          onArchive={() => setSheet({ type: 'archive' })}
         />
       )}
       {sheet?.type === 'leave' && (
@@ -647,37 +614,22 @@ export function GroupDetailPage() {
           )}
         </DecisionSheet>
       )}
-      {sheet?.type === 'remove-group' && (
-        <DecisionSheet
-          icon={<Trash2 className="size-6" />}
-          title={`¿Eliminar “${name}”?`}
+      {sheet?.type === 'hide' && groupId && (
+        <HideGroupSheet
+          groupId={groupId}
+          name={name}
           onClose={() => setSheet(null)}
-          actions={[
-            ...(myNet !== 0
-              ? [{ label: 'Saldar primero', onClick: () => setSheet({ type: 'settle' }) }]
-              : []),
-            {
-              label: myNet !== 0 ? 'Eliminar igual' : 'Eliminar grupo',
-              tone: 'danger' as const,
-              onClick: () => {
-                patchOverlay(groupId, { deleted: true })
-                toast.show('Grupo eliminado')
-                navigate('/grupos', { replace: true })
-              },
-            },
-            { label: 'Cancelar', tone: 'outline' as const, onClick: () => setSheet(null) },
-          ]}
-        >
-          <p>Se borran los gastos del grupo para todos.</p>
-          {myNet !== 0 && (
-            <p className="mt-3 rounded-[18px] bg-tint-gold px-4 py-3 text-[16px]">
-              <strong className="font-extrabold">
-                {myNet < 0 ? `Debés ${formatArs(-myNet)}.` : `Te deben ${formatArs(myNet)}.`}
-              </strong>{' '}
-              Si lo eliminás, esa cuenta se pierde.
-            </p>
-          )}
-        </DecisionSheet>
+          onDone={() => navigate('/grupos', { replace: true })}
+        />
+      )}
+      {sheet?.type === 'archive' && groupId && (
+        <ArchiveGroupSheet
+          groupId={groupId}
+          name={name}
+          serverName={groupQuery.data?.name}
+          onClose={() => setSheet(null)}
+          onDone={() => navigate('/grupos', { replace: true })}
+        />
       )}
       {sheet?.type === 'void-settlement' && (
         <ConfirmDialog

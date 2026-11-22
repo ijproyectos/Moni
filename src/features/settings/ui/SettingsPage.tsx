@@ -27,6 +27,7 @@ import { Link } from 'react-router'
 import { ShoppingBasket } from 'lucide-react'
 import { useTheme } from '../api/useTheme'
 import { GroupLabel, ProfileGroup } from './ProfilePage'
+import { GroupNoticePrefs } from './GroupNoticePrefs'
 
 const THEME_CHOICES = [
   { mode: 'light', label: 'Claro', Icon: Sun },
@@ -159,6 +160,8 @@ export function SettingsPage() {
           />
         )}
       </ProfileGroup>
+
+      <GroupNoticePrefs />
 
       {FEATURES.pro && (
         <Link to="/pro" className="flex items-center gap-4 rounded-[20px] bg-gold px-4 py-3.5 text-on-bright">

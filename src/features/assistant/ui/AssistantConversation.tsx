@@ -1,6 +1,7 @@
-import { ArrowUp, Mic } from 'lucide-react'
+import { ArrowUp, Mic, MicOff, X } from 'lucide-react'
 import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { useSpeechRecognition } from '@/features/ai/ui/useSpeechRecognition'
+import { mergeDictation } from '@/features/ai/domain/dictation'
+import { useSpeechRecognition, type SpeechError } from '@/features/ai/ui/useSpeechRecognition'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { useParseMovements } from '@/features/ai/api/useParseMovements'
 import { warningsNotice, type DraftMovement } from '@/features/ai/domain/draft'
@@ -24,6 +25,17 @@ import {
 } from '../domain/chat'
 import { parsePurchaseMessage } from '../domain/purchaseVerdict'
 import { PurchaseVerdictCard } from './PurchaseVerdictCard'
+
+/** What the chat says when the dictation does not work: what happened and what to do, never a silent failure. */
+const DICTATION_MESSAGES: Record<SpeechError, string> = {
+  denied: 'El micrófono está bloqueado. Habilitalo en los permisos del navegador o del sitio para poder dictar, o escribí tu consulta.',
+  service: 'El dictado de tu dispositivo no está activo. En iPhone: Ajustes › General › Teclado › Dictado, o abrí Moni desde Safari. Mientras tanto, escribí tu consulta.',
+  no_mic: 'No encuentro un micrófono en este dispositivo. Escribí tu consulta.',
+  network: 'No pude conectarme con el servicio de voz. Revisá tu conexión y probá de nuevo, o escribí tu consulta.',
+  no_speech: 'No te escuché. Probá de nuevo, más cerca del micrófono, o escribí tu consulta.',
+  unsupported: 'Este navegador no permite dictar por voz. Escribí tu consulta o abrí Moni en Chrome (Android o computadora) o Safari (iPhone).',
+  unavailable: 'El dictado no está disponible ahora. Escribí tu consulta.',
+}
 
 function Bubble({ message }: { message: ChatMessage }) {
   const mine = message.role === 'user'
@@ -80,7 +92,27 @@ export function AssistantConversation({
   const [draft, setDraft] = useState(initialDraft ?? '')
   const [upsell, setUpsell] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
-  const speech = useSpeechRecognition({ onTranscript: setDraft })
+  /** What was written when the dictation started: the dictation goes after it and "Cancelar" gives it back. */
+  const dictationBase = useRef('')
+  const speech = useSpeechRecognition({
+    onTranscript: (spoken) => setDraft(mergeDictation(dictationBase.current, spoken).slice(0, ASSISTANT_LIMITS.maxChars)),
+  })
+  const dictating = speech.listening || speech.processing
+
+  function toggleMic() {
+    if (speech.processing) return
+    if (speech.listening) {
+      speech.stop()
+      return
+    }
+    dictationBase.current = draft
+    speech.start()
+  }
+
+  function cancelDictation() {
+    speech.cancel()
+    setDraft(dictationBase.current)
+  }
   const initialSent = useRef(false)
   const { send, append } = chat
   const isFree = plus.isFree
@@ -141,6 +173,7 @@ export function AssistantConversation({
 
   function submit(event: FormEvent) {
     event.preventDefault()
+    if (dictating) speech.cancel()
     if (ask(draft)) setDraft('')
   }
 
@@ -239,6 +272,42 @@ export function AssistantConversation({
             ))}
           </div>
 
+          {(dictating || speech.error) && (
+            <div
+              role={speech.error ? 'alert' : 'status'}
+              className={cn(
+                'flex items-start gap-2 rounded-2xl px-3.5 py-2.5 text-[14px] leading-5',
+                speech.error ? 'bg-expense/10 text-expense' : 'bg-lilac text-ink',
+              )}
+            >
+              {speech.error ? (
+                <>
+                  <p className="flex-1">{DICTATION_MESSAGES[speech.error]}</p>
+                  <button
+                    type="button"
+                    aria-label="Cerrar aviso"
+                    onClick={speech.clearError}
+                    className={cn('-mr-1.5 -mt-1 flex size-9 shrink-0 items-center justify-center rounded-full', FOCUS_RING)}
+                  >
+                    <X aria-hidden="true" className="size-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span aria-hidden="true" className="mt-1.5 size-2.5 shrink-0 rounded-full bg-expense motion-safe:animate-pulse" />
+                  <p className="flex-1 font-bold">{speech.listening ? 'Escuchando…' : 'Procesando…'}</p>
+                  <button
+                    type="button"
+                    onClick={cancelDictation}
+                    className={cn('-my-1 min-h-9 shrink-0 rounded-full px-3 text-[13px] font-extrabold underline', FOCUS_RING)}
+                  >
+                    Cancelar
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           <form
             onSubmit={submit}
             className={cn(
@@ -254,23 +323,31 @@ export function AssistantConversation({
                 aria-label="Tu pregunta"
                 placeholder="Preguntale a Moni o contale un gasto…"
                 autoComplete="off"
+                readOnly={dictating}
                 className="min-w-0 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-[#8A9A90]"
               />
-              {speech.supported && (
-                <button
-                  type="button"
-                  aria-label={speech.listening ? 'Detener dictado' : 'Dictar pregunta'}
-                  aria-pressed={speech.listening}
-                  onClick={speech.listening ? speech.stop : speech.start}
-                  className={cn(
-                    'flex size-[38px] shrink-0 items-center justify-center rounded-full bg-sand text-ink',
-                    speech.listening && 'bg-lilac',
-                    FOCUS_RING,
-                  )}
-                >
-                  <Mic aria-hidden="true" className="size-[18px]" />
-                </button>
-              )}
+              <button
+                type="button"
+                aria-label={speech.listening ? 'Detener dictado' : 'Dictar pregunta'}
+                aria-pressed={speech.listening}
+                disabled={speech.processing}
+                onClick={toggleMic}
+                className={cn(
+                  'relative flex size-[38px] shrink-0 items-center justify-center rounded-full bg-sand text-ink disabled:opacity-60',
+                  speech.listening && 'bg-lilac',
+                  !speech.supported && 'text-text-muted',
+                  FOCUS_RING,
+                )}
+              >
+                {speech.listening && (
+                  <span aria-hidden="true" className="absolute inset-0 rounded-full bg-lilac motion-safe:animate-ping" />
+                )}
+                {speech.supported ? (
+                  <Mic aria-hidden="true" className="relative size-[18px]" />
+                ) : (
+                  <MicOff aria-hidden="true" className="relative size-[18px]" />
+                )}
+              </button>
               <button
                 type="submit"
                 aria-label="Enviar"

@@ -81,6 +81,20 @@ describe('InvitePanel', () => {
     expect(href).toContain(encodeURIComponent(`${window.location.origin}/unirse/${CODE}`))
   })
 
+  it('the message has the group name, ONE link and the code, and the native share does not add the link again', async () => {
+    const share = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true })
+    setup()
+    await userEvent.click(screen.getByRole('button', { name: 'Compartir' }))
+    const arg = share.mock.calls[0]?.[0] as { text: string; url?: string }
+    expect(arg.url).toBeUndefined()
+    const link = `${window.location.origin}/unirse/${CODE}`
+    expect(arg.text).toBe(
+      `Te invito a unirte a nuestro grupo Asado & Amigos en Moni.\n\nEntrá desde este enlace:\n${link}\n\nO ingresá este código en Moni:\nABCD-2345`,
+    )
+    expect(arg.text.split(link)).toHaveLength(2)
+  })
+
   it('offers the native share only when the browser supports it', async () => {
     Object.defineProperty(navigator, 'share', { value: undefined, configurable: true })
     const first = setup()

@@ -22,7 +22,17 @@ export interface PaymentReport {
 }
 
 export type NoticeKind =
-  'debt_reminder' | 'payment_reported' | 'payment_confirmed' | 'payment_rejected'
+  | 'debt_reminder'
+  | 'payment_reported'
+  | 'payment_confirmed'
+  | 'payment_rejected'
+  | 'join_request'
+  | 'join_approved'
+  | 'join_rejected'
+  | 'group_invitation'
+  | 'invitation_accepted'
+  | 'recurring_due'
+  | 'group_archived'
 
 export interface Notice {
   id: string
@@ -31,8 +41,15 @@ export interface Notice {
   groupName: string
   actorId: string
   actorName: string
+  /** Zero for the group notices (join requests), which carry no amount. */
   amountCents: Cents
   reportId: string | null
+  /** The join request a group notice is about. */
+  requestId?: string | null
+  /** The direct invitation a group notice is about. */
+  invitationId?: string | null
+  /** The recurring expense a "recurring_due" notice is about (its name). */
+  subject?: string | null
   transferLabel: string | null
   transferAlias: string | null
   transferCbu: string | null
@@ -194,13 +211,27 @@ export function noticeText(notice: Notice): string {
   const amount = formatArs(notice.amountCents)
   switch (notice.kind) {
     case 'debt_reminder':
-      return `${notice.actorName} te recuerda que le debés ${amount} del grupo ${notice.groupName}.`
+      return `${notice.actorName} te recordó que tenés un pago pendiente de ${amount}.`
     case 'payment_reported':
-      return `${notice.actorName} informó que te pagó ${amount} del grupo ${notice.groupName}. ¿Lo recibiste?`
+      return `${notice.actorName} indicó que te pagó ${amount}. ¿Recibiste el dinero?`
     case 'payment_confirmed':
-      return `${notice.actorName} confirmó que recibió tu pago de ${amount} del grupo ${notice.groupName}.`
+      return `${notice.actorName} confirmó tu pago de ${amount}.`
     case 'payment_rejected':
-      return `${notice.actorName} dice que todavía no recibió tu pago de ${amount} del grupo ${notice.groupName}.`
+      return `${notice.actorName} todavía no confirmó tu pago de ${amount}.`
+    case 'join_request':
+      return `${notice.actorName} quiere entrar al grupo ${notice.groupName}.`
+    case 'join_approved':
+      return `${notice.actorName} te aceptó en el grupo ${notice.groupName}. Ya podés verlo.`
+    case 'join_rejected':
+      return `Tu solicitud para entrar al grupo ${notice.groupName} no fue aceptada.`
+    case 'group_invitation':
+      return `${notice.actorName} te invitó al grupo ${notice.groupName}.`
+    case 'invitation_accepted':
+      return `${notice.actorName} aceptó tu invitación al grupo ${notice.groupName}.`
+    case 'group_archived':
+      return `${notice.actorName} eliminó el grupo ${notice.groupName} para todos. Podés consultar el historial.`
+    case 'recurring_due':
+      return `Tenés un gasto recurrente para registrar: ${notice.subject ?? 'un gasto del hogar'}.`
   }
 }
 
@@ -215,4 +246,20 @@ export function reportStatusLabel(status: ReportStatus): string {
     case 'cancelled':
       return 'Cancelado'
   }
+}
+
+/** The preferences for the push notices of the groups (the notices inside Moni are always created). */
+export interface NoticePrefs {
+  debtReminders: boolean
+  paymentsReported: boolean
+  paymentsAnswered: boolean
+  /** The push shows a generic text instead of names and amounts (for the lock screen). */
+  hideDetails: boolean
+}
+
+export const DEFAULT_NOTICE_PREFS: NoticePrefs = {
+  debtReminders: true,
+  paymentsReported: true,
+  paymentsAnswered: true,
+  hideDetails: false,
 }

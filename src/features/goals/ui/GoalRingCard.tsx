@@ -2,7 +2,7 @@ import { formatMonthShortYear, monthNameOf } from '@/shared/lib/dates'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { cn } from '@/shared/ui/cn'
 import { FOCUS_RING } from '@/shared/ui/focusRing'
-import { ProgressRing } from '@/shared/ui/ProgressRing'
+import { MoniPiggy } from './MoniPiggy'
 import { barValue, percentText, type SavingsGoal } from '../domain/savings'
 import { simulate, type MonthlyRow, averageSaved } from '../domain/savingsPlan'
 
@@ -51,7 +51,10 @@ export function GoalRingCard({
         FOCUS_RING,
       )}
     >
-      <ProgressRing value={value} label={percentText(goal)} />
+      <span className="flex flex-col items-center gap-0.5">
+        <MoniPiggy share={value} className="h-[68px] w-[60px]" />
+        <span className="text-[12px] font-extrabold text-mint-ink">{percentText(goal)}</span>
+      </span>
       <span className="flex min-w-0 flex-col gap-[3px]">
         <span className="truncate text-[15.5px] font-semibold">{goal.name}</span>
         <span className="text-[13px] text-[#4F6157] dark:text-text-muted">

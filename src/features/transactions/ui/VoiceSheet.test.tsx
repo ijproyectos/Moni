@@ -277,7 +277,8 @@ describe('VoiceSheet', () => {
     expect(FakeRecognition.instances).toHaveLength(2)
     expect(screen.getByText('Te escucho…')).toBeInTheDocument()
     act(() => FakeRecognition.instances[1]?.say('dos'))
-    finishListening()
+    // The first recording already ended: the finish of the second one is the one that counts.
+    finishListening(1)
     expect(screen.getByText(/“dos”/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Eliminar' }))

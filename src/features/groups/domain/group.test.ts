@@ -15,12 +15,12 @@ const B = '22222222-2222-2222-2222-222222222222'
 
 describe('groupFormSchema', () => {
   it('trims the name and validates the kind', () => {
-    expect(groupFormSchema.parse({ name: '  Casa  ', kind: 'casa' })).toEqual({
-      name: 'Casa',
-      kind: 'casa',
+    expect(groupFormSchema.parse({ name: '  Hogar  ', kind: 'hogar' })).toEqual({
+      name: 'Hogar',
+      kind: 'hogar',
     })
-    expect(groupFormSchema.safeParse({ name: '   ', kind: 'casa' }).success).toBe(false)
-    expect(groupFormSchema.safeParse({ name: 'x'.repeat(61), kind: 'casa' }).success).toBe(false)
+    expect(groupFormSchema.safeParse({ name: '   ', kind: 'hogar' }).success).toBe(false)
+    expect(groupFormSchema.safeParse({ name: 'x'.repeat(61), kind: 'hogar' }).success).toBe(false)
     expect(groupFormSchema.safeParse({ name: 'Ok', kind: 'hotel' }).success).toBe(false)
   })
 })
@@ -144,5 +144,16 @@ describe('group kinds offered', () => {
     const { GROUP_KINDS, GROUP_KIND_LABELS } = await import('./group')
     expect(GROUP_KINDS).not.toContain('viaje')
     expect(GROUP_KIND_LABELS.viaje).toBe('Grupo')
+  })
+})
+
+describe('Hogar (antes Casa)', () => {
+  it('"casa" is treated and shown as Hogar, and Hogar is the kind offered', async () => {
+    const { normalizeKind, GROUP_KINDS, GROUP_KIND_LABELS } = await import('./group')
+    expect(normalizeKind('casa')).toBe('hogar')
+    expect(normalizeKind('amigos')).toBe('amigos')
+    expect(GROUP_KINDS).toEqual(['hogar', 'pareja', 'amigos'])
+    expect(GROUP_KIND_LABELS.hogar).toBe('Hogar')
+    expect(GROUP_KIND_LABELS.casa).toBe('Hogar')
   })
 })

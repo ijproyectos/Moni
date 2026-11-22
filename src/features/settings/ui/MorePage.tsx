@@ -1,20 +1,19 @@
 import { ChevronRight } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { AssistantSheet } from '@/features/assistant/ui/AssistantSheet'
-import { useProfile } from '@/features/auth/api/useProfile'
 import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
-import { useCategories } from '@/features/categories/api/useCategories'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { useAnts } from '@/features/insights/api/useAnts'
 import { useSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
 import { useTrips } from '@/features/trips/api/useTrips'
-import { summarizeTrip, tripStatus, tripTimeLabel } from '@/features/trips/domain/trip'
+import { daysBetween } from '@/features/trips/domain/dates'
+import { tripStatus } from '@/features/trips/domain/trip'
 import { FEATURES } from '@/shared/config/features'
 import { formatArs, formatCompact } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
 import { cn } from '@/shared/ui/cn'
+import { ProgressRing } from '@/shared/ui/ProgressRing'
 
 /** Date of today's trip headline: the ongoing trip, else the nearest one that has not started. */
 function nextTrip<T extends { startsOn: string; endsOn: string; archivedAt: string | null }>(
@@ -28,83 +27,76 @@ function nextTrip<T extends { startsOn: string; endsOn: string; archivedAt: stri
   )
 }
 
-function tripLabelOf(
-  trip: { startsOn: string; endsOn: string; budgetCents: number },
+/** The big figure and caption of the trip card: days to go for the next trip, or "En curso". Nothing is made up without a trip. */
+function tripFigure(
+  trip: { name: string; startsOn: string; endsOn: string; archivedAt: string | null },
   today: string,
-): string {
-  return tripTimeLabel(trip, summarizeTrip(trip, [], today), today)
+): { value: string; sub: string } {
+  if (tripStatus(trip as never, today) === 'ongoing') {
+    const left = Math.max(1, daysBetween(today, trip.endsOn))
+    return { value: 'En curso', sub: `${trip.name} · ${left === 1 ? 'último día' : `quedan ${left} días`}` }
+  }
+  const away = daysBetween(today, trip.startsOn) - 1
+  return { value: away <= 0 ? 'Hoy' : away === 1 ? '1 día' : `${away} días`, sub: trip.name }
 }
 
-/** A figure for a half-width cell: whole pesos up to a million, then short ("$3,5 M"). */
+/** A figure for a half-width card: whole pesos up to a million, then short ("$3,5 M"). */
 function big(cents: number): string {
   return Math.abs(cents) >= 100_000_000 ? `$${formatCompact(cents).replace('M', ' M')}` : formatArs(cents)
 }
 
-const FOCUS = 'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mint-ink'
+const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink dark:focus-visible:outline-lime'
+const CARD =
+  'relative block min-w-0 w-full rounded-[26px] bg-card shadow-[0_8px_22px_-16px_rgba(12,36,24,0.35)] dark:border dark:border-white/[0.06] dark:shadow-none'
 
-/** One cell of the grid: the whole cell is the link. No cards: thin lines between cells. */
-function Cell({
+/** The round arrow of every card: the whole card is the link, this only says so. */
+function Go({ onDark = false }: { onDark?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'flex size-[30px] shrink-0 items-center justify-center rounded-full',
+        onDark ? 'bg-white/15 text-cream' : 'bg-sand text-text-muted',
+      )}
+    >
+      <ChevronRight className="size-4" strokeWidth={2.4} />
+    </span>
+  )
+}
+
+/** One of the four square cards of the grid. */
+function Tile({
   to,
   title,
   value,
   sub,
   tone,
-  index,
   children,
 }: {
   to: string
   title: string
   value: string
-  sub?: string
+  sub: string
   tone?: 'bad'
-  index: number
   children?: ReactNode
 }) {
   return (
-    <li className={cn('min-w-0 border-line', index % 2 === 0 ? 'border-r' : '', index < 4 ? 'border-b' : '')}>
-      <Link
-        to={to}
-        className={cn('relative flex h-full min-h-[116px] flex-col justify-start gap-1 py-4', index % 2 === 0 ? 'pr-4' : 'pl-4', FOCUS)}
+    <Link to={to} className={cn(CARD, 'flex min-h-[150px] flex-col gap-1 p-4', FOCUS)}>
+      <span className="flex items-start justify-between gap-2">
+        <span className="min-w-0 text-[15px] font-extrabold leading-[19px] text-ink">{title}</span>
+        <Go />
+      </span>
+      <span
+        className={cn(
+          'mt-auto block whitespace-nowrap font-display text-[clamp(22px,7.4vw,30px)] font-extrabold leading-[1.05] tracking-[-0.02em]',
+          tone === 'bad' ? 'text-expense' : 'text-ink',
+        )}
       >
-        <span className="text-[15px] font-bold leading-5 text-text-muted">{title}</span>
-        <span
-          className={cn(
-            'mt-1 block whitespace-nowrap font-display text-[clamp(22px,7vw,34px)] font-extrabold leading-[1.05] tracking-[-0.02em]',
-            tone === 'bad' && 'text-expense',
-          )}
-        >
-          {value}
-        </span>
-        {sub && <span className="line-clamp-2 text-[14px] leading-5 text-text-muted">{sub}</span>}
-        {children}
-      </Link>
-    </li>
-  )
-}
-
-const ROW =
-  'flex min-h-[56px] w-full items-center gap-3 py-2 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mint-ink'
-
-function MoreRow({ to, title, value, onClick }: { to?: string; title: string; value: string; onClick?: () => void }) {
-  const inner = (
-    <>
-      <span className="shrink-0 whitespace-nowrap font-display text-[clamp(17px,5vw,19px)] font-extrabold tracking-[-0.01em]">{title}</span>
-      <span className="min-w-0 flex-1 truncate text-right text-[14px] text-text-muted">{value}</span>
-      <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-muted" strokeWidth={2.25} />
-    </>
-  )
-  return (
-    <li>
-      {to ? (
-        <Link to={to} className={ROW}>
-          {inner}
-        </Link>
-      ) : (
-        <button type="button" onClick={onClick} className={ROW}>
-          {inner}
-        </button>
-      )}
-    </li>
+        {value}
+      </span>
+      <span className="line-clamp-2 min-h-[18px] text-[13px] leading-[18px] text-text-muted">{sub}</span>
+      {children}
+    </Link>
   )
 }
 
@@ -112,113 +104,180 @@ const BARS = [40, 70, 50, 100, 36]
 
 export function MorePage() {
   const today = todayIso()
-  const profile = useProfile()
-  const [asking, setAsking] = useState(false)
 
   const savings = useSavings()
   const subscriptions = useSubscriptions()
-  const categories = useCategories()
   const trips = useTrips()
   const ants = useAnts(today)
   const budget = useDailyAllowance()
 
   const goalTotals = activeTotals(savings.data?.goals ?? [])
-  const goalShare =
-    goalTotals.targetCents > 0
-      ? Math.round(Math.min(1, goalTotals.reservedCents / goalTotals.targetCents) * 100)
-      : null
+  const hasGoals = goalTotals.targetCents > 0
+  const goalShare = hasGoals ? Math.min(1, goalTotals.reservedCents / goalTotals.targetCents) : 0
   // Only monthly subscriptions add up to "por mes": a yearly one would need an estimate.
   const monthlySubs = (subscriptions.data?.subscriptions ?? []).filter(
     (s) => s.status === 'active' && s.period === 'monthly',
   )
   const monthlyTotal = monthlySubs.reduce((sum, s) => sum + s.amountCents, 0)
   const trip = useMemo(() => nextTrip(trips.data ?? [], today), [trips.data, today])
-  const tripLabel = trip ? tripLabelOf(trip, today) : null
+  const tripCard = trip ? tripFigure(trip, today) : null
   const antsTotal = ants.data?.monthTotalCents ?? 0
   const allowance = budget.allowance
 
-  const budgetCell: { value: string; sub: string; tone?: 'bad' } =
+  const moreRows = FEATURES.debts || FEATURES.aguinaldo || FEATURES.pro
+
+  // The budget card keeps the existing allowance logic; the bar is what was spent of what the month allows.
+  const hero =
     allowance.kind === 'ok'
-      ? allowance.overCents > 0
-        ? { value: `-${big(allowance.overCents)}`, sub: 'te pasaste', tone: 'bad' }
-        : { value: big(Math.max(0, allowance.remainingCents)), sub: 'te queda del presupuesto' }
-      : { value: 'Ver', sub: 'armá tu presupuesto' }
+      ? {
+          value: allowance.overCents > 0 ? `-${big(allowance.overCents)}` : big(Math.max(0, allowance.remainingCents)),
+          sub: allowance.overCents > 0 ? 'te pasaste este mes' : 'te queda del presupuesto este mes',
+          over: allowance.overCents > 0,
+          progress:
+            allowance.overCents > 0 || allowance.spendBudgetCents <= 0
+              ? 1
+              : Math.min(1, Math.max(0, allowance.spentCents / allowance.spendBudgetCents)),
+        }
+      : null
 
   return (
-    <section className="pb-4">
-      <header className="flex items-start justify-between gap-3 px-5 pt-6">
-        <div className="min-w-0">
-          <p className="text-[15px] font-semibold text-text-muted">Tu plata de un vistazo</p>
-          <h1 className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight tracking-[-0.02em]">Explorar</h1>
-        </div>
+    <section className="flex flex-col gap-3 px-5 pb-4">
+      <header className="pt-6">
+        <p className="text-[15px] font-semibold text-text-muted">Tu plata de un vistazo</p>
+        <h1 className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight tracking-[-0.02em]">Explorar</h1>
       </header>
 
-      <div className="mt-4 px-5">
-        <ul aria-label="Resumen" className="grid grid-cols-2 border-t border-line">
-          <Cell
-            index={0}
-            to="/metas"
-            title="Metas de ahorro"
-            value={goalShare !== null ? `${goalShare}%` : 'Ver'}
-            sub={goalShare !== null ? `${big(goalTotals.reservedCents)} de ${big(goalTotals.targetCents)}` : 'límites y ahorro'}
-          />
-          <Cell index={1} to="/presupuesto" title="Presupuesto" {...budgetCell} />
-          <Cell
-            index={2}
-            to="/recurrentes"
-            title="Pagos recurrentes"
-            value={monthlySubs.length > 0 ? big(monthlyTotal) : '$0'}
-            sub={
-              monthlySubs.length > 0
-                ? `${monthlySubs.length} ${monthlySubs.length === 1 ? 'cobro' : 'cobros'} por mes`
-                : 'sin cobros cargados'
-            }
-          />
-          <Cell
-            index={3}
-            to="/hormigas"
-            title="Gastos hormiga"
-            value={antsTotal > 0 ? big(antsTotal) : '0'}
-            sub={antsTotal > 0 ? 'este mes' : 'sin hormigas'}
-          />
-          <Cell index={4} to="/este-mes" title="Informes" value="Mes y año">
-            <span aria-hidden="true" className="absolute bottom-3 right-0 flex h-9 items-end gap-1.5">
-              {BARS.map((h, i) => (
-                <span
-                  key={i}
-                  className={cn('w-2.5 rounded-full', i === 3 ? 'bg-[#4C8B5E]' : 'bg-forest/15 dark:bg-white/15')}
-                  style={{ height: `${h}%` }}
-                />
-              ))}
+      <Link
+        to="/presupuesto"
+        className={cn(
+          'relative mt-1 flex min-h-[170px] flex-col rounded-[28px] p-5 text-cream',
+          'bg-[linear-gradient(140deg,#0B3D2E_0%,#10382B_55%,#1D4A3A_100%)] dark:bg-[linear-gradient(140deg,#16261c_0%,#1c3a2c_55%,#2b5a47_100%)]',
+          'shadow-[0_14px_30px_-18px_rgba(11,61,46,0.7)] dark:shadow-none dark:ring-1 dark:ring-white/[0.07]',
+          FOCUS,
+        )}
+      >
+        <span className="flex items-start justify-between gap-2">
+          <span className="text-[16px] font-extrabold leading-5">Presupuesto</span>
+          <Go onDark />
+        </span>
+        {hero ? (
+          <>
+            <span className="mt-3 block whitespace-nowrap font-display text-[clamp(34px,11vw,46px)] font-extrabold leading-none tracking-[-0.03em]">
+              {hero.value}
             </span>
-          </Cell>
-          <Cell
-            index={5}
-            to="/viajes"
-            title="Viajes"
-            value="Ver"
-            sub={trip && tripLabel ? `${trip.name} · ${tripLabel}` : 'presupuesto y gastos'}
-          />
-        </ul>
+            <span
+              role="progressbar"
+              aria-label="Presupuesto gastado del mes"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(hero.progress * 100)}
+              className="mt-4 block h-[5px] w-full overflow-hidden rounded-full bg-white/15"
+            >
+              <span
+                className={cn('block h-full rounded-full', hero.over ? 'bg-[#D9785A]' : 'bg-lime')}
+                style={{ width: `${Math.round(hero.progress * 100)}%` }}
+              />
+            </span>
+            <span className="mt-2 block text-[13px] font-semibold text-text-muted-on-dark">{hero.sub}</span>
+          </>
+        ) : (
+          <>
+            <span className="mt-4 block font-display text-[clamp(26px,8vw,32px)] font-extrabold leading-tight tracking-[-0.02em]">
+              {budget.isLoading ? '…' : 'Configurá tu presupuesto'}
+            </span>
+            <span className="mt-auto block pt-3 text-[13px] font-semibold text-text-muted-on-dark">
+              {budget.isLoading ? '' : 'Tocá para armarlo con tus ingresos'}
+            </span>
+          </>
+        )}
+      </Link>
 
-        <h2 className="mt-7 text-[13px] font-bold uppercase tracking-[0.14em] text-text-muted">Más</h2>
-        <ul className="mt-1 divide-y divide-line">
-          <MoreRow to="/categorias" title="Categorías" value={(categories.data ?? []).length > 0 ? 'Editar' : 'Creá las tuyas'} />
-          <MoreRow title="¿Me conviene?" value="Preguntale a Moni" onClick={() => setAsking(true)} />
-          <MoreRow to="/tarjetas/simulador" title="Simulador de cuotas" value="Simulá una compra" />
-          {FEATURES.debts && <MoreRow to="/deudas" title="Deudas" value="Lo que debés y te deben" />}
-          {FEATURES.aguinaldo && <MoreRow to="/aguinaldo" title="Aguinaldo" value="Repartilo" />}
-          {FEATURES.pro && <MoreRow to="/pro" title="Integraciones" value="Billeteras y bancos" />}
-        </ul>
-      </div>
+      <Link to="/metas" className={cn(CARD, 'flex items-center gap-4 p-4', FOCUS)}>
+        <span aria-hidden="true" className="shrink-0">
+          <ProgressRing value={goalShare} label={`${Math.floor(goalShare * 100)}%`} size={64} stroke={7} className={cn(!hasGoals && 'opacity-60')} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[17px] font-extrabold leading-5">Metas de ahorro</span>
+          <span className="mt-0.5 block text-[13px] leading-[18px] text-text-muted">
+            {hasGoals
+              ? `${big(goalTotals.reservedCents)} de ${big(goalTotals.targetCents)}`
+              : savings.isLoading
+                ? '…'
+                : 'Creá tu primera meta'}
+          </span>
+        </span>
+        <Go />
+      </Link>
 
-      {asking && (
-        <AssistantSheet
-          name={profile.data?.display_name ?? null}
-          initialDraft="Quiero comprar algo de $ ¿Me conviene?"
-          onClose={() => setAsking(false)}
-        />
+      <ul className="grid grid-cols-2 gap-3">
+        <li className="flex">
+            <Tile
+              to="/viajes"
+              title="Viajes"
+              value={tripCard ? tripCard.value : '0'}
+              sub={tripCard ? tripCard.sub : 'todavía no tenés viajes'}
+            />
+        </li>
+        <li className="flex">
+            <Tile
+              to="/recurrentes"
+              title="Pagos recurrentes"
+              value={monthlySubs.length > 0 ? big(monthlyTotal) : '$0'}
+              sub={
+                monthlySubs.length > 0
+                  ? `${monthlySubs.length} ${monthlySubs.length === 1 ? 'cobro' : 'cobros'} por mes`
+                  : 'no tenés pagos próximos'
+              }
+            />
+        </li>
+        <li className="flex">
+            <Tile
+              to="/hormigas"
+              title="Gastos hormiga"
+              value={antsTotal > 0 ? big(antsTotal) : '0'}
+              sub={antsTotal > 0 ? 'este mes' : ants.data ? 'sin hormigas' : 'todavía sin datos'}
+            />
+        </li>
+        <li className="flex">
+            <Tile to="/este-mes" title="Informes" value="Mes y año" sub="tu resumen">
+              <span aria-hidden="true" className="absolute bottom-4 right-4 flex h-8 items-end gap-1">
+                {BARS.map((h, i) => (
+                  <span
+                    key={i}
+                    className={cn('w-2 rounded-full', i === 3 ? 'bg-[#4C8B5E]' : 'bg-forest/15 dark:bg-white/15')}
+                    style={{ height: `${h}%` }}
+                  />
+                ))}
+              </span>
+            </Tile>
+        </li>
+      </ul>
+
+      {moreRows && (
+        <>
+          <h2 className="mt-4 text-[13px] font-bold uppercase tracking-[0.14em] text-text-muted">Más</h2>
+          <ul className="divide-y divide-line">
+            {FEATURES.debts && <MoreRow to="/deudas" title="Deudas" value="Lo que debés y te deben" />}
+            {FEATURES.aguinaldo && <MoreRow to="/aguinaldo" title="Aguinaldo" value="Repartilo" />}
+            {FEATURES.pro && <MoreRow to="/pro" title="Integraciones" value="Billeteras y bancos" />}
+          </ul>
+        </>
       )}
     </section>
+  )
+}
+
+const ROW =
+  'flex min-h-[56px] w-full items-center gap-3 py-2 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mint-ink'
+
+function MoreRow({ to, title, value }: { to: string; title: string; value: string }) {
+  return (
+    <li>
+      <Link to={to} className={ROW}>
+        <span className="shrink-0 whitespace-nowrap font-display text-[clamp(17px,5vw,19px)] font-extrabold tracking-[-0.01em]">{title}</span>
+        <span className="min-w-0 flex-1 truncate text-right text-[14px] text-text-muted">{value}</span>
+        <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-muted" strokeWidth={2.25} />
+      </Link>
+    </li>
   )
 }

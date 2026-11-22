@@ -24,7 +24,8 @@ export function GroupDetailHeader({
   /** Shown after the name when there is no photo (the couple's avatars). */
   extra?: ReactNode
   onBack: () => void
-  onInvite: () => void
+  /** Only administrators can invite: without it the button is not shown. */
+  onInvite?: () => void
   onOptions: () => void
 }) {
   const compact = Boolean(photoUrl)
@@ -51,6 +52,7 @@ export function GroupDetailHeader({
         {name}
       </h1>
       {!photoUrl && extra}
+      {onInvite && (
       <button
         type="button"
         aria-label="Invitar"
@@ -59,7 +61,8 @@ export function GroupDetailHeader({
       >
         <UserPlus aria-hidden="true" className="size-6" />
       </button>
-      <button type="button" aria-label="Opciones del grupo" onClick={onOptions} className={round}>
+      )}
+      <button type="button" aria-label="Opciones del grupo" onClick={onOptions} className={cn(round, !onInvite && 'ml-auto')}>
         <Ellipsis aria-hidden="true" className="size-6" />
       </button>
     </div>

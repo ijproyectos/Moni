@@ -1,4 +1,3 @@
-import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
@@ -41,9 +40,6 @@ vi.mock('@/features/dashboard/api/useDailyAllowance', () => ({
   useDailyAllowance: () => ({ isLoading: false, allowance: budgetData.current, status: null, pace: null }),
 }))
 const plusState = vi.hoisted(() => ({ isPlus: false, isLoading: false }))
-vi.mock('@/features/assistant/ui/AssistantSheet', () => ({
-  AssistantSheet: ({ initialDraft }: { initialDraft?: string }) => <div role="dialog" aria-label="moni-chat">{initialDraft}</div>,
-}))
 vi.mock('@/features/plus/api/usePlus', () => ({
   usePlus: () => ({ ...plusState, isFree: !plusState.isPlus, expiresAt: null }),
 }))
@@ -78,19 +74,14 @@ describe('Explorar', () => {
     expect(screen.queryByRole('button', { name: 'Hablá con Moni' })).toBeNull()
   })
 
-  it('"Más" keeps Categorías, ¿Me conviene?, the simulator (no Avisos de Moni)', () => {
+  it('shows only the six tools: no ¿Me conviene?, simulator, Categorías or Avisos, and no empty "Más"', () => {
     renderPage()
-    expect(screen.getByRole('heading', { name: 'Más' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /^Categorías/ })).toHaveAttribute('href', '/categorias')
-    expect(screen.getByRole('link', { name: /Simulador de cuotas/ })).toHaveAttribute('href', '/tarjetas/simulador')
-    expect(screen.queryByRole('link', { name: /Avisos de Moni/ })).toBeNull()
-    expect(screen.queryByRole('link', { name: /Tarjetas de crédito|^Medios de pago/ })).toBeNull()
-  })
-
-  it('"¿Me conviene?" opens Moni with that question', async () => {
-    renderPage()
-    await userEvent.click(screen.getByRole('button', { name: /¿Me conviene\?/ }))
-    expect(screen.getByRole('dialog', { name: 'moni-chat' })).toHaveTextContent('¿Me conviene?')
+    expect(screen.getAllByRole('link')).toHaveLength(6)
+    for (const name of [/Categorías/, /Simulador/, /Avisos de Moni/, /Tarjetas de crédito|^Medios de pago/]) {
+      expect(screen.queryByRole('link', { name })).toBeNull()
+    }
+    expect(screen.queryByRole('button', { name: /¿Me conviene\?/ })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Más' })).toBeNull()
   })
 
   it('"Pagos recurrentes" adds up only the active monthly subscriptions', () => {
@@ -112,7 +103,7 @@ describe('Explorar', () => {
     renderPage()
     expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('$12.500este mes')
     const budget = screen.getByRole('link', { name: /^Presupuesto/ })
-    expect(budget).toHaveTextContent('-$75.000te pasaste')
+    expect(budget).toHaveTextContent('-$75.000te pasaste este mes')
   })
 
   it('shows what is left of the budget when it was not exceeded', () => {
@@ -124,6 +115,11 @@ describe('Explorar', () => {
   it('says "sin hormigas" and does not invent a budget without data', () => {
     renderPage()
     expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('sin hormigas')
-    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('armá tu presupuesto')
+    expect(screen.getByRole('link', { name: /^Metas de ahorro/ })).toHaveTextContent('Creá tu primera meta')
+    expect(screen.getByRole('link', { name: /^Viajes/ })).toHaveTextContent('todavía no tenés viajes')
+    expect(screen.getByRole('link', { name: /^Pagos recurrentes/ })).toHaveTextContent('no tenés pagos próximos')
+    // None of the example figures of the design may show up as if they were real.
+    expect(document.body).not.toHaveTextContent(/201\.866|Bariloche|\$30\.000/)
+    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('Configurá tu presupuesto')
   })
 })

@@ -34,6 +34,7 @@ import {
   Briefcase,
   type LucideIcon,
 } from 'lucide-react'
+import { categoryArt } from './categoryArt'
 
 /** Curated icon set for categories. Names are stored in the database as-is. */
 const ICONS: Record<string, LucideIcon> = {
@@ -76,7 +77,7 @@ export const CATEGORY_ICON_NAMES: readonly string[] = Object.keys(ICONS)
 
 /** Falls back to a generic tag for unknown names so a bad row never breaks a list. */
 export function getCategoryIcon(name: string | null | undefined): LucideIcon {
-  return (name && ICONS[name]) || Tag
+  return categoryArt(name) ?? (name ? ICONS[name] : undefined) ?? categoryArt('Tag') ?? Tag
 }
 
 /** Brand category palette (see docs/SPRINT_2.md). */

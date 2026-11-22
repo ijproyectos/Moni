@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { ShoppingCart } from 'lucide-react'
+import { ReceiptText, ShoppingCart } from 'lucide-react'
 import { GroupsScreen, type LastExpenseRow, type ListedGroup } from './GroupsScreen'
 
 const group = (over: Partial<ListedGroup> = {}): ListedGroup => ({
@@ -100,8 +100,22 @@ describe('Grupos: the green hero "Te deben" / "Debés"', () => {
     expect(screen.queryByText(/Último en/)).toBeNull()
   })
 
+  it('asks to review the category of the last expense when it does not fit, opening the group', () => {
+    renderScreen(vi.fn(), undefined, {
+      groupId: 'g1',
+      needsReview: true,
+      groupName: 'IJ Society',
+      description: 'Remera · dividido entre 3',
+      meta: 'Pagaste vos · hoy · Revisá la categoría',
+      deltaCents: 0,
+      icon: ReceiptText,
+    })
+    expect(screen.getByRole('link', { name: /Remera/ })).toHaveAttribute('href', '/grupos/g1')
+  })
+
   it('shows the last real expense of the group', () => {
     renderScreen(vi.fn(), undefined, {
+      groupId: 'g1',
       groupName: 'Casa',
       description: 'Coto · dividido 50/50',
       meta: 'Pagaste vos · ayer',
@@ -122,5 +136,31 @@ describe('Grupos: the green hero "Te deben" / "Debés"', () => {
     expect(screen.getByRole('heading', { name: 'Todavía no compartís gastos' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Crear grupo' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Entrar con un código' })).toHaveAttribute('href', '/grupos/unirse')
+  })
+})
+
+describe('Hidden groups keep counting in the totals', () => {
+  it('the green box adds up the groups I hid too, while the list shows only the visible ones', () => {
+    const base = { kind: 'hogar', role: 'member', memberCount: 2, lastActivity: '2026-11-01T00:00:00Z', peopleCount: 2 } as const
+    const shown = { ...base, id: 'a', name: 'Amigos', myNetCents: 10_000_00 }
+    const hidden = { ...base, id: 'b', name: 'Depto', myNetCents: -30_000_00, hiddenAt: '2026-11-02T00:00:00Z' }
+    render(
+      <MemoryRouter>
+        <GroupsScreen groups={[shown]} totalsFrom={[shown, hidden]} isLoading={false} isError={false} onRetry={vi.fn()} onNewGroup={vi.fn()} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Amigos')).toBeInTheDocument()
+    expect(screen.queryByText('Depto')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Ver lo que debés' })).toHaveTextContent('$30.000')
+  })
+
+  it('with every group hidden it is not the "first group" empty state: the debts box is still there', () => {
+    const hidden = { id: 'b', name: 'Depto', kind: 'hogar', role: 'member', memberCount: 2, lastActivity: '2026-11-01T00:00:00Z', peopleCount: 2, myNetCents: -5_000_00, hiddenAt: '2026-11-02T00:00:00Z' } as const
+    render(
+      <MemoryRouter>
+        <GroupsScreen groups={[]} totalsFrom={[hidden]} isLoading={false} isError={false} onRetry={vi.fn()} onNewGroup={vi.fn()} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('button', { name: 'Ver lo que debés' })).toHaveTextContent('$5.000')
   })
 })

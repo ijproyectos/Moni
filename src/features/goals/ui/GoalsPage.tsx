@@ -36,7 +36,6 @@ import mascotMoni from '@/assets/mascot/personaje_asistente.svg'
 import { SavingsHero } from './goalVisuals'
 import { NewGoalSheet } from './NewGoalSheet'
 import { SavingsGoalCard } from './SavingsGoalCard'
-import { SavingsProgressCard } from './SavingsProgressCard'
 import { SavingsNotices } from './SavingsNotices'
 import { SharedGoalSheet } from './SharedGoalSheet'
 
@@ -57,7 +56,8 @@ export function GoalsPage() {
   const shared = sharedGoals.filter((g) => g.shared)
   const all = savings.data?.goals ?? []
   const active = goalsByStatus(all, 'active')
-  const others = goalsByStatus(all, 'paused', 'completed', 'archived')
+  const done = goalsByStatus(all, 'completed')
+  const others = goalsByStatus(all, 'paused', 'archived')
   const tab: Tab =
     FEATURES.sharedGoals && params.get('tab') === 'shared' && shared.length > 0 ? 'shared' : 'mine'
   const today = todayIso()
@@ -138,7 +138,6 @@ export function GoalsPage() {
               )}
             </>
           )}
-          {savings.data && all.length > 0 && <SavingsProgressCard overview={savings.data} />}
           <div className={FEATURES.aguinaldo ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-2 gap-3'}>
             <Link
               to="/metas/cuotas"
@@ -235,6 +234,25 @@ export function GoalsPage() {
                   </p>
                 </div>
               )}
+              {done.length > 0 && (
+                <section aria-labelledby="metas-cumplidas" className="flex flex-col gap-3">
+                  <h2 id="metas-cumplidas" className="text-[13px] font-bold uppercase tracking-[0.14em] text-text-muted">
+                    Metas cumplidas
+                  </h2>
+                  <ul className="flex flex-col gap-3">
+                    {done.map((goal) => (
+                      <li key={goal.id}>
+                        <GoalRingCard
+                          goal={goal}
+                          today={savings.data?.today ?? today}
+                          rows={null}
+                          onOpen={() => navigate(`/metas/${goal.id}`)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
               {all.length > 0 && (
                 <button
                   type="button"
@@ -256,7 +274,7 @@ export function GoalsPage() {
                     onClick={() => setShowOthers((v) => !v)}
                     className="min-h-11 self-start text-[16px] font-extrabold text-ink underline"
                   >
-                    {showOthers ? 'Ocultar' : 'Ver'} pausadas, completadas y archivadas (
+                    {showOthers ? 'Ocultar' : 'Ver'} pausadas y archivadas (
                     {others.length})
                   </button>
                   {showOthers && (
