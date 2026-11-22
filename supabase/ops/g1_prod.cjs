@@ -176,6 +176,17 @@ async function preflight(c) {
     for (const t of ['contact_prefs', 'group_invitations']) {
       if (await has(`select exists(select 1 from information_schema.tables where table_schema='public' and table_name='${t}') x`)) issues.push(`${t} ya existe`)
     }
+  } else if (batchArg === 'G') {
+    if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='group_recurring_expenses') x"))) issues.push('falta G5 (group_recurring_expenses)')
+    if (await has("select exists(select 1 from public.category_templates where slug='ropa') x")) issues.push("la plantilla 'ropa' ya existe")
+    const kindDef = await q(c, "select pg_get_constraintdef(oid) d from pg_constraint where conname='notifications_kind_check'")
+    if (kindDef.length !== 1 || /group_archived/.test(kindDef[0].d)) issues.push('notifications_kind_check no es el esperado')
+    for (const fn of ['archive_group_for_all', 'get_my_hidden_and_archived_groups']) {
+      const defs = await q(c, "select pg_get_functiondef(p.oid) d from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname=$1", [fn])
+      const expected = repoBody('20261129000000_group_hide_archive_additive.sql', fn)
+      if (defs.length !== 1) issues.push(`${fn}: hay ${defs.length} definiciones`)
+      else if (/insert into public\.notifications/i.test(defs[0].d) || (fn === 'archive_group_for_all' && (!expected || norm(bodyOf(defs[0].d)) !== norm(expected)))) issues.push(`${fn}: la definición de producción difiere del repositorio`)
+    }
   } else if (batchArg === 'A') {
     if (hiddenExists) issues.push('group_members.hidden_at ya existe')
     for (const fn of newFns) if (await fnExists(fn)) issues.push(`la función ${fn} ya existe`)
