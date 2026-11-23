@@ -1,8 +1,10 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { Link } from 'react-router'
 import { distributionLabel, type HomeBalance } from '../domain/homeBalance'
-import { formatArs, type Cents } from '@/shared/lib/money'
+import { convertArsCents } from '@/shared/lib/exchangeRates'
+import { formatMoney, type Cents } from '@/shared/lib/money'
 import { AmountDisplay, MASK } from '@/shared/ui/AmountDisplay'
+import { useDisplayCurrency } from '@/shared/ui/displayCurrencyContext'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
 
 /**
@@ -68,7 +70,9 @@ const MIN_FIGURE_PX = 22
  */
 function Figure({ cents }: { cents: Cents }) {
   const { hidden } = useHiddenAmounts()
-  const text = hidden ? MASK : formatArs(cents)
+  const { currency, rates } = useDisplayCurrency()
+  const converted = currency !== 'ARS' && rates ? convertArsCents(cents, currency, rates) : null
+  const text = hidden ? MASK : formatMoney(converted ?? cents, converted !== null ? currency : 'ARS')
   const size = `clamp(${MIN_FIGURE_PX}px, ${(100 / (text.length * CHAR_EM)).toFixed(2)}cqw, ${MAX_FIGURE_PX}px)`
   return (
     <p

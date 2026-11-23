@@ -1,6 +1,8 @@
-import { formatArs, type Cents } from '@/shared/lib/money'
+import { convertArsCents } from '@/shared/lib/exchangeRates'
+import { formatMoney, type Cents } from '@/shared/lib/money'
 import { AmountDisplay } from './AmountDisplay'
 import { cn } from './cn'
+import { useDisplayCurrency } from './displayCurrencyContext'
 import { useHiddenAmounts } from './hiddenAmountsContext'
 
 interface BigFigureProps {
@@ -10,10 +12,17 @@ interface BigFigureProps {
   className?: string
 }
 
-/** Big hero amount: pesos at full size, the decimals (only when there are cents) at ~55%. Masked when amounts are hidden. */
+/**
+ * Big hero amount: pesos (o la moneda de visualización elegida) a tamaño completo, los decimales
+ * (solo cuando hay) a ~55%. Enmascarado cuando los montos están ocultos.
+ */
 export function BigFigure({ cents, signed, className }: BigFigureProps) {
   const { hidden } = useHiddenAmounts()
-  const [whole = '', decimals] = formatArs(cents, { signed }).split(',')
+  const { currency, rates } = useDisplayCurrency()
+  const converted = currency !== 'ARS' && rates ? convertArsCents(cents, currency, rates) : null
+  const displayCents = converted ?? cents
+  const displayCurrency = converted !== null ? currency : 'ARS'
+  const [whole = '', decimals] = formatMoney(displayCents, displayCurrency, { signed }).split(',')
   return (
     <p
       className={cn(

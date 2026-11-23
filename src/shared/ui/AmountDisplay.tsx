@@ -1,5 +1,7 @@
-import { formatArs, formatCompact, type Cents } from '@/shared/lib/money'
+import { convertArsCents } from '@/shared/lib/exchangeRates'
+import { formatCompact, formatMoney, formatMoneyDigits, type Cents } from '@/shared/lib/money'
 import { cn } from './cn'
+import { useDisplayCurrency } from './displayCurrencyContext'
 import { useHiddenAmounts } from './hiddenAmountsContext'
 
 export const MASK = '••••'
@@ -14,9 +16,14 @@ interface AmountDisplayProps {
   className?: string
 }
 
-/** Renders money, or a mask when the user chose to hide amounts. */
+/**
+ * Renders money, or a mask when the user chose to hide amounts. `cents` is always ARS (how everything
+ * is stored); when the user picked another "moneda de visualización" this converts just for display,
+ * falling back to ARS untouched if there's no rate yet (first load, offline, fetch failed).
+ */
 export function AmountDisplay({ cents, signed, bare, compact, className }: AmountDisplayProps) {
   const { hidden } = useHiddenAmounts()
+  const { currency, rates } = useDisplayCurrency()
 
   if (hidden) {
     return (
@@ -26,10 +33,14 @@ export function AmountDisplay({ cents, signed, bare, compact, className }: Amoun
     )
   }
 
+  const converted = currency !== 'ARS' && rates ? convertArsCents(cents, currency, rates) : null
+  const displayCents = converted ?? cents
+  const displayCurrency = converted !== null ? currency : 'ARS'
+
   const text = compact
-    ? formatCompact(cents)
+    ? formatCompact(displayCents)
     : bare
-      ? formatArs(Math.abs(cents)).slice(1)
-      : formatArs(cents, { signed })
+      ? formatMoneyDigits(displayCents)
+      : formatMoney(displayCents, displayCurrency, { signed })
   return <span className={cn('tabular-nums', className)}>{text}</span>
 }
