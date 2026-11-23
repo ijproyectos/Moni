@@ -28,7 +28,7 @@ import { joinedLabel, useProfileIdentity } from './profileIdentity'
 
 export function ProfileGroup({ children }: { children: React.ReactNode }) {
   return (
-    <div className="divide-y divide-line overflow-hidden rounded-[20px] border border-line bg-card px-4">{children}</div>
+    <div data-guide="profile-group" className="divide-y divide-line overflow-hidden rounded-[20px] border border-line bg-card px-4">{children}</div>
   )
 }
 

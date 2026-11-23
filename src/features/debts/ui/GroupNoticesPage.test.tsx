@@ -12,6 +12,11 @@ const state = vi.hoisted(() => ({
   report: vi.fn(),
   confirm: vi.fn(),
   reject: vi.fn(),
+  removed: new Set<string>(),
+  remove: vi.fn(),
+}))
+vi.mock('@/features/notifications/ui/useNoticeDeletion', () => ({
+  useNoticeDeletion: () => ({ removed: state.removed, remove: state.remove, isRemoving: false }),
 }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'me' } }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({

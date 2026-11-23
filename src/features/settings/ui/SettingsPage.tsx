@@ -23,8 +23,10 @@ import { MoniSays, Page, Toggle } from '@/shared/ui/kit'
 import { MentaHeader } from '@/shared/ui/MentaHeader'
 import { SettingRow } from '@/shared/ui/SettingRow'
 import { useToast } from '@/shared/ui/toastContext'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { requestGuide } from '@/features/guide/ui/guideStore'
 import { ShoppingBasket } from 'lucide-react'
+import { useSecondaryCurrency } from '../api/useSecondaryCurrency'
 import { useTheme } from '../api/useTheme'
 import { GroupLabel, ProfileGroup } from './ProfilePage'
 import { GroupNoticePrefs } from './GroupNoticePrefs'
@@ -75,6 +77,8 @@ export function SettingsPage() {
   const hiddenAmounts = useHiddenAmounts()
   const accounts = useAccounts()
   const weekly = useWeeklyDigestSettings()
+  const currency = useSecondaryCurrency()
+  const navigate = useNavigate()
   const [sheet, setSheet] = useState<Sheet>(null)
   const [isSigningOut, setIsSigningOut] = useState(false)
 
@@ -119,6 +123,26 @@ export function SettingsPage() {
                 )}
               />
             </button>
+          }
+        />
+      </ProfileGroup>
+
+      <GroupLabel>Moneda</GroupLabel>
+      <ProfileGroup>
+        <SettingRow
+          title="Dólares (USD)"
+          subtitle="Peso argentino es tu moneda principal. Activá dólares para ahorrar en una segunda moneda, sin convertir nada."
+          trailing={
+            <Toggle
+              label="Usar dólares como segunda moneda"
+              checked={currency.usesUsd}
+              onChange={(on) =>
+                void currency
+                  .setUsesUsd(on)
+                  .then(() => toast.show(on ? 'Dólares activados' : 'Dólares desactivados'))
+                  .catch((e: unknown) => toast.show(toUserMessage(e), { tone: 'error' }))
+              }
+            />
           }
         />
       </ProfileGroup>
@@ -175,6 +199,14 @@ export function SettingsPage() {
 
       <GroupLabel>Ayuda</GroupLabel>
       <ProfileGroup>
+        <SettingRow
+          title="Conocé Moni"
+          subtitle="Volvé a recorrer las funciones de la app"
+          onClick={() => {
+            requestGuide()
+            navigate('/')
+          }}
+        />
         <SettingRow title="Ayuda y contacto" subtitle="Escribinos y mirá tus consultas" to="/soporte" />
         <SettingRow
           title="Recomendá a un amigo"

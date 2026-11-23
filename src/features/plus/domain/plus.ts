@@ -29,8 +29,8 @@ export const PLUS_REASON_COPY: Record<PlusGateReason, { title: string; text: str
     text: 'En la versión Free podés crear un grupo. Con Moni Plus creás todos los que quieras. Seguís pudiendo sumarte a los de tus amigos.',
   },
   assistant: {
-    title: 'El asistente es de Moni Plus',
-    text: 'Con Moni Plus le preguntás a Moni por tus gastos, vencimientos, cuotas y grupos, y te responde con lo que encuentra en tus datos. Lo manual sigue siendo gratis.',
+    title: 'Conocé a tu asistente financiero',
+    text: 'Moni analiza tus gastos, te ayuda a entender en qué se va tu plata y te acompaña a tomar mejores decisiones para ahorrar y llegar a tus metas.',
   },
   mp_import: {
     title: 'Importar de Mercado Pago es de Moni Plus',

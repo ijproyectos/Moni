@@ -3,7 +3,6 @@ import { Button } from '@/shared/ui/Button'
 import { CategoryChip } from '@/shared/ui/CategoryChip'
 import type { CategoryTemplate } from '@/features/categories/domain/category'
 import { OnboardingTitle } from './OnboardingTitle'
-import { SkipAllLink } from './SkipAllLink'
 
 const EXPENSE_DOT = '#b23b2e'
 const INCOME_DOT = '#5fae4e'
@@ -25,11 +24,8 @@ interface OnboardingCategoriesStepProps {
   onCreate: () => void
   onRemoveCustom: (category: CustomCategoryChip) => void
   onContinue: () => void
-  /** Keeps the suggested categories and goes on. */
-  onSkip: () => void
-  /** Asks to finish the whole onboarding with the defaults. */
-  onSkipAll: () => void
-  isBusy?: boolean
+  /** Puts the suggested categories back (used when the person cleared everything). */
+  onRestoreSuggested: () => void
 }
 
 // Screen 011 — Categorías.
@@ -42,9 +38,7 @@ export function OnboardingCategoriesStep({
   onCreate,
   onRemoveCustom,
   onContinue,
-  onSkip,
-  onSkipAll,
-  isBusy = false,
+  onRestoreSuggested,
 }: OnboardingCategoriesStepProps) {
   const allSelected = templates.length > 0 && selected.length === templates.length
   const count = selected.length + custom.length
@@ -53,7 +47,7 @@ export function OnboardingCategoriesStep({
     <>
       <OnboardingTitle title="Elegí tus categorías" />
       <p className="mt-3 text-center text-[15px] leading-[22px] text-text-muted">
-        Podés crear las tuyas ahora o después desde <em>Más › Categorías</em>.
+        Podés crear las tuyas ahora o después desde <em>Explorar › Categorías</em>.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -121,17 +115,20 @@ export function OnboardingCategoriesStep({
 
       <div className="mt-auto flex flex-col items-center gap-1 pt-6">
         {count === 0 && (
-          <p role="alert" className="mb-3 w-full text-center text-sm font-bold text-expense">
-            Elegí al menos una categoría para seguir.
-          </p>
+          <div role="alert" className="mb-3 flex w-full flex-col items-center gap-1 text-center">
+            <p className="text-sm font-bold text-expense">Elegí al menos una categoría para seguir.</p>
+            <button
+              type="button"
+              onClick={onRestoreSuggested}
+              className="min-h-11 px-4 text-[15px] font-extrabold text-ink underline underline-offset-4"
+            >
+              Usar las sugeridas
+            </button>
+          </div>
         )}
         <Button onClick={onContinue} disabled={count === 0}>
-          {`Continuar · ${count} ${count === 1 ? 'elegida' : 'elegidas'}`}
+          Continuar
         </Button>
-        <Button variant="ghost" disabled={isBusy} onClick={onSkip} className="text-text-muted">
-          Saltar
-        </Button>
-        <SkipAllLink disabled={isBusy} onClick={onSkipAll} />
       </div>
     </>
   )

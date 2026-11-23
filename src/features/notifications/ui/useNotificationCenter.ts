@@ -15,12 +15,11 @@ import {
   setCenterPrefs,
   type CenterPrefs,
 } from '../api/centerRepository'
+import { centerKeys } from './centerKeys'
+import { useNoticeDeletion } from './useNoticeDeletion'
 import { buildCenterItems, unreadCount, type CenterItem } from '../domain/centerItems'
 
-export const centerKeys = {
-  reads: (userId: string | undefined) => ['notice-center', userId, 'reads'] as const,
-  prefs: (userId: string | undefined) => ['notice-center', userId, 'prefs'] as const,
-}
+export { centerKeys }
 
 /** Used only while the database does not have the read table yet: the device remembers, nothing else. */
 const localKey = (userId: string | undefined) => `moni-center-read-${userId ?? 'anon'}`
@@ -63,7 +62,9 @@ export function useNotificationCenter() {
   const reads = useQuery({ queryKey: centerKeys.reads(user?.id), enabled: Boolean(user), queryFn: listCenterReads, retry: false })
   const [local, setLocal] = useState(() => loadLocal(user?.id))
 
-  const readKeys = useMemo(() => new Set(reads.isError ? local : (reads.data ?? [])), [reads.isError, reads.data, local])
+  const deletion = useNoticeDeletion()
+  const readKeys = useMemo(() => new Set(reads.isError ? local : (reads.data?.read ?? [])), [reads.isError, reads.data, local])
+  const hidden = useMemo(() => new Set([...(reads.data?.dismissed ?? []), ...deletion.removed]), [reads.data, deletion.removed])
   const effective = prefs ?? DEFAULT_CENTER_PREFS
 
   const items = useMemo<CenterItem[]>(
@@ -75,8 +76,8 @@ export function useNotificationCenter() {
         charges: subscriptions.data?.charges ?? [],
         budgets: budgets.data ?? [],
         show: { paymentsDue: effective.paymentsDue, priceChanges: effective.priceChanges, budgets: effective.budgets },
-      }),
-    [today, notices.data, subscriptions.data, budgets.data, effective.paymentsDue, effective.priceChanges, effective.budgets],
+      }).filter((i) => !hidden.has(i.key)),
+    [today, notices.data, subscriptions.data, budgets.data, effective.paymentsDue, effective.priceChanges, effective.budgets, hidden],
   )
 
   const refresh = useCallback(
@@ -118,8 +119,14 @@ export function useNotificationCenter() {
   }
   const markAllRead = () => markMutation.mutate(items.filter(isUnread))
 
+  const targetOf = (i: CenterItem) => ({ key: i.key, source: i.source, kind: i.noticeKind })
+  /** Deletes one notice, or all of them; resolves with how many stayed because they still wait for an answer. */
+  const remove = (list: CenterItem[]) => deletion.remove(list.map(targetOf))
+
   return {
     items,
+    remove,
+    isRemoving: deletion.isRemoving,
     unread: unreadCount(items, readKeys),
     isUnread,
     markRead,

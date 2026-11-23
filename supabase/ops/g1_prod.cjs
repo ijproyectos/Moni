@@ -43,13 +43,17 @@ const BATCHES = {
   I: [['20261203000000', 'ahorros']],
   // J (aviso al incluirte en un gasto, preferencias y estado leído del centro de notificaciones): después de I y junto con el front nuevo.
   J: [['20261204000000', 'expense_notices_and_center_reads']],
+  // K (borrar avisos propios y limpieza de más de 7 días): después de J y junto con el front nuevo.
+  K: [['20261205000000', 'notice_cleanup']],
+  // L (estado de la guía interactiva en el perfil): después de K y junto con el front nuevo.
+  L: [['20261206000000', 'guide_status']],
 }
 const batchArg = (process.argv.find((a) => a.startsWith('--lote=')) || '--lote=A').split('=')[1].toUpperCase()
-if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I o J')
+if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I, J, K o L')
 const MIGRATIONS = BATCHES[batchArg]
 const BACKUP_BASE = process.env.G1_BACKUP_DIR || path.join(os.homedir(), 'Desktop', 'MONI', 'backups-g1')
 // Funciones que el lote reemplaza (A: solo get_my_groups; B: las demás) y cuyo cuerpo actual debe coincidir con el repositorio.
-const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [] }
+const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [], K: [], L: [] }
 const FUNCTIONS = ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite', 'get_my_groups', 'join_group']
 // Cuerpos de las funciones que G1 reemplaza, tal como están en el repositorio (para detectar cambios en producción).
 const EXPECTED = {
@@ -187,6 +191,13 @@ async function preflight(c) {
     if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='trips' and column_name='icon') x")) issues.push('trips.icon ya existe')
     const d = await q(c, "select pg_get_functiondef(p.oid) d from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='request_join_group'")
     if (d.length !== 1 || /direct invitation/i.test(d[0].d)) issues.push('request_join_group: definición inesperada')
+  } else if (batchArg === 'K') {
+    if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='notice_reads') x"))) issues.push('falta el lote J (notice_reads)')
+    if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='notice_reads' and column_name='dismissed_at') x")) issues.push('notice_reads.dismissed_at ya existe')
+    if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('delete_my_notices','purge_old_notices','dismiss_center_notices')) x")) issues.push('las funciones de avisos ya existen')
+  } else if (batchArg === 'L') {
+    if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='guide_status') x")) issues.push('profiles.guide_status ya existe')
+    if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='set_guide_status') x")) issues.push('set_guide_status ya existe')
   } else if (batchArg === 'J') {
     if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='ahorro_entries') x"))) issues.push('falta el lote I (ahorro_entries)')
     for (const t of ['notice_reads', 'notice_prefs_extra']) {

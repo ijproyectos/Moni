@@ -33,6 +33,8 @@ export interface Database {
           /** Added by the proposed migration 20261028000000; absent until it is applied. */
           secondary_currency?: string | null
           notifications_opt_in?: boolean | null
+          /** Migration 20261206000000: whether the guided tour was completed or skipped (null = not seen). */
+          guide_status?: 'completed' | 'skipped' | null
           created_at: string
           updated_at: string
         }
@@ -208,7 +210,7 @@ export interface Database {
         Relationships: []
       }
       notice_reads: {
-        Row: { user_id: string; key: string; read_at: string }
+        Row: { user_id: string; key: string; read_at: string; dismissed_at: string | null }
         Insert: never
         Update: never
         Relationships: []
@@ -786,6 +788,23 @@ export interface Database {
       }
       mark_center_notices_read: {
         Args: { p_keys: string[] }
+        Returns: undefined
+      }
+      set_guide_status: {
+        Args: { p_status: string }
+        Returns: undefined
+      }
+      /** Migration 20261205000000_notice_cleanup. */
+      delete_my_notices: {
+        Args: { p_ids?: string[] | null }
+        Returns: number
+      }
+      dismiss_center_notices: {
+        Args: { p_keys: string[] }
+        Returns: undefined
+      }
+      purge_old_notices: {
+        Args: Record<string, never>
         Returns: undefined
       }
       create_ahorro_entry: {

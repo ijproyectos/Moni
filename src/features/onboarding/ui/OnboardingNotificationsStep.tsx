@@ -1,14 +1,13 @@
 import { Check } from 'lucide-react'
 import mascotUrl from '@/assets/mascot/personaje_notificaciones.svg'
 import { Button } from '@/shared/ui/Button'
-import { SkipAllLink } from './SkipAllLink'
 
+// Only what Moni already sends: group notices (expenses, payments, invitations), charges about to happen and category limits.
 const REASONS = [
-  'Acordarte de anotar tus gastos del día',
-  'Avisarte cuando un gasto se carga solo',
-  'Contarte cada semana dónde se van tus gastos hormiga',
-  'Frenarte antes de pasarte del presupuesto',
-  'Contarte cuando alguien divide un gasto con vos',
+  'Enterarte cuando alguien divide un gasto con vos',
+  'Saber cuando te recuerdan o te confirman un pago',
+  'Ver los cobros fijos que se vienen',
+  'Avisarte cuando una categoría se acerca a su límite',
 ]
 
 /**
@@ -30,13 +29,10 @@ async function requestNotifications(): Promise<boolean> {
 // Screen 012 — Notificaciones.
 export function OnboardingNotificationsStep({
   onContinue,
-  onSkipAll,
   isBusy = false,
 }: {
   /** Receives the answer: true = activar, false = más tarde. */
   onContinue: (optIn: boolean) => void
-  /** Asks to finish the whole onboarding with the defaults (notifications unanswered). */
-  onSkipAll: () => void
   isBusy?: boolean
 }) {
   return (
@@ -84,7 +80,6 @@ export function OnboardingNotificationsStep({
         >
           Más tarde
         </Button>
-        <SkipAllLink disabled={isBusy} onClick={onSkipAll} />
       </div>
     </>
   )

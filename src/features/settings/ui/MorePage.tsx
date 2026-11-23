@@ -9,6 +9,7 @@ import { useSavings } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { useAnts } from '@/features/insights/api/useAnts'
 import { useSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
+import { useSecondaryCurrency } from '@/features/settings/api/useSecondaryCurrency'
 import { useTrips } from '@/features/trips/api/useTrips'
 import { daysBetween } from '@/features/trips/domain/dates'
 import { tripStatus } from '@/features/trips/domain/trip'
@@ -119,6 +120,7 @@ export function MorePage() {
   const ants = useAnts(today)
   const ahorros = useAhorros()
   const health = useFinancialHealth()
+  const { usesUsd } = useSecondaryCurrency()
   const arsSaved = balanceOf(ahorros.data ?? [], 'ARS')
   const usdSaved = balanceOf(ahorros.data ?? [], 'USD')
 
@@ -181,7 +183,7 @@ export function MorePage() {
             title="Ahorros"
             surface={CREAM}
             value={ahorros.isLoading ? '…' : big(arsSaved)}
-            sub={usdSaved > 0 ? formatSaving(usdSaved, 'USD') : 'Pesos y dólares'}
+            sub={usdSaved > 0 ? formatSaving(usdSaved, 'USD') : usesUsd ? 'Pesos y dólares' : 'Lo que ahorrás'}
           />
         </li>
         <li className="flex">

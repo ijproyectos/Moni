@@ -35,12 +35,12 @@ export function WelcomePage() {
 
   return (
     <main className="min-h-dvh bg-canvas text-ink">
-      <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col gap-3 px-[18px] pb-[max(env(safe-area-inset-bottom),24px)]">
-        <header className="-mx-[18px] flex flex-col items-center gap-4 rounded-b-[40px] bg-mint px-6 pb-[34px] pt-[30px] text-white">
+      <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col gap-4 px-[18px] pb-[max(env(safe-area-inset-bottom),20px)]">
+        <header className="-mx-[18px] flex flex-col items-center gap-4 rounded-b-[40px] bg-mint px-6 pb-8 pt-[max(env(safe-area-inset-top),30px)] text-white">
           <img
             src={mascotUrl}
             alt="Moni"
-            className="size-[132px] rounded-full border-[5px] border-lilac bg-card object-contain p-2"
+            className="size-[132px] rounded-full max-[380px]:size-[104px] border-[5px] border-lilac bg-card object-contain p-2"
           />
           <h1 className="text-balance text-center font-display text-[34px] font-bold leading-[1.05] tracking-[-0.03em]">
             Hola, soy Moni
@@ -50,7 +50,7 @@ export function WelcomePage() {
           </p>
         </header>
 
-        <ul className="flex flex-col gap-3.5 px-1 pt-2.5">
+        <ul className="flex flex-col gap-4 px-1 pb-2 pt-1">
           {BENEFITS.map(({ icon: Icon, title, text, tile }) => (
             <li key={title} className="grid grid-cols-[44px_1fr] items-center gap-3.5">
               <span
@@ -67,17 +67,12 @@ export function WelcomePage() {
           ))}
         </ul>
 
-        <div aria-hidden="true" className="mt-auto flex justify-center gap-1.5 pt-3">
-          <span className="h-[7px] w-[22px] rounded-full bg-mint" />
-          <span className="size-[7px] rounded-full bg-[#C7D6CB]" />
-          <span className="size-[7px] rounded-full bg-[#C7D6CB]" />
-        </div>
 
         <button
           type="button"
           onClick={handleSignIn}
           disabled={isRedirecting}
-          className={cn(MINT_PILL, 'h-[54px] shrink-0 text-[16px] font-bold')}
+          className={cn(MINT_PILL, 'mt-auto h-[54px] shrink-0 text-[16px] font-bold')}
         >
           Empezar
         </button>

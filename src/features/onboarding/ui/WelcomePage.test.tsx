@@ -32,6 +32,14 @@ describe('WelcomePage', () => {
       expect(screen.getByText(t)).toBeInTheDocument()
   })
 
+  it('has no fake page dots and no swipe hint', () => {
+    render(<WelcomePage />)
+    expect(screen.queryByText(/deslizar/i)).toBeNull()
+    expect(screen.queryByRole('tablist')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Empezar' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ya tengo cuenta' })).toBeInTheDocument()
+  })
+
   it('has no suspension text on a normal visit', () => {
     render(<WelcomePage />)
     expect(screen.queryByText(/suspendida/)).not.toBeInTheDocument()

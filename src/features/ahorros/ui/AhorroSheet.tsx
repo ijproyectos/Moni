@@ -10,7 +10,8 @@ import { ChoiceChip, SectionLabel } from '@/shared/ui/kit'
 import { FIELD_CLASS as fieldClass } from '@/shared/ui/fieldStyles'
 import { useToast } from '@/shared/ui/toastContext'
 import { useAhorros, useCreateAhorro } from '../api/useAhorros'
-import { CURRENCIES, KIND_LABELS, type AhorroCurrency, type AhorroKind } from '../domain/ahorros'
+import { useSecondaryCurrency } from '@/features/settings/api/useSecondaryCurrency'
+import { KIND_LABELS, visibleCurrencies, type AhorroCurrency, type AhorroKind } from '../domain/ahorros'
 
 const TITLES: Record<AhorroKind, string> = {
   deposit: 'Agregar ahorro',
@@ -47,6 +48,8 @@ export function AhorroSheet({
   const requestKey = useRef(crypto.randomUUID())
   const cents = parseAmountInput(amountText) ?? 0
   const entries = useAhorros().data ?? []
+  const { usesUsd } = useSecondaryCurrency()
+  const currencies = visibleCurrencies(usesUsd, entries)
   // Money set aside from each account (deposits from it minus withdrawals back to it): a withdrawal can only go back where it is reserved.
   const reservedIn = (accountId: string) =>
     entries
@@ -81,8 +84,8 @@ export function AhorroSheet({
   return (
     <BottomSheet title={TITLES[kind]} onClose={onClose}>
       <div className="flex flex-col gap-3">
-        <div role="group" aria-label="Moneda" className="flex gap-2">
-          {CURRENCIES.map((c) => (
+        <div role="group" aria-label="Moneda" className={currencies.length > 1 ? 'flex gap-2' : 'hidden'}>
+          {currencies.map((c) => (
             <ChoiceChip
               key={c.code}
               selected={currency === c.code}

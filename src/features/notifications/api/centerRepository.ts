@@ -16,11 +16,42 @@ export function isCenterNotEnabled(error: unknown): boolean {
   return code === 'PGRST205' || code === 'PGRST202' || code === '42P01'
 }
 
-/** The keys of the events (the ones calculated from live data) that the person already read. */
-export async function listCenterReads(): Promise<string[]> {
+/** What the person already read and what they deleted, by key (derived events have no row of their own). */
+export interface CenterReads {
+  read: string[]
+  dismissed: string[]
+}
+
+export async function listCenterReads(): Promise<CenterReads> {
+  const full = await getSupabase().from('notice_reads').select('key, dismissed_at')
+  if (!full.error) {
+    const rows = full.data as { key: string; dismissed_at: string | null }[]
+    return { read: rows.map((r) => r.key), dismissed: rows.filter((r) => r.dismissed_at).map((r) => r.key) }
+  }
+  // The cleanup migration is not there yet: the column does not exist, reads still work.
   const { data, error } = await getSupabase().from('notice_reads').select('key')
   if (error) throw error
-  return (data as { key: string }[]).map((r) => r.key)
+  return { read: (data as { key: string }[]).map((r) => r.key), dismissed: [] }
+}
+
+/** Deletes the person's own notices (`null` = all of them). Notices still waiting for an answer are kept: the number deleted comes back. */
+export async function deleteNotices(ids: readonly string[] | null): Promise<number> {
+  const { data, error } = await getSupabase().rpc('delete_my_notices', { p_ids: ids === null ? null : [...ids] })
+  if (error) throw error
+  return Number(data ?? 0)
+}
+
+/** Hides events calculated from live data (they have no row to delete): the key is remembered so they do not come back. */
+export async function dismissCenterEvents(keys: readonly string[]): Promise<void> {
+  if (keys.length === 0) return
+  const { error } = await getSupabase().rpc('dismiss_center_notices', { p_keys: [...keys] })
+  if (error) throw error
+}
+
+/** Old notices (over 7 days) are removed, except the ones that still need an answer. Best effort: never blocks the screen. */
+export async function purgeOldNotices(): Promise<void> {
+  const { error } = await getSupabase().rpc('purge_old_notices')
+  if (error && !isCenterNotEnabled(error)) throw error
 }
 
 export async function markCenterRead(keys: readonly string[]): Promise<void> {

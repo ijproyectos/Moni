@@ -17,7 +17,6 @@ export interface OnboardingDraft {
   custom: CustomCategory[]
   usesDollars: boolean
   notificationsOptIn: boolean | null
-  income?: { incomeCents: number; payDay: number | null } | null
 }
 
 const prefsKey = (userId: string) => `moni:prefs:${userId}`

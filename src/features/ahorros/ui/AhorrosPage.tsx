@@ -11,10 +11,11 @@ import { Page } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
+import { useSecondaryCurrency } from '@/features/settings/api/useSecondaryCurrency'
 import { useAhorros, useVoidAhorro } from '../api/useAhorros'
 import {
-  CURRENCIES,
   KIND_LABELS,
+  visibleCurrencies,
   balanceOf,
   formatSaving,
   type AhorroCurrency,
@@ -36,6 +37,8 @@ export function AhorrosPage() {
   const [sheet, setSheet] = useState<Sheet>(null)
   const [pending, setPending] = useState<AhorroEntry | null>(null)
   const entries = ahorros.data ?? []
+  const { usesUsd } = useSecondaryCurrency()
+  const currencies = visibleCurrencies(usesUsd, entries)
   const posted = entries.filter((e) => e.status === 'posted')
   const today = todayIso()
 
@@ -69,7 +72,7 @@ export function AhorrosPage() {
       ) : (
         <>
           <section aria-label="Lo que tenés ahorrado" className="flex flex-col gap-4">
-            {CURRENCIES.map(({ code, label }) => {
+            {currencies.map(({ code, label }) => {
               const balance = balanceOf(entries, code)
               const history = posted.filter((e) => e.currency === code)
               return (

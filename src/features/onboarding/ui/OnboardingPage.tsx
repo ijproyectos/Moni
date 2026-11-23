@@ -11,15 +11,14 @@ import { FEATURES } from '@/shared/config/features'
 import type { CategoryKind } from '@/shared/lib/database.types'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
-import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { Button } from '@/shared/ui/Button'
 import { ProgressHeader } from '@/shared/ui/ProgressHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useCompleteOnboarding } from '../api/useCompleteOnboarding'
 import { goalsToPersist, toggleGoal } from '../domain/goals'
-import { updateProfileExtras } from '@/features/settings/mock/profileExtrasStore'
-import { clearDraft, loadDraft, mergeLocalPreferences, saveDraft } from '../domain/localPreferences'
+import { markGuidePending } from '@/features/guide/domain/guide'
+import { clearDraft, loadDraft, saveDraft } from '../domain/localPreferences'
 import {
   customNameTaken,
   defaultTemplateSlugs,
@@ -34,11 +33,10 @@ import { OnboardingBenefitsStep, type SlideTint } from './OnboardingBenefitsStep
 import { OnboardingCategoriesStep } from './OnboardingCategoriesStep'
 import { OnboardingCurrencyStep } from './OnboardingCurrencyStep'
 import { OnboardingGoalsStep } from './OnboardingGoalsStep'
-import { OnboardingIncomeStep, type IncomeAnswer } from './OnboardingIncomeStep'
 import { OnboardingNotificationsStep } from './OnboardingNotificationsStep'
 
 /**
- * Onboarding flow (screens 002-013). The current step lives in the URL (?paso=N) so the browser
+ * Onboarding flow: objetivos, beneficios, moneda, categorías and the notifications screen. The current step lives in the URL (?paso=N) so the browser
  * back/forward buttons move between steps, and the answers are kept as a session draft so a reload
  * does not lose them. Nothing is saved in Supabase until the last screen, so the "already
  * onboarded" redirect cannot cut the flow short.
@@ -60,12 +58,9 @@ export function OnboardingPage() {
   const [notificationsOptIn, setNotificationsOptIn] = useState<boolean | null>(
     draft?.notificationsOptIn ?? null,
   )
-  const [income, setIncome] = useState<IncomeAnswer | null>(draft?.income ?? null)
   const [creatingKind, setCreatingKind] = useState<CategoryKind | null>(null)
-  // "Omitir configuración" throws away the answers, so it asks first.
-  const [confirmingSkipAll, setConfirmingSkipAll] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // The benefits slides tint the whole screen; every other step uses the canvas.
+  // The benefit cards tint the whole screen; every other step uses the canvas.
   const [tint, setTint] = useState<SlideTint | null>(null)
   const onTint = useCallback((t: SlideTint | null) => setTint(t), [])
 
@@ -77,13 +72,14 @@ export function OnboardingPage() {
   }, [slugs, templatesQuery.data])
   const selected = slugs ?? []
   const hasCategories = selected.length + custom.length > 0
-  // Deep links or reloads can't skip past the categories step without a valid choice.
+  // Deep links or reloads can't skip a required step: goals first, then a valid categories choice.
   const lastStep = FEATURES.pro ? PRO_STEP : ONBOARDING_STEPS
-  const step = Math.min(requested > 4 && slugs !== null && !hasCategories ? 4 : requested, lastStep)
+  const guarded = requested > 1 && goals.length === 0 ? 1 : requested > 4 && slugs !== null && !hasCategories ? 4 : requested
+  const step = Math.min(guarded, lastStep)
 
   useEffect(() => {
-    saveDraft(userId, { goals, slugs, custom, usesDollars, notificationsOptIn, income })
-  }, [userId, goals, slugs, custom, usesDollars, notificationsOptIn, income])
+    saveDraft(userId, { goals, slugs, custom, usesDollars, notificationsOptIn })
+  }, [userId, goals, slugs, custom, usesDollars, notificationsOptIn])
 
   function goTo(next: number) {
     setError(null)
@@ -97,17 +93,14 @@ export function OnboardingPage() {
     else goTo(step - 1)
   }
 
-  async function submit(input: OnboardingInput, skipIncome = false) {
+  async function submit(input: OnboardingInput) {
     if (complete.isPending) return
     setError(null)
     try {
       await complete.mutateAsync(input)
-      // Income and pay day have no column yet: they stay on this device, in the existing preferences.
-      if (income && !skipIncome) {
-        mergeLocalPreferences(userId, { monthlyIncomeCents: income.incomeCents, payDay: income.payDay })
-        updateProfileExtras({ monthlyIncomeCents: income.incomeCents })
-      }
       clearDraft(userId)
+      // New people get the guided tour the first time they enter the app.
+      markGuidePending(userId)
       navigate(peekReturnTo() ?? '/', { replace: true })
     } catch (e) {
       setError(toUserMessage(e))
@@ -122,22 +115,6 @@ export function OnboardingPage() {
       secondaryCurrency: usesDollars ? 'USD' : null,
       notificationsOptIn: optIn,
     })
-  }
-
-  // "Omitir configuración" (after confirming): finish right away with the defaults, ignoring the answers given so far.
-  function skipAll() {
-    const defaults = defaultTemplateSlugs(templates)
-    if (defaults.length === 0) {
-      setError('Todavía no pudimos cargar las categorías. Probá de nuevo en un momento.')
-      return
-    }
-    return submit({
-      goals: [],
-      templateSlugs: defaults,
-      customCategories: [],
-      secondaryCurrency: null,
-      notificationsOptIn: null,
-    }, true)
   }
 
   if (step === PRO_STEP) {
@@ -158,9 +135,7 @@ export function OnboardingPage() {
   return (
     <main
       className="min-h-dvh bg-[var(--ob-light,var(--color-canvas))] text-ink transition-colors duration-300 dark:bg-[var(--ob-dark,var(--color-canvas))]"
-      style={
-        tint ? ({ '--ob-light': tint.light, '--ob-dark': tint.dark } as CSSProperties) : undefined
-      }
+      style={tint ? ({ '--ob-light': tint.light, '--ob-dark': tint.dark } as CSSProperties) : undefined}
     >
       <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-6">
         <ProgressHeader step={step} total={ONBOARDING_STEPS} onBack={step > 1 ? back : undefined} />
@@ -170,34 +145,16 @@ export function OnboardingPage() {
             selected={goals}
             onToggle={(id) => setGoals((g) => toggleGoal(g, id))}
             onContinue={() => goTo(2)}
-            onSkip={() => {
-              setGoals([])
-              goTo(2)
-            }}
           />
         )}
         {step === 2 && (
-          <OnboardingBenefitsStep
-            name={firstName(profile?.display_name)}
-            onContinue={() => goTo(3)}
-            onSkip={() => goTo(3)}
-            onSkipAll={() => setConfirmingSkipAll(true)}
-            onTint={onTint}
-            isBusy={complete.isPending}
-          />
+          <OnboardingBenefitsStep name={firstName(profile?.display_name)} goals={goals} onContinue={() => goTo(3)} onTint={onTint} />
         )}
         {step === 3 && (
           <OnboardingCurrencyStep
             usesDollars={usesDollars}
             onUsesDollarsChange={setUsesDollars}
             onContinue={() => goTo(4)}
-            // Skipping the currency keeps pesos only.
-            onSkip={() => {
-              setUsesDollars(false)
-              goTo(4)
-            }}
-            onSkipAll={() => setConfirmingSkipAll(true)}
-            isBusy={complete.isPending}
           />
         )}
         {step === 4 &&
@@ -234,33 +191,11 @@ export function OnboardingPage() {
               onRemoveCustom={(c) =>
                 setCustom((list) => list.filter((x) => !(x.kind === c.kind && x.name === c.name)))
               }
+              onRestoreSuggested={() => setSlugs(defaultTemplateSlugs(templates))}
               onContinue={() => goTo(5)}
-              // Skipping the categories keeps the suggested ones (and the ones the person created).
-              onSkip={() => {
-                setSlugs(defaultTemplateSlugs(templates))
-                goTo(5)
-              }}
-              onSkipAll={() => setConfirmingSkipAll(true)}
-              isBusy={complete.isPending}
             />
           ))}
         {step === 5 && (
-          <OnboardingIncomeStep
-            initial={income}
-            onContinue={(answer) => {
-              setIncome(answer)
-              goTo(6)
-            }}
-            // Skipping the income keeps it unset: Moni never invents one.
-            onSkip={() => {
-              setIncome(null)
-              goTo(6)
-            }}
-            onSkipAll={() => setConfirmingSkipAll(true)}
-            isBusy={complete.isPending}
-          />
-        )}
-        {step === 6 && (
           <OnboardingNotificationsStep
             isBusy={complete.isPending}
             onContinue={(optIn) => {
@@ -269,7 +204,6 @@ export function OnboardingPage() {
               if (FEATURES.pro) goTo(PRO_STEP)
               else void finish(optIn)
             }}
-            onSkipAll={() => setConfirmingSkipAll(true)}
           />
         )}
         {error && (
@@ -279,20 +213,6 @@ export function OnboardingPage() {
         )}
       </div>
 
-      {confirmingSkipAll && (
-        <ConfirmDialog
-          title="¿Omitir la configuración?"
-          message="Terminamos ahora con los valores por defecto: todas las categorías sugeridas, solo pesos, sin objetivos y sin avisos. Lo que elegiste hasta acá no se guarda. Lo podés cambiar después desde Perfil."
-          confirmLabel="Omitir y terminar"
-          cancelLabel="Seguir configurando"
-          isBusy={complete.isPending}
-          onConfirm={() => {
-            setConfirmingSkipAll(false)
-            void skipAll()
-          }}
-          onCancel={() => setConfirmingSkipAll(false)}
-        />
-      )}
       {creatingKind && (
         <BottomSheet title="Nueva categoría" onClose={() => setCreatingKind(null)}>
           <SegmentedControl

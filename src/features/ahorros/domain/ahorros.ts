@@ -67,3 +67,12 @@ export const KIND_LABELS: Record<AhorroKind, string> = {
   deposit: 'Aporte',
   withdrawal: 'Retiro',
 }
+
+/**
+ * The currencies to offer: pesos always; dollars only when the person turned them on (Configuración) or already has dollar savings,
+ * which are never hidden.
+ */
+export function visibleCurrencies(usesUsd: boolean, entries: readonly AhorroEntry[]): typeof CURRENCIES {
+  const hasUsd = entries.some((e) => e.currency === 'USD' && e.status === 'posted')
+  return usesUsd || hasUsd ? CURRENCIES : CURRENCIES.filter((c) => c.code === 'ARS')
+}

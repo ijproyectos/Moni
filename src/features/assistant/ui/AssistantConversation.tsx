@@ -184,9 +184,9 @@ export function AssistantConversation({
     <>
       {locked ? (
         <Panel className="flex flex-col gap-3">
-          <h2 className="text-[20px] font-extrabold">El asistente es de Moni Plus</h2>
+          <h2 className="text-[20px] font-extrabold">Conocé a tu asistente financiero</h2>
           <p className="text-[16px] leading-6">
-            Con Moni Plus le preguntás a Moni por tus números. Lo manual sigue siendo gratis.
+            Moni analiza tus gastos, te ayuda a entender en qué se va tu plata y te acompaña a tomar mejores decisiones para ahorrar y llegar a tus metas.
           </p>
           <Button onClick={() => setUpsell(true)}>Conocer Moni Plus</Button>
         </Panel>

@@ -8,7 +8,6 @@ interface OnboardingGoalsStepProps {
   selected: readonly string[]
   onToggle: (id: string) => void
   onContinue: () => void
-  onSkip: () => void
 }
 
 // Screen 002 — Objetivos: a flat list with a check on the right (no cards, no icons).
@@ -16,7 +15,6 @@ export function OnboardingGoalsStep({
   selected,
   onToggle,
   onContinue,
-  onSkip,
 }: OnboardingGoalsStepProps) {
   return (
     <>
@@ -58,9 +56,11 @@ export function OnboardingGoalsStep({
       </ul>
 
       <div className="mt-auto flex flex-col items-center gap-1 pt-6">
-        <Button onClick={onContinue}>Continuar</Button>
-        <Button variant="ghost" onClick={onSkip} className="text-text-muted">
-          Saltar
+        {selected.length === 0 && (
+          <p className="mb-3 text-center text-[14px] text-text-muted">Elegí al menos una para seguir.</p>
+        )}
+        <Button onClick={onContinue} disabled={selected.length === 0}>
+          Continuar
         </Button>
       </div>
     </>

@@ -4,6 +4,8 @@ import { useProfile } from '@/features/auth/api/useProfile'
 import { initialOf } from '@/features/auth/domain/profile'
 import { useSyncFixedExpenses } from '@/features/fixedExpenses/api/useFixedExpenses'
 import { useSyncDueSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
+import { GuideHost } from '@/features/guide/ui/GuideHost'
+import { useGuideActive } from '@/features/guide/ui/guideStore'
 import { RewardCelebration } from '@/features/goals/ui/RewardCelebration'
 import { PushEnrollmentPrompt } from '@/features/push/ui/PushEnrollmentPrompt'
 import { MyInitialContext } from '@/shared/ui/myInitialContext'
@@ -34,6 +36,7 @@ export function AppShell() {
   const initial = initialOf(profile?.display_name, user?.email ?? '') || 'V'
   const { pathname } = useLocation()
   // The bottom bar is in the flow (sticky), so it brings its own room; tab pages only need a small gap above it.
+  const guideActive = useGuideActive()
   const bottomRoom = TAB_PATHS.includes(pathname) ? 'pb-4' : 'pb-10'
   // Safety net for the server job: register what is already due for this person when the app opens.
   useSyncDueSubscriptions()
@@ -49,7 +52,8 @@ export function AppShell() {
           </main>
           <ShellBottomBar />
           <RewardCelebration />
-          <PushEnrollmentPrompt />
+          {!guideActive && <PushEnrollmentPrompt />}
+          <GuideHost />
         </div>
       </MovementSheetProvider>
     </MyInitialContext.Provider>

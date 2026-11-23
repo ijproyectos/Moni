@@ -24,10 +24,15 @@ export interface CenterItem {
   source: 'notice' | 'derived'
   /** Only for notices: already read in the database. */
   readInDb?: boolean
+  /** Only for notices: what kind of group notice it is. */
+  noticeKind?: string
+  /** False when only the day is known (events calculated from live data): no hour is shown. */
+  hasTime: boolean
 }
 
 const DUE_WINDOW_DAYS = 3
-const PRICE_WINDOW_DAYS = 45
+/** Notices are kept for a week: an older price change is not shown. */
+const PRICE_WINDOW_DAYS = 7
 
 /**
  * The general notices of Moni Plus, built ONLY from real data: the notices of groups, the subscription charges that are about to
@@ -56,6 +61,8 @@ export function buildCenterItems(input: {
       at: n.createdAt,
       source: 'notice',
       readInDb: n.readAt !== null,
+      noticeKind: n.kind,
+      hasTime: true,
     })
   }
 
@@ -70,6 +77,7 @@ export function buildCenterItems(input: {
         to: '/recurrentes',
         at: `${s.nextChargeOn}T00:00:00Z`,
         source: 'derived',
+        hasTime: false,
       })
     }
     const history = chargesOf(charges, s.id)
@@ -84,6 +92,7 @@ export function buildCenterItems(input: {
         to: '/recurrentes',
         at: `${last.dueOn}T00:00:00Z`,
         source: 'derived',
+        hasTime: false,
       })
     }
   }
@@ -101,6 +110,7 @@ export function buildCenterItems(input: {
       to: '/categorias',
       at: `${today}T00:00:00Z`,
       source: 'derived',
+      hasTime: false,
     })
   }
 

@@ -5,7 +5,10 @@ import { ToastProvider } from '@/shared/ui/Toast'
 import type { AhorroEntry } from '../domain/ahorros'
 import { AhorrosPage } from './AhorrosPage'
 
-const state = vi.hoisted(() => ({ entries: [] as unknown[], voidEntry: vi.fn() }))
+const state = vi.hoisted(() => ({ entries: [] as unknown[], voidEntry: vi.fn(), usesUsd: true }))
+vi.mock('@/features/settings/api/useSecondaryCurrency', () => ({
+  useSecondaryCurrency: () => ({ usesUsd: state.usesUsd, isLoading: false, setUsesUsd: vi.fn(), isSaving: false }),
+}))
 vi.mock('../api/useAhorros', () => ({
   useAhorros: () => ({ data: state.entries, isLoading: false, isError: false, refetch: vi.fn() }),
   useVoidAhorro: () => ({ mutateAsync: state.voidEntry, isPending: false }),
@@ -38,6 +41,7 @@ function setup() {
 describe('Ahorros', () => {
   beforeEach(() => {
     state.entries = []
+    state.usesUsd = true
     state.voidEntry.mockReset()
     state.voidEntry.mockResolvedValue(undefined)
   })
@@ -110,5 +114,21 @@ describe('Ahorros', () => {
     setup()
     expect(within(screen.getByRole('article', { name: 'Pesos (ARS)' })).getByText('Sin movimientos')).toBeInTheDocument()
     expect(within(screen.getByRole('article', { name: 'Dólares (USD)' })).getByText('US$ 0')).toBeInTheDocument()
+  })
+
+  it('without dollars turned on it shows only pesos, and no currency choice in the form', async () => {
+    state.usesUsd = false
+    const user = setup()
+    expect(screen.getByRole('article', { name: 'Pesos (ARS)' })).toBeInTheDocument()
+    expect(screen.queryByRole('article', { name: 'Dólares (USD)' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Agregar ahorro en pesos' }))
+    expect(screen.getByRole('group', { name: 'Moneda', hidden: true })).toHaveClass('hidden')
+  })
+
+  it('dollar savings that already exist are never hidden, even with dollars turned off', () => {
+    state.usesUsd = false
+    state.entries = [entry({ id: 'u', currency: 'USD', kind: 'opening', amountCents: 100_00 })]
+    setup()
+    expect(screen.getByRole('article', { name: 'Dólares (USD)' })).toBeInTheDocument()
   })
 })

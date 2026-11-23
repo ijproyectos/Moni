@@ -28,7 +28,7 @@ describe('buildCenterItems', () => {
       today: TODAY,
       notices: [notice()],
       subscriptions: [sub()],
-      charges: [charge({ id: 'c0', dueOn: '2026-10-01', amountCents: 8_000_00 }), charge({ id: 'c1', dueOn: '2026-11-01', amountCents: 10_000_00 })],
+      charges: [charge({ id: 'c0', dueOn: '2026-10-01', amountCents: 8_000_00 }), charge({ id: 'c1', dueOn: '2026-11-18', amountCents: 10_000_00 })],
       budgets: [budget({ state: 'over' }), budget({ categoryId: 'x', name: 'Súper', state: 'ok' })],
     })
     expect(items.map((i) => i.kind).sort()).toEqual(['budget', 'group', 'payment_due', 'price_increase'])
@@ -61,11 +61,24 @@ describe('buildCenterItems: preferences', () => {
       today: TODAY,
       notices: [notice()],
       subscriptions: [sub()],
-      charges: [charge({ id: 'c0', dueOn: '2026-10-01', amountCents: 8_000_00 }), charge({ id: 'c1', dueOn: '2026-11-01', amountCents: 10_000_00 })],
+      charges: [charge({ id: 'c0', dueOn: '2026-10-01', amountCents: 8_000_00 }), charge({ id: 'c1', dueOn: '2026-11-18', amountCents: 10_000_00 })],
       budgets: [budget({ state: 'over' })],
     }
     const items = buildCenterItems({ ...input, show: { paymentsDue: false, priceChanges: false, budgets: false } })
     expect(items.map((i) => i.kind)).toEqual(['group'])
     expect(buildCenterItems({ ...input, show: { paymentsDue: true, priceChanges: false, budgets: false } }).map((i) => i.kind).sort()).toEqual(['group', 'payment_due'])
+  })
+
+  it('keeps notices for a week: an older price change is not shown, and events say they carry no hour', () => {
+    const old = buildCenterItems({
+      today: TODAY,
+      notices: [],
+      subscriptions: [sub()],
+      charges: [charge({ id: 'c0', dueOn: '2026-10-01', amountCents: 8_000_00 }), charge({ id: 'c1', dueOn: '2026-11-01', amountCents: 10_000_00 })],
+      budgets: [],
+    })
+    expect(old.some((i) => i.kind === 'price_increase')).toBe(false)
+    const items = buildCenterItems({ today: TODAY, notices: [notice()], subscriptions: [sub()], charges: [], budgets: [] })
+    expect(items.find((i) => i.kind === 'group')?.hasTime).toBe(true)
   })
 })

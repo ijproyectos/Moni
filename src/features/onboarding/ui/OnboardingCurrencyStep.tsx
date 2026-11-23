@@ -3,7 +3,6 @@ import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { formatArs } from '@/shared/lib/money'
 import { OnboardingTitle } from './OnboardingTitle'
-import { SkipAllLink } from './SkipAllLink'
 
 function ArgentinaFlag() {
   return (
@@ -61,24 +60,16 @@ export function OnboardingCurrencyStep({
   usesDollars,
   onUsesDollarsChange,
   onContinue,
-  onSkip,
-  onSkipAll,
-  isBusy = false,
 }: {
   usesDollars: boolean
   onUsesDollarsChange: (value: boolean) => void
   onContinue: () => void
-  /** Skips this step (pesos only) and goes on. */
-  onSkip: () => void
-  /** Asks to finish the whole onboarding with the defaults. */
-  onSkipAll: () => void
-  isBusy?: boolean
 }) {
   return (
     <>
       <OnboardingTitle
         title="¿En qué moneda manejás tu plata?"
-        subtitle="Por ahora Moni funciona en pesos argentinos. Si también usás dólares, sumalos como segunda moneda."
+        subtitle="Tu moneda principal es el peso argentino. Si también ahorrás en dólares, activalos como segunda moneda: después lo podés cambiar en Configuración."
       />
 
       <div className="mt-6 flex flex-col gap-3">
@@ -121,7 +112,7 @@ export function OnboardingCurrencyStep({
         </span>
         <span className="flex-1">
           <span className="block text-[17px] font-extrabold text-ink">También uso dólares</span>
-          <span className="block text-[14px] text-text-muted">Sumalos como segunda moneda</span>
+          <span className="block text-[14px] text-text-muted">Ahorros en pesos y en dólares, cada uno por separado</span>
         </span>
         <span
           aria-hidden="true"
@@ -138,10 +129,6 @@ export function OnboardingCurrencyStep({
 
       <div className="mt-auto flex flex-col items-center gap-1 pt-8">
         <Button onClick={onContinue}>Continuar</Button>
-        <Button variant="ghost" disabled={isBusy} onClick={onSkip} className="text-text-muted">
-          Saltar
-        </Button>
-        <SkipAllLink disabled={isBusy} onClick={onSkipAll} />
       </div>
     </>
   )

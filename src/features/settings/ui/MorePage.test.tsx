@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
 import { MorePage } from './MorePage'
@@ -36,6 +36,10 @@ vi.mock('@/features/insights/api/useAnts', () => ({
 const subsData = vi.hoisted(() => ({ current: [] as unknown[] }))
 const antsData = vi.hoisted(() => ({ current: 0 }))
 const ahorrosData = vi.hoisted(() => ({ current: [] as unknown[] }))
+const currencyData = vi.hoisted(() => ({ usesUsd: true }))
+vi.mock('@/features/settings/api/useSecondaryCurrency', () => ({
+  useSecondaryCurrency: () => ({ usesUsd: currencyData.usesUsd }),
+}))
 vi.mock('@/features/ahorros/api/useAhorros', () => ({
   useAhorros: () => ({ data: ahorrosData.current, isLoading: false }),
 }))
@@ -85,6 +89,11 @@ describe('Explorar', () => {
   it('shows the savings of each currency separately, never mixed, and an empty state without them', () => {
     renderPage()
     expect(screen.getByRole('link', { name: /^Ahorros/ })).toHaveTextContent('Pesos y dólares')
+    currencyData.usesUsd = false
+    cleanup()
+    renderPage()
+    expect(screen.getByRole('link', { name: /^Ahorros/ })).not.toHaveTextContent('dólares')
+    currencyData.usesUsd = true
     ahorrosData.current = [
       { id: '1', currency: 'ARS', kind: 'opening', amountCents: 150_000_00, status: 'posted' },
       { id: '2', currency: 'USD', kind: 'opening', amountCents: 300_00, status: 'posted' },

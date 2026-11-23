@@ -93,7 +93,7 @@ describe('AssistantPage', () => {
     const user = setup()
     await user.click(screen.getByRole('button', { name: '¿Cuánto gasté este mes?' }))
     expect(
-      await screen.findByRole('dialog', { name: 'El asistente es de Moni Plus' }),
+      await screen.findByRole('dialog', { name: 'Conocé a tu asistente financiero' }),
     ).toBeInTheDocument()
   })
 
@@ -102,7 +102,7 @@ describe('AssistantPage', () => {
     const user = setup()
     expect(screen.queryByLabelText('Tu pregunta')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Conocer Moni Plus' }))
-    expect(screen.getByRole('dialog', { name: 'El asistente es de Moni Plus' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Conocé a tu asistente financiero' })).toBeInTheDocument()
     // The upsell sheet reads the billing state (plus-subscription); the assistant function itself is never called.
     expect(invoke.mock.calls.filter(([name]) => name === 'insights-chat')).toHaveLength(0)
   })

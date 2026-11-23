@@ -327,7 +327,7 @@ describe('Moni chat (opened from the cat)', () => {
     plusState.isFree = true
     const user = renderAgent()
     await user.click(cat())
-    expect(screen.getByText('El asistente es de Moni Plus')).toBeInTheDocument()
+    expect(screen.getByText('Conocé a tu asistente financiero')).toBeInTheDocument()
     expect(mocks.invoke).not.toHaveBeenCalledWith('parse-movements', expect.anything())
   })
 })
