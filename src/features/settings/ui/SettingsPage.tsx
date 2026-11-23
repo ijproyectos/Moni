@@ -176,6 +176,9 @@ export function SettingsPage() {
       <GroupLabel>Ayuda</GroupLabel>
       <ProfileGroup>
         <SettingRow title="Ayuda y contacto" subtitle="Escribinos y mirá tus consultas" to="/soporte" />
+        <SettingRow title="Acerca de Moni" to="/legal/acerca-de" />
+        <SettingRow title="Términos de uso" to="/legal/terminos" />
+        <SettingRow title="Política de privacidad" to="/legal/privacidad" />
         <SettingRow
           title="Recomendá a un amigo"
           subtitle="Compartí el link de Moni"
