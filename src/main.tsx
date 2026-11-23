@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { themeStore } from './features/settings/api/themeStore'
 import { envResult } from './shared/lib/env'
 import { ConfigErrorScreen } from './shared/ui/ConfigErrorScreen'
+import { SplashGate } from './features/splash/ui/SplashGate'
 import { FullScreenLoader } from './shared/ui/FullScreenLoader'
 
 // crypto.randomUUID only exists in secure contexts (https or localhost). Opening the app over plain http on a local network (for
@@ -30,12 +31,14 @@ if (!rootElement) throw new Error('Root element not found')
 
 createRoot(rootElement).render(
   <StrictMode>
-    {envResult.ok ? (
-      <Suspense fallback={<FullScreenLoader />}>
-        <App />
-      </Suspense>
-    ) : (
-      <ConfigErrorScreen missing={envResult.missing} />
-    )}
+    <SplashGate>
+      {envResult.ok ? (
+        <Suspense fallback={<FullScreenLoader />}>
+          <App />
+        </Suspense>
+      ) : (
+        <ConfigErrorScreen missing={envResult.missing} />
+      )}
+    </SplashGate>
   </StrictMode>,
 )
