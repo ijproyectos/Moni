@@ -13,11 +13,13 @@ import { formatPlusExpiry } from '@/features/plus/domain/plus'
 import { CancelPlusSheet } from '@/features/plus/ui/CancelPlusSheet'
 import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { FEATURES } from '@/shared/config/features'
+import { getCurrency } from '@/shared/lib/currencies'
 import { toUserMessage } from '@/shared/lib/errors'
 import { shareLink } from '@/shared/lib/share'
 import { AppVersion } from '@/shared/ui/AppVersion'
 import { cn } from '@/shared/ui/cn'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
+import { useDisplayCurrency } from '@/shared/ui/displayCurrencyContext'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
 import { MoniSays, Page, Toggle } from '@/shared/ui/kit'
 import { MentaHeader } from '@/shared/ui/MentaHeader'
@@ -26,6 +28,7 @@ import { useToast } from '@/shared/ui/toastContext'
 import { Link } from 'react-router'
 import { ShoppingBasket } from 'lucide-react'
 import { useTheme } from '../api/useTheme'
+import { DisplayCurrencySheet } from './DisplayCurrencySheet'
 import { ExportMovementsRow } from './ExportMovementsRow'
 import { GroupLabel, ProfileGroup } from './ProfilePage'
 import { GroupNoticePrefs } from './GroupNoticePrefs'
@@ -66,7 +69,7 @@ function ThemeSelector() {
   )
 }
 
-type Sheet = 'plus' | 'cancelPlus' | 'signout' | 'delete' | 'import' | null
+type Sheet = 'plus' | 'cancelPlus' | 'signout' | 'delete' | 'import' | 'currency' | null
 
 /** Configuración: appearance, account (payment methods, plan, notifications), help and sign out. */
 export function SettingsPage() {
@@ -75,6 +78,7 @@ export function SettingsPage() {
   const plus = usePlus()
   const subscription = useSubscriptionState()
   const hiddenAmounts = useHiddenAmounts()
+  const displayCurrency = useDisplayCurrency()
   const accounts = useAccounts()
   const weekly = useWeeklyDigestSettings()
   const [sheet, setSheet] = useState<Sheet>(null)
@@ -98,6 +102,12 @@ export function SettingsPage() {
       <GroupLabel>Apariencia</GroupLabel>
       <ProfileGroup>
         <SettingRow title="Tema" trailing={<ThemeSelector />} />
+        <SettingRow
+          title="Moneda de visualización"
+          subtitle="Convierte lo que ves, no lo que guardás"
+          trailing={getCurrency(displayCurrency.currency)?.code ?? displayCurrency.currency}
+          onClick={() => setSheet('currency')}
+        />
         <SettingRow
           title="Modo privacidad"
           subtitle="Oculta tus saldos al abrir la app"
@@ -226,6 +236,7 @@ export function SettingsPage() {
       {sheet === 'plus' && <PlusSheet onClose={() => setSheet(null)} />}
       {sheet === 'cancelPlus' && <CancelPlusSheet expiresAt={plus.expiresAt} onClose={() => setSheet(null)} />}
       {sheet === 'import' && <ImportMovementsSheet onClose={() => setSheet(null)} />}
+      {sheet === 'currency' && <DisplayCurrencySheet onClose={() => setSheet(null)} />}
       {sheet === 'signout' && (
         <DecisionSheet
           icon={<ChevronLeft className="size-6" />}
