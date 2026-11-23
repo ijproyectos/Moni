@@ -1,4 +1,4 @@
-import { Award, ChevronRight, CreditCard, Gift, Heart, Plus, UsersRound } from 'lucide-react'
+import { Award, ChevronRight, Gift, Heart, Plus, UsersRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Button } from '@/shared/ui/Button'
@@ -138,21 +138,7 @@ export function GoalsPage() {
               )}
             </>
           )}
-          <div className={FEATURES.aguinaldo ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-2 gap-3'}>
-            <Link
-              to="/metas/cuotas"
-              className="flex min-w-0 items-center gap-2 rounded-[22px] border border-line bg-card px-3 py-3"
-            >
-              <IconTile
-                icon={CreditCard}
-                bg="var(--color-tint-gold)"
-                className="size-11 shrink-0"
-              />
-              <span className="min-w-0">
-                <span className="block text-[17px] font-extrabold leading-5">Cuotas</span>
-                <span className="block text-[14px] text-text-muted">¿Conviene?</span>
-              </span>
-            </Link>
+          <div className={FEATURES.aguinaldo ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1 gap-3'}>
             <Link
               to="/logros"
               className="flex min-w-0 items-center gap-2 rounded-[22px] border border-line bg-card px-3 py-3"

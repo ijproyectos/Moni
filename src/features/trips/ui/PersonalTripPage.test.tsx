@@ -11,6 +11,17 @@ const state = vi.hoisted(() => ({
   expenses: { data: [], isLoading: false } as Record<string, unknown>,
   updateTrip: vi.fn(),
 }))
+const voidTx = vi.hoisted(() => vi.fn())
+vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [{ id: 'acc', name: 'Banco' }] }) }))
+vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
+vi.mock('@/features/transactions/api/useTransactions', () => ({
+  useVoidTransaction: () => ({ mutateAsync: voidTx, isPending: false }),
+}))
+vi.mock('@tanstack/react-query', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-query')>()),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}))
+vi.mock('./TripIconPicker', () => ({ TripIconButton: () => <button type="button" aria-label="Cambiar el ícono del viaje" /> }))
 vi.mock('../api/useTrips', () => ({
   useTrips: () => state.trips,
   useTripExpenses: () => state.expenses,
@@ -115,11 +126,22 @@ describe('PersonalTripPage', () => {
     expect(rows[1]).toHaveTextContent('$30.000')
   })
 
-  it('lists the trip movements; tapping one edits it with the usual movement sheet', async () => {
+  it('lists the trip movements; tapping one opens its summary, from where it is edited or deleted after confirming', async () => {
     const { openEdit, user } = renderPage()
     expect(screen.queryByText(/1\.000\.000/)).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Editar gasto Cena' }))
+    await user.click(screen.getByRole('button', { name: 'Ver detalle de Cena' }))
+    const dialog = screen.getByRole('dialog', { name: 'Resumen del movimiento' })
+    await user.click(within(dialog).getByRole('button', { name: 'Editar' }))
     expect(openEdit).toHaveBeenCalledWith(expenses[0])
+  })
+
+  it('has real buttons for what the swipe does, and deleting asks first', async () => {
+    const { user } = renderPage()
+    expect(screen.getByRole('button', { name: 'Editar Cena' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Eliminar Cena' }))
+    expect(voidTx).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }))
+    expect(voidTx).toHaveBeenCalledWith('a')
   })
 
   it('"Cargar gasto" opens the usual new-expense sheet bound to this trip', async () => {

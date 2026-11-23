@@ -64,6 +64,7 @@ describe('tripsRepository', () => {
         endsOn: '2026-12-17',
         budgetCents: 500_000_00,
         archivedAt: null,
+        icon: null,
       },
     ])
     expect(sb.calls[0]).toEqual({ method: 'from', args: ['trips'] })

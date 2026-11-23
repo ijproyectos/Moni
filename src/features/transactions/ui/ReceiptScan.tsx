@@ -85,5 +85,5 @@ function ReceiptConfirmation({
   // Drafts are computed once: from then on the confirmation list owns (and edits) them.
   const [drafts] = useState(() => prepareDrafts(response, accounts, categories))
   const [notice] = useState(() => warningsNotice(response.warnings))
-  return <DraftConfirmation initialDrafts={drafts} notice={notice} onClose={onClose} />
+  return <DraftConfirmation initialDrafts={drafts} notice={notice} allowGroupSplit onClose={onClose} />
 }

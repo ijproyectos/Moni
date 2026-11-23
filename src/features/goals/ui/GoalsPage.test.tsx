@@ -177,9 +177,9 @@ describe('GoalsPage (real goals)', () => {
     expect(screen.queryByText(/Revisá tu conexión/)).toBeNull()
   })
 
-  it('keeps the installments calculator shortcut and hides Aguinaldo and shared goals (no backend)', () => {
+  it('has no installments shortcut, keeps Mis logros, and hides Aguinaldo and shared goals (no backend)', () => {
     setup(overview)
-    expect(screen.getByRole('link', { name: /Cuotas/ })).toHaveAttribute('href', '/metas/cuotas')
+    expect(screen.queryByRole('link', { name: /Cuotas/ })).toBeNull()
     expect(screen.getByRole('link', { name: /Mis logros/ })).toHaveAttribute('href', '/logros')
     expect(screen.queryByRole('link', { name: /Aguinaldo/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Compartidas/ })).toBeNull()

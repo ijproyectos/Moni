@@ -1,8 +1,5 @@
-import { Activity, ChevronRight, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router'
-import { useFinancialHealth } from '@/features/health/api/useFinancialHealth'
-import { BAND_LABELS } from '@/features/health/domain/healthScore'
 import { AchievementsRow } from '@/features/goals/ui/AchievementsRow'
 import { usePlus } from '@/features/plus/api/usePlus'
 import { useUpdateGoals } from '@/features/onboarding/api/useGoals'
@@ -46,7 +43,6 @@ export function ProfilePage() {
   const id = useProfileIdentity()
   const extras = useProfileExtras()
   const plus = usePlus()
-  const health = useFinancialHealth()
   const [sheet, setSheet] = useState<Sheet>(null)
   const goalCount = sanitizeGoals(id.profile?.goals).length
   const since = joinedLabel(id.createdAt)
@@ -88,26 +84,6 @@ export function ProfilePage() {
         </div>
       )}
 
-      <Link
-        to="/salud"
-        className="flex items-center gap-3 rounded-[22px] bg-[linear-gradient(135deg,#1B3A2E,#0F2A20)] px-3.5 py-3 text-[#F1EEDD] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink dark:bg-[linear-gradient(135deg,#2B4A3C,#16291F)]"
-      >
-        <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-[#A99BE3] bg-[#1B3A2E] text-[#F4E6B8]">
-          <Activity className="size-5" strokeWidth={2} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[16px] font-extrabold">Salud financiera</span>
-          <span className="block truncate text-[12.5px] text-[#D4DCCB]">
-            {health.score.kind === 'ok'
-              ? `${health.score.score} de 100 · ${BAND_LABELS[health.score.band]}`
-              : health.isLoading
-                ? 'Mirá cómo viene tu mes'
-                : 'Cargá tus ingresos para medirla'}
-          </span>
-        </span>
-        <ChevronRight aria-hidden="true" className="size-[18px] shrink-0 text-[#D4DCCB]" />
-      </Link>
-
       <GroupLabel>Mis datos</GroupLabel>
       <ProfileGroup>
         <SettingRow
@@ -131,11 +107,9 @@ export function ProfilePage() {
           }
           onClick={() => setSheet('goals')}
         />
-        <SettingRow title="Categorías" subtitle="Creá, editá, colores e íconos" to="/categorias" />
         <AchievementsRow />
       </ProfileGroup>
 
-      <GroupLabel>App</GroupLabel>
       <ProfileGroup>
         <SettingRow
           icon={<Settings className="size-[18px]" strokeWidth={1.9} />}

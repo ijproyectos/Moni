@@ -33,6 +33,7 @@ export type NoticeKind =
   | 'invitation_accepted'
   | 'recurring_due'
   | 'group_archived'
+  | 'expense_added'
 
 export interface Notice {
   id: string
@@ -228,6 +229,8 @@ export function noticeText(notice: Notice): string {
       return `${notice.actorName} te invitó al grupo ${notice.groupName}.`
     case 'invitation_accepted':
       return `${notice.actorName} aceptó tu invitación al grupo ${notice.groupName}.`
+    case 'expense_added':
+      return `${notice.actorName} te incluyó en «${notice.subject ?? 'un gasto'}» de ${notice.groupName}.`
     case 'group_archived':
       return `${notice.actorName} eliminó el grupo ${notice.groupName} para todos. Podés consultar el historial.`
     case 'recurring_due':

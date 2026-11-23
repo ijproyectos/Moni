@@ -1,10 +1,11 @@
-import { Check, Share2, UsersRound, type LucideIcon } from 'lucide-react'
+import { Check, Pencil, Share2, Trash2, UsersRound, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Cents } from '@/shared/lib/money'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { BigFigure } from '@/shared/ui/BigFigure'
 import { cn } from '@/shared/ui/cn'
 import { FOCUS_RING } from '@/shared/ui/focusRing'
+import { SwipeRow } from '@/shared/ui/SwipeRow'
 import { useMyInitial } from '@/shared/ui/myInitialContext'
 import type { BalanceHeadline } from '../domain/groupsOverview'
 import { initialsOf } from '../domain/groupsOverview'
@@ -118,17 +119,25 @@ export interface GroupExpenseRowData {
 export function GroupExpenseRows({
   rows,
   onOpen,
+  onEdit,
+  onDelete,
+  canChange,
   empty,
 }: {
   rows: readonly GroupExpenseRowData[]
   onOpen: (id: string) => void
+  /** Swipe right / button: only for the expenses the person is allowed to change (same rule as the detail). */
+  onEdit?: (id: string) => void
+  /** Swipe left / button: always ends in the confirmation of the group. */
+  onDelete?: (id: string) => void
+  canChange?: (id: string) => boolean
   empty: ReactNode
 }) {
   if (rows.length === 0) return <p className="rounded-[26px] bg-card p-5 text-center text-[15px] text-text-muted">{empty}</p>
   return (
     <ul className="divide-y divide-line rounded-[26px] bg-card px-4 py-0.5">
-      {rows.map((r) => (
-        <li key={r.id}>
+      {rows.map((r) => {
+        const face = (
           <button
             type="button"
             onClick={() => onOpen(r.id)}
@@ -161,8 +170,24 @@ export function GroupExpenseRows({
               )}
             </span>
           </button>
-        </li>
-      ))}
+        )
+        const allowed = Boolean(onEdit && onDelete && canChange?.(r.id))
+        return (
+          <li key={r.id}>
+            {allowed ? (
+              <SwipeRow
+                surfaceClassName="bg-card"
+                leadingAction={{ label: 'Editar', tone: 'primary', icon: <Pencil className="size-5" strokeWidth={2.2} />, ariaLabel: `Editar ${r.title}`, onPress: () => onEdit?.(r.id) }}
+                actions={[{ label: 'Eliminar', tone: 'danger', icon: <Trash2 className="size-5" strokeWidth={2.2} />, ariaLabel: `Eliminar ${r.title}`, onPress: () => onDelete?.(r.id) }]}
+              >
+                {face}
+              </SwipeRow>
+            ) : (
+              face
+            )}
+          </li>
+        )
+      })}
     </ul>
   )
 }

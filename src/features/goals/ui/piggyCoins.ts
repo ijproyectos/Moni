@@ -1,15 +1,23 @@
-/** Where the jar's coins sit, bottom row first (coordinates of the jar drawing). */
-export const COINS: ReadonlyArray<readonly [number, number]> = [
-  [143, 396], [178, 396], [213, 396], [248, 396],
-  [160, 364], [195, 364], [230, 364],
-  [178, 332], [213, 332],
-  [196, 300],
-]
+/** Where the jar's coins sit: six per row, bottom row first (coordinates of the jar drawing). 24 in all. */
+const XS = [135, 162, 189, 216, 243, 270] as const
+const YS = [408, 382, 356, 330] as const
+export const COINS: ReadonlyArray<readonly [number, number]> = YS.flatMap((y) => XS.map((x) => [x, y] as const))
 
-/** How many of the jar's coins show for a share (0..1): none at 0, at least one as soon as something is saved, all at 100 %. */
-export function coinsFor(share: number): number {
+/**
+ * The jar's coins for a share (0..1): whole coins plus ONE growing coin (`partial`, 0..1), so even a small contribution changes
+ * what is drawn. Each coin is about 4 % of the goal. Nothing at 0, never a full jar before 100 %.
+ */
+export function coinLevel(share: number): { full: number; partial: number } {
   const value = Math.max(0, Math.min(1, Number.isFinite(share) ? share : 0))
-  if (value <= 0) return 0
-  if (value >= 1) return COINS.length
-  return Math.max(1, Math.round(value * COINS.length))
+  if (value <= 0) return { full: 0, partial: 0 }
+  if (value >= 1) return { full: COINS.length, partial: 0 }
+  const total = Math.min(value * COINS.length, COINS.length - 0.01)
+  const full = Math.floor(total)
+  return { full, partial: total - full }
+}
+
+/** How many coins are drawn at all (whole ones plus the growing one). */
+export function coinsFor(share: number): number {
+  const { full, partial } = coinLevel(share)
+  return full + (partial > 0 ? 1 : 0)
 }

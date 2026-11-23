@@ -10,6 +10,8 @@ import { useGroupLedger } from '../api/useGroupLedger'
 import { useMyGroups } from '../api/useGroups'
 import { lastExpenseView, mostRecentGroup, splitShortLabel } from '../domain/groupsOverview'
 import { personName } from '../domain/ledger'
+import { useUnreadNoticeCount } from '@/features/debts/api/useDebts'
+import { ArchiveGroupSheet, HideGroupSheet } from './GroupAdminSections'
 import { categorySeemsWrong } from '../domain/categoryCheck'
 import { expenseIcon } from './expenseIcon'
 import { overlayDeltaFor } from '../domain/ledger'
@@ -28,6 +30,8 @@ export function GroupsPage() {
   const photos = useGroupPhotos()
   // The debts sheet opens from the green box, on the tab of the amount that was tapped.
   const [debtsTab, setDebtsTab] = useState<DebtDirection | null>(null)
+  // The confirmation that a swipe opens: archive for everybody (admins) or remove from my list.
+  const [rowSheet, setRowSheet] = useState<{ type: 'archive' | 'hide'; group: { id: string; name: string } } | null>(null)
 
   const listed = useMemo<ListedGroup[] | undefined>(
     () =>
@@ -53,6 +57,7 @@ export function GroupsPage() {
   const recent = visible ? mostRecentGroup(visible) : undefined
   const recentData = useGroupLedger(recent?.id)
   const templates = useCategoryTemplates()
+  const noticeCount = useUnreadNoticeCount()
   const lastExpense = useMemo(() => {
     if (!recent) return null
     const view = lastExpenseView(recentData.ledger.expenses, user?.id ?? '')
@@ -81,12 +86,27 @@ export function GroupsPage() {
         onRetry={() => void groups.refetch()}
         onNewGroup={() => navigate('/grupos/nuevo')}
         onOpenDebts={setDebtsTab}
+        noticeCount={noticeCount}
+        onArchive={(g) => setRowSheet({ type: 'archive', group: g })}
+        onHide={(g) => setRowSheet({ type: 'hide', group: g })}
       />
       <div className="px-[18px]">
         <PendingInvitations />
         <PendingRequests />
       </div>
       <HiddenGroupsEntry />
+      {rowSheet?.type === 'archive' && (
+        <ArchiveGroupSheet
+          groupId={rowSheet.group.id}
+          name={rowSheet.group.name}
+          serverName={groups.data?.find((x) => x.id === rowSheet.group.id)?.name}
+          onClose={() => setRowSheet(null)}
+          onDone={() => setRowSheet(null)}
+        />
+      )}
+      {rowSheet?.type === 'hide' && (
+        <HideGroupSheet groupId={rowSheet.group.id} name={rowSheet.group.name} onClose={() => setRowSheet(null)} onDone={() => setRowSheet(null)} />
+      )}
       {debtsTab && <GroupDebtsSheet initialTab={debtsTab} onClose={() => setDebtsTab(null)} />}
     </>
   )

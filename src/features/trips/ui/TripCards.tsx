@@ -45,7 +45,7 @@ export function PersonalTripCard({
           aria-hidden="true"
           className={`flex size-12 shrink-0 items-center justify-center rounded-full ${ended ? 'bg-tint-green text-ink' : 'bg-white/15 text-cream'}`}
         >
-          <DestinationGlyph name={trip.name} size={26} />
+          <DestinationGlyph name={trip.name} icon={trip.icon} size={26} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block break-words font-display text-[26px] font-extrabold leading-8">

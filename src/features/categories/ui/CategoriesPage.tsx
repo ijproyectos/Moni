@@ -146,7 +146,7 @@ export function CategoriesPage() {
       <MentaHeader
         title="Categorías"
         subtitle={`${list.length} ${list.length === 1 ? 'categoría' : 'categorías'} · ${formatMonthName(monthStart(todayIso())).toLowerCase()}`}
-        backTo="/perfil"
+        backTo="/mas"
         action={
           <button type="button" onClick={() => startEditing()} aria-label="Nueva categoría" className={MENTA_CIRCLE}>
             <Plus aria-hidden="true" className="size-5" strokeWidth={2.2} />

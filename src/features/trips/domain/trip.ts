@@ -9,6 +9,8 @@ import { daysBetween } from './dates'
 export interface PersonalTrip {
   id: string
   name: string
+  /** Look of the trip chosen by the person; null = the destination decides. */
+  icon?: string | null
   startsOn: IsoDate
   endsOn: IsoDate
   budgetCents: Cents

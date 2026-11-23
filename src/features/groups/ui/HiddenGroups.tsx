@@ -10,7 +10,7 @@ import { useToast } from '@/shared/ui/toastContext'
 import { useHiddenGroups, useHideGroup, useRestoreGroup } from '../api/useGroups'
 import { GROUP_KIND_LABELS } from '../domain/group'
 
-/** "Ocultos y archivados": groups I removed from my account (restorable) and groups archived for everybody (read-only). */
+/** "Eliminados y archivados": groups I removed from my account (restorable) and groups archived for everybody (read-only). */
 export function HiddenGroupsEntry() {
   const hidden = useHiddenGroups()
   const [open, setOpen] = useState(false)
@@ -24,7 +24,7 @@ export function HiddenGroupsEntry() {
         className="mx-auto flex min-h-11 items-center gap-2 px-4 text-[15px] font-extrabold text-text-muted"
       >
         <EyeOff aria-hidden="true" className="size-4" />
-        Ocultos y archivados ({list.length})
+        Eliminados y archivados ({list.length})
       </button>
       {open && <HiddenGroupsSheet onClose={() => setOpen(false)} />}
     </>
@@ -56,7 +56,7 @@ function HiddenGroupsSheet({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <BottomSheet title="Ocultos y archivados" onClose={onClose}>
+    <BottomSheet title="Eliminados y archivados" onClose={onClose}>
       <ul className="flex flex-col divide-y divide-line">
         {(hidden.data ?? []).map((g) => (
           <li key={g.id} className="flex min-h-16 items-center gap-3 py-2">

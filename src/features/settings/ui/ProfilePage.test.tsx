@@ -70,14 +70,14 @@ function setup(Page: () => React.ReactElement = ProfilePage) {
 }
 
 describe('Perfil', () => {
-  it('shows the person, Salud financiera, Mis datos and App, and the gear to Configuración', () => {
+  it('shows the person and Mis datos, with Configuración, and no Salud financiera, Categorías nor "App" label', () => {
     setup()
     expect(screen.getByRole('heading', { name: 'Ana Pérez' })).toBeInTheDocument()
     expect(screen.getByText('ana@example.com')).toBeInTheDocument()
     expect(screen.getByText('GRATIS')).toBeInTheDocument()
-    const health = screen.getByRole('link', { name: /Salud financiera/ })
-    expect(health).toHaveAttribute('href', '/salud')
-    expect(health).toHaveTextContent('68 de 100 · Bien encaminado')
+    expect(screen.queryByRole('link', { name: /Salud financiera/ })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Categorías/ })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'App' })).toBeNull()
     expect(screen.getByRole('link', { name: /^Datos personales/ })).toHaveAttribute('href', '/perfil/datos')
     expect(screen.getByRole('button', { name: /^Mis objetivos/ })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /^Configuración/ })).toHaveAttribute('href', '/perfil/configuracion')

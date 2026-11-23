@@ -1,17 +1,17 @@
-import { useId } from 'react'
-import { COINS, coinsFor } from './piggyCoins'
+import { useEffect, useId, useRef } from 'react'
+import { COINS, coinLevel, coinsFor } from './piggyCoins'
 
 /**
  * Moni with its piggy jar (designs/moni_alcancia_estatica.svg, drawn inline so it can move): the jar fills with coins as the goal's
  * percentage grows, and at 100 % Moni celebrates (hops, waves its paw, sparkles) unless the person prefers reduced motion.
  */
 
-function Coin({ x, y }: { x: number; y: number }) {
+function Coin({ x, y, fresh, scale = 1 }: { x: number; y: number; fresh: boolean; scale?: number }) {
   return (
-    <g>
-      <circle cx={x} cy={y} r="16" fill="#F5BC3A" stroke="#244A38" strokeWidth="4.5" />
-      <circle cx={x} cy={y} r="10.6" fill="none" stroke="#D18F1B" strokeWidth="2.6" />
-      <text x={x} y={y + 0.5} textAnchor="middle" dominantBaseline="central" fontFamily="Arial,Helvetica,sans-serif" fontWeight="800" fontSize="15.2" fill="#D18F1B">$</text>
+    <g className={fresh ? 'mp-coin-new' : undefined} transform={scale < 1 ? `translate(${x} ${y}) scale(${scale}) translate(${-x} ${-y})` : undefined}>
+      <circle cx={x} cy={y} r="12.5" fill="#F5BC3A" stroke="#244A38" strokeWidth="3.5" />
+      <circle cx={x} cy={y} r="8" fill="none" stroke="#D18F1B" strokeWidth="2" />
+      <text x={x} y={y + 0.5} textAnchor="middle" dominantBaseline="central" fontFamily="Arial,Helvetica,sans-serif" fontWeight="800" fontSize="11.5" fill="#D18F1B">$</text>
     </g>
   )
 }
@@ -19,6 +19,13 @@ function Coin({ x, y }: { x: number; y: number }) {
 export function MoniPiggy({ share, celebrate = false, className }: { share: number; celebrate?: boolean; className?: string } ) {
   const clip = `${useId()}-hc`
   const coins = coinsFor(share)
+  const { full, partial } = coinLevel(share)
+  // Coins that were not there before this render drop in (the first render never animates).
+  const seen = useRef<number | null>(null)
+  const before = seen.current ?? coins
+  useEffect(() => {
+    seen.current = coins
+  }, [coins])
   const party = celebrate || share >= 1
   return (
     <svg viewBox="0 0 400 450" aria-hidden="true" focusable="false" data-party={party ? 'true' : undefined} className={`moni-piggy ${className ?? ''}`}>
@@ -49,8 +56,8 @@ export function MoniPiggy({ share, celebrate = false, className }: { share: numb
         <g stroke="#244A38" strokeWidth="3.6" strokeLinecap="round"><path d="M110 150 L84 145"/><path d="M110 160 L82 162"/><path d="M290 150 L316 145"/><path d="M290 160 L318 162"/></g>
       </g>
         <path d="M112 282 H288 V396 Q288 424 260 424 H140 Q112 424 112 396Z" fill="#DDF0E4" fillOpacity=".5"/>
-      {COINS.slice(0, coins).map(([x, y]) => (
-        <Coin key={`${x}-${y}`} x={x} y={y} />
+      {COINS.slice(0, coins).map(([x, y], i) => (
+        <Coin key={`${x}-${y}`} x={x} y={y} fresh={i >= before} scale={i === full && partial > 0 ? 0.4 + 0.6 * partial : 1} />
       ))}
         <path d="M112 282 H288 V396 Q288 424 260 424 H140 Q112 424 112 396Z" fill="#DDF0E4" fillOpacity=".2" stroke="#244A38" strokeWidth="7" strokeLinejoin="round"/>
         <path d="M128 300 V380" stroke="#fff" strokeWidth="7" strokeLinecap="round" opacity=".7"/><path d="M128 392 Q130 404 142 408" stroke="#fff" strokeWidth="6" strokeLinecap="round" fill="none" opacity=".6"/>

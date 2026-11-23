@@ -344,3 +344,13 @@ describe('parseSavingsOverview', () => {
     ).toThrow()
   })
 })
+
+describe('percentText: small progress', () => {
+  it('shows one decimal under 10 % so a small contribution moves the figure, and whole numbers from there', async () => {
+    const { percentText } = await import('./savings')
+    expect(percentText({ reservedCents: 76_000_00, targetCents: 3_555_677_00 })).toBe('2,1%')
+    expect(percentText({ reservedCents: 70_000_00, targetCents: 3_555_677_00 })).toBe('1,9%')
+    expect(percentText({ reservedCents: 0, targetCents: 100 })).toBe('0%')
+    expect(percentText({ reservedCents: 25_00, targetCents: 100_00 })).toBe('25%')
+  })
+})

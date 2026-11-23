@@ -37,13 +37,19 @@ const BATCHES = {
   F: [['20261130000300', 'group_recurring_expenses']],
   // G (aviso de grupo eliminado, quitar archivados de la lista y categoría «Ropa»): después de F y junto con el front nuevo.
   G: [['20261201000000', 'group_archived_notice']],
+  // H (invitaciones directas con código, push de grupos sin gato, ícono del viaje): después de G y junto con el front nuevo.
+  H: [['20261202000000', 'group_push_and_invitations']],
+  // I (Ahorros en pesos y dólares; las reservas de ahorros y de metas se cuentan juntas): después de H y junto con el front nuevo.
+  I: [['20261203000000', 'ahorros']],
+  // J (aviso al incluirte en un gasto, preferencias y estado leído del centro de notificaciones): después de I y junto con el front nuevo.
+  J: [['20261204000000', 'expense_notices_and_center_reads']],
 }
 const batchArg = (process.argv.find((a) => a.startsWith('--lote=')) || '--lote=A').split('=')[1].toUpperCase()
-if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F o G')
+if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I o J')
 const MIGRATIONS = BATCHES[batchArg]
 const BACKUP_BASE = process.env.G1_BACKUP_DIR || path.join(os.homedir(), 'Desktop', 'MONI', 'backups-g1')
 // Funciones que el lote reemplaza (A: solo get_my_groups; B: las demás) y cuyo cuerpo actual debe coincidir con el repositorio.
-const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [] }
+const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [] }
 const FUNCTIONS = ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite', 'get_my_groups', 'join_group']
 // Cuerpos de las funciones que G1 reemplaza, tal como están en el repositorio (para detectar cambios en producción).
 const EXPECTED = {
@@ -176,6 +182,25 @@ async function preflight(c) {
     for (const t of ['contact_prefs', 'group_invitations']) {
       if (await has(`select exists(select 1 from information_schema.tables where table_schema='public' and table_name='${t}') x`)) issues.push(`${t} ya existe`)
     }
+  } else if (batchArg === 'H') {
+    if (!(await has("select exists(select 1 from pg_constraint where conname='notifications_kind_check' and pg_get_constraintdef(oid) like '%group_archived%') x"))) issues.push('falta el lote G (group_archived)')
+    if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='trips' and column_name='icon') x")) issues.push('trips.icon ya existe')
+    const d = await q(c, "select pg_get_functiondef(p.oid) d from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='request_join_group'")
+    if (d.length !== 1 || /direct invitation/i.test(d[0].d)) issues.push('request_join_group: definición inesperada')
+  } else if (batchArg === 'J') {
+    if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='ahorro_entries') x"))) issues.push('falta el lote I (ahorro_entries)')
+    for (const t of ['notice_reads', 'notice_prefs_extra']) {
+      if (await has(`select exists(select 1 from information_schema.tables where table_schema='public' and table_name='${t}') x`)) issues.push(`${t} ya existe`)
+    }
+    if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='notifications' and column_name='expense_id') x")) issues.push('notifications.expense_id ya existe')
+    const dup = await q(c, "select count(*)::int n from public.shared_expense_splits where false")
+    void dup
+  } else if (batchArg === 'I') {
+    if (!(await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='trips' and column_name='icon') x"))) issues.push('falta el lote H (trips.icon)')
+    if (await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='ahorro_entries') x")) issues.push('ahorro_entries ya existe')
+    if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='savings_goals') x"))) issues.push('faltan las metas de ahorro')
+    const d = await q(c, "select pg_get_functiondef(p.oid) d from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='savings_account_reserved'")
+    if (d.length !== 1 || /ahorro_account_reserved/.test(d[0].d)) issues.push('savings_account_reserved: definición inesperada')
   } else if (batchArg === 'G') {
     if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='group_recurring_expenses') x"))) issues.push('falta G5 (group_recurring_expenses)')
     if (await has("select exists(select 1 from public.category_templates where slug='ropa') x")) issues.push("la plantilla 'ropa' ya existe")

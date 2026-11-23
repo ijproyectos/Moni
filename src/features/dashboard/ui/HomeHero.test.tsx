@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import userEvent from '@testing-library/user-event'
 import { HiddenAmountsProvider } from '@/shared/ui/HiddenAmountsProvider'
 import { distributionLabel, type HomeBalance } from '../domain/homeBalance'
@@ -6,9 +7,11 @@ import { HomeHero } from './HomeHero'
 
 function setup(balance: HomeBalance) {
   render(
-    <HiddenAmountsProvider>
-      <HomeHero balance={balance} />
-    </HiddenAmountsProvider>,
+    <MemoryRouter>
+      <HiddenAmountsProvider>
+        <HomeHero balance={balance} />
+      </HiddenAmountsProvider>
+    </MemoryRouter>,
   )
   return screen.getByRole('region', { name: 'Lo que tenés' })
 }
@@ -21,6 +24,11 @@ describe('HomeHero', () => {
     expect(screen.getByRole('img', { name: '97% del dinero en Galicia' })).toBeInTheDocument()
   })
 
+  it('the total opens Cuentas', () => {
+    setup({ totalCents: 635_000_00, methodCount: 2, top: { name: 'Galicia', percent: 97 } })
+    expect(screen.getByRole('link', { name: 'Ver mis cuentas y saldos' })).toHaveAttribute('href', '/cuentas')
+  })
+
   it('says only the count when there is no money to split, and "medio" in singular', () => {
     expect(distributionLabel({ totalCents: 0, methodCount: 1, top: null })).toBe('1 medio')
     expect(distributionLabel({ totalCents: 5, methodCount: 3 })).toBe('3 medios')
@@ -28,9 +36,11 @@ describe('HomeHero', () => {
 
   it('the total stays on one line and its size follows the width and the length of the amount', () => {
     const { unmount } = render(
-      <HiddenAmountsProvider>
-        <HomeHero balance={{ totalCents: 5_550_553_00, methodCount: 5 }} />
-      </HiddenAmountsProvider>,
+      <MemoryRouter>
+        <HiddenAmountsProvider>
+          <HomeHero balance={{ totalCents: 5_550_553_00, methodCount: 5 }} />
+        </HiddenAmountsProvider>
+      </MemoryRouter>,
     )
     const long = screen.getByTestId('hero-figure')
     expect(long).toHaveClass('whitespace-nowrap')

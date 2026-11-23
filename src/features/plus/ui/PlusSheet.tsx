@@ -7,7 +7,8 @@ import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { WHITE_PILL } from '@/shared/ui/mentaStyles'
-import { useSubscriptionState } from '../api/useBilling'
+import { Link } from 'react-router'
+import { useReactivateSubscription, useSubscriptionState } from '../api/useBilling'
 import { usePlus, useRedeemPromoCode } from '../api/usePlus'
 import {
   formatPlusExpiry,
@@ -61,13 +62,7 @@ export function PlusSheet({ onClose, reason = 'generic' }: PlusSheetProps) {
               <li key={perk}>· {perk}</li>
             ))}
           </ul>
-          {subscription.data !== 'authorized' && (
-            <p className="text-[15px] leading-5 text-text-muted">
-              Si no te suscribís, cuando termine tu cuenta vuelve a la versión Free sin cargos ni
-              renovación automática.
-            </p>
-          )}
-          <PlusSubscribe />
+          <ActivePlanStatus state={subscription.data} onClose={onClose} />
           <Button onClick={onClose}>Listo</Button>
         </div>
       </BottomSheet>
@@ -144,6 +139,48 @@ export function PlusSheet({ onClose, reason = 'generic' }: PlusSheetProps) {
         </button>
       </div>
     </BottomSheet>
+  )
+}
+
+/** Who already has Plus sees the state of the subscription and how to manage it, never a way to buy the plan again. */
+function ActivePlanStatus({ state, onClose }: { state: string | null | undefined; onClose: () => void }) {
+  const reactivate = useReactivateSubscription()
+  const [error, setError] = useState<string | null>(null)
+  async function resume() {
+    if (reactivate.isPending) return
+    setError(null)
+    try {
+      await reactivate.mutateAsync()
+    } catch (e) {
+      setError(toUserMessage(e))
+    }
+  }
+  return (
+    <section aria-label="Tu suscripción" className="flex flex-col gap-2 rounded-[20px] bg-card p-3.5 text-[15px] leading-5">
+      {state === 'authorized' && (
+        <>
+          <p>Suscripción activa. Se renueva cada mes.</p>
+          <Link to="/perfil/configuracion" onClick={onClose} className="min-h-11 content-center font-extrabold underline">
+            Gestionar suscripción
+          </Link>
+        </>
+      )}
+      {state === 'paused' && (
+        <>
+          <p>Suscripción pausada: no se cobra.</p>
+          <button type="button" onClick={() => void resume()} disabled={reactivate.isPending} className="min-h-11 text-left font-extrabold underline">
+            {reactivate.isPending ? 'Reactivando…' : 'Reactivar suscripción'}
+          </button>
+        </>
+      )}
+      {state === 'cancelled' && <p>Suscripción cancelada: no se renueva.</p>}
+      {state !== 'authorized' && state !== 'paused' && state !== 'cancelled' && <p>Acceso activo, sin renovación automática.</p>}
+      {error && (
+        <p role="alert" className="text-sm text-expense">
+          {error}
+        </p>
+      )}
+    </section>
   )
 }
 

@@ -263,7 +263,10 @@ export function barValue(goal: Pick<SavingsGoal, 'reservedCents' | 'targetCents'
 }
 
 export function percentText(goal: Pick<SavingsGoal, 'reservedCents' | 'targetCents'>): string {
-  return `${Math.floor(Math.max(0, ratioOf(goal)) * 100)}%`
+  const percent = Math.max(0, ratioOf(goal)) * 100
+  // Under 10 % one decimal, so a small contribution still moves the figure.
+  if (percent > 0 && percent < 10) return `${(Math.floor(percent * 10) / 10).toString().replace('.', ',')}%`
+  return `${Math.floor(percent)}%`
 }
 
 export function missingCents(goal: Pick<SavingsGoal, 'reservedCents' | 'targetCents'>): Cents {

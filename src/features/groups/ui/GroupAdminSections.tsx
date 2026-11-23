@@ -93,7 +93,7 @@ export function HideGroupSheet({ groupId, name, onClose, onDone }: { groupId: st
     >
       <p>
         Desaparece de tu lista. Los demás siguen con acceso, no se borra nada y tus deudas siguen contando. Lo recuperás
-        en «Ocultos y archivados».
+        en «Eliminados y archivados».
       </p>
     </DecisionSheet>
   )

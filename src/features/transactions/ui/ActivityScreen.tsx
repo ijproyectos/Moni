@@ -4,8 +4,10 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Pencil,
   Scale,
   Search,
+  Trash2,
 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
@@ -246,13 +248,16 @@ export function ActivityScreen(props: ActivityScreenProps) {
         ) : (
           <SwipeRow
             surfaceClassName="bg-card"
-            actions={[]}
-            leadingAction={{
-              label: 'Anular',
-              tone: 'danger',
-              ariaLabel: 'Anular transferencia',
-              onPress: () => setPendingVoid(entry),
-            }}
+            leadingAction={undefined}
+            actions={[
+              {
+                label: 'Eliminar',
+                tone: 'danger',
+                icon: <Trash2 className="size-5" strokeWidth={2.2} />,
+                ariaLabel: 'Eliminar transferencia',
+                onPress: () => setPendingVoid(entry),
+              },
+            ]}
           >
             <RowFace
               icon={<ArrowLeftRight aria-hidden="true" className="size-[17px]" strokeWidth={1.9} />}
@@ -529,10 +534,10 @@ export function ActivityScreen(props: ActivityScreenProps) {
         <ConfirmDialog
           title={
             pendingVoid.type === 'transfer'
-              ? '¿Anular esta transferencia?'
+              ? '¿Eliminar esta transferencia?'
               : pendingVoid.transaction.installmentPlanId
-                ? '¿Anular la compra en cuotas?'
-                : '¿Anular este movimiento?'
+                ? '¿Eliminar la compra en cuotas?'
+                : '¿Eliminar este movimiento?'
           }
           message={
             voidError ??
@@ -540,7 +545,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
               ? 'Se anulan todas las cuotas de esta compra, también las que todavía no llegaron, y baja tu deuda. Esta acción no se puede deshacer.'
               : 'Lo sacamos de tus balances y totales. Esta acción no se puede deshacer.')
           }
-          confirmLabel="Anular"
+          confirmLabel="Eliminar"
           isBusy={isVoiding}
           onConfirm={() => void confirmVoid()}
           onCancel={() => {
@@ -678,17 +683,17 @@ function TransactionRow({
       surfaceClassName="bg-card"
       onPress={onOpen}
       pressLabel={`Ver detalle de ${name}`}
-      // Swiping right voids (the same confirmation as before); swiping left edits. Both are real buttons too.
+      // Swiping right edits; swiping left deletes (always after a confirmation). Both are real buttons too.
       // The starting balance is fixed history: a wrong balance is fixed with "Ajustar saldo".
       leadingAction={
-        opening
-          ? undefined
-          : { label: 'Anular', tone: 'danger', ariaLabel: `Anular ${name}`, onPress: onDelete }
+        editable
+          ? { label: 'Editar', tone: 'primary', icon: <Pencil className="size-5" strokeWidth={2.2} />, ariaLabel: `Editar ${name}`, onPress: onEdit }
+          : undefined
       }
       actions={
-        editable
-          ? [{ label: 'Editar', tone: 'primary', ariaLabel: `Editar ${name}`, onPress: onEdit }]
-          : []
+        opening
+          ? []
+          : [{ label: 'Eliminar', tone: 'danger', icon: <Trash2 className="size-5" strokeWidth={2.2} />, ariaLabel: `Eliminar ${name}`, onPress: onDelete }]
       }
     >
       <RowFace

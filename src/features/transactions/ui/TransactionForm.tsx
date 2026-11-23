@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Calendar, Check, CreditCard, Pencil, Plus } from 'lucide-react'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { isCreditCard, type Account } from '@/features/accounts/domain/account'
 import type { Category } from '@/features/categories/domain/category'
@@ -63,6 +63,15 @@ interface TransactionFormProps {
 }
 
 /** Presentational form for expenses and incomes. Emits parsed values: amount in integer cents. */
+/** A text field that opens the phone's keyboard (the amount uses the on-screen keypad: inputMode none). */
+function isNativeKeyboardField(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    target.matches('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), textarea, select') &&
+    target.getAttribute('inputmode') !== 'none'
+  )
+}
+
 export function TransactionForm({
   kind,
   accounts,
@@ -79,6 +88,7 @@ export function TransactionForm({
   dailyCents = null,
 }: TransactionFormProps) {
   const online = useOnlineStatus()
+  const [nativeKeyboard, setNativeKeyboard] = useState(false)
   const {
     register,
     handleSubmit,
@@ -144,7 +154,16 @@ export function TransactionForm({
         : 'Guardar ingreso'
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-1 flex-col gap-3">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="flex flex-1 flex-col gap-3"
+      // The phone's own keyboard is up while a field other than the amount (which uses the on-screen keypad) has focus.
+      onFocusCapture={(event) => setNativeKeyboard(isNativeKeyboardField(event.target))}
+      onBlurCapture={(event) => {
+        if (!isNativeKeyboardField(event.relatedTarget)) setNativeKeyboard(false)
+      }}
+    >
       <div className="flex flex-col items-center gap-0.5 py-1">
         <AmountInput
           scale="hero"
@@ -273,9 +292,10 @@ export function TransactionForm({
 
       {extra}
 
-      <NumericKeypad onKey={pressKey} />
+      {/* With the phone's keyboard open the on-screen keypad would only take room: it steps aside. */}
+      {!nativeKeyboard && <NumericKeypad onKey={pressKey} />}
 
-      <div className="mt-auto flex flex-col gap-2">
+      <div className="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 bg-canvas pb-1 pt-2">
         {submitError && (
           <p role="alert" className="text-center text-sm text-expense">
             {submitError}

@@ -12,6 +12,7 @@ const BANK = '44444444-4444-4444-8444-444444444444'
 const CARD = '55555555-5555-4555-8555-555555555555'
 const FOOD = '22222222-2222-4222-8222-222222222222'
 const SALARY = '33333333-3333-4333-8333-333333333333'
+const SAVING = '66666666-6666-4666-8666-666666666666'
 
 const tripsData = vi.hoisted(() => ({
   current: [] as {
@@ -67,6 +68,14 @@ vi.mock('@/features/categories/api/useCategories', () => ({
         archivedAt: null,
       },
       {
+        id: SAVING,
+        kind: 'expense',
+        name: 'Ahorro',
+        icon: 'PiggyBank',
+        color: '#0E8A6D',
+        archivedAt: null,
+      },
+      {
         id: SALARY,
         kind: 'income',
         name: 'Sueldo',
@@ -76,6 +85,9 @@ vi.mock('@/features/categories/api/useCategories', () => ({
       },
     ],
   }),
+}))
+vi.mock('@/features/ahorros/ui/AhorroSheet', () => ({
+  AhorroSheet: ({ initial }: { initial?: { amountText?: string } }) => <div role="dialog" aria-label="Formulario de ahorro">{initial?.amountText}</div>,
 }))
 vi.mock('@/features/trips/api/useTrips', () => ({
   useTrips: () => ({ data: tripsData.current, isLoading: false }),
@@ -648,5 +660,16 @@ describe('MovementSheet: screen 19 (manual load)', () => {
     expect(screen.getByLabelText('Nota')).toHaveValue('Café')
     expect(screen.getByRole('button', { name: 'Comida' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Cuenta')).toHaveDisplayValue('Banco')
+  })
+})
+
+describe('MovementSheet: category Ahorro', () => {
+  it('offers to register it in Ahorros before saving, with what is already typed, and only for that category', async () => {
+    const { user } = renderSheet()
+    await user.type(screen.getByLabelText('Monto'), '25000')
+    expect(screen.queryByRole('button', { name: /Registrar como ahorro/ })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Ahorro' }))
+    await user.click(screen.getByRole('button', { name: /Registrar como ahorro/ }))
+    expect(screen.getByRole('dialog', { name: 'Formulario de ahorro' })).toBeInTheDocument()
   })
 })

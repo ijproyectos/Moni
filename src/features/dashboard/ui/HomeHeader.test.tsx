@@ -3,6 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { HomeHeader } from './HomeHeader'
 
+vi.mock('@/features/notifications/ui/NotificationCenter', () => ({
+  PlusBell: () => <button type="button" aria-label="Notificaciones" />,
+}))
+
+
 vi.mock('@/features/plus/ui/PlusSheet', () => ({
   PlusSheet: () => <div role="dialog" aria-label="Moni Plus activo" />,
 }))
@@ -60,5 +65,14 @@ describe('HomeHeader: "Hola, nombre", crown and avatar', () => {
       renderHeader()
       expect(document.querySelector('[data-plus-crown]')).toBeNull()
     })
+  })
+})
+
+describe('HomeHeader: notification bell', () => {
+  it('is only for Moni Plus', () => {
+    const { rerender } = render(<HomeHeader initial="A" name="Ana" isPlus />)
+    expect(screen.getByRole('button', { name: 'Notificaciones' })).toBeInTheDocument()
+    rerender(<HomeHeader initial="A" name="Ana" isPlus={false} />)
+    expect(screen.queryByRole('button', { name: 'Notificaciones' })).toBeNull()
   })
 })

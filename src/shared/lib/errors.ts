@@ -165,6 +165,11 @@ const MESSAGES: Record<string, string> = {
   invalid_statement:
     'Ese resumen no es válido para esta tarjeta. Elegí uno cercano a la fecha de compra.',
   invalid_date: 'La fecha no es válida.',
+  not_enough_savings: 'No tenés tanto ahorrado en esa moneda.',
+  not_enough_saved_in_account: 'Esa cuenta no tiene tanto ahorro reservado.',
+  would_go_negative: 'No se puede eliminar: tus ahorros quedarían en negativo.',
+  invalid_account: 'Esa cuenta no sirve para este ahorro.',
+  entry_voided: 'Ese movimiento ya estaba eliminado.',
   not_enough_free_money:
     'No alcanza el dinero libre de esa cuenta. Bajá el importe o liberá parte de otra reserva.',
   withdraw_exceeds_reserve: 'La meta no tiene tanto dinero reservado.',

@@ -1,4 +1,4 @@
-import { ChevronRight, KeyRound, UsersRound, type LucideIcon } from 'lucide-react'
+import { Archive, Bell, ChevronRight, KeyRound, Trash2, UsersRound, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
@@ -11,8 +11,9 @@ import { BigFigure } from '@/shared/ui/BigFigure'
 import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { Kicker } from '@/shared/ui/Kicker'
 import { MentaHeader } from '@/shared/ui/MentaHeader'
-import { MINT_PILL, WHITE_PILL } from '@/shared/ui/mentaStyles'
+import { MENTA_CIRCLE, MINT_PILL, WHITE_PILL } from '@/shared/ui/mentaStyles'
 import { Skeleton } from '@/shared/ui/Skeleton'
+import { SwipeRow } from '@/shared/ui/SwipeRow'
 import { GROUP_KIND_LABELS, type MyGroup } from '../domain/group'
 import { balanceTotals } from '../domain/groupsOverview'
 import { GROUP_KIND_ICONS } from './groupKindIcons'
@@ -36,6 +37,12 @@ interface GroupsScreenProps {
   onOpenDebts?: (tab: 'owe' | 'owed') => void
   /** Latest real expense of the most recently active group; omitted when there is none. */
   lastExpense?: LastExpenseRow | null
+  /** Swipe right: archive for everybody (administrators only; opens its confirmation). */
+  onArchive?: (group: ListedGroup) => void
+  /** Swipe left: remove the group from my list only (opens its confirmation). */
+  onHide?: (group: ListedGroup) => void
+  /** Unread notices of Grupos (the bell shows them); the bell is not drawn when it is not given. */
+  noticeCount?: number
 }
 
 function netLabel(group: ListedGroup): { text: string; tone: 'owed' | 'owes' | 'even' } {
@@ -95,6 +102,27 @@ function Wrapper({ to, className, children }: { to: string | null; className: st
   )
 }
 
+/** The bell of Grupos: only the notices about groups, with how many are unread. */
+function GroupsBell({ count }: { count: number }) {
+  return (
+    <Link
+      to="/grupos/avisos"
+      aria-label={count > 0 ? `Avisos de grupos, ${count} sin leer` : 'Avisos de grupos'}
+      className={cn(MENTA_CIRCLE, 'relative')}
+    >
+      <Bell aria-hidden="true" className="size-5" strokeWidth={2} />
+      {count > 0 && (
+        <span
+          aria-hidden="true"
+          className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-expense px-1 text-[11px] font-extrabold leading-[18px] text-white"
+        >
+          {count > 9 ? '9+' : count}
+        </span>
+      )}
+    </Link>
+  )
+}
+
 export interface LastExpenseRow {
   groupId: string
   /** The saved category does not fit the description: the row asks to review it (it opens the group, where the expense is edited). */
@@ -120,6 +148,9 @@ export function GroupsScreen({
   onNewGroup,
   onOpenDebts,
   lastExpense,
+  onArchive,
+  onHide,
+  noticeCount,
 }: GroupsScreenProps) {
   const { owedCents: owed, oweCents: owe } = balanceTotals(totalsFrom ?? groups ?? [])
   const header = (
@@ -127,6 +158,7 @@ export function GroupsScreen({
       backTo={null}
       title="Grupos"
       subtitle="Gastos compartidos"
+      action={noticeCount === undefined ? undefined : <GroupsBell count={noticeCount} />}
     />
   )
 
@@ -225,6 +257,20 @@ export function GroupsScreen({
               const net = netLabel(group)
               return (
                 <li key={group.id}>
+                  {onArchive || onHide ? (
+                    <SwipeRow
+                      surfaceClassName="bg-card"
+                      leadingAction={
+                        onArchive && group.role === 'owner'
+                          ? { label: 'Archivar', tone: 'primary', icon: <Archive className="size-5" strokeWidth={2.2} />, ariaLabel: `Archivar ${group.name} para todos`, onPress: () => onArchive(group) }
+                          : undefined
+                      }
+                      actions={
+                        onHide
+                          ? [{ label: 'Eliminar para mí', tone: 'danger', icon: <Trash2 className="size-5" strokeWidth={2.2} />, ariaLabel: `Eliminar ${group.name} para mí`, onPress: () => onHide(group) }]
+                          : []
+                      }
+                    >
                   <Link
                     to={`/grupos/${group.id}`}
                     className={cn('grid grid-cols-[42px_1fr_auto] items-center gap-3 py-2.5', FOCUS_RING)}
@@ -252,6 +298,36 @@ export function GroupsScreen({
                       </span>
                     )}
                   </Link>
+                    </SwipeRow>
+                  ) : (
+                  <Link
+                    to={`/grupos/${group.id}`}
+                    className={cn('grid grid-cols-[42px_1fr_auto] items-center gap-3 py-2.5', FOCUS_RING)}
+                  >
+                    <GroupRowIcon group={group} />
+                    <span className="min-w-0">
+                      <span className="block truncate text-[15px] font-medium">{group.name}</span>
+                      <span className="block truncate text-[12px] text-text-muted">{subtitle(group)}</span>
+                    </span>
+                    {net.tone === 'owed' || net.tone === 'owes' ? (
+                      <span className="text-right">
+                        <AmountDisplay
+                          cents={Math.abs(group.myNetCents)}
+                          signed={net.tone === 'owed'}
+                          className={cn(
+                            'block text-[15px] font-medium',
+                            net.tone === 'owed' ? 'text-income' : 'text-expense',
+                          )}
+                        />
+                        <span className="block text-[12px] text-text-muted">{net.text}</span>
+                      </span>
+                    ) : (
+                      <span className={cn('text-[14px] font-medium', net.tone === 'even' && group.peopleCount > 1 ? 'text-income' : 'text-text-muted')}>
+                        {net.text}
+                      </span>
+                    )}
+                  </Link>
+                  )}
                 </li>
               )
             })}

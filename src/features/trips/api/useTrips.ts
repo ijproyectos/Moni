@@ -9,6 +9,7 @@ import {
   listTripExpenses,
   listTrips,
   setGroupTrip,
+  setTripIcon,
   updateTrip,
 } from './tripsRepository'
 
@@ -57,6 +58,15 @@ export function useUpdateTrip() {
   const { user } = useAuth()
   return useMutation({
     mutationFn: ({ id, values }: { id: string; values: TripFormValues }) => updateTrip(id, values),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: tripKeys.all(user?.id) }),
+  })
+}
+
+export function useSetTripIcon() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: ({ id, icon }: { id: string; icon: string | null }) => setTripIcon(id, icon),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: tripKeys.all(user?.id) }),
   })
 }

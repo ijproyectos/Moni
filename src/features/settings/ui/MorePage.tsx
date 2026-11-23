@@ -1,7 +1,10 @@
 import { ChevronRight } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
+import { useAhorros } from '@/features/ahorros/api/useAhorros'
+import { balanceOf, formatSaving } from '@/features/ahorros/domain/ahorros'
+import { useFinancialHealth } from '@/features/health/api/useFinancialHealth'
+import { BAND_LABELS } from '@/features/health/domain/healthScore'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { useAnts } from '@/features/insights/api/useAnts'
@@ -46,17 +49,22 @@ function big(cents: number): string {
 }
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink dark:focus-visible:outline-lime'
+/** Surfaces of Explorar: dark green (Ahorros), soft green (Metas, some tiles) and cream, all with their dark-mode pair. */
+const DARK_GREEN = 'bg-[linear-gradient(140deg,#0B3D2E_0%,#145240_100%)] text-cream dark:bg-[linear-gradient(140deg,#14503C_0%,#1F6A50_100%)]'
+const SOFT_GREEN = 'bg-mint-soft'
+const CREAM = 'bg-card'
+const TILE = CREAM
 const CARD =
-  'relative block min-w-0 w-full rounded-[26px] bg-card shadow-[0_8px_22px_-16px_rgba(12,36,24,0.35)] dark:border dark:border-white/[0.06] dark:shadow-none'
+  'relative block min-w-0 w-full rounded-[26px] shadow-[0_8px_22px_-16px_rgba(12,36,24,0.35)] dark:border dark:border-white/[0.06] dark:shadow-none'
 
 /** The round arrow of every card: the whole card is the link, this only says so. */
-function Go({ onDark = false }: { onDark?: boolean }) {
+function Go({ onDark = false, onSoft = false }: { onDark?: boolean; onSoft?: boolean }) {
   return (
     <span
       aria-hidden="true"
       className={cn(
         'flex size-[30px] shrink-0 items-center justify-center rounded-full',
-        onDark ? 'bg-white/15 text-cream' : 'bg-sand text-text-muted',
+        onDark ? 'bg-white/15 text-cream' : onSoft ? 'bg-white/60 text-mint-ink dark:bg-white/10 dark:text-lime' : 'bg-sand text-text-muted',
       )}
     >
       <ChevronRight className="size-4" strokeWidth={2.4} />
@@ -64,13 +72,14 @@ function Go({ onDark = false }: { onDark?: boolean }) {
   )
 }
 
-/** One of the four square cards of the grid. */
+/** One of the square cards of the grid. */
 function Tile({
   to,
   title,
   value,
   sub,
   tone,
+  surface = TILE,
   children,
 }: {
   to: string
@@ -78,29 +87,28 @@ function Tile({
   value: string
   sub: string
   tone?: 'bad'
+  surface?: string
   children?: ReactNode
 }) {
   return (
-    <Link to={to} className={cn(CARD, 'flex min-h-[150px] flex-col gap-1 p-4', FOCUS)}>
+    <Link to={to} className={cn(CARD, surface, 'flex min-h-[150px] flex-col gap-1 p-4', FOCUS)}>
       <span className="flex items-start justify-between gap-2">
-        <span className="min-w-0 text-[15px] font-extrabold leading-[19px] text-ink">{title}</span>
-        <Go />
+        <span className={cn('min-w-0 text-[15px] font-extrabold leading-[19px]', surface === DARK_GREEN ? 'text-cream' : 'text-ink')}>{title}</span>
+        <Go onDark={surface === DARK_GREEN} onSoft={surface === SOFT_GREEN} />
       </span>
       <span
         className={cn(
           'mt-auto block whitespace-nowrap font-display text-[clamp(22px,7.4vw,30px)] font-extrabold leading-[1.05] tracking-[-0.02em]',
-          tone === 'bad' ? 'text-expense' : 'text-ink',
+          tone === 'bad' ? 'text-expense' : surface === DARK_GREEN ? 'text-cream' : 'text-ink',
         )}
       >
         {value}
       </span>
-      <span className="line-clamp-2 min-h-[18px] text-[13px] leading-[18px] text-text-muted">{sub}</span>
+      <span className={cn('line-clamp-2 min-h-[18px] text-[13px] leading-[18px]', surface === DARK_GREEN ? 'text-[#D4DCCB]' : 'text-text-muted')}>{sub}</span>
       {children}
     </Link>
   )
 }
-
-const BARS = [40, 70, 50, 100, 36]
 
 export function MorePage() {
   const today = todayIso()
@@ -109,7 +117,10 @@ export function MorePage() {
   const subscriptions = useSubscriptions()
   const trips = useTrips()
   const ants = useAnts(today)
-  const budget = useDailyAllowance()
+  const ahorros = useAhorros()
+  const health = useFinancialHealth()
+  const arsSaved = balanceOf(ahorros.data ?? [], 'ARS')
+  const usdSaved = balanceOf(ahorros.data ?? [], 'USD')
 
   const goalTotals = activeTotals(savings.data?.goals ?? [])
   const hasGoals = goalTotals.targetCents > 0
@@ -122,23 +133,8 @@ export function MorePage() {
   const trip = useMemo(() => nextTrip(trips.data ?? [], today), [trips.data, today])
   const tripCard = trip ? tripFigure(trip, today) : null
   const antsTotal = ants.data?.monthTotalCents ?? 0
-  const allowance = budget.allowance
 
   const moreRows = FEATURES.debts || FEATURES.aguinaldo || FEATURES.pro
-
-  // The budget card keeps the existing allowance logic; the bar is what was spent of what the month allows.
-  const hero =
-    allowance.kind === 'ok'
-      ? {
-          value: allowance.overCents > 0 ? `-${big(allowance.overCents)}` : big(Math.max(0, allowance.remainingCents)),
-          sub: allowance.overCents > 0 ? 'te pasaste este mes' : 'te queda del presupuesto este mes',
-          over: allowance.overCents > 0,
-          progress:
-            allowance.overCents > 0 || allowance.spendBudgetCents <= 0
-              ? 1
-              : Math.min(1, Math.max(0, allowance.spentCents / allowance.spendBudgetCents)),
-        }
-      : null
 
   return (
     <section className="flex flex-col gap-3 px-5 pb-4">
@@ -147,52 +143,7 @@ export function MorePage() {
         <h1 className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight tracking-[-0.02em]">Explorar</h1>
       </header>
 
-      <Link
-        to="/presupuesto"
-        className={cn(
-          'relative mt-1 flex min-h-[170px] flex-col rounded-[28px] p-5 text-cream',
-          'bg-[linear-gradient(140deg,#0B3D2E_0%,#10382B_55%,#1D4A3A_100%)] dark:bg-[linear-gradient(140deg,#16261c_0%,#1c3a2c_55%,#2b5a47_100%)]',
-          'shadow-[0_14px_30px_-18px_rgba(11,61,46,0.7)] dark:shadow-none dark:ring-1 dark:ring-white/[0.07]',
-          FOCUS,
-        )}
-      >
-        <span className="flex items-start justify-between gap-2">
-          <span className="text-[16px] font-extrabold leading-5">Presupuesto</span>
-          <Go onDark />
-        </span>
-        {hero ? (
-          <>
-            <span className="mt-3 block whitespace-nowrap font-display text-[clamp(34px,11vw,46px)] font-extrabold leading-none tracking-[-0.03em]">
-              {hero.value}
-            </span>
-            <span
-              role="progressbar"
-              aria-label="Presupuesto gastado del mes"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(hero.progress * 100)}
-              className="mt-4 block h-[5px] w-full overflow-hidden rounded-full bg-white/15"
-            >
-              <span
-                className={cn('block h-full rounded-full', hero.over ? 'bg-[#D9785A]' : 'bg-lime')}
-                style={{ width: `${Math.round(hero.progress * 100)}%` }}
-              />
-            </span>
-            <span className="mt-2 block text-[13px] font-semibold text-text-muted-on-dark">{hero.sub}</span>
-          </>
-        ) : (
-          <>
-            <span className="mt-4 block font-display text-[clamp(26px,8vw,32px)] font-extrabold leading-tight tracking-[-0.02em]">
-              {budget.isLoading ? '…' : 'Configurá tu presupuesto'}
-            </span>
-            <span className="mt-auto block pt-3 text-[13px] font-semibold text-text-muted-on-dark">
-              {budget.isLoading ? '' : 'Tocá para armarlo con tus ingresos'}
-            </span>
-          </>
-        )}
-      </Link>
-
-      <Link to="/metas" className={cn(CARD, 'flex items-center gap-4 p-4', FOCUS)}>
+      <Link to="/metas" className={cn(CARD, CREAM, 'flex items-center gap-4 p-4', FOCUS)}>
         <span aria-hidden="true" className="shrink-0">
           <ProgressRing value={goalShare} label={`${Math.floor(goalShare * 100)}%`} size={64} stroke={7} className={cn(!hasGoals && 'opacity-60')} />
         </span>
@@ -209,11 +160,38 @@ export function MorePage() {
         <Go />
       </Link>
 
+      <Link to="/salud" className={cn(CARD, DARK_GREEN, 'flex items-center gap-4 p-4', FOCUS)}>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[17px] font-extrabold leading-5">Salud financiera</span>
+          <span className="mt-0.5 block text-[13px] leading-[18px] text-[#D4DCCB]">
+            {health.score.kind === 'ok'
+              ? `${health.score.score} de 100 · ${BAND_LABELS[health.score.band]}`
+              : health.isLoading
+                ? '…'
+                : 'Cargá tus ingresos para medirla'}
+          </span>
+        </span>
+        <Go onDark />
+      </Link>
+
       <ul className="grid grid-cols-2 gap-3">
+        <li className="flex">
+          <Tile
+            to="/ahorros"
+            title="Ahorros"
+            surface={CREAM}
+            value={ahorros.isLoading ? '…' : big(arsSaved)}
+            sub={usdSaved > 0 ? formatSaving(usdSaved, 'USD') : 'Pesos y dólares'}
+          />
+        </li>
+        <li className="flex">
+          <Tile to="/categorias" title="Categorías" surface={SOFT_GREEN} value="Límite" sub="por mes" />
+        </li>
         <li className="flex">
             <Tile
               to="/viajes"
               title="Viajes"
+              surface={SOFT_GREEN}
               value={tripCard ? tripCard.value : '0'}
               sub={tripCard ? tripCard.sub : 'todavía no tenés viajes'}
             />
@@ -239,17 +217,7 @@ export function MorePage() {
             />
         </li>
         <li className="flex">
-            <Tile to="/este-mes" title="Informes" value="Mes y año" sub="tu resumen">
-              <span aria-hidden="true" className="absolute bottom-4 right-4 flex h-8 items-end gap-1">
-                {BARS.map((h, i) => (
-                  <span
-                    key={i}
-                    className={cn('w-2 rounded-full', i === 3 ? 'bg-[#4C8B5E]' : 'bg-forest/15 dark:bg-white/15')}
-                    style={{ height: `${h}%` }}
-                  />
-                ))}
-              </span>
-            </Tile>
+            <Tile to="/este-mes" title="Informes" value="Mes y año" sub="tu resumen" surface={SOFT_GREEN} />
         </li>
       </ul>
 

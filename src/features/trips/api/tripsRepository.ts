@@ -11,6 +11,7 @@ function toTrip(row: TripRow): PersonalTrip {
   return {
     id: row.id,
     name: row.name,
+    icon: row.icon ?? null,
     startsOn: row.starts_on,
     endsOn: row.ends_on,
     budgetCents: toCents(row.budget),
@@ -73,6 +74,12 @@ export async function updateTrip(id: string, values: TripFormValues): Promise<Pe
     .single()
   if (error) throw error
   return toTrip(data)
+}
+
+/** Only the look of the trip: nothing else about it (destination, dates, budget, expenses) changes. */
+export async function setTripIcon(id: string, icon: string | null): Promise<void> {
+  const { error } = await getSupabase().from('trips').update({ icon }).eq('id', id)
+  if (error) throw error
 }
 
 /** Every posted expense that belongs to one of the person's trips (the same rows Actividad shows). */

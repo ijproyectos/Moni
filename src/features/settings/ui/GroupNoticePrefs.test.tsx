@@ -4,7 +4,11 @@ import { ToastProvider } from '@/shared/ui/Toast'
 import { DEFAULT_NOTICE_PREFS, type NoticePrefs } from '@/features/debts/domain/debts'
 import { GroupNoticePrefs } from './GroupNoticePrefs'
 
-const state = vi.hoisted(() => ({ data: null as unknown, mutate: vi.fn() }))
+const state = vi.hoisted(() => ({ data: null as unknown, mutate: vi.fn(), extra: { expenseAddedPush: true, paymentsDue: true, priceChanges: true, budgets: true } as unknown, extraSave: vi.fn(), isPlus: false }))
+vi.mock('@/features/notifications/ui/useNotificationCenter', () => ({
+  useCenterPrefs: () => ({ prefs: state.extra, isAvailable: true, save: { mutate: state.extraSave } }),
+}))
+vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: state.isPlus }) }))
 vi.mock('@/features/debts/api/useDebts', () => ({
   useNoticePrefs: () => ({ data: state.data }),
   useSetNoticePrefs: () => ({ mutate: state.mutate }),
@@ -18,7 +22,11 @@ const renderIt = () =>
   )
 
 describe('Avisos de grupos (Configuración)', () => {
-  beforeEach(() => state.mutate.mockClear())
+  beforeEach(() => {
+    state.mutate.mockClear()
+    state.extraSave.mockClear()
+    state.isPlus = false
+  })
 
   it('is not shown while the database has no preferences yet', () => {
     state.data = null
@@ -48,6 +56,28 @@ describe('Avisos de grupos (Configuración)', () => {
     await userEvent.click(screen.getByRole('switch', { name: 'Recordatorios de pago' }))
     expect(state.mutate).toHaveBeenLastCalledWith(
       { debtReminders: false, paymentsReported: true, paymentsAnswered: false, hideDetails: false },
+      expect.anything(),
+    )
+  })
+
+  it('saves the extra push choice and shows the Plus center choices only with Plus', async () => {
+    state.data = DEFAULT_NOTICE_PREFS
+    renderIt()
+    expect(screen.queryByRole('switch', { name: 'Pagos próximos' })).toBeNull()
+    await userEvent.click(screen.getByRole('switch', { name: 'Gastos en los que te incluyen' }))
+    expect(state.extraSave).toHaveBeenLastCalledWith(
+      { expenseAddedPush: false, paymentsDue: true, priceChanges: true, budgets: true },
+      expect.anything(),
+    )
+  })
+
+  it('with Plus, the center choices are saved in Supabase too', async () => {
+    state.data = DEFAULT_NOTICE_PREFS
+    state.isPlus = true
+    renderIt()
+    await userEvent.click(screen.getByRole('switch', { name: 'Aumentos de precio' }))
+    expect(state.extraSave).toHaveBeenLastCalledWith(
+      { expenseAddedPush: true, paymentsDue: true, priceChanges: false, budgets: true },
       expect.anything(),
     )
   })
