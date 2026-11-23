@@ -1,11 +1,11 @@
 import '@fontsource-variable/nunito'
 import './styles/index.css'
-import { StrictMode, lazy, Suspense } from 'react'
+import { StrictMode, lazy, Suspense, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { themeStore } from './features/settings/api/themeStore'
 import { envResult } from './shared/lib/env'
+import { AppSplashScreen } from './shared/ui/AppSplashScreen'
 import { ConfigErrorScreen } from './shared/ui/ConfigErrorScreen'
-import { FullScreenLoader } from './shared/ui/FullScreenLoader'
 
 // crypto.randomUUID only exists in secure contexts (https or localhost). Opening the app over plain http on a local network (for
 // example to try it on a phone) would break every form that creates an id, so a small fallback fills the gap.
@@ -25,17 +25,30 @@ const App = lazy(() => import('./app/App').then((module) => ({ default: module.A
 // The inline script in index.html already painted the theme; this keeps it in sync with the OS afterwards.
 themeStore.start()
 
+// Keeps the Moni splash on screen for a minimum stretch so it never just flashes by on a fast load,
+// while still covering slower loads through the Suspense fallback below.
+const SPLASH_MIN_MS = 1500
+
+function Bootstrap() {
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeElapsed(true), SPLASH_MIN_MS)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (!minTimeElapsed) return <AppSplashScreen />
+
+  return (
+    <Suspense fallback={<AppSplashScreen />}>
+      <App />
+    </Suspense>
+  )
+}
+
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('Root element not found')
 
 createRoot(rootElement).render(
-  <StrictMode>
-    {envResult.ok ? (
-      <Suspense fallback={<FullScreenLoader />}>
-        <App />
-      </Suspense>
-    ) : (
-      <ConfigErrorScreen missing={envResult.missing} />
-    )}
-  </StrictMode>,
+  <StrictMode>{envResult.ok ? <Bootstrap /> : <ConfigErrorScreen missing={envResult.missing} />}</StrictMode>,
 )
