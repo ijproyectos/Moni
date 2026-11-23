@@ -26,8 +26,10 @@ import { useToast } from '@/shared/ui/toastContext'
 import { Link } from 'react-router'
 import { ShoppingBasket } from 'lucide-react'
 import { useTheme } from '../api/useTheme'
+import { ExportMovementsRow } from './ExportMovementsRow'
 import { GroupLabel, ProfileGroup } from './ProfilePage'
 import { GroupNoticePrefs } from './GroupNoticePrefs'
+import { ImportMovementsSheet } from './ImportMovementsSheet'
 
 const THEME_CHOICES = [
   { mode: 'light', label: 'Claro', Icon: Sun },
@@ -64,7 +66,7 @@ function ThemeSelector() {
   )
 }
 
-type Sheet = 'plus' | 'cancelPlus' | 'signout' | 'delete' | null
+type Sheet = 'plus' | 'cancelPlus' | 'signout' | 'delete' | 'import' | null
 
 /** Configuración: appearance, account (payment methods, plan, notifications), help and sign out. */
 export function SettingsPage() {
@@ -163,6 +165,16 @@ export function SettingsPage() {
 
       <GroupNoticePrefs />
 
+      <GroupLabel>Tus datos</GroupLabel>
+      <ProfileGroup>
+        <ExportMovementsRow />
+        <SettingRow
+          title="Importar desde Excel"
+          subtitle="Traé movimientos de una planilla"
+          onClick={() => setSheet('import')}
+        />
+      </ProfileGroup>
+
       {FEATURES.pro && (
         <Link to="/pro" className="flex items-center gap-4 rounded-[20px] bg-gold px-4 py-3.5 text-on-bright">
           <ShoppingBasket aria-hidden="true" className="size-6" />
@@ -213,6 +225,7 @@ export function SettingsPage() {
 
       {sheet === 'plus' && <PlusSheet onClose={() => setSheet(null)} />}
       {sheet === 'cancelPlus' && <CancelPlusSheet expiresAt={plus.expiresAt} onClose={() => setSheet(null)} />}
+      {sheet === 'import' && <ImportMovementsSheet onClose={() => setSheet(null)} />}
       {sheet === 'signout' && (
         <DecisionSheet
           icon={<ChevronLeft className="size-6" />}
