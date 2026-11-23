@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
 import { PlusSheet } from './PlusSheet'
 import { PlusBadge } from './PlusBadge'
 
@@ -64,6 +65,20 @@ describe('PlusSheet', () => {
     renderWithClient(<PlusSheet onClose={vi.fn()} />)
     expect(await screen.findByText(/Activo hasta el/)).toBeInTheDocument()
     expect(screen.queryByLabelText('Código de acceso')).not.toBeInTheDocument()
+  })
+
+  it('does not offer to buy the plan again when it is active: only its state and how to manage it', async () => {
+    rpc.mockResolvedValue({ data: new Date(Date.now() + 5 * 86_400_000).toISOString(), error: null })
+    invoke.mockResolvedValue({ data: { status: 'authorized' }, error: null })
+    renderWithClient(
+      <MemoryRouter>
+        <PlusSheet onClose={vi.fn()} />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText(/Activo hasta el/)).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Gestionar suscripción' })).toHaveAttribute('href', '/perfil/configuracion')
+    expect(screen.queryByRole('button', { name: /Suscribirme/ })).toBeNull()
+    expect(screen.queryByText(/Mensual/)).toBeNull()
   })
 })
 

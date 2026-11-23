@@ -1,5 +1,24 @@
 /** The look of a trip, chosen from what its destination says. Anything not recognised is a plane. */
-export type DestinationTheme = 'eiffel' | 'beach' | 'palm' | 'sea' | 'sun' | 'mountain' | 'snow' | 'city' | 'landmark' | 'plane'
+export type DestinationTheme = 'eiffel' | 'beach' | 'palm' | 'sea' | 'sun' | 'mountain' | 'snow' | 'city' | 'landmark' | 'nature' | 'plane'
+
+/** The looks the person can pick by hand (the automatic ones also include palm, sea and the Eiffel Tower). */
+export const PICKABLE_THEMES: readonly { theme: DestinationTheme; label: string }[] = [
+  { theme: 'beach', label: 'Playa' },
+  { theme: 'mountain', label: 'Montaña' },
+  { theme: 'snow', label: 'Nieve' },
+  { theme: 'sun', label: 'Sol' },
+  { theme: 'city', label: 'Ciudad' },
+  { theme: 'nature', label: 'Naturaleza' },
+  { theme: 'landmark', label: 'Monumentos' },
+  { theme: 'plane', label: 'Genérico' },
+]
+
+const ALL_THEMES: readonly string[] = ['eiffel', 'beach', 'palm', 'sea', 'sun', 'mountain', 'snow', 'city', 'landmark', 'nature', 'plane']
+
+/** A theme stored by the person, or undefined when it is empty or not one of ours. */
+export function asTheme(value: string | null | undefined): DestinationTheme | undefined {
+  return value && ALL_THEMES.includes(value) ? (value as DestinationTheme) : undefined
+}
 
 /** Lowercase, no accents, words only, so "París" and "paris." match the same entry. */
 const plain = (text: string) =>

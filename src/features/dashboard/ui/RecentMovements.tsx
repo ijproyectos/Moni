@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from 'lucide-react'
 import { Link } from 'react-router'
 import { useState, type ReactNode } from 'react'
 import { addsToBalance, groupKindLabel, isAdjustment, isOpening } from '@/features/transactions/domain/transaction'
@@ -102,6 +103,42 @@ export function RecentMovements({
     }
   }
 
+  // The summary and the confirmation belong to every variant (Inicio uses "latest"): a tap opens the summary, a delete asks first.
+  const overlays = (
+    <>
+      {opened && actions?.renderDetail &&
+        actions.renderDetail(opened, {
+          onClose: () => setOpened(null),
+          onDelete: () => {
+            setPending(opened)
+            setOpened(null)
+          },
+        })}
+      {pending && actions && (
+        <ConfirmDialog
+          title={
+            actions.isInstallment(pending)
+              ? '¿Eliminar la compra en cuotas?'
+              : '¿Eliminar este movimiento?'
+          }
+          message={
+            error ??
+            (actions.isInstallment(pending)
+              ? 'Se anulan todas las cuotas de esta compra, también las que todavía no llegaron, y baja tu deuda. Esta acción no se puede deshacer.'
+              : 'Lo sacamos de tus balances y totales. Esta acción no se puede deshacer.')
+          }
+          confirmLabel="Eliminar"
+          isBusy={busy}
+          onConfirm={() => void confirmVoid()}
+          onCancel={() => {
+            setPending(null)
+            setError(null)
+          }}
+        />
+      )}
+    </>
+  )
+
   if (latest) {
     return (
       <section aria-labelledby="recent-title" className="mx-[18px] flex flex-col">
@@ -125,8 +162,9 @@ export function RecentMovements({
                 const edit = detail ?? (actions?.canEdit(m) ? () => actions.onEdit(m) : undefined)
                 const isIncome = addsToBalance(m.kind)
                 const title = titleOf(m)
-                return (
-                  <li key={m.id}>
+                const canEditRow = Boolean(actions?.canEdit(m))
+                const canVoidRow = Boolean(actions?.canVoid(m))
+                const face = (
                     <button
                       type="button"
                       onClick={edit}
@@ -149,12 +187,35 @@ export function RecentMovements({
                         className={`whitespace-nowrap text-[15px] font-extrabold ${isIncome ? 'text-[#1B7F4E] dark:text-[#6FD3A0]' : 'text-[#B5382A] dark:text-expense'}`}
                       />
                     </button>
+                )
+                return (
+                  <li key={m.id}>
+                    {actions && (canEditRow || canVoidRow) ? (
+                      <SwipeRow
+                        surfaceClassName="bg-canvas"
+                        leadingAction={
+                          canEditRow
+                            ? { label: 'Editar', tone: 'primary' as const, icon: <Pencil className="size-5" strokeWidth={2.2} />, ariaLabel: `Editar ${title}`, onPress: () => actions.onEdit(m) }
+                            : undefined
+                        }
+                        actions={
+                          canVoidRow
+                            ? [{ label: 'Eliminar', tone: 'danger' as const, icon: <Trash2 className="size-5" strokeWidth={2.2} />, ariaLabel: `Eliminar ${title}`, onPress: () => setPending(m) }]
+                            : []
+                        }
+                      >
+                        {face}
+                      </SwipeRow>
+                    ) : (
+                      face
+                    )}
                   </li>
                 )
               })}
             </ul>
           </section>
         ))}
+        {overlays}
       </section>
     )
   }
@@ -207,25 +268,27 @@ export function RecentMovements({
                     {actions && (canEdit || canVoid || canOpen) ? (
                       <SwipeRow
                         onPress={canOpen ? () => setOpened(m) : canEdit ? () => actions.onEdit(m) : undefined}
-                        // Swiping right voids (with its confirmation); swiping left edits. Both are real buttons too.
+                        // Swiping right edits; swiping left deletes (always after a confirmation). Both are real buttons too.
                         leadingAction={
-                          canVoid
+                          canEdit
                             ? {
-                                label: 'Anular',
-                                tone: 'danger' as const,
-                                ariaLabel: `Anular ${titleOf(m)}`,
-                                onPress: () => setPending(m),
+                                label: 'Editar',
+                                tone: 'primary' as const,
+                                icon: <Pencil className="size-5" strokeWidth={2.2} />,
+                                ariaLabel: `Editar ${titleOf(m)}`,
+                                onPress: () => actions.onEdit(m),
                               }
                             : undefined
                         }
                         actions={
-                          canEdit
+                          canVoid
                             ? [
                                 {
-                                  label: 'Editar',
-                                  tone: 'primary' as const,
-                                  ariaLabel: `Editar ${titleOf(m)}`,
-                                  onPress: () => actions.onEdit(m),
+                                  label: 'Eliminar',
+                                  tone: 'danger' as const,
+                                  icon: <Trash2 className="size-5" strokeWidth={2.2} />,
+                                  ariaLabel: `Eliminar ${titleOf(m)}`,
+                                  onPress: () => setPending(m),
                                 },
                               ]
                             : []
@@ -255,39 +318,10 @@ export function RecentMovements({
       )}
       {anySwipe && (
         <p className="px-5 pt-2 text-center text-[13px] text-text-muted">
-          Deslizá un movimiento a la derecha para anularlo o a la izquierda para editarlo.
+          Deslizá un movimiento a la derecha para editarlo o a la izquierda para eliminarlo.
         </p>
       )}
-      {opened && actions?.renderDetail &&
-        actions.renderDetail(opened, {
-          onClose: () => setOpened(null),
-          onDelete: () => {
-            setPending(opened)
-            setOpened(null)
-          },
-        })}
-      {pending && actions && (
-        <ConfirmDialog
-          title={
-            actions.isInstallment(pending)
-              ? '¿Anular la compra en cuotas?'
-              : '¿Anular este movimiento?'
-          }
-          message={
-            error ??
-            (actions.isInstallment(pending)
-              ? 'Se anulan todas las cuotas de esta compra, también las que todavía no llegaron, y baja tu deuda. Esta acción no se puede deshacer.'
-              : 'Lo sacamos de tus balances y totales. Esta acción no se puede deshacer.')
-          }
-          confirmLabel="Anular"
-          isBusy={busy}
-          onConfirm={() => void confirmVoid()}
-          onCancel={() => {
-            setPending(null)
-            setError(null)
-          }}
-        />
-      )}
+      {overlays}
     </section>
   )
 }

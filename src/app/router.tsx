@@ -13,6 +13,7 @@ import {
 } from '@/features/auth/ui/guards'
 import { GroupNoticesPage } from '@/features/debts/ui/GroupNoticesPage'
 import { AccountsPage } from '@/features/accounts/ui/AccountsPage'
+import { AhorrosPage } from '@/features/ahorros/ui/AhorrosPage'
 import { CategoriesPage } from '@/features/categories/ui/CategoriesPage'
 import { HomePage } from '@/features/dashboard/ui/HomePage'
 import { MonthReportPage } from '@/features/dashboard/ui/MonthReportPage'
@@ -123,6 +124,7 @@ export const appRoutes = [
   { path: 'mas', element: <MorePage /> },
   { path: 'cuentas', element: <AccountsPage /> },
   { path: 'categorias', element: <CategoriesPage /> },
+  { path: 'ahorros', element: <AhorrosPage /> },
   { path: 'perfil', element: <ProfilePage /> },
   { path: 'perfil/configuracion', element: <SettingsPage /> },
   { path: 'perfil/datos', element: <PersonalDataPage /> },

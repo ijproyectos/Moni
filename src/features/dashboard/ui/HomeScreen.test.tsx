@@ -3,6 +3,11 @@ import { MemoryRouter } from 'react-router'
 import type { MonthSummary, RecentMovement } from '../domain/monthSummary'
 import { HomeScreen } from './HomeScreen'
 
+vi.mock('@/features/notifications/ui/NotificationCenter', () => ({
+  PlusBell: () => <button type="button" aria-label="Notificaciones" />,
+}))
+
+
 vi.mock('@/features/transactions/ui/QuickAdd', () => ({
   QuickAdd: () => <section aria-label="Cargar un movimiento" />,
 }))

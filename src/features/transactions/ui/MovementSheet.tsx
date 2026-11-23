@@ -18,6 +18,7 @@ import { SavingsCommittedSheet } from '@/features/goals/ui/SavingsCommittedSheet
 import { CreditLimitSheet } from '@/features/cards/ui/CreditLimitSheet'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { useDailyAllowance } from '@/features/dashboard/api/useDailyAllowance'
+import { AhorroSheet } from '@/features/ahorros/ui/AhorroSheet'
 import { SharedMovementForm } from '@/features/groups/ui/SharedMovementForm'
 import { formatAmountInput } from '@/shared/lib/amountInput'
 import { formatRelativeDay } from '@/shared/lib/dates'
@@ -108,6 +109,7 @@ export function MovementSheet({
   const [tripChoice, setTripChoice] = useState(transaction?.tripId ?? '')
   // "Compartido": the expense goes to one of the person's groups instead of a plain movement.
   const [shared, setShared] = useState(initialShared && !transaction)
+  const [ahorroOpen, setAhorroOpen] = useState(false)
   const [draft, setDraft] = useState<TransactionDraft | undefined>(() =>
     initialValues && !transaction
       ? {
@@ -357,6 +359,27 @@ export function MovementSheet({
     )
   }
 
+  // A new expense in the category "Ahorro": the person is offered to register it in Ahorros instead (it is not consumption).
+  const savingCategory =
+    !isEdit && mode === 'expense'
+      ? (categoriesQuery.data ?? []).find((c) => c.id === draft?.categoryId && /^ahorros?$/i.test(c.name.trim()))
+      : undefined
+
+  if (ahorroOpen) {
+    return (
+      <AhorroSheet
+        kind="deposit"
+        initial={{
+          amountText: draft?.amount,
+          accountId: draft?.accountId || null,
+          date: draft?.occurredOn || undefined,
+          note: draft?.note,
+        }}
+        onClose={onClose}
+      />
+    )
+  }
+
   // "Dividir con un grupo" is a row of the form's card; in the shared form it stands alone in its own card.
   const shareRow =
     mode === 'expense' && canShare && !isLoading && !loadFailed ? (
@@ -455,6 +478,15 @@ export function MovementSheet({
             extra={
               transaction?.kind === 'expense' && mode === 'expense' ? (
                 <TripLinkSelect value={tripChoice} onChange={setTripChoice} />
+              ) : savingCategory ? (
+                <button
+                  type="button"
+                  onClick={() => setAhorroOpen(true)}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 rounded-[18px] bg-tint-green px-4 text-left text-[14.5px] font-extrabold"
+                >
+                  Registrar como ahorro
+                  <span className="text-[13px] font-semibold text-text-muted">No cuenta como gasto</span>
+                </button>
               ) : undefined
             }
           />

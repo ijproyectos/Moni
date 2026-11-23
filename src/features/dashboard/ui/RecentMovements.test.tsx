@@ -119,7 +119,7 @@ describe('RecentMovements', () => {
     expect(screen.getByRole('dialog', { name: 'detalle' })).toHaveTextContent('ChatGPT')
     await user.click(screen.getByRole('button', { name: 'Eliminar' }))
     expect(screen.queryByRole('dialog', { name: 'detalle' })).toBeNull()
-    expect(screen.getByText('¿Anular este movimiento?')).toBeInTheDocument()
+    expect(screen.getByText('¿Eliminar este movimiento?')).toBeInTheDocument()
     expect(full.onVoid).not.toHaveBeenCalled()
   })
 
@@ -127,7 +127,7 @@ describe('RecentMovements', () => {
     const { user, full } = setup([movement()])
     expect(
       screen.getByText(
-        /Deslizá un movimiento a la derecha para anularlo o a la izquierda para editarlo/,
+        /Deslizá un movimiento a la derecha para editarlo o a la izquierda para eliminarlo/,
       ),
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Editar ChatGPT' }))
@@ -136,20 +136,20 @@ describe('RecentMovements', () => {
 
   it('voiding asks first and then voids; cancelling keeps the movement', async () => {
     const { user, full } = setup([movement()])
-    await user.click(screen.getByRole('button', { name: 'Anular ChatGPT' }))
-    const dialog = screen.getByRole('dialog', { name: '¿Anular este movimiento?' })
+    await user.click(screen.getByRole('button', { name: 'Eliminar ChatGPT' }))
+    const dialog = screen.getByRole('dialog', { name: '¿Eliminar este movimiento?' })
     await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
     expect(full.onVoid).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Anular ChatGPT' }))
+    await user.click(screen.getByRole('button', { name: 'Eliminar ChatGPT' }))
     await user.click(
-      within(screen.getByRole('dialog', { name: '¿Anular este movimiento?' })).getByRole('button', {
-        name: 'Anular',
+      within(screen.getByRole('dialog', { name: '¿Eliminar este movimiento?' })).getByRole('button', {
+        name: 'Eliminar',
       }),
     )
     expect(full.onVoid).toHaveBeenCalledWith(expect.objectContaining({ id: 'm1' }))
   })
 
-  it('swiping right reveals Anular and swiping left reveals Editar, like Actividad', () => {
+  it('swiping right reveals Eliminar and swiping left reveals Editar, like Actividad', () => {
     setup([movement()])
     const row = screen.getByText('ChatGPT').closest('button')?.parentElement as HTMLElement
     const swipe = (from: number, to: number) => {
@@ -166,8 +166,8 @@ describe('RecentMovements', () => {
 
   it('an installment warns that the whole purchase is voided', async () => {
     const { user } = setup([movement()], { isInstallment: () => true, canEdit: () => false })
-    await user.click(screen.getByRole('button', { name: 'Anular ChatGPT' }))
-    expect(screen.getByRole('dialog', { name: '¿Anular la compra en cuotas?' })).toHaveTextContent(
+    await user.click(screen.getByRole('button', { name: 'Eliminar ChatGPT' }))
+    expect(screen.getByRole('dialog', { name: '¿Eliminar la compra en cuotas?' })).toHaveTextContent(
       'Se anulan todas las cuotas',
     )
     expect(screen.queryByRole('button', { name: 'Editar ChatGPT' })).toBeNull()
@@ -177,15 +177,15 @@ describe('RecentMovements', () => {
     const { user } = setup([movement()], {
       onVoid: vi.fn().mockRejectedValue(new Error('Sin conexión')),
     })
-    await user.click(screen.getByRole('button', { name: 'Anular ChatGPT' }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Anular' }))
+    await user.click(screen.getByRole('button', { name: 'Eliminar ChatGPT' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Eliminar' }))
     expect(await screen.findByText('Sin conexión')).toBeInTheDocument()
   })
 
   it('rows that cannot be edited or voided are plain and there is no hint', () => {
     setup([movement()], { canEdit: () => false, canVoid: () => false })
     expect(screen.queryByText(/Deslizá/)).toBeNull()
-    expect(screen.queryByRole('button', { name: /^Anular/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Eliminar/ })).toBeNull()
   })
 })
 
@@ -303,5 +303,35 @@ describe('RecentMovements: groups by day and expands', () => {
       </MemoryRouter>,
     )
     expect(screen.getAllByText('Único')).toHaveLength(1)
+  })
+
+  it('Inicio ("latest"): a tap opens the summary, never the edit form, even though the row can be swiped', async () => {
+    const onEdit = vi.fn()
+    const actions: MovementActions = {
+      canEdit: () => true,
+      canVoid: () => true,
+      isInstallment: () => false,
+      onEdit,
+      onVoid: vi.fn().mockResolvedValue(undefined),
+      canOpen: () => true,
+      renderDetail: (m, api) => (
+        <div role="dialog" aria-label="resumen">
+          {m.note}
+          <button onClick={api.onClose}>Cerrar</button>
+        </div>
+      ),
+    }
+    render(
+      <MemoryRouter>
+        <RecentMovements variant="latest" today="2026-11-05" movements={[movement({ note: 'Mesa 12' })]} actions={actions} />
+      </MemoryRouter>,
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByText('Mesa 12'))
+    expect(screen.getByRole('dialog', { name: 'resumen' })).toHaveTextContent('Mesa 12')
+    expect(onEdit).not.toHaveBeenCalled()
+    // The swipe actions are real buttons too.
+    expect(screen.getByRole('button', { name: 'Editar Mesa 12' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Eliminar Mesa 12' })).toBeInTheDocument()
   })
 })

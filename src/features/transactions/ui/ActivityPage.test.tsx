@@ -159,29 +159,29 @@ describe('ActivityPage', () => {
     expect(within(dialog).getByText('Categoría')).toBeInTheDocument()
     expect(within(dialog).queryByText('Por voz')).not.toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Eliminar' }))
-    await user.click(within(screen.getByRole('dialog', { name: '¿Anular este movimiento?' })).getByRole('button', { name: 'Anular' }))
+    await user.click(within(screen.getByRole('dialog', { name: '¿Eliminar este movimiento?' })).getByRole('button', { name: 'Eliminar' }))
     expect(voidTx).toHaveBeenCalledWith('e1')
   })
 
   it('every movement has a real button for what the swipe does (right voids, left edits)', async () => {
     const user = setup()
     expect(screen.getByRole('button', { name: 'Editar Cena' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Anular Cena' }))
-    expect(screen.getByRole('dialog', { name: '¿Anular este movimiento?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Eliminar Cena' }))
+    expect(screen.getByRole('dialog', { name: '¿Eliminar este movimiento?' })).toBeInTheDocument()
   })
 
   it('asks for confirmation before voiding a movement', async () => {
     const user = setup()
-    await user.click(screen.getByRole('button', { name: 'Anular Cena' }))
-    const dialog = screen.getByRole('dialog', { name: '¿Anular este movimiento?' })
+    await user.click(screen.getByRole('button', { name: 'Eliminar Cena' }))
+    const dialog = screen.getByRole('dialog', { name: '¿Eliminar este movimiento?' })
     expect(voidTx).not.toHaveBeenCalled()
-    await user.click(within(dialog).getByRole('button', { name: 'Anular' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Eliminar' }))
     expect(voidTx).toHaveBeenCalledWith('e1')
   })
 
   it('cancelling the confirmation keeps the movement', async () => {
     const user = setup()
-    await user.click(screen.getByRole('button', { name: 'Anular Cena' }))
+    await user.click(screen.getByRole('button', { name: 'Eliminar Cena' }))
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(voidTx).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

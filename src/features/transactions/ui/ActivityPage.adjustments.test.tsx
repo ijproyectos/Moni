@@ -73,7 +73,7 @@ describe('Activity: adjustments and incoming settlements', () => {
 
   it('shows an adjustment as an increase that can be voided but not edited', () => {
     expect(screen.getByText('+$14.000')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Anular Ajuste de saldo' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Eliminar Ajuste de saldo' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Editar Ajuste de saldo' })).toBeNull()
   })
 
@@ -100,9 +100,9 @@ describe('Activity: adjustments and incoming settlements', () => {
   it('installments are not editable and voiding one cancels the whole purchase', async () => {
     expect(screen.queryByRole('button', { name: 'Editar Heladera' })).toBeNull()
     const user = userEvent.setup()
-    await user.click(screen.getAllByRole('button', { name: 'Anular Heladera' })[1] as HTMLElement)
-    expect(screen.getByRole('dialog', { name: '¿Anular la compra en cuotas?' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Anular' }))
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar Heladera' })[1] as HTMLElement)
+    expect(screen.getByRole('dialog', { name: '¿Eliminar la compra en cuotas?' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }))
     expect(voidPlan).toHaveBeenCalledWith('plan-1')
   })
 })

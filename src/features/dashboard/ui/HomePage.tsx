@@ -15,7 +15,8 @@ import {
   useTransactions,
   useVoidTransaction,
 } from '@/features/transactions/api/useTransactions'
-import { MovementDetail } from '@/features/transactions/ui/MovementDetail'
+import { groupKindLabel } from '@/features/transactions/domain/transaction'
+import { MovementSummarySheet } from '@/features/transactions/ui/MovementSummarySheet'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
 import { toUserMessage } from '@/shared/lib/errors'
 import { useToast } from '@/shared/ui/toastContext'
@@ -89,12 +90,14 @@ export function HomePage() {
     const find = (m: RecentMovement) => byId.get(m.id)
     const categoryById = new Map((categories.data ?? []).map((c) => [c.id, c]))
     const accountNameById = new Map((accounts.data ?? []).map((a) => [a.id, a.name]))
+    const groupNameById = new Map((groups.data ?? []).map((g) => [g.id, g.name]))
     return {
       canEdit: (m) => {
         const t = find(m)
         return Boolean(t && (t.kind === 'expense' || t.kind === 'income') && !t.installmentPlanId)
       },
-      canVoid: (m) => Boolean(find(m)) && m.kind !== 'opening_in',
+      // Group records (expense, payment, collection) are changed from the group, where their rules and permissions live.
+      canVoid: (m) => Boolean(find(m)) && m.kind !== 'opening_in' && !groupKindLabel(m.kind),
       isInstallment: (m) => Boolean(find(m)?.installmentPlanId),
       onEdit: (m) => {
         const t = find(m)
@@ -105,11 +108,11 @@ export function HomePage() {
         const t = find(m)
         if (!t) return null
         return (
-          <MovementDetail
+          <MovementSummarySheet
             transaction={t}
             category={t.categoryId ? categoryById.get(t.categoryId) : undefined}
             accountName={accountNameById.get(t.accountId)}
-            history={transactions.data ?? []}
+            groupName={t.groupId ? (groupNameById.get(t.groupId) ?? null) : null}
             onClose={api.onClose}
             onEdit={() => {
               api.onClose()
@@ -130,7 +133,7 @@ export function HomePage() {
         toast.show(t?.installmentPlanId ? 'Compra en cuotas anulada' : 'Movimiento anulado')
       },
     }
-  }, [transactions.data, categories.data, accounts.data, openEdit, voidPlan, voidTransaction, toast])
+  }, [transactions.data, categories.data, accounts.data, groups.data, openEdit, voidPlan, voidTransaction, toast])
 
   if (summary.isLoading) return <HomeSkeleton />
   if (summary.isError || !summary.data) {

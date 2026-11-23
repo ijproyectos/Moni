@@ -1,4 +1,5 @@
 import { Eye, EyeOff } from 'lucide-react'
+import { Link } from 'react-router'
 import { distributionLabel, type HomeBalance } from '../domain/homeBalance'
 import { formatArs, type Cents } from '@/shared/lib/money'
 import { AmountDisplay, MASK } from '@/shared/ui/AmountDisplay'
@@ -34,7 +35,13 @@ export function HomeHero({ balance }: { balance: HomeBalance }) {
             <Eye_ aria-hidden="true" className="size-5" strokeWidth={2.2} />
           </button>
         </div>
-        <Figure cents={balance.totalCents} />
+        <Link
+          to="/cuentas"
+          aria-label="Ver mis cuentas y saldos"
+          className="-mx-1 block rounded-xl px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F1EEDD]"
+        >
+          <Figure cents={balance.totalCents} />
+        </Link>
         <div
           role="img"
           aria-label={balance.top ? `${balance.top.percent}% del dinero en ${balance.top.name}` : 'Sin dinero repartido'}

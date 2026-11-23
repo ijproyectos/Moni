@@ -35,9 +35,12 @@ vi.mock('@/features/insights/api/useAnts', () => ({
 }))
 const subsData = vi.hoisted(() => ({ current: [] as unknown[] }))
 const antsData = vi.hoisted(() => ({ current: 0 }))
-const budgetData = vi.hoisted(() => ({ current: { kind: 'sin-datos' } as Record<string, unknown> }))
-vi.mock('@/features/dashboard/api/useDailyAllowance', () => ({
-  useDailyAllowance: () => ({ isLoading: false, allowance: budgetData.current, status: null, pace: null }),
+const ahorrosData = vi.hoisted(() => ({ current: [] as unknown[] }))
+vi.mock('@/features/ahorros/api/useAhorros', () => ({
+  useAhorros: () => ({ data: ahorrosData.current, isLoading: false }),
+}))
+vi.mock('@/features/health/api/useFinancialHealth', () => ({
+  useFinancialHealth: () => ({ isLoading: false, score: { kind: 'ok', score: 68, band: 'good' } }),
 }))
 const plusState = vi.hoisted(() => ({ isPlus: false, isLoading: false }))
 vi.mock('@/features/plus/api/usePlus', () => ({
@@ -57,27 +60,45 @@ describe('Explorar', () => {
     accountsData.current = []
     subsData.current = []
     antsData.current = 0
-    budgetData.current = { kind: 'sin-datos' }
+    ahorrosData.current = []
   })
 
-  it('has the header and the six sections, each a whole link to its tool', () => {
+  it('has the header and the long cards (Metas, Ahorros, Categorías, Salud) and the four tiles, each a whole link', () => {
     renderPage()
     expect(screen.getByRole('heading', { name: 'Explorar' })).toBeInTheDocument()
     expect(screen.getByText('Tu plata de un vistazo')).toBeInTheDocument()
     const link = (re: RegExp, href: string) => expect(screen.getByRole('link', { name: re })).toHaveAttribute('href', href)
     link(/^Metas de ahorro/, '/metas')
-    link(/^Presupuesto/, '/presupuesto')
+    link(/^Ahorros/, '/ahorros')
+    link(/^Categorías/, '/categorias')
+    link(/^Salud financiera/, '/salud')
     link(/^Pagos recurrentes/, '/recurrentes')
     link(/^Gastos hormiga/, '/hormigas')
     link(/^Informes/, '/este-mes')
     link(/^Viajes/, '/viajes')
+    expect(screen.queryByRole('link', { name: /^Presupuesto/ })).toBeNull()
+    expect(screen.getByRole('link', { name: /^Categorías/ })).toHaveTextContent(/Límite.*por mes/)
+    expect(screen.getByRole('link', { name: /^Salud financiera/ })).toHaveTextContent('68 de 100')
     expect(screen.queryByRole('button', { name: 'Hablá con Moni' })).toBeNull()
   })
 
-  it('shows only the six tools: no ¿Me conviene?, simulator, Categorías or Avisos, and no empty "Más"', () => {
+  it('shows the savings of each currency separately, never mixed, and an empty state without them', () => {
     renderPage()
-    expect(screen.getAllByRole('link')).toHaveLength(6)
-    for (const name of [/Categorías/, /Simulador/, /Avisos de Moni/, /Tarjetas de crédito|^Medios de pago/]) {
+    expect(screen.getByRole('link', { name: /^Ahorros/ })).toHaveTextContent('Pesos y dólares')
+    ahorrosData.current = [
+      { id: '1', currency: 'ARS', kind: 'opening', amountCents: 150_000_00, status: 'posted' },
+      { id: '2', currency: 'USD', kind: 'opening', amountCents: 300_00, status: 'posted' },
+    ]
+    renderPage()
+    const tiles = screen.getAllByRole('link', { name: /^Ahorros/ })
+    expect(tiles[tiles.length - 1]).toHaveTextContent('$150.000')
+    expect(tiles[tiles.length - 1]).toHaveTextContent('US$ 300')
+  })
+
+  it('shows only the tools: no ¿Me conviene?, simulator or Avisos, and no empty "Más"', () => {
+    renderPage()
+    expect(screen.getAllByRole('link')).toHaveLength(8)
+    for (const name of [/Simulador/, /Avisos de Moni/, /Tarjetas de crédito|^Medios de pago/]) {
       expect(screen.queryByRole('link', { name })).toBeNull()
     }
     expect(screen.queryByRole('button', { name: /¿Me conviene\?/ })).toBeNull()
@@ -97,19 +118,10 @@ describe('Explorar', () => {
     expect(tile).toHaveTextContent('2 cobros por mes')
   })
 
-  it('shows the real ants and a budget that was exceeded', () => {
+  it('shows the real ants', () => {
     antsData.current = 12_500_00
-    budgetData.current = { kind: 'ok', spendBudgetCents: 800_000_00, overCents: 75_000_00, remainingCents: -75_000_00 }
     renderPage()
     expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('$12.500este mes')
-    const budget = screen.getByRole('link', { name: /^Presupuesto/ })
-    expect(budget).toHaveTextContent('-$75.000te pasaste este mes')
-  })
-
-  it('shows what is left of the budget when it was not exceeded', () => {
-    budgetData.current = { kind: 'ok', spendBudgetCents: 800_000_00, overCents: 0, remainingCents: 120_000_00 }
-    renderPage()
-    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('$120.000te queda')
   })
 
   it('says "sin hormigas" and does not invent a budget without data', () => {
@@ -120,6 +132,5 @@ describe('Explorar', () => {
     expect(screen.getByRole('link', { name: /^Pagos recurrentes/ })).toHaveTextContent('no tenés pagos próximos')
     // None of the example figures of the design may show up as if they were real.
     expect(document.body).not.toHaveTextContent(/201\.866|Bariloche|\$30\.000/)
-    expect(screen.getByRole('link', { name: /^Presupuesto/ })).toHaveTextContent('Configurá tu presupuesto')
   })
 })

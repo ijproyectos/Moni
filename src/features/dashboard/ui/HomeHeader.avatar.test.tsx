@@ -3,6 +3,11 @@ import { MemoryRouter } from 'react-router'
 import { HiddenAmountsProvider } from '@/shared/ui/HiddenAmountsProvider'
 import { HomeHeader } from './HomeHeader'
 
+vi.mock('@/features/notifications/ui/NotificationCenter', () => ({
+  PlusBell: () => <button type="button" aria-label="Notificaciones" />,
+}))
+
+
 function setup(over: Partial<Parameters<typeof HomeHeader>[0]> = {}) {
   render(
     <MemoryRouter>

@@ -20,6 +20,13 @@ const state = vi.hoisted(() => ({
   createTrip: vi.fn(),
 }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
+vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
+vi.mock('@/features/transactions/api/useTransactions', () => ({ useVoidTransaction: () => ({ mutateAsync: vi.fn(), isPending: false }) }))
+vi.mock('@tanstack/react-query', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-query')>()),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}))
+vi.mock('./TripIconPicker', () => ({ TripIconButton: () => <button type="button" aria-label="Cambiar el ícono del viaje" /> }))
 vi.mock('../api/useTrips', () => ({
   useTrips: () => ({ data: state.trips, isLoading: false, isError: false, error: null }),
   useTripExpenses: () => ({ data: [], isLoading: false }),

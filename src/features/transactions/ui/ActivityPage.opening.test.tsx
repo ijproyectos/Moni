@@ -66,13 +66,13 @@ describe('Activity: starting balance and salary loaded with an account', () => {
   })
 
   it('the starting balance is fixed history: it cannot be edited or voided', () => {
-    expect(screen.queryByRole('button', { name: /Anular Saldo inicial/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Eliminar Saldo inicial/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Editar Saldo inicial/ })).toBeNull()
   })
 
   it('a salary loaded with the account is a normal income with its category', () => {
     expect(screen.getAllByText('+$150.000')).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Anular Sueldo' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Eliminar Sueldo' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Editar Sueldo' })).toBeInTheDocument()
   })
 

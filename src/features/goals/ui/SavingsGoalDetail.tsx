@@ -1,3 +1,4 @@
+import { MoniPiggy } from './MoniPiggy'
 import { BellRing, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { formatCompactDate, formatDayMonth, formatShortDate } from '@/shared/lib/dates'
@@ -111,6 +112,10 @@ export function SavingsGoalDetail({
           </span>
         }
       />
+
+      <div className="flex justify-center">
+        <MoniPiggy share={barValue(goal)} className="h-[150px] w-[133px]" />
+      </div>
 
       <Panel className="flex flex-col gap-1">
         <p className="text-[15px] leading-5 text-text-muted">Cuenta</p>

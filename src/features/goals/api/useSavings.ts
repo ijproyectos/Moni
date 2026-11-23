@@ -22,6 +22,9 @@ export function useSavings() {
     queryKey: savingsKeys.overview(user?.id),
     enabled: Boolean(user),
     queryFn: getSavingsOverview,
+    // The reserves change from other screens (detail, Ahorros): the list never shows an older figure than the detail.
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }
 

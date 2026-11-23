@@ -1,4 +1,4 @@
-import { Check, Mic } from 'lucide-react'
+import { Check, Mic, Users } from 'lucide-react'
 import { useState } from 'react'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
@@ -16,9 +16,11 @@ import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { MINT_PILL } from '@/shared/ui/mentaStyles'
 import { useToast } from '@/shared/ui/toastContext'
 import { useCreateTransactions } from '../api/useTransactions'
-import { parseAmountInput } from '@/shared/lib/amountInput'
+import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
 import { formatArs } from '@/shared/lib/money'
 import type { TransactionFormValues } from '../domain/transaction'
+import { SharedMovementForm } from '@/features/groups/ui/SharedMovementForm'
+import { ShareRow } from './FormRows'
 import { MovementConfirmCards } from './MovementConfirmCards'
 import { VoiceFrame } from './VoiceFrame'
 
@@ -29,6 +31,8 @@ interface DraftConfirmationProps {
   notice: string | null
   /** The lilac microphone: discard these drafts and speak again. Without it (receipt photos) the button is not shown. */
   onRerecord?: () => void
+  /** Receipt photos only: offers "Dividir con un grupo" before saving (the voice and text flows never show it). */
+  allowGroupSplit?: boolean
   onClose: () => void
 }
 
@@ -40,11 +44,13 @@ export function DraftConfirmation({
   initialDrafts,
   notice,
   onRerecord,
+  allowGroupSplit = false,
   onClose,
 }: DraftConfirmationProps) {
   const toast = useToast()
   const online = useOnlineStatus()
   const [drafts, setDrafts] = useState<DraftMovement[]>(initialDrafts)
+  const [shared, setShared] = useState(false)
   const [draftErrors, setDraftErrors] = useState<Record<string, string>>({})
   const today = todayIso()
 
@@ -135,6 +141,33 @@ export function DraftConfirmation({
       </span>
     ) : null
 
+  // Splitting with a group needs expenses only (a receipt is one): the whole ticket becomes ONE shared expense.
+  const canSplit = allowGroupSplit && drafts.length > 0 && drafts.every((d) => d.kind === 'expense')
+  const splitDraft = (() => {
+    const first = drafts[0]
+    if (!first) return null
+    const total = drafts.reduce((sum, d) => sum + (parseAmountInput(d.amount) ?? 0), 0)
+    // The items the receipt recognized become the description; nothing is added that was not read.
+    const notes = drafts.map((d) => d.note.trim()).filter(Boolean)
+    const sameCategory = drafts.every((d) => d.categoryId === first.categoryId)
+    return {
+      amount: formatAmountInput(total),
+      note: (notes.length > 1 ? notes.join(', ') : (notes[0] ?? '')).slice(0, 120),
+      occurredOn: first.occurredOn,
+      accountId: first.accountId,
+      categoryName: sameCategory ? (categories.find((c) => c.id === first.categoryId)?.name ?? '') : '',
+    }
+  })()
+
+  if (shared && canSplit && splitDraft) {
+    return (
+      <VoiceFrame title="Dividir con un grupo" onClose={onClose}>
+        <ShareRow icon={Users} checked onChange={() => setShared(false)} />
+        <SharedMovementForm draft={splitDraft} onSaved={onClose} onLeave={onClose} />
+      </VoiceFrame>
+    )
+  }
+
   return (
     <VoiceFrame title="Revisá y guardá" onClose={onClose}>
       {count > 1 && (
@@ -166,6 +199,7 @@ export function DraftConfirmation({
           cardFooter={leftLine}
         />
       )}
+      {canSplit && accounts.length > 0 && <ShareRow icon={Users} checked={false} onChange={setShared} />}
       {count > 1 && leftLine && <p className="text-center">{leftLine}</p>}
       {!online && (
         <p role="status" className="text-center text-sm font-semibold text-text-muted">

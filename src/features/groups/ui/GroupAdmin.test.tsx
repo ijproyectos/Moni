@@ -153,11 +153,11 @@ describe('AdminMembersSection', () => {
   })
 })
 
-describe('Ocultos y archivados', () => {
+describe('Eliminados y archivados', () => {
   it('shows nothing without hidden or archived groups', () => {
     hiddenData.current = []
     render(<MemoryRouter><HiddenGroupsEntry /></MemoryRouter>)
-    expect(screen.queryByText(/Ocultos y archivados/)).toBeNull()
+    expect(screen.queryByText(/Eliminados y archivados/)).toBeNull()
   })
 
   it('restores a hidden group and opens an archived one only to read it', async () => {
@@ -167,7 +167,7 @@ describe('Ocultos y archivados', () => {
     ]
     render(<MemoryRouter><HiddenGroupsEntry /></MemoryRouter>)
     const user = userEvent.setup()
-    await user.click(screen.getByRole('button', { name: /Ocultos y archivados \(2\)/ }))
+    await user.click(screen.getByRole('button', { name: /Eliminados y archivados \(2\)/ }))
     await user.click(screen.getByRole('button', { name: 'Restaurar Depto' }))
     expect(restore).toHaveBeenCalledWith('h1')
     expect(screen.getByRole('link', { name: 'Ver historial' })).toHaveAttribute('href', '/grupos/a1')

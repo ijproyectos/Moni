@@ -191,6 +191,7 @@ export interface Database {
           starts_on: string
           ends_on: string
           budget: number
+          icon?: string | null
           archived_at: string | null
           created_at: string
           updated_at: string
@@ -198,11 +199,36 @@ export interface Database {
         Insert: { name: string; starts_on: string; ends_on: string; budget: number }
         Update: {
           name?: string
+          icon?: string | null
           starts_on?: string
           ends_on?: string
           budget?: number
           archived_at?: string | null
         }
+        Relationships: []
+      }
+      notice_reads: {
+        Row: { user_id: string; key: string; read_at: string }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      ahorro_entries: {
+        Row: {
+          id: string
+          owner_id: string
+          currency: 'ARS' | 'USD'
+          kind: 'opening' | 'deposit' | 'withdrawal'
+          amount: number
+          occurred_on: string
+          note: string | null
+          account_id: string | null
+          status: 'posted' | 'voided'
+          voided_at: string | null
+          created_at: string
+        }
+        Insert: never
+        Update: never
         Relationships: []
       }
       payment_reports: {
@@ -237,6 +263,7 @@ export interface Database {
             | 'invitation_accepted'
             | 'recurring_due'
             | 'group_archived'
+            | 'expense_added'
           group_id: string
           group_name: string
           actor_id: string
@@ -737,6 +764,44 @@ export interface Database {
       }
       set_savings_goal_status: {
         Args: { p_goal: string; p_status: string; p_release?: boolean }
+        Returns: undefined
+      }
+      get_my_notice_prefs_extra: {
+        Args: Record<never, never>
+        Returns: {
+          expense_added_push: boolean
+          center_payments_due: boolean
+          center_price_changes: boolean
+          center_budgets: boolean
+        }[]
+      }
+      set_notice_prefs_extra: {
+        Args: {
+          p_expense_added_push: boolean
+          p_center_payments_due: boolean
+          p_center_price_changes: boolean
+          p_center_budgets: boolean
+        }
+        Returns: undefined
+      }
+      mark_center_notices_read: {
+        Args: { p_keys: string[] }
+        Returns: undefined
+      }
+      create_ahorro_entry: {
+        Args: {
+          p_currency: string
+          p_kind: string
+          p_amount: number
+          p_on?: string | null
+          p_note?: string | null
+          p_account?: string | null
+          p_request_key?: string | null
+        }
+        Returns: string
+      }
+      void_ahorro_entry: {
+        Args: { p_entry: string }
         Returns: undefined
       }
       add_goal_deposit: {

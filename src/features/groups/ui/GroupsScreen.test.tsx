@@ -164,3 +164,58 @@ describe('Hidden groups keep counting in the totals', () => {
     expect(screen.getByRole('button', { name: 'Ver lo que debés' })).toHaveTextContent('$5.000')
   })
 })
+
+describe('Grupos: swipe actions of a row', () => {
+  function renderSwipe(groups: ListedGroup[]) {
+    const onArchive = vi.fn()
+    const onHide = vi.fn()
+    render(
+      <MemoryRouter>
+        <GroupsScreen
+          groups={groups}
+          isLoading={false}
+          isError={false}
+          onRetry={vi.fn()}
+          onNewGroup={vi.fn()}
+          onArchive={onArchive}
+          onHide={onHide}
+        />
+      </MemoryRouter>,
+    )
+    return { onArchive, onHide }
+  }
+
+  it('offers "Eliminar para mí" to everybody and "Archivar" only to administrators, as real buttons', async () => {
+    const { onArchive, onHide } = renderSwipe([group(), group({ id: 'g2', name: 'Brasil', role: 'member' })])
+    expect(screen.getByRole('button', { name: 'Archivar Casa para todos' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Archivar Brasil/ })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar Brasil para mí' }))
+    expect(onHide).toHaveBeenCalledWith(expect.objectContaining({ id: 'g2' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Archivar Casa para todos' }))
+    expect(onArchive).toHaveBeenCalledWith(expect.objectContaining({ id: 'g1' }))
+  })
+})
+
+describe('Grupos: bell', () => {
+  function renderBell(noticeCount?: number) {
+    render(
+      <MemoryRouter>
+        <GroupsScreen groups={[group()]} isLoading={false} isError={false} onRetry={vi.fn()} onNewGroup={vi.fn()} noticeCount={noticeCount} />
+      </MemoryRouter>,
+    )
+  }
+  it('shows only the notices of groups and how many are unread', () => {
+    renderBell(3)
+    const bell = screen.getByRole('link', { name: 'Avisos de grupos, 3 sin leer' })
+    expect(bell).toHaveAttribute('href', '/grupos/avisos')
+    expect(bell).toHaveTextContent('3')
+  })
+  it('has no badge when everything is read, and no bell when the count is not given', () => {
+    renderBell(0)
+    expect(screen.getByRole('link', { name: 'Avisos de grupos' })).not.toHaveTextContent(/\d/)
+  })
+  it('is not drawn without the count', () => {
+    renderBell(undefined)
+    expect(screen.queryByRole('link', { name: /Avisos de grupos/ })).toBeNull()
+  })
+})

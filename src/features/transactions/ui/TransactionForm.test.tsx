@@ -106,3 +106,14 @@ describe('TransactionForm', () => {
     expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ amount: 2_500_000 })
   })
 })
+
+describe('TransactionForm: phone keyboard', () => {
+  it('hides the on-screen keypad while the note (native keyboard) has focus and brings it back after', async () => {
+    const { user } = setup()
+    expect(screen.getByRole('button', { name: '7' })).toBeInTheDocument()
+    await user.click(screen.getByPlaceholderText(/nota|detalle|Agregar/i))
+    expect(screen.queryByRole('button', { name: '7' })).toBeNull()
+    await user.click(screen.getByLabelText('Monto'))
+    expect(screen.getByRole('button', { name: '7' })).toBeInTheDocument()
+  })
+})

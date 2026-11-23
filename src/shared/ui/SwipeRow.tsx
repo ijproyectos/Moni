@@ -9,6 +9,8 @@ interface SwipeAction {
   label: string
   onPress: () => void
   tone: 'primary' | 'danger'
+  /** Drawn above the label so the action is clear while the row is being swiped. */
+  icon?: ReactNode
   /** Accessible name when the visible label alone would be ambiguous (many rows share "Editar"). */
   ariaLabel?: string
 }
@@ -37,10 +39,11 @@ function ActionButton({ action, onDone }: { action: SwipeAction; onDone: () => v
         action.onPress()
       }}
       className={cn(
-        'flex flex-1 items-center justify-center text-[15px] font-extrabold',
+        'flex flex-1 flex-col items-center justify-center gap-1 text-[13.5px] font-extrabold',
         action.tone === 'danger' ? 'bg-expense text-white' : 'bg-forest text-cream',
       )}
     >
+      {action.icon && <span aria-hidden="true">{action.icon}</span>}
       {action.label}
     </button>
   )

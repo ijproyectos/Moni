@@ -1,5 +1,5 @@
 import { cn } from '@/shared/ui/cn'
-import { destinationTheme, type DestinationTheme } from '../domain/destinationIcon'
+import { asTheme, destinationTheme, type DestinationTheme } from '../domain/destinationIcon'
 
 const EMOJI: Record<Exclude<DestinationTheme, 'eiffel'>, string> = {
   beach: '🏖️',
@@ -7,6 +7,7 @@ const EMOJI: Record<Exclude<DestinationTheme, 'eiffel'>, string> = {
   sea: '🌊',
   sun: '☀️',
   mountain: '⛰️',
+  nature: '🌳',
   snow: '🏔️',
   city: '🏙️',
   landmark: '🏛️',
@@ -29,15 +30,18 @@ function Eiffel() {
 /** Round badge with the look of a trip's destination: the picture for what the name says, or a plane when it says nothing known. */
 export function DestinationGlyph({
   name,
+  icon,
   className,
   size = 24,
 }: {
   name: string
+  /** The look the person chose; without it the destination decides. */
+  icon?: string | null
   className?: string
   /** Size of the picture in px. */
   size?: number
 }) {
-  const theme = destinationTheme(name)
+  const theme = asTheme(icon) ?? destinationTheme(name)
   return (
     <span
       aria-hidden="true"

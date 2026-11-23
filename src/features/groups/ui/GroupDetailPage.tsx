@@ -389,6 +389,12 @@ export function GroupDetailPage() {
           (e) => expenseRow(e),
         )}
         onOpen={(id) => setSheet({ type: 'detail', id })}
+        onEdit={(id) => setSheet({ type: 'edit', id })}
+        onDelete={(id) => setSheet({ type: 'delete', id })}
+        canChange={(id) => {
+          const e = ledger.expenses.find((x) => x.id === id)
+          return Boolean(e && canEdit(e))
+        }}
         empty="Todavía no hay gastos. Cargá el primero y Moni hace las cuentas."
       />
 

@@ -1,8 +1,18 @@
-import { DestinationGlyph } from './DestinationGlyph'
-import { Pencil, Plus } from 'lucide-react'
+import { TripIconButton } from './TripIconPicker'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useParams } from 'react-router'
 import mascotUrl from '@/assets/mascot/personaje_carga-de-dinero.svg'
+import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { useAuth } from '@/features/auth/api/authContext'
+import { useVoidTransaction } from '@/features/transactions/api/useTransactions'
+import type { Transaction } from '@/features/transactions/domain/transaction'
+import { MovementSummarySheet } from '@/features/transactions/ui/MovementSummarySheet'
+import { toUserMessage } from '@/shared/lib/errors'
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
+import { SwipeRow } from '@/shared/ui/SwipeRow'
+import { tripKeys } from '../api/queryKeys'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
 import { formatRelativeDay } from '@/shared/lib/dates'
@@ -31,7 +41,25 @@ export function PersonalTripPage() {
   const { openNew, openEdit } = useMovementSheet()
   const toast = useToast()
   const [editing, setEditing] = useState(false)
+  const [opened, setOpened] = useState<Transaction | null>(null)
+  const [pendingVoid, setPendingVoid] = useState<Transaction | null>(null)
+  const accounts = useAccounts()
+  const voidTransaction = useVoidTransaction()
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
   const today = todayIso()
+
+  async function confirmVoid() {
+    if (!pendingVoid) return
+    try {
+      await voidTransaction.mutateAsync(pendingVoid.id)
+      await queryClient.invalidateQueries({ queryKey: tripKeys.all(user?.id) })
+      toast.show('Gasto eliminado')
+    } catch (e) {
+      toast.show(toUserMessage(e), { tone: 'error' })
+    }
+    setPendingVoid(null)
+  }
 
   if (trips.isLoading) {
     return (
@@ -88,7 +116,7 @@ export function PersonalTripPage() {
         }
       />
       <div className="-mt-2 flex items-center gap-3">
-        <DestinationGlyph name={trip.name} size={28} className="size-12 shrink-0 rounded-full bg-tint-green" />
+        <TripIconButton tripId={trip.id} name={trip.name} icon={trip.icon} />
         <p className="text-[16px] text-text-muted">
           {rangeLabel(trip.startsOn, trip.endsOn)} · {summary.totalDays}{' '}
           {summary.totalDays === 1 ? 'día' : 'días'}
@@ -181,20 +209,68 @@ export function PersonalTripPage() {
             const category = t.categoryId ? categoryById.get(t.categoryId) : undefined
             return (
               <li key={t.id}>
-                <MovementRow
-                  leading={<CategoryIconCircle iconName={category?.icon} color={category?.color} />}
-                  title={t.note?.trim() || category?.name || 'Gasto'}
-                  subtitle={`${category?.name ?? 'Sin categoría'} · ${formatRelativeDay(t.occurredOn, today)}`}
-                  trailing={formatArs(-t.amountCents)}
-                  onPress={() => openEdit(t)}
-                  pressLabel={`Editar gasto ${t.note?.trim() || category?.name || ''}`.trim()}
-                />
+                <SwipeRow
+                  surfaceClassName="bg-card"
+                  leadingAction={{
+                    label: 'Editar',
+                    tone: 'primary',
+                    icon: <Pencil className="size-5" strokeWidth={2.2} />,
+                    ariaLabel: `Editar ${t.note?.trim() || category?.name || 'gasto'}`,
+                    onPress: () => openEdit(t),
+                  }}
+                  actions={[
+                    {
+                      label: 'Eliminar',
+                      tone: 'danger',
+                      icon: <Trash2 className="size-5" strokeWidth={2.2} />,
+                      ariaLabel: `Eliminar ${t.note?.trim() || category?.name || 'gasto'}`,
+                      onPress: () => setPendingVoid(t),
+                    },
+                  ]}
+                >
+                  <MovementRow
+                    leading={<CategoryIconCircle iconName={category?.icon} color={category?.color} />}
+                    title={t.note?.trim() || category?.name || 'Gasto'}
+                    subtitle={`${category?.name ?? 'Sin categoría'} · ${formatRelativeDay(t.occurredOn, today)}`}
+                    trailing={formatArs(-t.amountCents)}
+                    onPress={() => setOpened(t)}
+                    pressLabel={`Ver detalle de ${t.note?.trim() || category?.name || 'gasto'}`}
+                  />
+                </SwipeRow>
               </li>
             )
           })}
         </ul>
       )}
 
+      {opened && (
+        <MovementSummarySheet
+          transaction={opened}
+          category={opened.categoryId ? categoryById.get(opened.categoryId) : undefined}
+          accountName={(accounts.data ?? []).find((a) => a.id === opened.accountId)?.name}
+          groupName={null}
+          onClose={() => setOpened(null)}
+          onEdit={() => {
+            const target = opened
+            setOpened(null)
+            openEdit(target)
+          }}
+          onDelete={() => {
+            setPendingVoid(opened)
+            setOpened(null)
+          }}
+        />
+      )}
+      {pendingVoid && (
+        <ConfirmDialog
+          title="¿Eliminar este gasto?"
+          message="Lo sacamos de tus balances y del viaje. Esta acción no se puede deshacer."
+          confirmLabel="Eliminar"
+          isBusy={voidTransaction.isPending}
+          onConfirm={() => void confirmVoid()}
+          onCancel={() => setPendingVoid(null)}
+        />
+      )}
       {editing && (
         <PersonalTripForm
           trip={trip}
