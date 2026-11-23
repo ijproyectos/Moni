@@ -1,4 +1,4 @@
-import { formatArs, formatCompact, fromCents, splitEqually, toCents } from './money'
+import { formatArs, formatCompact, formatMoney, formatMoneyDigits, fromCents, splitEqually, toCents } from './money'
 
 describe('toCents', () => {
   it.each([
@@ -33,6 +33,30 @@ describe('formatArs', () => {
     expect(formatArs(1234550)).toBe('$12.345,50')
     expect(formatArs(-2200000)).toBe('-$22.000')
     expect(formatArs(85050000, { signed: true })).toBe('+$850.500')
+  })
+})
+
+describe('formatMoney', () => {
+  it('ARS renders exactly like formatArs (no behavior change for the default currency)', () => {
+    expect(formatMoney(1234550, 'ARS')).toBe(formatArs(1234550))
+    expect(formatMoney(-2200000, 'ARS', { signed: true })).toBe(formatArs(-2200000, { signed: true }))
+  })
+
+  it('another currency uses its own symbol with the same digit grouping', () => {
+    expect(formatMoney(123456, 'USD')).toBe('US$1.234,56')
+    expect(formatMoney(-50000, 'USD')).toBe('-US$500')
+    expect(formatMoney(100, 'USD', { signed: true })).toBe('+US$1')
+  })
+
+  it('falls back to the currency code itself when there is no known symbol', () => {
+    expect(formatMoney(100000, 'XXX')).toBe('XXX1.000')
+  })
+})
+
+describe('formatMoneyDigits', () => {
+  it('returns only the digits, no sign and no symbol', () => {
+    expect(formatMoneyDigits(1234550)).toBe('12.345,50')
+    expect(formatMoneyDigits(-2200000)).toBe('22.000')
   })
 })
 
