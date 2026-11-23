@@ -295,7 +295,13 @@ export function TransactionForm({
       {/* With the phone's keyboard open the on-screen keypad would only take room: it steps aside. */}
       {!nativeKeyboard && <NumericKeypad onKey={pressKey} />}
 
-      <div className="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 bg-canvas pb-1 pt-2">
+      {/* mt-auto pins the footer below the keypad; with the phone's keyboard open there's no keypad to pin against, so it would otherwise leave an empty gap above the button. */}
+      <div
+        className={cn(
+          'sticky bottom-0 z-10 flex flex-col gap-2 bg-canvas pb-1 pt-2',
+          !nativeKeyboard && 'mt-auto',
+        )}
+      >
         {submitError && (
           <p role="alert" className="text-center text-sm text-expense">
             {submitError}
