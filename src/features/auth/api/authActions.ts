@@ -13,6 +13,15 @@ export async function signInWithGoogle(): Promise<void> {
   if (error) throw error
 }
 
+/** Apple exige este login si la app ya ofrece otro proveedor externo (Google) y se sube a la App Store. */
+export async function signInWithApple(): Promise<void> {
+  const { error } = await getSupabase().auth.signInWithOAuth({
+    provider: 'apple',
+    options: { redirectTo: `${window.location.origin}${AUTH_CALLBACK_PATH}` },
+  })
+  if (error) throw error
+}
+
 /** Signs out and wipes everything cached for the account so the next one starts clean. */
 export async function signOut(queryClient: QueryClient): Promise<void> {
   const { error } = await getSupabase().auth.signOut()

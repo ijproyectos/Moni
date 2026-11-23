@@ -52,4 +52,20 @@ describe('WelcomePage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Empezar' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos conectarte con Google')
   })
+
+  it('"Continuar con Apple" starts Apple OAuth', async () => {
+    render(<WelcomePage />)
+    await userEvent.click(screen.getByRole('button', { name: /Continuar con Apple/ }))
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'apple',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    })
+  })
+
+  it('shows an error when Apple sign-in fails', async () => {
+    signInWithOAuth.mockResolvedValue({ data: {}, error: new Error('boom') })
+    render(<WelcomePage />)
+    await userEvent.click(screen.getByRole('button', { name: /Continuar con Apple/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos conectarte con Apple')
+  })
 })
