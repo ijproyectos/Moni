@@ -2,7 +2,6 @@ export function FullScreenLoader({ label = 'Cargando…' }: { label?: string }) 
   return (
     <div
       role="status"
-      data-app-loading=""
       className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-forest text-cream"
     >
       <span

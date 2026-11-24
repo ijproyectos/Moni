@@ -25,26 +25,6 @@
         } catch (e) {}
       })()
     </script>
-    <script>
-      // A probable cold start (fresh session, not a reload) paints the splash green from the very first frame, so launching the
-      // installed app never flashes white. src/features/splash/domain/coldStart.ts decides for real and removes the class if not played.
-      ;(function () {
-        try {
-          var nav = performance.getEntriesByType('navigation')[0]
-          var type = nav && nav.type
-          var played = window.sessionStorage.getItem('moni:splash:session') === '1'
-          if (!played && type !== 'reload' && type !== 'back_forward' && location.pathname.indexOf('/auth/') !== 0) {
-            document.documentElement.classList.add('splash-boot')
-          }
-        } catch (e) {}
-      })()
-    </script>
-    <style>
-      html.splash-boot,
-      html.splash-boot body {
-        background: #0d3b2e;
-      }
-    </style>
     <meta name="description" content="Moni — tu plata, bajo control. Sin vueltas." />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -69,7 +69,7 @@ export default defineConfig({
       },
       workbox: {
         // Precache the app shell (HTML, JS, CSS, images, latin fonts) so it opens offline.
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}', '**/*latin-*.woff2', '**/fredoka-*.woff2'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}', '**/*latin-*.woff2'],
         // The admin panel is a lazy chunk named after its entry module (src/features/admin/ui/AdminApp.tsx). It is
         // not precached, so regular users never download it; only /adminmoni fetches it.
         globIgnores: ['**/AdminApp-*.js'],
