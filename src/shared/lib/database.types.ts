@@ -162,6 +162,12 @@ export interface Database {
           installments_total?: number | null
           /** Personal trip this expense belongs to (migration 20261109000000). */
           trip_id?: string | null
+          /** Amount as typed when loaded in a foreign currency; `amount` holds the ARS equivalent (migration 20261121000000). */
+          original_amount?: number | null
+          /** Currency of `original_amount` (MVP: USD only). */
+          original_currency?: string | null
+          /** ARS per unit of `original_currency` used to convert `original_amount` into `amount`. */
+          fx_rate?: number | null
           created_at: string
           updated_at: string
         }
@@ -173,6 +179,9 @@ export interface Database {
           occurred_on?: string
           note?: string | null
           trip_id?: string | null
+          original_amount?: number | null
+          original_currency?: string | null
+          fx_rate?: number | null
         }
         Update: {
           account_id?: string
@@ -182,6 +191,9 @@ export interface Database {
           note?: string | null
           status?: RowStatus
           trip_id?: string | null
+          original_amount?: number | null
+          original_currency?: string | null
+          fx_rate?: number | null
         }
         Relationships: []
       }
