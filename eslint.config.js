@@ -5,7 +5,8 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage'] },
+  // android/ and ios/ are Capacitor-generated native projects, not app source.
+  { ignores: ['dist', 'coverage', 'android', 'ios'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.strict],
     files: ['**/*.{ts,tsx}'],

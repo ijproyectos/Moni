@@ -2,11 +2,11 @@ import { Navigate, useParams } from 'react-router'
 import { useState } from 'react'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
 import { formatMonthShortYear } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { Avatar, MoniCalcCard, Page, Panel, ProgressBar } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { monthlyNeeded, percentLabel, progress, splitMonthly, type Goal } from '../domain/goals'
 import { useSavings } from '../api/useSavings'
 import { updateShared, useGoal } from '../mock/goalsStore'
@@ -61,6 +61,7 @@ function SharedGoalDetail({
   setContributing,
 }: DetailProps & { info: NonNullable<Goal['shared']> }) {
   const today = todayIso()
+  const money = useFormatMoney()
   const [inviting, setInviting] = useState(false)
   const monthly = monthlyNeeded(goal, today)
   const [mine, theirs] = splitMonthly(monthly, info.split, info.incomeShare)
@@ -80,7 +81,7 @@ function SharedGoalDetail({
         footer={
           <span className="flex justify-between font-extrabold">
             <span>{percentLabel(value)} juntado</span>
-            <span>Faltan {formatArs(Math.max(0, goal.targetCents - goal.savedCents))}</span>
+            <span>Faltan {money(Math.max(0, goal.targetCents - goal.savedCents))}</span>
           </span>
         }
       >
@@ -88,10 +89,10 @@ function SharedGoalDetail({
           Aportar a la meta
         </Button>
       </SavingsHero>
-      <MoniCalcCard tone="light" mascot={mascotGroup} title={`${formatArs(monthly)} por mes`}>
+      <MoniCalcCard tone="light" mascot={mascotGroup} title={`${money(monthly)} por mes`}>
         {info.split === 'half'
-          ? `entre los dos (${formatArs(mine)} cada uno), y llegan en ${formatMonthShortYear(goal.dueDate)}`
-          : `entre los dos (Vos ${formatArs(mine)} · ${info.partner} ${formatArs(theirs)}), y llegan en ${formatMonthShortYear(goal.dueDate)}`}
+          ? `entre los dos (${money(mine)} cada uno), y llegan en ${formatMonthShortYear(goal.dueDate)}`
+          : `entre los dos (Vos ${money(mine)} · ${info.partner} ${money(theirs)}), y llegan en ${formatMonthShortYear(goal.dueDate)}`}
       </MoniCalcCard>
       {info.pending && (
         <button
@@ -121,12 +122,12 @@ function SharedGoalDetail({
                   <span className="min-w-0 flex-1">
                     <span className="block text-[18px] font-extrabold">{p.name}</span>
                     <span className="block text-[15px] leading-5 text-text-muted">
-                      Este mes {formatArs(p.month)} de {formatArs(p.due)} ·{' '}
-                      {done ? 'listo' : `faltan ${formatArs(p.due - p.month)}`}
+                      Este mes {money(p.month)} de {money(p.due)} ·{' '}
+                      {done ? 'listo' : `faltan ${money(p.due - p.month)}`}
                     </span>
                   </span>
                   <span className="text-right">
-                    <span className="block text-[18px] font-extrabold">{formatArs(p.total)}</span>
+                    <span className="block text-[18px] font-extrabold">{money(p.total)}</span>
                     <span className="block text-[14px] text-text-muted">aportado</span>
                   </span>
                 </div>

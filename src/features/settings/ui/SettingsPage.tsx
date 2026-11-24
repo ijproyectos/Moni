@@ -13,11 +13,13 @@ import { formatPlusExpiry } from '@/features/plus/domain/plus'
 import { CancelPlusSheet } from '@/features/plus/ui/CancelPlusSheet'
 import { PlusSheet } from '@/features/plus/ui/PlusSheet'
 import { FEATURES } from '@/shared/config/features'
+import { getCurrency } from '@/shared/lib/currencies'
 import { toUserMessage } from '@/shared/lib/errors'
 import { shareLink } from '@/shared/lib/share'
 import { AppVersion } from '@/shared/ui/AppVersion'
 import { cn } from '@/shared/ui/cn'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
+import { useDisplayCurrency } from '@/shared/ui/displayCurrencyContext'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
 import { MoniSays, Page, Toggle } from '@/shared/ui/kit'
 import { MentaHeader } from '@/shared/ui/MentaHeader'
@@ -28,8 +30,11 @@ import { requestGuide } from '@/features/guide/ui/guideStore'
 import { ShoppingBasket } from 'lucide-react'
 import { useSecondaryCurrency } from '../api/useSecondaryCurrency'
 import { useTheme } from '../api/useTheme'
+import { DisplayCurrencySheet } from './DisplayCurrencySheet'
+import { ExportMovementsRow } from './ExportMovementsRow'
 import { GroupLabel, ProfileGroup } from './ProfilePage'
 import { GroupNoticePrefs } from './GroupNoticePrefs'
+import { ImportMovementsSheet } from './ImportMovementsSheet'
 
 const THEME_CHOICES = [
   { mode: 'light', label: 'Claro', Icon: Sun },
@@ -66,7 +71,7 @@ function ThemeSelector() {
   )
 }
 
-type Sheet = 'plus' | 'cancelPlus' | 'signout' | 'delete' | null
+type Sheet = 'plus' | 'cancelPlus' | 'signout' | 'delete' | 'import' | 'currency' | null
 
 /** Configuración: appearance, account (payment methods, plan, notifications), help and sign out. */
 export function SettingsPage() {
@@ -75,6 +80,7 @@ export function SettingsPage() {
   const plus = usePlus()
   const subscription = useSubscriptionState()
   const hiddenAmounts = useHiddenAmounts()
+  const displayCurrency = useDisplayCurrency()
   const accounts = useAccounts()
   const weekly = useWeeklyDigestSettings()
   const currency = useSecondaryCurrency()
@@ -100,6 +106,12 @@ export function SettingsPage() {
       <GroupLabel>Apariencia</GroupLabel>
       <ProfileGroup>
         <SettingRow title="Tema" trailing={<ThemeSelector />} />
+        <SettingRow
+          title="Moneda de visualización"
+          subtitle="Convierte lo que ves, no lo que guardás"
+          trailing={getCurrency(displayCurrency.currency)?.code ?? displayCurrency.currency}
+          onClick={() => setSheet('currency')}
+        />
         <SettingRow
           title="Modo privacidad"
           subtitle="Oculta tus saldos al abrir la app"
@@ -187,6 +199,16 @@ export function SettingsPage() {
 
       <GroupNoticePrefs />
 
+      <GroupLabel>Tus datos</GroupLabel>
+      <ProfileGroup>
+        <ExportMovementsRow />
+        <SettingRow
+          title="Importar desde Excel"
+          subtitle="Traé movimientos de una planilla"
+          onClick={() => setSheet('import')}
+        />
+      </ProfileGroup>
+
       {FEATURES.pro && (
         <Link to="/pro" className="flex items-center gap-4 rounded-[20px] bg-gold px-4 py-3.5 text-on-bright">
           <ShoppingBasket aria-hidden="true" className="size-6" />
@@ -208,6 +230,9 @@ export function SettingsPage() {
           }}
         />
         <SettingRow title="Ayuda y contacto" subtitle="Escribinos y mirá tus consultas" to="/soporte" />
+        <SettingRow title="Acerca de Moni" to="/legal/acerca-de" />
+        <SettingRow title="Términos de uso" to="/legal/terminos" />
+        <SettingRow title="Política de privacidad" to="/legal/privacidad" />
         <SettingRow
           title="Recomendá a un amigo"
           subtitle="Compartí el link de Moni"
@@ -242,6 +267,8 @@ export function SettingsPage() {
 
       {sheet === 'plus' && <PlusSheet onClose={() => setSheet(null)} />}
       {sheet === 'cancelPlus' && <CancelPlusSheet expiresAt={plus.expiresAt} onClose={() => setSheet(null)} />}
+      {sheet === 'import' && <ImportMovementsSheet onClose={() => setSheet(null)} />}
+      {sheet === 'currency' && <DisplayCurrencySheet onClose={() => setSheet(null)} />}
       {sheet === 'signout' && (
         <DecisionSheet
           icon={<ChevronLeft className="size-6" />}

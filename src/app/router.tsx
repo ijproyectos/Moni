@@ -12,6 +12,9 @@ import {
   WELCOME_PATH,
 } from '@/features/auth/ui/guards'
 import { GroupNoticesPage } from '@/features/debts/ui/GroupNoticesPage'
+import { AboutPage } from '@/features/legal/ui/AboutPage'
+import { PrivacyPage } from '@/features/legal/ui/PrivacyPage'
+import { TermsPage } from '@/features/legal/ui/TermsPage'
 import { AccountsPage } from '@/features/accounts/ui/AccountsPage'
 import { AhorrosPage } from '@/features/ahorros/ui/AhorrosPage'
 import { CategoriesPage } from '@/features/categories/ui/CategoriesPage'
@@ -152,6 +155,10 @@ export const router = createBrowserRouter([
   { path: '/adminmoni/*', element: <AdminRoute /> },
   // Public: what someone without Moni sees when they open a group link (screen 127).
   { path: '/g/:code', element: <GroupLinkLandingPage /> },
+  // Public: legal/info pages, reachable from Configuración or straight from a store listing, with or without sesión.
+  { path: '/legal/terminos', element: <TermsPage /> },
+  { path: '/legal/privacidad', element: <PrivacyPage /> },
+  { path: '/legal/acerca-de', element: <AboutPage /> },
   {
     element: <RequireAuth />,
     children: [

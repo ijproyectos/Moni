@@ -8,10 +8,10 @@ import { overlayDeltaFor } from '@/features/groups/domain/ledger'
 import { useGroupOverlays } from '@/features/groups/api/useGroupGuests'
 import { useGroupPhotos } from '@/features/groups/api/useGroupPhotos'
 import { AvatarStack } from '@/features/groups/ui/groupVisuals'
-import { formatArs } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { HeaderAddButton, Page } from '@/shared/ui/kit'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
@@ -178,6 +178,7 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
   const overlays = useGroupOverlays()
   const photos = useGroupPhotos()
   const { user } = useAuth()
+  const money = useFormatMoney()
 
   if (groups.isLoading) {
     return (
@@ -233,7 +234,7 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
                 </span>
                 <span className="block text-[15px] text-text-muted">
                   {g.memberCount + (overlay?.guests.length ?? 0)} personas
-                  {info && ` · Presupuesto ${formatArs(info.budgetCents)}`}
+                  {info && ` · Presupuesto ${money(info.budgetCents)}`}
                 </span>
               </span>
             </div>
@@ -241,9 +242,9 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
               <AvatarStack people={[{ name: 'Vos' }, ...(overlay?.guests ?? [])]} />
               <span className="flex items-center gap-1 text-[16px] font-extrabold">
                 {net > 0
-                  ? `Te deben ${formatArs(net)}`
+                  ? `Te deben ${money(net)}`
                   : net < 0
-                    ? `Debés ${formatArs(-net)}`
+                    ? `Debés ${money(-net)}`
                     : 'Estás al día'}
                 <ChevronRight aria-hidden="true" className="size-5" />
               </span>

@@ -18,7 +18,6 @@ import { useGoals } from '@/features/goals/mock/goalsStore'
 import { FEATURES } from '@/shared/config/features'
 import { formatMonthName, formatRelativeDay } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
 import { useGoBack } from '@/shared/lib/useGoBack'
 import { monthStart, todayIso } from '@/shared/lib/month'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
@@ -30,6 +29,7 @@ import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Avatar, MoniGlyph, ProgressBar } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { useGroupLedger } from '../api/useGroupLedger'
 import { useNewMemberNotice } from '../api/useNewMemberNotice'
 import { useGroupTrips } from '@/features/trips/api/useTrips'
@@ -91,6 +91,7 @@ export function GroupDetailPage() {
   // Back to where the group was opened from (Grupos, Viajes…); Grupos only if there was nothing before.
   const goBack = useGoBack('/grupos')
   const toast = useToast()
+  const money = useFormatMoney()
   const data = useGroupLedger(groupId)
   useNewMemberNotice(groupId)
   // Real dates and budget of the group trip (Viajes), if the group has them.
@@ -165,7 +166,7 @@ export function GroupDetailPage() {
     const text = reminderMessage({
       debtorNames: headline.debtorNames,
       groupName: name,
-      amountText: formatArs(myNet),
+      amountText: money(myNet),
     })
     try {
       if (navigator.share) {
@@ -256,18 +257,18 @@ export function GroupDetailPage() {
     return [
       {
         label: 'Total del grupo',
-        from: formatArs(ledger.totalCents),
-        to: formatArs(ledger.totalCents - e.amountCents),
+        from: money(ledger.totalCents),
+        to: money(ledger.totalCents - e.amountCents),
       },
       {
         label: 'Tu parte',
-        from: formatArs(ledger.myShareCents),
-        to: formatArs(ledger.myShareCents - myShare),
+        from: money(ledger.myShareCents),
+        to: money(ledger.myShareCents - myShare),
       },
       {
         label: 'Tu saldo',
-        from: formatArs(myNet, { signed: true }),
-        to: formatArs(myNet - myPaid + myShare, { signed: true }),
+        from: money(myNet, { signed: true }),
+        to: money(myNet - myPaid + myShare, { signed: true }),
       },
     ]
   }
@@ -301,7 +302,7 @@ export function GroupDetailPage() {
         <div className="rounded-[22px] bg-card px-4 py-3">
           <ProgressBar value={ledger.totalCents / groupTrip.budgetCents} />
           <p className="mt-1 text-[13px] text-text-muted">
-            Presupuesto del grupo {formatArs(groupTrip.budgetCents)} · gastaron el{' '}
+            Presupuesto del grupo {money(groupTrip.budgetCents)} · gastaron el{' '}
             {Math.round((ledger.totalCents / groupTrip.budgetCents) * 100)}%
           </p>
         </div>
@@ -354,7 +355,7 @@ export function GroupDetailPage() {
           <MoniGlyph />
           <p className="flex-1 text-[16px] leading-5">
             <strong className="font-extrabold">Con el aguinaldo:</strong> tu parte (
-            {formatArs(ledger.myShareCents)}) se puede reservar.
+            {money(ledger.myShareCents)}) se puede reservar.
           </p>
           <Link
             to="/aguinaldo"
@@ -418,7 +419,7 @@ export function GroupDetailPage() {
                     />
                   </span>
                   <span className="ml-auto flex items-center gap-2">
-                    <span className="text-[16px] font-extrabold">{formatArs(s.amountCents)}</span>
+                    <span className="text-[16px] font-extrabold">{money(s.amountCents)}</span>
                     {canRecordReceipt(s, meId) && (
                       <button
                         type="button"
@@ -454,7 +455,7 @@ export function GroupDetailPage() {
                   />
                 </span>
                 <span className="ml-auto flex items-center gap-2">
-                  <span className="text-[16px] font-extrabold">{formatArs(s.cents)}</span>
+                  <span className="text-[16px] font-extrabold">{money(s.cents)}</span>
                   <button
                     type="button"
                     aria-label="Anular pago"
@@ -614,8 +615,8 @@ export function GroupDetailPage() {
             <p className="mt-3 flex gap-2 rounded-[18px] bg-tint-green px-4 py-3 text-[16px]">
               <Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
               {myNet < 0
-                ? `Antes de irte tenés que saldar los ${formatArs(-myNet)} que debés.`
-                : `Antes de irte, que te paguen los ${formatArs(myNet)} que te deben.`}
+                ? `Antes de irte tenés que saldar los ${money(-myNet)} que debés.`
+                : `Antes de irte, que te paguen los ${money(myNet)} que te deben.`}
             </p>
           )}
         </DecisionSheet>

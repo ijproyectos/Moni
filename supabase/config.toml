@@ -55,10 +55,26 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/mp-webhook/index.ts"
 
+# verify_jwt is OFF on purpose: RevenueCat calls this URL server-to-server with no Supabase JWT. The request is
+# authenticated by comparing the `Authorization` header against REVENUECAT_WEBHOOK_AUTH_TOKEN (constant time),
+# before any database work. See supabase/functions/revenuecat-webhook/index.ts.
+[functions.revenuecat-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/revenuecat-webhook/index.ts"
+
 [functions.mp-oauth]
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/mp-oauth/index.ts"
+
+# verify_jwt is OFF on purpose: Meta calls this URL server-to-server with no Supabase JWT. GET is Meta's
+# subscription handshake (hub.verify_token must match WHATSAPP_VERIFY_TOKEN). POST is authenticated by
+# X-Hub-Signature-256 (HMAC-SHA256 of the raw body, WHATSAPP_APP_SECRET), checked before any database work.
+[functions.whatsapp-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/whatsapp-webhook/index.ts"
 
 # verify_jwt is OFF on purpose: public/mp/callback.html may reach this function without a usable session. The function
 # requires a session JWT itself (session_required otherwise) and a single-use state bound to that user.
@@ -66,6 +82,15 @@ entrypoint = "./functions/mp-oauth/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/mp-oauth-callback/index.ts"
+
+# verify_jwt is OFF on purpose: Twilio calls this URL server-to-server with no Supabase JWT. Authenticated by
+# X-Twilio-Signature (HMAC-SHA1 over TWILIO_WEBHOOK_URL + every POST param, TWILIO_AUTH_TOKEN), checked before any
+# database work. Same product as whatsapp-webhook (Meta Cloud API), different transport — see
+# supabase/functions/_shared/whatsappExpense.ts, which both call into.
+[functions.twilio-whatsapp-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/twilio-whatsapp-webhook/index.ts"
 
 # verify_jwt is OFF on purpose: pg_cron (via pg_net) and mp-oauth `sync` call this function server-to-server with no
 # user JWT. The function compares the `x-moni-cron-secret` header with its Edge secret (constant time) before any
