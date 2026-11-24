@@ -12,11 +12,11 @@ import { MovementSummarySheet } from '@/features/transactions/ui/MovementSummary
 import { toUserMessage } from '@/shared/lib/errors'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { SwipeRow } from '@/shared/ui/SwipeRow'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { tripKeys } from '../api/queryKeys'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
 import { formatRelativeDay } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
@@ -48,6 +48,7 @@ export function PersonalTripPage() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const today = todayIso()
+  const money = useFormatMoney()
 
   async function confirmVoid() {
     if (!pendingVoid) return
@@ -130,10 +131,10 @@ export function PersonalTripPage() {
           Presupuesto del viaje
         </p>
         <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
-          {formatArs(trip.budgetCents)}
+          {money(trip.budgetCents)}
         </p>
         <div className="mt-3 flex justify-between gap-3 text-[15px] font-extrabold text-text-muted-on-dark">
-          <span>Gastaste {formatArs(summary.spentCents)}</span>
+          <span>Gastaste {money(summary.spentCents)}</span>
           <span>{percent}%</span>
         </div>
         <ProgressBar
@@ -150,8 +151,8 @@ export function PersonalTripPage() {
           }
         >
           {summary.overBudget
-            ? `Te pasaste ${formatArs(-summary.remainingCents)}`
-            : `Te quedan ${formatArs(summary.remainingCents)}`}
+            ? `Te pasaste ${money(-summary.remainingCents)}`
+            : `Te quedan ${money(summary.remainingCents)}`}
         </p>
         {summary.perDayCents > 0 && (
           <div className="mt-3 flex gap-3 rounded-[18px] bg-surface p-4 text-[16px] leading-6">
@@ -160,8 +161,8 @@ export function PersonalTripPage() {
               {summary.status === 'upcoming' ? 'Para cada uno de los ' : 'Podés gastar unos '}
               <strong className="font-extrabold">
                 {summary.status === 'upcoming'
-                  ? `${summary.daysLeft} días: ${formatArs(summary.perDayCents)} por día`
-                  : `${formatArs(summary.perDayCents)} por día`}
+                  ? `${summary.daysLeft} días: ${money(summary.perDayCents)} por día`
+                  : `${money(summary.perDayCents)} por día`}
               </strong>
               {summary.status === 'ongoing' &&
                 ` durante los ${summary.daysLeft} ${summary.daysLeft === 1 ? 'día' : 'días'} que faltan`}
@@ -188,7 +189,7 @@ export function PersonalTripPage() {
                       {Math.round(row.share * 100)}% de lo gastado
                     </span>
                   </span>
-                  <span className="text-[18px] font-extrabold">{formatArs(row.cents)}</span>
+                  <span className="text-[18px] font-extrabold">{money(row.cents)}</span>
                 </li>
               )
             })}
@@ -232,7 +233,7 @@ export function PersonalTripPage() {
                     leading={<CategoryIconCircle iconName={category?.icon} color={category?.color} />}
                     title={t.note?.trim() || category?.name || 'Gasto'}
                     subtitle={`${category?.name ?? 'Sin categoría'} · ${formatRelativeDay(t.occurredOn, today)}`}
-                    trailing={formatArs(-t.amountCents)}
+                    trailing={money(-t.amountCents)}
                     onPress={() => setOpened(t)}
                     pressLabel={`Ver detalle de ${t.note?.trim() || category?.name || 'gasto'}`}
                   />

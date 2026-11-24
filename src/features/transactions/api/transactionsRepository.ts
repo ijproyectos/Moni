@@ -2,9 +2,10 @@ import type {
   Transaction as TransactionRow,
   Transfer as TransferRow,
 } from '@/shared/lib/database.types'
-import { fromCents, toCents } from '@/shared/lib/money'
+import { fromCents, toCents, type Cents } from '@/shared/lib/money'
 import { getSupabase } from '@/shared/lib/supabase'
 import type {
+  EntryKind,
   Transaction,
   TransactionFormValues,
   Transfer,
@@ -105,6 +106,30 @@ export async function createTransaction(values: NewTransaction): Promise<Created
     .single()
   if (error) throw error
   return data ? { id: data.id, installmentPlanId: data.installment_plan_id ?? null } : null
+}
+
+/** A row parsed from an imported spreadsheet. Bypasses `transactionFormSchema` (a zod form schema is the wrong tool
+ * for rows already validated by `parseMovementRows`), but keeps the same database rule: a check constraint on
+ * `transactions` requires `category_id` whenever `kind` is 'expense' or 'income'. */
+export interface ImportedTransaction {
+  accountId: string
+  categoryId: string
+  kind: EntryKind
+  amountCents: Cents
+  occurredOn: string
+  note: string | null
+}
+
+export async function createImportedTransaction(values: ImportedTransaction): Promise<void> {
+  const { error } = await getSupabase().from('transactions').insert({
+    account_id: values.accountId,
+    category_id: values.categoryId,
+    kind: values.kind,
+    amount: toNumeric(values.amountCents),
+    occurred_on: values.occurredOn,
+    note: values.note,
+  })
+  if (error) throw error
 }
 
 /** In-place edit. The kind cannot change: switch by voiding and creating a new movement. */

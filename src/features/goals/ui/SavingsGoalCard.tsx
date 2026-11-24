@@ -1,7 +1,7 @@
 import { BellRing, TriangleAlert } from 'lucide-react'
 import { formatShortDate } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
 import { cn } from '@/shared/ui/cn'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { IconTile, ProgressBar } from '@/shared/ui/kit'
 import {
   barValue,
@@ -33,6 +33,7 @@ export function SavingsGoalCard({
   today: string
   onOpen: () => void
 }) {
+  const money = useFormatMoney()
   const kind = savingsKind(goal.icon)
   const exceeded = exceededCents(goal)
   const reminder = nextReminderLabel(goal, today)
@@ -57,15 +58,15 @@ export function SavingsGoalCard({
       </div>
       <ProgressBar value={barValue(goal)} className="mt-4" label={`Avance de ${goal.name}`} />
       <div className="mt-2 flex flex-wrap justify-between gap-x-3 text-[15px] text-text-muted">
-        <span>Reservado {formatArs(goal.reservedCents)}</span>
-        <span>de {formatArs(goal.targetCents)}</span>
+        <span>Reservado {money(goal.reservedCents)}</span>
+        <span>de {money(goal.targetCents)}</span>
       </div>
       <p
         className={cn('mt-1 text-[15px] font-extrabold', exceeded > 0 ? 'text-income' : 'text-ink')}
       >
         {exceeded > 0
-          ? `¡Superaste tu meta por ${formatArs(exceeded)}!`
-          : `Faltan ${formatArs(missingCents(goal))}`}
+          ? `¡Superaste tu meta por ${money(exceeded)}!`
+          : `Faltan ${money(missingCents(goal))}`}
       </p>
       {(status || reminder || !goal.accountUsable) && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[14px]">

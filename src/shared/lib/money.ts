@@ -1,6 +1,8 @@
 // Monetary values are handled as integer cents in the client to avoid floating point drift.
 // PostgreSQL stores them as numeric(14,2); the database stays authoritative.
 
+import { currencySymbol } from './currencies'
+
 export type Cents = number
 
 const DECIMAL_PATTERN = /^-?\d+(?:[.,]\d{1,2})?$/
@@ -34,6 +36,26 @@ export function formatArs(cents: Cents, options: { signed?: boolean } = {}): str
   const abs = formatter.format(Math.abs(cents) / 100)
   const sign = cents < 0 ? '-' : options.signed && cents > 0 ? '+' : ''
   return `${sign}$${abs}`
+}
+
+/** Just the digits (no sign, no symbol) — same grouping rule `formatArs`/`formatMoney` use. For "bare" displays. */
+export function formatMoneyDigits(cents: Cents): string {
+  const formatter = cents % 100 === 0 ? wholeFormatter : fractionFormatter
+  return formatter.format(Math.abs(cents) / 100)
+}
+
+/**
+ * Same rendering as `formatArs` (es-AR digit grouping, drops decimals on whole amounts) but with
+ * another currency's symbol — used once `cents` were already converted to that currency by the caller
+ * (see `convertArsCents`). Kept separate from `formatArs` so ARS display never changes: `formatMoney`
+ * with `currencyCode: 'ARS'` just calls `formatArs` straight through.
+ */
+export function formatMoney(cents: Cents, currencyCode: string, options: { signed?: boolean } = {}): string {
+  if (currencyCode === 'ARS') return formatArs(cents, options)
+  const formatter = cents % 100 === 0 ? wholeFormatter : fractionFormatter
+  const abs = formatter.format(Math.abs(cents) / 100)
+  const sign = cents < 0 ? '-' : options.signed && cents > 0 ? '+' : ''
+  return `${sign}${currencySymbol(currencyCode)}${abs}`
 }
 
 /** Splits an amount into equal integer-cent shares; leftover cents go to the first shares. */

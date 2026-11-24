@@ -13,12 +13,14 @@ import { useState, type ReactNode } from 'react'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
 import type { Category } from '@/features/categories/domain/category'
 import { formatLongDay, formatMonthYear, formatRelativeDay, monthNameOf } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
+import { convertArsCents } from '@/shared/lib/exchangeRates'
+import { formatMoney } from '@/shared/lib/money'
 import { monthStart, todayIso, type IsoDate } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { getCategoryIcon } from '@/shared/ui/categoryIcons'
 import { cn } from '@/shared/ui/cn'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
+import { useDisplayCurrency } from '@/shared/ui/displayCurrencyContext'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { Kicker } from '@/shared/ui/Kicker'
@@ -191,6 +193,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [detail, setDetail] = useState<Transaction | null>(null)
+  const { currency: displayCurrency, rates } = useDisplayCurrency()
   const today = todayIso()
   const count = countEntries(days)
   const chipCategories = kind === 'all' ? categories : categories.filter((c) => c.kind === kind)
@@ -496,7 +499,14 @@ export function ActivityScreen(props: ActivityScreenProps) {
                     </h2>
                     {day.scheduledCents > 0 && !day.entries.some((e) => isExecuted(e, today)) && (
                       <span className="text-[12px] font-semibold text-text-muted">
-                        Programado {formatArs(-day.scheduledCents)}
+                        Programado{' '}
+                        {(() => {
+                          const converted =
+                            displayCurrency !== 'ARS' && rates
+                              ? convertArsCents(-day.scheduledCents, displayCurrency, rates)
+                              : null
+                          return formatMoney(converted ?? -day.scheduledCents, converted !== null ? displayCurrency : 'ARS')
+                        })()}
                       </span>
                     )}
                   </div>

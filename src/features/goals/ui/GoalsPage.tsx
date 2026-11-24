@@ -12,7 +12,6 @@ import mascotAssistant from '@/assets/mascot/personaje_metas-de-ahorro.svg'
 import { FEATURES } from '@/shared/config/features'
 import { formatMonthShortYear } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
@@ -38,6 +37,7 @@ import { NewGoalSheet } from './NewGoalSheet'
 import { SavingsGoalCard } from './SavingsGoalCard'
 import { SavingsNotices } from './SavingsNotices'
 import { SharedGoalSheet } from './SharedGoalSheet'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 
 type Tab = 'mine' | 'shared'
 
@@ -350,6 +350,7 @@ function MineSummary({
 }
 
 function SharedTeaser({ goal, onOpen }: { goal: Goal; onOpen: () => void }) {
+  const money = useFormatMoney()
   return (
     <button
       type="button"
@@ -365,7 +366,7 @@ function SharedTeaser({ goal, onOpen }: { goal: Goal; onOpen: () => void }) {
       </span>
       <span className="text-right">
         <span className="block text-[18px] font-extrabold">{percentLabel(progress(goal))}</span>
-        <span className="block text-[14px] text-text-muted">{formatArs(goal.savedCents)}</span>
+        <span className="block text-[14px] text-text-muted">{money(goal.savedCents)}</span>
       </span>
       <ChevronRight aria-hidden="true" className="size-5 shrink-0" />
     </button>
@@ -373,6 +374,7 @@ function SharedTeaser({ goal, onOpen }: { goal: Goal; onOpen: () => void }) {
 }
 
 function SharedOverview({ goal, today }: { goal: Goal; today: string }) {
+  const money = useFormatMoney()
   const info = goal.shared
   if (!info) return null
   const value = progress(goal)
@@ -392,7 +394,7 @@ function SharedOverview({ goal, today }: { goal: Goal; today: string }) {
             <Avatar name={info.partner} size="sm" className="ring-2 ring-ink" />
           </span>
         }
-        footer={`Vos ${formatArs(info.mineCents)} · ${info.partner} ${formatArs(info.theirsCents)}`}
+        footer={`Vos ${money(info.mineCents)} · ${info.partner} ${money(info.theirsCents)}`}
       />
       <Link
         to={`/metas/${goal.id}`}
@@ -410,12 +412,12 @@ function SharedOverview({ goal, today }: { goal: Goal; today: string }) {
         </div>
         <ProgressBar value={value} className="mt-4" />
         <div className="mt-2 flex justify-between text-[15px] text-text-muted">
-          <span>Juntaron {formatArs(goal.savedCents)}</span>
-          <span>de {formatArs(goal.targetCents)}</span>
+          <span>Juntaron {money(goal.savedCents)}</span>
+          <span>de {money(goal.targetCents)}</span>
         </div>
         <MoniSays className="mt-3">
           {missingTheirs > 0
-            ? `a ${info.partner} le faltan ${formatArs(missingTheirs)} para llegar a su parte de este mes.`
+            ? `a ${info.partner} le faltan ${money(missingTheirs)} para llegar a su parte de este mes.`
             : `los dos ya pusieron su parte de este mes.`}
         </MoniSays>
       </Link>

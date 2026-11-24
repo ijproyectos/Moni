@@ -116,4 +116,12 @@ describe('TransactionForm: phone keyboard', () => {
     await user.click(screen.getByLabelText('Monto'))
     expect(screen.getByRole('button', { name: '7' })).toBeInTheDocument()
   })
+
+  it('does not reserve an empty gap above the save button once the phone keyboard pushes the keypad away', async () => {
+    const { user } = setup()
+    const footer = screen.getByRole('button', { name: 'Guardar gasto' }).parentElement
+    expect(footer).toHaveClass('mt-auto')
+    await user.click(screen.getByPlaceholderText(/nota|detalle|Agregar/i))
+    expect(footer).not.toHaveClass('mt-auto')
+  })
 })

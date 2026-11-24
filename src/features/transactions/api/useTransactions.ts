@@ -6,10 +6,12 @@ import { tripKeys } from '@/features/trips/api/queryKeys'
 import type { TransactionFormValues, TransferFormValues } from '../domain/transaction'
 import { transactionKeys, type TransactionQueryFilters } from './queryKeys'
 import {
+  createImportedTransaction,
   createTransaction,
   createTransfer,
   listTransactions,
   listTransfers,
+  type ImportedTransaction,
   type NewTransaction,
   updateTransaction,
   voidTransaction,
@@ -75,6 +77,29 @@ export function useCreateTransactions() {
       for (const item of items) {
         try {
           await createTransaction(item.values)
+          results.push({ key: item.key, ok: true })
+        } catch (error) {
+          results.push({ key: item.key, ok: false, error })
+        }
+      }
+      return results
+    },
+    onSettled: invalidate,
+  })
+}
+
+/** Saves rows parsed from an imported spreadsheet (Configuración → Tus datos). Same fail-tolerant shape as
+ * `useCreateTransactions`, but through `createImportedTransaction` so a row with no matching category still goes in. */
+export function useImportTransactions() {
+  const invalidate = useInvalidateMoney()
+  return useMutation({
+    mutationFn: async (
+      items: readonly { key: string; values: ImportedTransaction }[],
+    ): Promise<CreateManyResult[]> => {
+      const results: CreateManyResult[] = []
+      for (const item of items) {
+        try {
+          await createImportedTransaction(item.values)
           results.push({ key: item.key, ok: true })
         } catch (error) {
           results.push({ key: item.key, ok: false, error })

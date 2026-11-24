@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="110 175 800 710" width="800" height="710">
+  <title>Moni, gato de la fortuna (solo la cara)</title>
+  <path d="M222 205 L392 272 Q512 232 632 272 L802 205 L788 340 Q885 470 885 600 Q885 845 512 848 Q140 845 140 600 Q140 470 236 340 Z"
+    fill="#fcf1dc" stroke="#1d4a3a" stroke-width="44" stroke-linejoin="round"/>
+  <path d="M256 262 L352 318 L264 372 Z" fill="#edb8b4" stroke="#edb8b4" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M768 262 L672 318 L760 372 Z" fill="#edb8b4" stroke="#edb8b4" stroke-width="14" stroke-linejoin="round"/>
+  <ellipse cx="258" cy="690" rx="66" ry="42" fill="#edb8b4"/>
+  <ellipse cx="766" cy="690" rx="66" ry="42" fill="#edb8b4"/>
+  <path d="M288 500 a8 8 0 0 1 8 -8 h160 a8 8 0 0 1 8 8 v35 a88 88 0 0 1 -176 0 z" fill="#1d4a3a"/>
+  <path d="M560 500 a8 8 0 0 1 8 -8 h160 a8 8 0 0 1 8 8 v35 a88 88 0 0 1 -176 0 z" fill="#1d4a3a"/>
+  <circle cx="422" cy="537" r="15" fill="#fcf1dc"/>
+  <circle cx="694" cy="537" r="15" fill="#fcf1dc"/>
+  <path d="M478 616 L548 616 L513 648 Z" fill="#1d4a3a" stroke="#1d4a3a" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M442 660 Q476 704 512 660 Q548 704 582 660" fill="none" stroke="#1d4a3a" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

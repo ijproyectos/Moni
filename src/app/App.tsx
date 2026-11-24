@@ -6,6 +6,7 @@ import { UserDataGuard } from '@/features/auth/api/UserDataGuard'
 import { syncInitialOnlineState } from '@/shared/lib/offline'
 import { createAppQueryClient } from '@/shared/lib/queryClient'
 import { UpdatePrompt } from '@/shared/pwa/UpdatePrompt'
+import { DisplayCurrencyProvider } from '@/shared/ui/DisplayCurrencyProvider'
 import { HiddenAmountsProvider } from '@/shared/ui/HiddenAmountsProvider'
 import { ToastProvider } from '@/shared/ui/Toast'
 import { PersistedQueryProvider } from './PersistedQueryProvider'
@@ -23,11 +24,13 @@ export function App() {
       <AuthProvider>
         <UserDataGuard />
         <PersistedQueryProvider client={queryClient}>
-          <HiddenAmountsProvider>
-            <ToastProvider>
-              <RouterProvider router={router} />
-            </ToastProvider>
-          </HiddenAmountsProvider>
+          <DisplayCurrencyProvider>
+            <HiddenAmountsProvider>
+              <ToastProvider>
+                <RouterProvider router={router} />
+              </ToastProvider>
+            </HiddenAmountsProvider>
+          </DisplayCurrencyProvider>
         </PersistedQueryProvider>
         <UpdatePrompt />
       </AuthProvider>
