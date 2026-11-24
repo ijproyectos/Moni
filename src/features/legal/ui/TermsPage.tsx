@@ -44,8 +44,8 @@ export function TermsPage() {
 
       <LegalSection heading="Tu cuenta">
         <p>
-          Entrás a Moni con tu cuenta de Google. Sos responsable de lo que pase dentro de tu cuenta mientras esté
-          activa en tu dispositivo.
+          Entrás a Moni con tu cuenta de Google o de Apple. Sos responsable de lo que pase dentro de tu cuenta
+          mientras esté activa en tu dispositivo.
         </p>
       </LegalSection>
 
