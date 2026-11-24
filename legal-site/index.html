@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Moni — Legales</title>
+    <meta
+      name="description"
+      content="Términos de uso, Política de privacidad y Acerca de Moni, tu plata bajo control."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --forest: #0b3d2e;
+        --lime: #9addb6;
+        --cream: #f1eedd;
+        --gold: #e3b23c;
+        --canvas: #f1eedd;
+        --surface: #052319;
+        --text-muted: #566a5c;
+        --ink: #0c2418;
+        --card: #faf8ec;
+        --line: #dcd8bf;
+        --expense: #b5382a;
+        --income: #177246;
+        --max-w: 720px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --canvas: #0e1a13;
+          --card: #11241a;
+          --ink: #f1eedd;
+          --text-muted: #9fb3a4;
+          --line: #1e3528;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: 'Nunito', system-ui, sans-serif;
+        line-height: 1.6;
+        font-size: 16px;
+      }
+      a {
+        color: inherit;
+      }
+      .wrap {
+        max-width: var(--max-w);
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      header.hero {
+        background: var(--forest);
+        color: var(--cream);
+        padding: 40px 0 28px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .brand svg {
+        width: 72px;
+        height: auto;
+      }
+      .brand svg path,
+      .brand svg circle:not(.coin) {
+        stroke: var(--cream);
+      }
+      .brand .coin {
+        fill: var(--gold);
+      }
+      .brand .coin-mark {
+        fill: var(--forest);
+      }
+      .brand span {
+        font-weight: 800;
+        font-size: 26px;
+        letter-spacing: -0.01em;
+      }
+      header.hero h1 {
+        font-size: 28px;
+        font-weight: 800;
+        margin: 0 0 8px;
+        letter-spacing: -0.01em;
+      }
+      header.hero p {
+        margin: 0;
+        color: var(--lime);
+        font-weight: 600;
+      }
+      nav.toc {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--card);
+        border-bottom: 1px solid var(--line);
+      }
+      nav.toc .wrap {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        scrollbar-width: none;
+      }
+      nav.toc .wrap::-webkit-scrollbar {
+        display: none;
+      }
+      nav.toc a {
+        flex: none;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+      nav.toc a:hover,
+      nav.toc a:focus-visible {
+        background: var(--line);
+        color: var(--ink);
+      }
+      main {
+        padding: 36px 0 64px;
+      }
+      section.doc {
+        padding-top: 28px;
+      }
+      section.doc:first-of-type {
+        padding-top: 0;
+      }
+      section.doc + section.doc {
+        border-top: 1px solid var(--line);
+      }
+      section.doc > h2 {
+        font-size: 22px;
+        font-weight: 800;
+        margin: 0 0 4px;
+        scroll-margin-top: 64px;
+      }
+      .updated {
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 700;
+        margin: 0 0 20px;
+      }
+      article h3 {
+        font-size: 16px;
+        font-weight: 800;
+        margin: 22px 0 6px;
+      }
+      article p {
+        margin: 0 0 12px;
+        color: var(--text-muted);
+      }
+      article p:first-of-type {
+        margin-top: 0;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px 20px;
+        margin: 20px 0;
+      }
+      .card p {
+        margin: 0;
+      }
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 28px 0 48px;
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+      footer a {
+        font-weight: 700;
+        text-decoration: underline;
+      }
+      @media (max-width: 480px) {
+        header.hero {
+          padding: 28px 0 22px;
+        }
+        header.hero h1 {
+          font-size: 23px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="wrap">
+        <div class="brand">
+          <svg viewBox="4 4 316 112" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g fill="none" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 100 V70 Q20 50 40 50 Q60 50 60 70 V100 M60 70 Q60 50 80 50 Q100 50 100 70 V100" />
+              <circle cx="160" cy="75" r="25" />
+              <path d="M220 100 V70 Q220 50 240 50 Q260 50 260 70 V100" />
+              <path d="M296 100 V58" />
+            </g>
+            <circle class="coin" cx="296" cy="22" r="14" />
+            <rect class="coin-mark" x="291.5" y="17.5" width="9" height="9" rx="2" />
+          </svg>
+        </div>
+        <h1>Legales de Moni</h1>
+        <p>Tu plata, bajo control. Sin vueltas.</p>
+      </div>
+    </header>
+
+    <nav class="toc" aria-label="Secciones">
+      <div class="wrap">
+        <a href="#acerca-de">Acerca de</a>
+        <a href="#terminos">Términos de uso</a>
+        <a href="#privacidad">Privacidad</a>
+      </div>
+    </nav>
+
+    <main class="wrap">
+      <section class="doc" id="acerca-de">
+        <h2>Acerca de Moni</h2>
+        <article>
+          <p>
+            Moni es una app para anotar tus gastos e ingresos del día a día, armar presupuestos y metas de ahorro, y
+            repartir cuentas con amigos, pareja o grupos. La idea es que lleves tus cuentas sin vueltas, sola o
+            acompañada.
+          </p>
+          <div class="card">
+            <p>
+              Esta página reúne los Términos de uso y la Política de privacidad de Moni. El mismo contenido también
+              está disponible dentro de la app, en Configuración.
+            </p>
+          </div>
+        </article>
+      </section>
+
+      <section class="doc" id="terminos">
+        <h2>Términos de uso</h2>
+        <p class="updated">Última actualización: 23 de noviembre de 2026</p>
+        <article>
+          <h3>Qué es Moni</h3>
+          <p>
+            Moni te deja anotar gastos e ingresos, armar presupuestos y metas de ahorro, y compartir cuentas con
+            otras personas en grupos. Te damos una licencia personal, intransferible y revocable para usar la app: no
+            está permitido revenderla, copiarla ni intentar desarmarla.
+          </p>
+
+          <h3>No es asesoramiento financiero</h3>
+          <p>
+            Los resúmenes, proyecciones, conversiones de moneda y consejos del Asistente son estimaciones para
+            ayudarte a entender tus números, no recomendaciones profesionales. No tomes decisiones de inversión,
+            crédito o impuestos basándote solo en lo que te muestra Moni.
+          </p>
+
+          <h3>Funciones con inteligencia artificial</h3>
+          <p>
+            Algunas funciones (leer un ticket con la cámara, cargar un gasto escribiéndole a Moni por WhatsApp, o
+            charlar con el Asistente) usan un proveedor externo de inteligencia artificial para interpretar lo que
+            mandás. Puede equivocarse: revisá el monto, la categoría y la fecha antes de confirmar cualquier carga.
+          </p>
+
+          <h3>Tus datos son tuyos</h3>
+          <p>
+            Los gastos, ingresos, metas y grupos que cargás son tuyos. Podés exportarlos y, si lo necesitás, borrar
+            tu cuenta cuando quieras desde Configuración. Sos responsable de hacer tus propias copias si te importa
+            no perder esa información.
+          </p>
+
+          <h3>Tu cuenta</h3>
+          <p>Entrás a Moni con tu cuenta de Google o de Apple. Sos responsable de lo que pase dentro de tu cuenta mientras esté
+          activa en tu dispositivo.</p>
+
+          <h3>Grupos compartidos</h3>
+          <p>
+            Si formás parte de un grupo, las demás personas del grupo ven los gastos, tu nombre y tu foto dentro de
+            ese grupo. Moni no mueve ni transfiere dinero entre ustedes: solo lleva la cuenta de quién puso qué. Si
+            borrás tu cuenta estando en un grupo, lo que cargaste queda visible para los demás hasta que se saldan
+            las cuentas pendientes.
+          </p>
+
+          <h3>Mercado Pago</h3>
+          <p>
+            Moni se integra con Mercado Pago para que puedas traer tus movimientos automáticamente. Esa integración
+            es opcional y Moni no tiene ninguna afiliación con Mercado Pago más allá de usar su conexión para leer
+            tus pagos.
+          </p>
+
+          <h3>Disponibilidad y cambios</h3>
+          <p>
+            Hacemos lo posible para que Moni esté siempre disponible, pero no garantizamos un servicio sin
+            interrupciones. Podemos agregar, cambiar o discontinuar funciones; si el cambio es importante, te
+            avisamos dentro de la app.
+          </p>
+
+          <h3>Responsabilidad</h3>
+          <p>
+            Moni se ofrece "tal cual". En la medida en que lo permita la ley, no somos responsables por decisiones
+            que tomes basándote en la información de la app.
+          </p>
+
+          <h3>Dar de baja tu cuenta</h3>
+          <p>
+            Podés dejar de usar Moni cuando quieras y eliminar tu cuenta desde Configuración. Podemos suspender una
+            cuenta si detectamos un uso dañino, abusivo o ilegal de la app.
+          </p>
+
+          <h3>Propiedad intelectual</h3>
+          <p>Moni, su marca y su diseño nos pertenecen. La información que cargás (tus gastos, metas, etc.) es tuya.</p>
+
+          <h3>Ley aplicable</h3>
+          <p>
+            Estos términos se rigen por las leyes de la República Argentina, sin perjuicio de los derechos de
+            consumidor que te correspondan según el país donde vivís.
+          </p>
+
+          <h3>Cambios en estos términos</h3>
+          <p>
+            Si cambiamos algo relevante de estos términos, te lo avisamos dentro de la app. Seguir usando Moni
+            después de ese aviso implica que los aceptás.
+          </p>
+        </article>
+      </section>
+
+      <section class="doc" id="privacidad">
+        <h2>Política de privacidad</h2>
+        <p class="updated">Última actualización: 23 de noviembre de 2026</p>
+        <article>
+          <h3>Qué datos guardamos</h3>
+          <p>
+            Guardamos lo que hace falta para que Moni funcione: tu nombre y foto (los que trae tu cuenta de Google o
+            de Apple), tus gastos e ingresos, categorías, presupuestos, metas de ahorro, viajes y la información de
+            los grupos de los que participás. Si usás el Asistente, también guardamos tu conversación con él.
+          </p>
+
+          <h3>Cómo entrás a Moni</h3>
+          <p>
+            Iniciás sesión con tu cuenta de Google o de Apple; no manejamos ni guardamos tu contraseña, eso lo hace
+            cada uno de esos proveedores.
+          </p>
+
+          <h3>Funciones con inteligencia artificial</h3>
+          <p>
+            Cuando le sacás una foto a un ticket, le escribís un gasto a Moni por WhatsApp o usás el Asistente,
+            mandamos ese contenido a un proveedor externo de inteligencia artificial para que lo interprete. No lo
+            usamos para entrenar modelos de terceros ni lo compartimos con nadie más que ese proveedor y solo para
+            responder tu pedido.
+          </p>
+
+          <h3>Mercado Pago</h3>
+          <p>
+            Si conectás tu cuenta de Mercado Pago, leemos tus movimientos para ayudarte a cargarlos automáticamente.
+            No vemos tu clave ni tus datos de tarjeta: esa parte la maneja Mercado Pago.
+          </p>
+
+          <h3>Notificaciones</h3>
+          <p>
+            Si activás las notificaciones, usamos ese permiso para avisarte cosas como vencimientos, resúmenes o
+            movimientos de tus grupos. Podés desactivarlas cuando quieras desde Configuración o desde los permisos
+            de tu dispositivo.
+          </p>
+
+          <h3>Grupos compartidos</h3>
+          <p>
+            Dentro de un grupo, las demás personas ven tu nombre, tu foto y los gastos que cargás ahí. No vemos
+            razón para compartir esa información con nadie fuera del grupo.
+          </p>
+
+          <h3>Con quién compartimos datos</h3>
+          <p>
+            No vendemos tus datos. Los compartimos solo con los proveedores que necesitamos para que Moni funcione
+            (por ejemplo, el que aloja la base de datos, el que envía las notificaciones push, y los proveedores de
+            inteligencia artificial y de Mercado Pago mencionados arriba), y solo lo necesario para prestar ese
+            servicio.
+          </p>
+
+          <h3>Tus datos son tuyos</h3>
+          <p>
+            Podés exportar tus movimientos desde Configuración cuando quieras, y pedir que eliminemos tu cuenta y
+            tus datos. Si estás en un grupo, lo que cargaste ahí queda visible para los demás hasta que se saldan
+            las cuentas pendientes, como se explica en los Términos de uso.
+          </p>
+
+          <h3>Cambios en esta política</h3>
+          <p>
+            Si cambiamos algo relevante de esta política, te avisamos dentro de la app antes de que entre en
+            vigencia.
+          </p>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <p>
+          ¿Dudas sobre estos textos o sobre tus datos? Escribinos desde Ayuda y contacto, dentro de la app Moni
+          (Configuración → Ayuda).
+        </p>
+        <p>© 2026 Moni. Hecho en Argentina.</p>
+      </div>
+    </footer>
+  </body>
+</html>
