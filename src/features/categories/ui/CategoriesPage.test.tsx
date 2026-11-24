@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { ToastProvider } from '@/shared/ui/Toast'
 import { CategoriesPage } from './CategoriesPage'
@@ -12,9 +13,11 @@ const cat = (id: string, name: string) => ({
   color: '#2f9e8f',
   archivedAt: null,
 })
+const createCategory = vi.hoisted(() => vi.fn().mockResolvedValue('new-cat-id'))
+const createBudget = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 vi.mock('../api/useCategories', () => ({
   useCategories: () => ({ isLoading: false, isError: false, data: [cat('a', 'Súper'), cat('b', 'Café')] }),
-  useCreateCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateCategory: () => ({ mutateAsync: createCategory, isPending: false }),
   useUpdateCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useArchiveCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
@@ -25,7 +28,7 @@ vi.mock('@/features/dashboard/api/useMonthSummary', () => ({
 }))
 vi.mock('@/features/budgets/api/useBudgets', () => ({
   useBudgetStatus: () => ({ data: [] }),
-  useCreateBudget: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateBudget: () => ({ mutateAsync: createBudget, isPending: false }),
   useUpdateBudget: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useArchiveBudget: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
@@ -73,5 +76,16 @@ describe('CategoriesPage', () => {
     ]
     setup()
     expect(screen.getByRole('link', { name: /Tengo 2 movimientos sin categoría. ¿Los ordenamos\?/ })).toHaveAttribute('href', '/actividad')
+  })
+
+  it('creates the monthly limit right away when a new expense category sets one', async () => {
+    const user = userEvent.setup({ delay: null })
+    setup()
+    await user.click(screen.getByRole('button', { name: 'Nueva categoría' }))
+    await user.type(screen.getByLabelText('Nombre'), 'Delivery')
+    await user.type(screen.getByLabelText('Límite por mes'), '500')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    expect(createCategory).toHaveBeenCalled()
+    expect(createBudget).toHaveBeenCalledWith({ categoryId: 'new-cat-id', amountCents: 50_000 })
   })
 })
