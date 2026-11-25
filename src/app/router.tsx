@@ -17,6 +17,7 @@ import { PrivacyPage } from '@/features/legal/ui/PrivacyPage'
 import { TermsPage } from '@/features/legal/ui/TermsPage'
 import { AccountsPage } from '@/features/accounts/ui/AccountsPage'
 import { AhorrosPage } from '@/features/ahorros/ui/AhorrosPage'
+import { AhorrosYMetasPage } from '@/features/goals/ui/AhorrosYMetasPage'
 import { CategoriesPage } from '@/features/categories/ui/CategoriesPage'
 import { HomePage } from '@/features/dashboard/ui/HomePage'
 import { MonthReportPage } from '@/features/dashboard/ui/MonthReportPage'
@@ -128,6 +129,7 @@ export const appRoutes = [
   { path: 'cuentas', element: <AccountsPage /> },
   { path: 'categorias', element: <CategoriesPage /> },
   { path: 'ahorros', element: <AhorrosPage /> },
+  { path: 'ahorros-y-metas', element: <AhorrosYMetasPage /> },
   { path: 'perfil', element: <ProfilePage /> },
   { path: 'perfil/configuracion', element: <SettingsPage /> },
   { path: 'perfil/datos', element: <PersonalDataPage /> },

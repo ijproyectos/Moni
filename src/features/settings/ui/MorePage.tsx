@@ -2,14 +2,13 @@ import { ChevronRight } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useAhorros } from '@/features/ahorros/api/useAhorros'
-import { balanceOf, formatSaving } from '@/features/ahorros/domain/ahorros'
+import { balanceOf } from '@/features/ahorros/domain/ahorros'
 import { useFinancialHealth } from '@/features/health/api/useFinancialHealth'
 import { BAND_LABELS } from '@/features/health/domain/healthScore'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { useAnts } from '@/features/insights/api/useAnts'
 import { useSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
-import { useSecondaryCurrency } from '@/features/settings/api/useSecondaryCurrency'
 import { useTrips } from '@/features/trips/api/useTrips'
 import { daysBetween } from '@/features/trips/domain/dates'
 import { tripStatus } from '@/features/trips/domain/trip'
@@ -120,9 +119,7 @@ export function MorePage() {
   const ants = useAnts(today)
   const ahorros = useAhorros()
   const health = useFinancialHealth()
-  const { usesUsd } = useSecondaryCurrency()
   const arsSaved = balanceOf(ahorros.data ?? [], 'ARS')
-  const usdSaved = balanceOf(ahorros.data ?? [], 'USD')
 
   const goalTotals = activeTotals(savings.data?.goals ?? [])
   const hasGoals = goalTotals.targetCents > 0
@@ -145,18 +142,20 @@ export function MorePage() {
         <h1 className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight tracking-[-0.02em]">Explorar</h1>
       </header>
 
-      <Link to="/metas" className={cn(CARD, CREAM, 'flex items-center gap-4 p-4', FOCUS)}>
+      <Link to="/ahorros-y-metas" className={cn(CARD, CREAM, 'flex items-center gap-4 p-4', FOCUS)}>
         <span aria-hidden="true" className="shrink-0">
           <ProgressRing value={goalShare} label={`${Math.floor(goalShare * 100)}%`} size={64} stroke={7} className={cn(!hasGoals && 'opacity-60')} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[17px] font-extrabold leading-5">Metas de ahorro</span>
+          <span className="block text-[17px] font-extrabold leading-5">Ahorros y metas</span>
           <span className="mt-0.5 block text-[13px] leading-[18px] text-text-muted">
             {hasGoals
-              ? `${big(goalTotals.reservedCents)} de ${big(goalTotals.targetCents)}`
-              : savings.isLoading
+              ? `${big(goalTotals.reservedCents)} en metas · ${big(arsSaved)} ahorrados`
+              : savings.isLoading || ahorros.isLoading
                 ? '…'
-                : 'Creá tu primera meta'}
+                : arsSaved > 0
+                  ? `${big(arsSaved)} ahorrados`
+                  : 'Creá tu primera meta'}
           </span>
         </span>
         <Go />
@@ -177,15 +176,6 @@ export function MorePage() {
       </Link>
 
       <ul className="grid grid-cols-2 gap-3">
-        <li className="flex">
-          <Tile
-            to="/ahorros"
-            title="Ahorros"
-            surface={CREAM}
-            value={ahorros.isLoading ? '…' : big(arsSaved)}
-            sub={usdSaved > 0 ? formatSaving(usdSaved, 'USD') : usesUsd ? 'Pesos y dólares' : 'Lo que ahorrás'}
-          />
-        </li>
         <li className="flex">
           <Tile to="/categorias" title="Categorías" surface={SOFT_GREEN} value="Límite" sub="por mes" />
         </li>

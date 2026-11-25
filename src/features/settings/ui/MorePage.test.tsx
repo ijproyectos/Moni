@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
 import { MorePage } from './MorePage'
@@ -36,10 +36,6 @@ vi.mock('@/features/insights/api/useAnts', () => ({
 const subsData = vi.hoisted(() => ({ current: [] as unknown[] }))
 const antsData = vi.hoisted(() => ({ current: 0 }))
 const ahorrosData = vi.hoisted(() => ({ current: [] as unknown[] }))
-const currencyData = vi.hoisted(() => ({ usesUsd: true }))
-vi.mock('@/features/settings/api/useSecondaryCurrency', () => ({
-  useSecondaryCurrency: () => ({ usesUsd: currencyData.usesUsd }),
-}))
 vi.mock('@/features/ahorros/api/useAhorros', () => ({
   useAhorros: () => ({ data: ahorrosData.current, isLoading: false }),
 }))
@@ -67,13 +63,12 @@ describe('Explorar', () => {
     ahorrosData.current = []
   })
 
-  it('has the header and the long cards (Metas, Ahorros, Categorías, Salud) and the four tiles, each a whole link', () => {
+  it('has the header and the long cards (Ahorros y metas, Categorías, Salud) and the tiles, each a whole link', () => {
     renderPage()
     expect(screen.getByRole('heading', { name: 'Explorar' })).toBeInTheDocument()
     expect(screen.getByText('Tu plata de un vistazo')).toBeInTheDocument()
     const link = (re: RegExp, href: string) => expect(screen.getByRole('link', { name: re })).toHaveAttribute('href', href)
-    link(/^Metas de ahorro/, '/metas')
-    link(/^Ahorros/, '/ahorros')
+    link(/^Ahorros y metas/, '/ahorros-y-metas')
     link(/^Categorías/, '/categorias')
     link(/^Salud financiera/, '/salud')
     link(/^Pagos recurrentes/, '/recurrentes')
@@ -81,32 +76,25 @@ describe('Explorar', () => {
     link(/^Informes/, '/este-mes')
     link(/^Viajes/, '/viajes')
     expect(screen.queryByRole('link', { name: /^Presupuesto/ })).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Metas de ahorro$/ })).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Ahorros$/ })).toBeNull()
     expect(screen.getByRole('link', { name: /^Categorías/ })).toHaveTextContent(/Límite.*por mes/)
     expect(screen.getByRole('link', { name: /^Salud financiera/ })).toHaveTextContent('68 de 100')
     expect(screen.queryByRole('button', { name: 'Hablá con Moni' })).toBeNull()
   })
 
-  it('shows the savings of each currency separately, never mixed, and an empty state without them', () => {
-    renderPage()
-    expect(screen.getByRole('link', { name: /^Ahorros/ })).toHaveTextContent('Pesos y dólares')
-    currencyData.usesUsd = false
-    cleanup()
-    renderPage()
-    expect(screen.getByRole('link', { name: /^Ahorros/ })).not.toHaveTextContent('dólares')
-    currencyData.usesUsd = true
+  it('shows what was saved (ARS) in the unified Ahorros y metas card', () => {
     ahorrosData.current = [
       { id: '1', currency: 'ARS', kind: 'opening', amountCents: 150_000_00, status: 'posted' },
       { id: '2', currency: 'USD', kind: 'opening', amountCents: 300_00, status: 'posted' },
     ]
     renderPage()
-    const tiles = screen.getAllByRole('link', { name: /^Ahorros/ })
-    expect(tiles[tiles.length - 1]).toHaveTextContent('$150.000')
-    expect(tiles[tiles.length - 1]).toHaveTextContent('US$ 300')
+    expect(screen.getByRole('link', { name: /^Ahorros y metas/ })).toHaveTextContent('$150.000 ahorrados')
   })
 
   it('shows only the tools: no ¿Me conviene?, simulator or Avisos, and no empty "Más"', () => {
     renderPage()
-    expect(screen.getAllByRole('link')).toHaveLength(8)
+    expect(screen.getAllByRole('link')).toHaveLength(7)
     for (const name of [/Simulador/, /Avisos de Moni/, /Tarjetas de crédito|^Medios de pago/]) {
       expect(screen.queryByRole('link', { name })).toBeNull()
     }
@@ -136,7 +124,7 @@ describe('Explorar', () => {
   it('says "sin hormigas" and does not invent a budget without data', () => {
     renderPage()
     expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('sin hormigas')
-    expect(screen.getByRole('link', { name: /^Metas de ahorro/ })).toHaveTextContent('Creá tu primera meta')
+    expect(screen.getByRole('link', { name: /^Ahorros y metas/ })).toHaveTextContent('Creá tu primera meta')
     expect(screen.getByRole('link', { name: /^Viajes/ })).toHaveTextContent('todavía no tenés viajes')
     expect(screen.getByRole('link', { name: /^Pagos recurrentes/ })).toHaveTextContent('no tenés pagos próximos')
     // None of the example figures of the design may show up as if they were real.
