@@ -7,7 +7,7 @@ import { useCategories } from '@/features/categories/api/useCategories'
 import { parseAmountInput } from '@/shared/lib/amountInput'
 import { formatCompactDate, formatMonthShortYear } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { todayIso } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
@@ -40,6 +40,7 @@ export function NewInstallmentSheet({
   monthlyNow: number
   onClose: () => void
 }) {
+  const formatMoney = useFormatMoney()
   const toast = useToast()
   const accounts = useAccounts()
   const categories = useCategories('expense')
@@ -229,10 +230,10 @@ export function NewInstallmentSheet({
             <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-cream">
               Moni calcula
             </p>
-            <p className="font-display text-[24px] font-extrabold">{formatArs(per)} por mes</p>
+            <p className="font-display text-[24px] font-extrabold">{formatMoney(per)} por mes</p>
             <p className="text-[15px] leading-5 text-text-muted-on-dark">
               Terminás de pagar en {formatMonthShortYear(last.dueOn).replace(' de ', ' ')}. Tus
-              cuotas pasan a {formatArs(monthlyNow + per)} por mes. Se suman {formatArs(committed)}{' '}
+              cuotas pasan a {formatMoney(monthlyNow + per)} por mes. Se suman {formatMoney(committed)}{' '}
               a tu deuda desde hoy, y cada cuota cuenta en el gasto de su mes.
             </p>
           </div>

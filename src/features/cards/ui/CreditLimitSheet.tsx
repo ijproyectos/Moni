@@ -1,5 +1,5 @@
 import { TriangleAlert } from 'lucide-react'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import type { CreditLimitWarning } from '../domain/creditLimit'
 
@@ -20,6 +20,7 @@ export function CreditLimitSheet({
   onCancel: () => void
   onContinue: () => void
 }) {
+  const formatMoney = useFormatMoney()
   return (
     <DecisionSheet
       icon={<TriangleAlert className="size-6" />}
@@ -43,12 +44,12 @@ export function CreditLimitSheet({
         Podés continuar: el banco puede rechazarla.
       </p>
       <dl className="mt-4 divide-y divide-line rounded-[20px] border border-line bg-card px-4 text-[16px]">
-        <Row label="Límite" value={formatArs(warning.limitCents)} />
-        <Row label="Deuda actual" value={formatArs(warning.debtCents)} />
-        <Row label="Esta compra" value={formatArs(warning.amountCents)} />
+        <Row label="Límite" value={formatMoney(warning.limitCents)} />
+        <Row label="Deuda actual" value={formatMoney(warning.debtCents)} />
+        <Row label="Esta compra" value={formatMoney(warning.amountCents)} />
         <Row
           label="Disponible resultante"
-          value={formatArs(warning.resultingAvailableCents)}
+          value={formatMoney(warning.resultingAvailableCents)}
           danger
         />
       </dl>

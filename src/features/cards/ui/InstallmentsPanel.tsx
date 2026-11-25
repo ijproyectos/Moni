@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { formatMonthShortYear, monthNameOf } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { IconTile, MoniGlyph, OptionRow, Panel, ProgressBar } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -14,6 +14,7 @@ import type { InstallmentPlanView } from '../domain/plans'
 
 /** Screen 076 — installment purchases of the person's credit cards, from the database. */
 export function InstallmentsPanel() {
+  const formatMoney = useFormatMoney()
   const accounts = useAccounts()
   const voidPlan = useVoidInstallmentPlan()
   const toast = useToast()
@@ -55,12 +56,12 @@ export function InstallmentsPanel() {
         </p>
         <p className="flex items-baseline gap-2">
           <span className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
-            {formatArs(monthly)}
+            {formatMoney(monthly)}
           </span>
           <span className="text-[17px] text-text-muted-on-dark">por mes</span>
         </p>
         <p className="text-[16px] text-text-muted-on-dark">
-          En total te quedan {formatArs(left)} por pagar
+          En total te quedan {formatMoney(left)} por pagar
         </p>
       </section>
 
@@ -83,7 +84,7 @@ export function InstallmentsPanel() {
             </span>
             <span className="text-right">
               <span className="block text-[19px] font-extrabold">
-                {formatArs(c.installmentCents)}
+                {formatMoney(c.installmentCents)}
               </span>
               <span className="block text-[14px] text-text-muted">por mes</span>
             </span>
@@ -93,7 +94,7 @@ export function InstallmentsPanel() {
             <span>
               Cuota {c.paid} de {c.count}
             </span>
-            <span>Faltan {formatArs(c.remainingCents)}</span>
+            <span>Faltan {formatMoney(c.remainingCents)}</span>
             <button
               type="button"
               aria-label={`Anular ${c.description}`}
@@ -117,8 +118,8 @@ export function InstallmentsPanel() {
           <p className="text-[16px] leading-6">
             <strong className="font-extrabold">Sugerido:</strong> en {monthNameOf(first.endsOn)}{' '}
             dejás de pagar {first.description.toLowerCase()} y liberás{' '}
-            {formatArs(first.installmentCents)} por mes. En {monthNameOf(second.endsOn)},{' '}
-            {formatArs(second.installmentCents)} más.
+            {formatMoney(first.installmentCents)} por mes. En {monthNameOf(second.endsOn)},{' '}
+            {formatMoney(second.installmentCents)} más.
           </p>
         </Panel>
       )}

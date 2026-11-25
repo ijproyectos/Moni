@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { formatCompactDate } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { SectionLabel } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { useSetSubscriptionStatus } from '../api/useSubscriptions'
 import { chargesOf, type Subscription, type SubscriptionCharge } from '../domain/subscription'
 import { ChargeRow } from './ChargeRow'
@@ -37,6 +37,7 @@ export function SubscriptionDetailSheet({
   onClose: () => void
 }) {
   const toast = useToast()
+  const formatMoney = useFormatMoney()
   const setStatus = useSetSubscriptionStatus()
   const [confirmCancel, setConfirmCancel] = useState(false)
   const own = chargesOf(charges, subscription.id)
@@ -61,7 +62,7 @@ export function SubscriptionDetailSheet({
           <ServiceLogo serviceId={s.serviceId} size="lg" />
           <span className="min-w-0 flex-1">
             <span className="block font-display text-[26px] font-extrabold leading-8">
-              {formatArs(s.amountCents)}
+              {formatMoney(s.amountCents)}
             </span>
             <span className="block text-[15px] leading-5 text-text-muted">
               {s.period === 'yearly' ? 'por año' : 'por mes'}

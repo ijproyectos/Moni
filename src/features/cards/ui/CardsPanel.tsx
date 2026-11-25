@@ -11,7 +11,7 @@ import {
 import { useExpectedIncome } from '@/features/dashboard/api/useExpectedIncome'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
 import { formatDayMonth, formatMonthName, formatMonthShortYear, monthNameOf } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { todayIso } from '@/shared/lib/month'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
@@ -59,6 +59,7 @@ function CardTab({ card, active, onSelect }: { card: Account; active: boolean; o
 }
 
 function Bars({ card }: { card: Account }) {
+  const formatMoney = useFormatMoney()
   const overview = useCardOverview(card.id)
   const income = useExpectedIncome()
   const statements = overview.data?.statements ?? []
@@ -95,7 +96,7 @@ function Bars({ card }: { card: Account }) {
             <div
               role="img"
               aria-label={`Próximos ${bars.length} resúmenes: ${bars
-                .map((b) => `${monthLabel(b)} ${formatArs(b.totalCents)}`)
+                .map((b) => `${monthLabel(b)} ${formatMoney(b.totalCents)}`)
                 .join(', ')}`}
               className="relative grid h-24 items-end gap-3.5 px-1.5"
               style={{ gridTemplateColumns: `repeat(${Math.max(bars.length, 1)}, minmax(0, 1fr))` }}
@@ -212,6 +213,7 @@ export function CardsPanel({
   onEdit: (card: Account) => void
   onAdd: () => void
 }) {
+  const formatMoney = useFormatMoney()
   const accounts = useAccounts()
   const { openNew } = useMovementSheet()
   const cards = (accounts.data ?? []).filter(isCreditCard)
@@ -281,7 +283,7 @@ export function CardsPanel({
               {card.closingDay !== null && card.dueDay !== null
                 ? `Cierra el ${card.closingDay} · vence el ${card.dueDay}`
                 : 'Sin día de cierre y vencimiento'}
-              {card.creditLimitCents !== null && ` · límite ${formatArs(card.creditLimitCents)}`}
+              {card.creditLimitCents !== null && ` · límite ${formatMoney(card.creditLimitCents)}`}
             </span>
           </span>
           <span className="text-right">

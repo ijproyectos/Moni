@@ -1,7 +1,7 @@
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { formatCompactDate, formatDayMonth, formatRelativeDay } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { todayIso } from '@/shared/lib/month'
 import { cn } from '@/shared/ui/cn'
 import { Button } from '@/shared/ui/Button'
@@ -29,6 +29,7 @@ export function CardSummarySection({
   /** Opens a transfer to this card; the amount is prefilled when given. */
   onPay: (amountCents?: number) => void
 }) {
+  const formatMoney = useFormatMoney()
   const overview = useCardOverview(accountId)
   if (overview.isLoading) return <Skeleton className="h-40" />
   if (overview.isError || !overview.data) {
@@ -45,7 +46,7 @@ export function CardSummarySection({
       <Figures data={data} />
       {data.billedCents > 0 && (
         <Button variant="dark" onClick={() => onPay(data.billedCents)}>
-          Pagar lo facturado · {formatArs(data.billedCents)}
+          Pagar lo facturado · {formatMoney(data.billedCents)}
         </Button>
       )}
       {!data.configured && (
@@ -76,6 +77,7 @@ export function CardSummarySection({
 }
 
 function Figures({ data }: { data: CardOverview }) {
+  const formatMoney = useFormatMoney()
   const rows: { label: string; hint?: string; cents: number; strong?: boolean; tone?: 'danger' }[] =
     [
       {
@@ -105,13 +107,13 @@ function Figures({ data }: { data: CardOverview }) {
               <span className="block text-[13px] font-normal text-text-muted">{row.hint}</span>
             )}
           </dt>
-          <dd className="font-extrabold">{formatArs(row.cents)}</dd>
+          <dd className="font-extrabold">{formatMoney(row.cents)}</dd>
         </div>
       ))}
       {data.inFavorCents > 0 && (
         <div className="flex items-center justify-between gap-3 py-3">
           <dt className="text-text-muted">Saldo a favor</dt>
-          <dd className="font-extrabold">{formatArs(data.inFavorCents)}</dd>
+          <dd className="font-extrabold">{formatMoney(data.inFavorCents)}</dd>
         </div>
       )}
       <div className="flex items-center justify-between gap-3 py-3">
@@ -120,7 +122,7 @@ function Figures({ data }: { data: CardOverview }) {
           <span className="block text-[13px] font-normal text-text-muted">
             {data.creditLimitCents === null
               ? 'Cargá un límite para verlo'
-              : `Límite ${formatArs(data.creditLimitCents)} menos toda la deuda`}
+              : `Límite ${formatMoney(data.creditLimitCents)} menos toda la deuda`}
           </span>
         </dt>
         <dd
@@ -129,7 +131,7 @@ function Figures({ data }: { data: CardOverview }) {
             data.availableCents !== null && data.availableCents < 0 && 'text-expense',
           )}
         >
-          {data.availableCents === null ? '—' : formatArs(data.availableCents)}
+          {data.availableCents === null ? '—' : formatMoney(data.availableCents)}
         </dd>
       </div>
     </dl>
@@ -137,6 +139,7 @@ function Figures({ data }: { data: CardOverview }) {
 }
 
 function StatementRow({ accountId, statement }: { accountId: string; statement: Statement }) {
+  const formatMoney = useFormatMoney()
   const [open, setOpen] = useState(false)
   const title = statement.closingOn
     ? `Resumen del ${formatCompactDate(statement.closingOn)}`
@@ -161,13 +164,13 @@ function StatementRow({ accountId, statement }: { accountId: string; statement: 
         </span>
         <span className="text-right">
           <span className="block text-[16px] font-extrabold">
-            {formatArs(statement.chargedCents)}
+            {formatMoney(statement.chargedCents)}
           </span>
           {statement.paidCents > 0 && (
             <span className="block text-[13px] text-text-muted">
               {statement.remainingCents === 0
                 ? 'Pagado'
-                : `Pagaste ${formatArs(statement.paidCents)} · falta ${formatArs(statement.remainingCents)}`}
+                : `Pagaste ${formatMoney(statement.paidCents)} · falta ${formatMoney(statement.remainingCents)}`}
             </span>
           )}
         </span>
@@ -190,7 +193,7 @@ function StatementRow({ accountId, statement }: { accountId: string; statement: 
                   ? ` · cuota ${t.installmentNumber}/${t.installmentsTotal}`
                   : ` · ${formatRelativeDay(t.occurredOn, today)}`}
               </span>
-              <span className="font-extrabold">{formatArs(t.amountCents)}</span>
+              <span className="font-extrabold">{formatMoney(t.amountCents)}</span>
             </li>
           ))}
         </ul>

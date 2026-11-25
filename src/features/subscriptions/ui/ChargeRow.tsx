@@ -1,9 +1,9 @@
 import { AlertTriangle } from 'lucide-react'
 import { formatCompactDate, formatDayMonth } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
 import { addDays } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import {
   isEffectiveCharge,
   type Subscription,
@@ -46,6 +46,7 @@ export function ChargeRow({
   onLink: (charge: SubscriptionCharge) => void
   onDismiss: (charge: SubscriptionCharge) => void
 }) {
+  const formatMoney = useFormatMoney()
   const effective = isEffectiveCharge(charge)
   const status = charge.voidedElsewhere
     ? 'Sin cobro'
@@ -76,7 +77,7 @@ export function ChargeRow({
               !effective && 'text-text-muted line-through',
             )}
           >
-            {formatArs(charge.amountCents)}
+            {formatMoney(charge.amountCents)}
           </span>
           <span className="block text-[13px] text-text-muted">{status}</span>
         </span>
@@ -96,7 +97,7 @@ export function ChargeRow({
           <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-expense" />
           <span>
             Este cobro dejó {subscription.accountName} en saldo negativo
-            {charge.balanceAfterCents !== null && ` (${formatArs(charge.balanceAfterCents)})`}. Si
+            {charge.balanceAfterCents !== null && ` (${formatMoney(charge.balanceAfterCents)})`}. Si
             en realidad no se cobró, abrí la suscripción y anulá el cobro.
           </span>
         </div>
@@ -119,7 +120,7 @@ export function ChargeRow({
         <div role="alert" className="flex flex-col gap-2 rounded-[14px] bg-tint-gold p-3">
           <p className="text-[14px] leading-5">
             <strong className="font-extrabold">Posible duplicado:</strong> ya tenías un gasto de{' '}
-            {formatArs(duplicate.amountCents)} el {formatDayMonth(duplicate.occurredOn)}
+            {formatMoney(duplicate.amountCents)} el {formatDayMonth(duplicate.occurredOn)}
             {duplicate.note ? ` («${duplicate.note}»)` : ''}.
           </p>
           <div className="grid grid-cols-2 gap-2">

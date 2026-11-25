@@ -4,13 +4,13 @@ import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
 import { formatCompactDate, formatRelativeDay } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
 import { Button } from '@/shared/ui/Button'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { SectionLabel } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import {
   useDismissDuplicate,
   useLinkChargeToExpense,
@@ -37,6 +37,7 @@ const HISTORY_SHOWN = 12
 /** Screen 074 — Suscripciones, saved in the database and charged by the server on their dates. */
 export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
   const toast = useToast()
+  const formatMoney = useFormatMoney()
   const query = useSubscriptions()
   const notCharged = useMarkChargeNotCharged()
   const link = useLinkChargeToExpense()
@@ -117,8 +118,8 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
           </span>
         </p>
         <p className="text-[16px] text-text-muted-on-dark">
-          {formatArs(monthlyEstimateCents(subscriptions))} por mes ·{' '}
-          {formatArs(yearlyEstimateCents(subscriptions))} al año
+          {formatMoney(monthlyEstimateCents(subscriptions))} por mes ·{' '}
+          {formatMoney(yearlyEstimateCents(subscriptions))} al año
         </p>
         <p className="mt-1 text-[13px] text-text-muted-on-dark">
           Estimado en pesos, según lo que cargaste.
@@ -269,7 +270,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
       {reverting && (
         <ConfirmDialog
           title="¿Anular este cobro?"
-          message={`Moni anula el gasto de ${formatArs(reverting.amountCents)} del ${formatCompactDate(reverting.dueOn)} y devuelve el importe a la cuenta. El cobro queda en el historial como «Sin cobro». Si el servicio sí te cobró, no lo anules.`}
+          message={`Moni anula el gasto de ${formatMoney(reverting.amountCents)} del ${formatCompactDate(reverting.dueOn)} y devuelve el importe a la cuenta. El cobro queda en el historial como «Sin cobro». Si el servicio sí te cobró, no lo anules.`}
           confirmLabel="Anular cobro"
           cancelLabel="Volver"
           isBusy={notCharged.isPending}
@@ -296,6 +297,7 @@ function SubscriptionRow({
   muted?: boolean
   onOpen: () => void
 }) {
+  const formatMoney = useFormatMoney()
   const when =
     s.status === 'active'
       ? `cobra ${formatRelativeDay(s.nextChargeOn, today).toLowerCase()}`
@@ -322,7 +324,7 @@ function SubscriptionRow({
           </span>
         </span>
         <span className="text-right">
-          <span className="block text-[18px] font-extrabold">{formatArs(s.amountCents)}</span>
+          <span className="block text-[18px] font-extrabold">{formatMoney(s.amountCents)}</span>
           <span className="block text-[14px] text-text-muted">
             {s.period === 'yearly' ? 'por año' : 'por mes'}
           </span>
