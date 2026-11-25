@@ -18,7 +18,7 @@ import mascotUrl from '@/assets/mascot/personaje_carga-de-dinero.svg'
 import { useGoalNames } from '@/features/goals/api/useSavings'
 import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
 import { formatDayMonth } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { todayIso } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
@@ -144,6 +144,7 @@ const KIND_ICONS: Record<DestinationKind, { icon: LucideIcon; bg: string; color:
 
 // Screens 071 / 072 — ¿A dónde va?
 export function AguinaldoSplitPage() {
+  const formatMoney = useFormatMoney()
   const navigate = useNavigate()
   const plan = useAguinaldo()
   const goals = useGoalNames()
@@ -170,12 +171,12 @@ export function AguinaldoSplitPage() {
             {left === 0
               ? 'Todo repartido'
               : left > 0
-                ? `Faltan ${formatArs(left)}`
-                : `Te pasaste ${formatArs(-left)}`}
+                ? `Faltan ${formatMoney(left)}`
+                : `Te pasaste ${formatMoney(-left)}`}
           </span>
         </div>
         <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold">
-          {formatArs(plan.amountCents)}
+          {formatMoney(plan.amountCents)}
         </p>
         <div className="ml-auto mt-2 flex h-3 w-1/2 gap-1" aria-hidden="true">
           {plan.destinations.map((d) => (
@@ -338,6 +339,7 @@ export function AguinaldoSplitPage() {
 
 // Screen 073 — Aguinaldo listo.
 export function AguinaldoDonePage() {
+  const formatMoney = useFormatMoney()
   const navigate = useNavigate()
   const plan = useAguinaldo()
   return (
@@ -369,14 +371,14 @@ export function AguinaldoDonePage() {
                 style={{ backgroundColor: themedColor(d.color) }}
               />
               <span className="flex-1">{d.name}</span>
-              <strong className="font-extrabold">{formatArs(d.cents)}</strong>
+              <strong className="font-extrabold">{formatMoney(d.cents)}</strong>
             </li>
           ))}
         </ul>
         <div className="mt-3 flex items-center justify-between border-t border-ink pt-3">
           <strong className="text-[17px] font-extrabold">Total</strong>
           <strong className="font-display text-[24px] font-extrabold">
-            {formatArs(plan.amountCents)}
+            {formatMoney(plan.amountCents)}
           </strong>
         </div>
       </Panel>

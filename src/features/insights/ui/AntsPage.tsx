@@ -12,7 +12,7 @@ import { Kicker } from '@/shared/ui/Kicker'
 import { MentaHeader } from '@/shared/ui/MentaHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { useAnts } from '../api/useAnts'
 import { useAntWeekdays } from '../api/useAntWeekdays'
 import { antKey, monthChangePercent, type AntExpenses, type AntGroup } from '../domain/ants'
@@ -87,6 +87,7 @@ function AntsContent({
   previousData: AntExpenses | undefined
   isCurrentMonth: boolean
 }) {
+  const formatMoney = useFormatMoney()
   const insight = antInsight(data)
   const pct = monthChangePercent(data, previousData)
   const weekdays = useAntWeekdays(data, month)
@@ -148,7 +149,7 @@ function AntsContent({
         ))}
       </ul>
       <p className="px-1 text-[12px] text-text-muted">
-        Gastos de hasta {formatArs(data.thresholdCents)} que aparecen 3 veces o más.
+        Gastos de hasta {formatMoney(data.thresholdCents)} que aparecen 3 veces o más.
       </p>
 
       {savings && (

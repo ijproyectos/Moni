@@ -4,7 +4,7 @@ import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotUrl from '@/assets/mascot/expresion_picaro.svg'
 import { usePeriodSummary } from '@/features/dashboard/api/useMonthSummary'
 import { formatDayMonth } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { argentinaTodayIso, monthStart } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
@@ -33,6 +33,7 @@ function comparisonText(c: WeeklyComparison): string {
 // Screen 032 — Resumen semanal. Real data for the current week (Monday to Sunday, Argentina time)
 // against the previous one. There is no scheduling or push yet: the screen is opened by hand.
 export function WeeklyDigestPage() {
+  const formatMoney = useFormatMoney()
   const navigate = useNavigate()
   const today = argentinaTodayIso()
   const week = weekOf(today)
@@ -90,7 +91,7 @@ export function WeeklyDigestPage() {
             </p>
             <div className="mt-1 flex items-center justify-between gap-3">
               <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
-                {formatArs(current.data.expenseCents)}
+                {formatMoney(current.data.expenseCents)}
               </p>
               {comparison.deltaPercent !== null && comparison.direction !== 'same' && (
                 <span className="flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[15px] font-extrabold text-on-bright">
@@ -109,7 +110,7 @@ export function WeeklyDigestPage() {
             </p>
             {previous.data && (
               <p className="text-[15px] text-text-muted-on-dark">
-                Semana pasada: {formatArs(previous.data.expenseCents)}
+                Semana pasada: {formatMoney(previous.data.expenseCents)}
               </p>
             )}
           </section>
@@ -133,7 +134,7 @@ export function WeeklyDigestPage() {
                     <span className="min-w-0 flex-1 truncate text-[17px] font-extrabold">
                       {c.name}
                     </span>
-                    <span className="text-[17px] font-extrabold">{formatArs(c.amountCents)}</span>
+                    <span className="text-[17px] font-extrabold">{formatMoney(c.amountCents)}</span>
                   </li>
                 ))}
               </ul>
@@ -154,7 +155,7 @@ export function WeeklyDigestPage() {
             {ants.data
               ? ants.data.groups.length === 0
                 ? 'Este mes no se repite ninguno. Bien ahí.'
-                : `${formatArs(ants.data.monthTotalCents)} este mes en cositas chicas que se repiten.`
+                : `${formatMoney(ants.data.monthTotalCents)} este mes en cositas chicas que se repiten.`
               : 'Mirá las cositas chicas que se repiten.'}
           </span>
         </span>
