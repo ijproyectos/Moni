@@ -79,3 +79,32 @@ describe('SwipeRow in both directions', () => {
     expect(row.style.transform).toBe('translateX(0px)')
   })
 })
+
+describe('SwipeRow: one open row at a time', () => {
+  function two() {
+    render(
+      <>
+        <SwipeRow actions={[{ label: 'Eliminar', tone: 'danger', ariaLabel: 'Eliminar A', onPress: () => undefined }]}>
+          <span>Fila A</span>
+        </SwipeRow>
+        <SwipeRow actions={[{ label: 'Eliminar', tone: 'danger', ariaLabel: 'Eliminar B', onPress: () => undefined }]}>
+          <span>Fila B</span>
+        </SwipeRow>
+        <p>Afuera</p>
+      </>,
+    )
+  }
+  const face = (text: string) => screen.getByText(text).parentElement as HTMLElement
+
+  it('opening a second row closes the first, and a tap outside closes the open one', async () => {
+    two()
+    await userEvent.tab() // focusing the first action opens its row
+    expect(face('Fila A').style.transform).toBe('translateX(-76px)')
+    await userEvent.tab()
+    await userEvent.tab()
+    expect(face('Fila B').style.transform).toBe('translateX(-76px)')
+    expect(face('Fila A').style.transform).toBe('translateX(0px)')
+    await userEvent.click(screen.getByText('Afuera'))
+    expect(face('Fila B').style.transform).toBe('translateX(0px)')
+  })
+})

@@ -1,4 +1,4 @@
-import { Archive, Bell, ChevronRight, KeyRound, Trash2, UsersRound, type LucideIcon } from 'lucide-react'
+import { Bell, ChevronRight, KeyRound, Trash2, UsersRound, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
@@ -37,10 +37,8 @@ interface GroupsScreenProps {
   onOpenDebts?: (tab: 'owe' | 'owed') => void
   /** Latest real expense of the most recently active group; omitted when there is none. */
   lastExpense?: LastExpenseRow | null
-  /** Swipe right: archive for everybody (administrators only; opens its confirmation). */
-  onArchive?: (group: ListedGroup) => void
-  /** Swipe left: remove the group from my list only (opens its confirmation). */
-  onHide?: (group: ListedGroup) => void
+  /** Swipe left: "Eliminar" (administrators) or "Salir del grupo" (everybody else); it only opens that confirmation. */
+  onRemove?: (group: ListedGroup) => void
   /** Unread notices of Grupos (the bell shows them); the bell is not drawn when it is not given. */
   noticeCount?: number
 }
@@ -148,8 +146,7 @@ export function GroupsScreen({
   onNewGroup,
   onOpenDebts,
   lastExpense,
-  onArchive,
-  onHide,
+  onRemove,
   noticeCount,
 }: GroupsScreenProps) {
   const { owedCents: owed, oweCents: owe } = balanceTotals(totalsFrom ?? groups ?? [])
@@ -257,19 +254,14 @@ export function GroupsScreen({
               const net = netLabel(group)
               return (
                 <li key={group.id}>
-                  {onArchive || onHide ? (
+                  {onRemove ? (
                     <SwipeRow
                       surfaceClassName="bg-card"
-                      leadingAction={
-                        onArchive && group.role === 'owner'
-                          ? { label: 'Archivar', tone: 'primary', icon: <Archive className="size-5" strokeWidth={2.2} />, ariaLabel: `Archivar ${group.name} para todos`, onPress: () => onArchive(group) }
-                          : undefined
-                      }
-                      actions={
-                        onHide
-                          ? [{ label: 'Eliminar para mí', tone: 'danger', icon: <Trash2 className="size-5" strokeWidth={2.2} />, ariaLabel: `Eliminar ${group.name} para mí`, onPress: () => onHide(group) }]
-                          : []
-                      }
+                      actions={[
+                        group.role === 'owner'
+                          ? { label: 'Eliminar', tone: 'danger', icon: <Trash2 className="size-5" strokeWidth={2.2} />, ariaLabel: `Eliminar ${group.name}`, onPress: () => onRemove(group) }
+                          : { label: 'Salir del grupo', tone: 'danger', icon: <Trash2 className="size-5" strokeWidth={2.2} />, ariaLabel: `Salir de ${group.name}`, onPress: () => onRemove(group) },
+                      ]}
                     >
                   <Link
                     to={`/grupos/${group.id}`}

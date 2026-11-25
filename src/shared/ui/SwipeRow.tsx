@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from './cn'
 
 const ACTION_WIDTH = 76
@@ -28,6 +28,9 @@ interface SwipeRowProps {
   /** Background of the sliding face; match the surface the row sits on. */
   surfaceClassName?: string
 }
+
+/** The row that is open right now: opening another one closes it, so only one row is slid at a time. */
+let closeOpenRow: (() => void) | null = null
 
 function ActionButton({ action, onDone }: { action: SwipeAction; onDone: () => void }) {
   return (
@@ -70,6 +73,23 @@ export function SwipeRow({
   const drag = useRef<{ x: number; y: number; from: number; moved: boolean } | null>(null)
   const justDragged = useRef(false)
   const open = offset !== 0 && (offset <= -trailingWidth / 2 || offset >= leadingWidth / 2)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // Only one row open at a time, and a tap anywhere outside the open row closes it (without pressing what was tapped).
+  useEffect(() => {
+    if (!open) return
+    const close = () => setOffset(0)
+    if (closeOpenRow && closeOpenRow !== close) closeOpenRow()
+    closeOpenRow = close
+    function onOutside(event: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) close()
+    }
+    document.addEventListener('pointerdown', onOutside, true)
+    return () => {
+      document.removeEventListener('pointerdown', onOutside, true)
+      if (closeOpenRow === close) closeOpenRow = null
+    }
+  }, [open])
 
   function onPointerDown(event: React.PointerEvent) {
     if (event.pointerType === 'mouse' && event.button !== 0) return
@@ -104,7 +124,7 @@ export function SwipeRow({
   }
 
   return (
-    <div className={cn('relative overflow-hidden', className)}>
+    <div ref={rootRef} className={cn('relative overflow-hidden', className)}>
       {leadingAction && (
         <div
           className="absolute inset-y-0 left-0 flex"

@@ -167,32 +167,24 @@ describe('Hidden groups keep counting in the totals', () => {
 
 describe('Grupos: swipe actions of a row', () => {
   function renderSwipe(groups: ListedGroup[]) {
-    const onArchive = vi.fn()
-    const onHide = vi.fn()
+    const onRemove = vi.fn()
     render(
       <MemoryRouter>
-        <GroupsScreen
-          groups={groups}
-          isLoading={false}
-          isError={false}
-          onRetry={vi.fn()}
-          onNewGroup={vi.fn()}
-          onArchive={onArchive}
-          onHide={onHide}
-        />
+        <GroupsScreen groups={groups} isLoading={false} isError={false} onRetry={vi.fn()} onNewGroup={vi.fn()} onRemove={onRemove} />
       </MemoryRouter>,
     )
-    return { onArchive, onHide }
+    return { onRemove }
   }
 
-  it('offers "Eliminar para mí" to everybody and "Archivar" only to administrators, as real buttons', async () => {
-    const { onArchive, onHide } = renderSwipe([group(), group({ id: 'g2', name: 'Brasil', role: 'member' })])
-    expect(screen.getByRole('button', { name: 'Archivar Casa para todos' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Archivar Brasil/ })).toBeNull()
-    await userEvent.click(screen.getByRole('button', { name: 'Eliminar Brasil para mí' }))
-    expect(onHide).toHaveBeenCalledWith(expect.objectContaining({ id: 'g2' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Archivar Casa para todos' }))
-    expect(onArchive).toHaveBeenCalledWith(expect.objectContaining({ id: 'g1' }))
+  it('offers "Eliminar" to administrators and "Salir del grupo" to everybody else, as real buttons that only open the confirmation', async () => {
+    const { onRemove } = renderSwipe([group(), group({ id: 'g2', name: 'Brasil', role: 'member' })])
+    expect(screen.queryByRole('button', { name: /Archivar/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /para mí/ })).toBeNull()
+    expect(onRemove).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Salir de Brasil' }))
+    expect(onRemove).toHaveBeenCalledWith(expect.objectContaining({ id: 'g2' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Eliminar Casa' }))
+    expect(onRemove).toHaveBeenCalledWith(expect.objectContaining({ id: 'g1' }))
   })
 })
 

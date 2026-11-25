@@ -55,13 +55,15 @@ const BATCHES = {
   O: [['20261209000000', 'free_plus_limits']],
   // P (eliminar cuenta: public.delete_account, aviso member_left): después de O y junto con el front nuevo y la función delete-account.
   P: [['20261210000000', 'delete_account']],
+  // Q (contactos «quitados» reaparecen al volver a compartir un grupo): después de P.
+  Q: [['20261211000000', 'contacts_reappear_on_share']],
 }
 const batchArg = (process.argv.find((a) => a.startsWith('--lote=')) || '--lote=A').split('=')[1].toUpperCase()
-if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I, J, K, L, M, N, O o P')
+if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P o Q')
 const MIGRATIONS = BATCHES[batchArg]
 const BACKUP_BASE = process.env.G1_BACKUP_DIR || path.join(os.homedir(), 'Desktop', 'MONI', 'backups-g1')
 // Funciones que el lote reemplaza (A: solo get_my_groups; B: las demás) y cuyo cuerpo actual debe coincidir con el repositorio.
-const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [], K: [], L: [], M: [], N: [], O: [], P: [] }
+const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [], K: [], L: [], M: [], N: [], O: [], P: [], Q: [] }
 const FUNCTIONS = ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite', 'get_my_groups', 'join_group']
 // Cuerpos de las funciones que G1 reemplaza, tal como están en el repositorio (para detectar cambios en producción).
 const EXPECTED = {
@@ -207,6 +209,9 @@ async function preflight(c) {
     if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='group_invites' and column_name='personal') x")) issues.push('group_invites.personal ya existe')
     if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_personal_group_invite') x")) issues.push('create_personal_group_invite ya existe')
     if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='request_join_group') x"))) issues.push('falta request_join_group (lotes C y H)')
+  } else if (batchArg === 'Q') {
+    if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='contact_prefs') x"))) issues.push('falta public.contact_prefs')
+    if (await has("select exists(select 1 from pg_trigger where tgname='contacts_reappear_on_share') x")) issues.push('el disparador contacts_reappear_on_share ya existe')
   } else if (batchArg === 'P') {
     if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.proname='notice_is_pending') x"))) issues.push('falta el lote K')
     if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='delete_account') x")) issues.push('public.delete_account ya existe')

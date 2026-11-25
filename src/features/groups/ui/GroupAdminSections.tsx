@@ -1,4 +1,4 @@
-import { Archive, Check, EyeOff, Shield, ShieldOff, X } from 'lucide-react'
+import { Archive, Check, ChevronLeft, EyeOff, Shield, ShieldOff, Sparkles, X } from 'lucide-react'
 import { useState } from 'react'
 import mascotAlert from '@/assets/mascot/personaje_alerta-de-presupuesto.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
@@ -6,12 +6,14 @@ import { toUserMessage } from '@/shared/lib/errors'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import { SectionLabel } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import {
   useApproveJoinRequest,
   useArchiveGroup,
   useGroupMembers,
   useHideGroup,
   useJoinRequests,
+  useLeaveGroup,
   useRejectJoinRequest,
   useSetMemberRole,
 } from '../api/useGroups'
@@ -157,6 +159,62 @@ export function ArchiveGroupSheet({
         Se cierra para todos: nadie podrá cargar gastos nuevos y el historial se conserva. Solo se puede si no hay deudas ni
         pagos sin confirmar.
       </p>
+    </DecisionSheet>
+  )
+}
+
+/** "Salir del grupo" for someone who is not an administrator: same rule as the group's own screen (only with a zero balance). */
+export function LeaveGroupSheet({
+  groupId,
+  name,
+  netCents,
+  onClose,
+  onDone,
+}: {
+  groupId: string
+  name: string
+  netCents: number
+  onClose: () => void
+  onDone: () => void
+}) {
+  const toast = useToast()
+  const money = useFormatMoney()
+  const leave = useLeaveGroup()
+  return (
+    <DecisionSheet
+      icon={<ChevronLeft className="size-6" />}
+      iconTone="neutral"
+      title={`¿Salir de “${name}”?`}
+      onClose={onClose}
+      actions={[
+        { label: 'Quedarme', onClick: onClose },
+        {
+          label: 'Salir del grupo',
+          tone: 'danger',
+          disabled: leave.isPending || netCents !== 0,
+          onClick: () =>
+            void leave
+              .mutateAsync(groupId)
+              .then(() => {
+                toast.show('Saliste del grupo', { mascotUrl: mascotHappy })
+                onDone()
+              })
+              .catch((e: unknown) => {
+                onClose()
+                toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert })
+              }),
+        },
+      ]}
+    >
+      <p>Dejás de ver el grupo y de recibir avisos. Los demás siguen con sus cuentas.</p>
+      {netCents !== 0 && (
+        <p className="mt-3 flex gap-2 rounded-[18px] bg-tint-green px-4 py-3 text-[16px]">
+          <Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+          {netCents < 0
+            ? `Antes de irte tenés que saldar los ${money(-netCents)} que debés.`
+            : `Antes de irte, que te paguen los ${money(netCents)} que te deben.`}
+        </p>
+      )}
     </DecisionSheet>
   )
 }
