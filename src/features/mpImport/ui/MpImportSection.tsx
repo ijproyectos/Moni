@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
 import { usePlus } from '@/features/plus/api/usePlus'
-import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
 import { toUserMessage } from '@/shared/lib/errors'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
@@ -180,7 +180,7 @@ export function MpImportSection() {
           onCancel={() => setConfirmingUnlink(false)}
         />
       )}
-      {upgrading && <PlusSheet reason="mp_import" onClose={() => setUpgrading(false)} />}
+      {upgrading && <PlusPromoDialog feature="mercadopago" onClose={() => setUpgrading(false)} />}
     </>
   )
 }

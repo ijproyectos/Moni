@@ -3,6 +3,7 @@ import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { Button } from '@/shared/ui/Button'
 import { findBrand } from '@/features/accounts/domain/bankCatalog'
 import { BrandLogo } from '@/features/accounts/ui/BrandLogo'
+import { PlusTagMark } from '@/features/plus/ui/PlusTag'
 import type { ButtonHTMLAttributes } from 'react'
 import { connectionNotice, formatLastSync, unimportedNotice, type MpConnection } from '../domain/mpImport'
 
@@ -70,7 +71,10 @@ export function MpConnectionCard({
         className="flex min-h-14 w-full items-center gap-3 rounded-[18px] border border-[#009EE3]/40 bg-card px-4 text-left outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#009EE3] enabled:active:brightness-95 disabled:opacity-60"
       >
         {mpBrand && <BrandLogo brand={mpBrand} size="sm" />}
-        <span className="flex-1 text-[16px] font-extrabold text-ink">Vincular Mercado Pago</span>
+        <span className="flex flex-1 items-center gap-2 text-[16px] font-extrabold text-ink">
+          Vincular Mercado Pago
+          {isFree && <PlusTagMark />}
+        </span>
         <ChevronRight aria-hidden="true" className="size-5 text-[#009EE3]" strokeWidth={2.5} />
       </button>
     )

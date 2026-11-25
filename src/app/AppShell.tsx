@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
@@ -7,6 +8,9 @@ import { useSyncDueSubscriptions } from '@/features/subscriptions/api/useSubscri
 import { GuideHost } from '@/features/guide/ui/GuideHost'
 import { useGuideActive } from '@/features/guide/ui/guideStore'
 import { RewardCelebration } from '@/features/goals/ui/RewardCelebration'
+import { usePlus } from '@/features/plus/api/usePlus'
+import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { usePushOpenedNotice } from '@/features/notifications/ui/usePushOpenedNotice'
 import { PushEnrollmentPrompt } from '@/features/push/ui/PushEnrollmentPrompt'
 import { MyInitialContext } from '@/shared/ui/myInitialContext'
 import { MovementSheetProvider } from '@/features/transactions/ui/MovementSheetProvider'
@@ -20,17 +24,21 @@ const TAB_PATHS = ['/', '/actividad', '/grupos', '/cuentas', '/mas', '/perfil', 
 export function ShellBottomBar() {
   const { pathname: path } = useLocation()
   const keyboardOpen = useKeyboardOpen()
+  const plus = usePlus()
+  const [plansOpen, setPlansOpen] = useState(false)
   if (!TAB_PATHS.includes(path) || keyboardOpen) return null
   return (
     // In the flow, after <main>: `sticky bottom-0` floats it over the content while scrolling, and at the end of the page it
     // rests in its own place, so the content always ends above it (no padding to guess, nothing can hide behind it).
     <div data-bottom-action className="pointer-events-none sticky bottom-0 z-30 pb-[calc(env(safe-area-inset-bottom)+12px)]">
-      <BottomNav />
+      <BottomNav isPlus={plus.isPlus} onCrownClick={() => setPlansOpen(true)} />
+      {plansOpen && <PlusSheet onClose={() => setPlansOpen(false)} />}
     </div>
   )
 }
 
 export function AppShell() {
+  usePushOpenedNotice()
   const { user } = useAuth()
   const { data: profile } = useProfile()
   const initial = initialOf(profile?.display_name, user?.email ?? '') || 'V'

@@ -22,13 +22,15 @@ const summary: MonthSummary = {
   recent: [],
 }
 
+vi.mock('@/features/notifications/ui/NotificationCenter', () => ({ PlusBell: () => <button type="button" aria-label="Notificaciones" /> }))
+vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: true, isFree: false, isLoading: false, expiresAt: null }) }))
 vi.mock('@/features/transactions/ui/QuickAdd', () => ({ QuickAdd: () => null }))
 
 describe('HomeScreen: no Metas card', () => {
   it('does not show the Metas summary nor its link to the goals', () => {
     render(
       <MemoryRouter>
-        <HomeScreen summary={summary} initial="J" />
+        <HomeScreen summary={summary} />
       </MemoryRouter>,
     )
     expect(screen.queryByRole('heading', { name: 'En qué se fue' })).toBeNull()

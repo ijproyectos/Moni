@@ -11,8 +11,10 @@ import { Button } from '@/shared/ui/Button'
 import { ChoiceChip, SectionLabel } from '@/shared/ui/kit'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
-import { useGroupTrips, useSetGroupTrip } from '../api/useTrips'
-import { defaultTripDates, tripFormSchema } from '../domain/trip'
+import { usePlanAccess } from '@/features/plus/api/usePlanAccess'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
+import { useGroupTrips, useSetGroupTrip, useTrips } from '../api/useTrips'
+import { defaultTripDates, tripFormSchema, tripsCreatedCount } from '../domain/trip'
 import { PersonalTripForm } from './PersonalTripForm'
 import { TripDatePicker, TripDatesBudget, tripFieldClass } from './TripFormParts'
 
@@ -35,6 +37,18 @@ export function NewTripSheet({
   const navigate = useNavigate()
   const toast = useToast()
   const [step, setStep] = useState<NewTripStart>(start)
+  // Free plan: ONE trip in total (personal or in a group, ended or not). Past that, a new one shows the Moni Plus promo; what exists
+  // is never touched. The server enforces the same count.
+  const access = usePlanAccess()
+  const trips = useTrips()
+  const groupTrips = useGroupTrips()
+  const myGroups = useMyGroups()
+  // The app does not know who created each group, so the ones I administer stand in (the server counts the exact ones).
+  const mine = new Set((myGroups.data ?? []).filter((g) => g.role === 'owner').map((g) => g.id))
+  const created = tripsCreatedCount(trips.data ?? [], groupTrips.data ?? [], mine)
+  if (step !== 'elegir' && !access.canCreate('trips', created)) {
+    return <PlusPromoDialog feature="trips" onClose={onClose} />
+  }
   if (step === 'elegir') {
     return (
       <ChooserWithClose

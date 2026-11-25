@@ -3,7 +3,7 @@ import { useAccounts } from '@/features/accounts/api/useAccounts'
 import type { useParseReceipt } from '@/features/ai/api/useParseReceipt'
 import { warningsNotice, type ParseResponse } from '@/features/ai/domain/draft'
 import { useCategories } from '@/features/categories/api/useCategories'
-import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
 import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
@@ -33,7 +33,7 @@ export function ReceiptScan({ scan, file, onRetry, onClose }: ReceiptScanProps) 
   }
 
   if (scan.isError && isPlusRequired(scan.error)) {
-    return <PlusSheet reason="receipt" onClose={onClose} />
+    return <PlusPromoDialog feature="photo" onClose={onClose} />
   }
 
   if (scan.isError) {

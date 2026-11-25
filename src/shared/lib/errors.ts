@@ -30,6 +30,14 @@ export function mapPlusRequired<T>(error: T): T | PlusRequiredError {
 }
 
 const MESSAGES: Record<string, string> = {
+  invalid_confirmation: 'Escribí ELIMINAR tal cual para confirmar.',
+  store_subscription_active:
+    'Tu suscripción de Moni Plus es de la App Store o de Google Play y no se puede cancelar desde acá. Cancelala desde tu tienda y volvé a intentar.',
+  subscription_cancel_failed:
+    'No pudimos cancelar tu suscripción de Moni Plus, así que no eliminamos nada. Probá de nuevo en un rato.',
+  result_unknown:
+    'No pudimos confirmar si tu cuenta se eliminó (se cortó la conexión). Revisá tu internet y tocá de nuevo: antes de hacer nada, verificamos si ya se eliminó.',
+  deletion_failed: 'No pudimos eliminar tu cuenta. No se borró nada a medias: probá de nuevo en un rato.',
   plus_required: 'Esto es parte de Moni Plus. Con un código de acceso lo activás en un toque.',
   already_subscribed: 'Ya tenés una suscripción activa a Moni Plus.',
   too_many_requests: 'Esperá un minuto antes de intentar de nuevo.',
@@ -60,6 +68,7 @@ const MESSAGES: Record<string, string> = {
   invalid_group_name: 'Ponele un nombre al grupo (hasta 60 caracteres).',
   invalid_group_kind: 'Elegí un tipo de grupo válido.',
   invite_limit_reached: 'Ya hay 5 invitaciones activas. Anulá una o esperá a que venza.',
+  personal_invite_limit: 'Ya hay 3 enlaces personales activos. Anulá uno o esperá a que venza.',
   invite_invalid: 'Ese código no es válido o la invitación ya no está disponible. Pedí una nueva.',
   too_many_attempts: 'Demasiados intentos fallidos. Probá de nuevo en una hora.',
   invite_expired: 'Esa invitación venció. Pedí una nueva.',

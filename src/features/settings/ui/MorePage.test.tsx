@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
@@ -65,6 +66,7 @@ describe('Explorar', () => {
     subsData.current = []
     antsData.current = 0
     ahorrosData.current = []
+    plusState.isPlus = true
   })
 
   it('has the header and the long cards (Metas, Ahorros, Categorías, Salud) and the four tiles, each a whole link', () => {
@@ -141,5 +143,45 @@ describe('Explorar', () => {
     expect(screen.getByRole('link', { name: /^Pagos recurrentes/ })).toHaveTextContent('no tenés pagos próximos')
     // None of the example figures of the design may show up as if they were real.
     expect(document.body).not.toHaveTextContent(/201\.866|Bariloche|\$30\.000/)
+  })
+
+  describe('Free plan', () => {
+    beforeEach(() => {
+      plusState.isPlus = false
+    })
+
+    it('keeps every card, puts the small PLUS label only on Salud, Pagos recurrentes, Gastos hormiga and Informes', () => {
+      renderPage()
+      for (const name of [/Salud financiera/, /Pagos recurrentes/, /Gastos hormiga/, /Informes/]) {
+        expect(screen.getByRole('button', { name })).toHaveTextContent('PLUS')
+      }
+      for (const name of [/^Metas de ahorro/, /^Ahorros/, /^Categorías/, /^Viajes/]) {
+        const card = screen.getByRole('link', { name })
+        expect(card).not.toHaveTextContent('PLUS')
+      }
+      expect(document.querySelectorAll('[data-plus-tag]')).toHaveLength(4)
+    })
+
+    it('tapping a Plus card opens its own promo and goes nowhere', async () => {
+      renderPage()
+      await userEvent.click(screen.getByRole('button', { name: /Gastos hormiga/ }))
+      expect(screen.getByRole('dialog', { name: 'Los pequeños gastos también cuentan' })).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Ahora no' }))
+      await userEvent.click(screen.getByRole('button', { name: /Salud financiera/ }))
+      expect(screen.getByRole('dialog', { name: 'Descubrí cómo están tus finanzas' })).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Ahora no' }))
+      await userEvent.click(screen.getByRole('button', { name: /Informes/ }))
+      expect(screen.getByRole('dialog', { name: 'Entendé mejor tus números' })).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Ahora no' }))
+      await userEvent.click(screen.getByRole('button', { name: /Pagos recurrentes/ }))
+      expect(screen.getByRole('dialog', { name: 'Que ningún pago te sorprenda' })).toBeInTheDocument()
+    })
+
+    it('Moni Plus sees no labels at all and the cards are plain links', () => {
+      plusState.isPlus = true
+      renderPage()
+      expect(document.querySelectorAll('[data-plus-tag]')).toHaveLength(0)
+      expect(screen.getByRole('link', { name: /^Salud financiera/ })).toHaveAttribute('href', '/salud')
+    })
   })
 })

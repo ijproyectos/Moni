@@ -23,6 +23,7 @@ const SUMMARIES: Record<string, MonthSummary> = {
 }
 const asked = vi.hoisted(() => ({ months: [] as string[] }))
 
+vi.mock('@/features/notifications/ui/NotificationCenter', () => ({ PlusBell: () => <button type="button" aria-label="Notificaciones" /> }))
 vi.mock('../api/useMonthSummary', () => ({
   useMonthSummary: (month: string) => {
     asked.months.push(month)

@@ -7,6 +7,8 @@ interface SettingRowProps {
   /** Without an icon the row is plain text (Configuración). */
   icon?: ReactNode
   title: string
+  /** Small label after the title (e.g. the PLUS label of a Moni Plus option). */
+  badge?: ReactNode
   subtitle?: ReactNode
   /** Right side: a value, a switch, swatches. */
   trailing?: ReactNode
@@ -21,6 +23,7 @@ const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visi
 export function SettingRow({
   icon,
   title,
+  badge,
   subtitle,
   trailing,
   to,
@@ -39,7 +42,10 @@ export function SettingRow({
         </span>
       )}
       <span className="min-w-0 text-left">
-        <span className="block text-[15px] font-medium text-ink">{title}</span>
+        <span className="flex items-center gap-2 text-[15px] font-medium text-ink">
+          {title}
+          {badge}
+        </span>
         {subtitle && <span className="block text-[12px] leading-4 text-text-muted">{subtitle}</span>}
       </span>
       <span className="flex items-center gap-1.5 text-[13px] text-text-muted">

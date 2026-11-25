@@ -252,3 +252,14 @@ describe('recurring expense notice', () => {
     expect(noticeText(n)).toBe('Tenés un gasto recurrente para registrar: Alquiler.')
   })
 })
+
+describe('noticeText: somebody left a group or a trip', () => {
+  const base = { id: 'n', kind: 'member_left', groupId: 'g', groupName: 'Mate', actorId: 'a', actorName: 'Iara', amountCents: 0, reportId: null, transferLabel: null, transferAlias: null, transferCbu: null, createdAt: '2026-11-25T10:00:00Z', readAt: null } as const
+  it('says she stopped being part of the group, and never that the account was deleted', () => {
+    expect(noticeText({ ...base, groupKind: 'amigos' })).toBe('Iara dejó de formar parte del grupo Mate.')
+    expect(noticeText({ ...base, groupKind: 'amigos' })).not.toMatch(/cuenta|elimin/i)
+  })
+  it('says trip for a trip', () => {
+    expect(noticeText({ ...base, groupKind: 'viaje', groupName: 'Bariloche' })).toBe('Iara dejó de formar parte del viaje Bariloche.')
+  })
+})

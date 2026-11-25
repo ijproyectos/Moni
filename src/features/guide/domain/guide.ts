@@ -21,15 +21,15 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     id: 'cargar',
     path: '/',
     targets: ['section[aria-label="Cargar un movimiento"]'],
-    title: 'Cargar un movimiento',
-    text: 'Foto: sacale una foto al ticket y Moni completa el gasto. Manual: lo escribís vos. Voz: lo decís hablando. Según tu plan, alguna opción puede ser de Moni Plus.',
+    title: 'Cargá tus movimientos',
+    text: 'Subí una foto de tu ticket, usá tu voz o cargá tus ingresos y gastos manualmente. Elegí la forma que más cómoda te resulte para llevar tus finanzas al día.',
   },
   {
     id: 'agente',
     path: '/',
     targets: ['button[aria-label="Hablá con Moni"]'],
-    title: 'Agente Moni',
-    text: 'El gatito es tu agente financiero: tocalo para preguntarle por tus gastos y pedirle ayuda para decidir antes de comprar. Podés moverlo por la pantalla.',
+    title: 'Tu asistente financiero',
+    text: 'Moni está para ayudarte a entender y mejorar tus finanzas. Preguntale sobre tus ingresos, tus gastos, cuánto podés ahorrar o pedile ayuda antes de tomar una decisión. ¡También podés moverlo por la pantalla!',
   },
   {
     id: 'grupos',
@@ -56,8 +56,8 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     id: 'perfil',
     path: '/perfil',
     targets: ['main [data-guide="profile-group"]', 'main h1', 'main h2'],
-    title: 'Perfil',
-    text: 'Cambiás tus datos, tus objetivos y mirás tus logros. En Configuración está el tema, la privacidad, el plan, los dólares y «Conocé Moni» para repetir esta guía.',
+    title: 'Tu perfil',
+    text: 'Personalizá Moni a tu manera. Desde tu perfil podés modificar tus datos, actualizar tus objetivos, descubrir tus logros y administrar las preferencias de tu cuenta. Si necesitás ayuda, siempre podés volver a recorrer esta guía desde Configuración.',
   },
 ]
 

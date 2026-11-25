@@ -203,6 +203,7 @@ export async function listGroupInvites(groupId: string): Promise<GroupInvite[]> 
     maxUses: row.max_uses,
     uses: row.uses,
     revokedAt: row.revoked_at,
+    personal: row.personal ?? false,
   }))
 }
 
@@ -267,6 +268,13 @@ export async function createGroup(values: GroupFormValues): Promise<string> {
 
 export async function createInvite(groupId: string): Promise<string> {
   const { data, error } = await getSupabase().rpc('create_group_invite', { p_group: groupId })
+  if (error) throw error
+  return data
+}
+
+/** A single-use link for one person (7 days): whoever opens it enters without the administrator approving again. */
+export async function createPersonalInvite(groupId: string): Promise<string> {
+  const { data, error } = await getSupabase().rpc('create_personal_group_invite', { p_group: groupId })
   if (error) throw error
   return data
 }

@@ -1,4 +1,5 @@
 import { House } from 'lucide-react'
+import plusCrown from '@/assets/brand/corona_moni.svg'
 import type { ComponentType } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import { cn } from './cn'
@@ -82,7 +83,7 @@ function NavTab({ to, match, label, icon: Icon, end }: NavItem) {
 }
 
 /** Floating bottom bar: one pill with the four tabs (the active one shows its name) and the profile avatar. */
-export function BottomNav() {
+export function BottomNav({ isPlus = false, onCrownClick }: { isPlus?: boolean; onCrownClick?: () => void }) {
   const initial = useMyInitial()
   return (
     <div className="flex h-[60px] items-center px-3">
@@ -93,19 +94,43 @@ export function BottomNav() {
         {NAV_ITEMS.map((item) => (
           <NavTab key={item.to} {...item} />
         ))}
-        <NavLink
-          to="/perfil"
-          aria-label="Perfil"
-          className={({ isActive }) =>
-            cn(
-              'flex aspect-square h-full shrink-0 items-center justify-center rounded-full bg-[#1B3A2E] font-display text-[17px] font-extrabold text-[#F1EEDD] outline-none dark:bg-[#2B4A3C]',
-              RING,
-              isActive && 'ring-2 ring-[#E3B23C]',
-            )
-          }
-        >
-          {initial}
-        </NavLink>
+        {/* The crown is not inside the link (a button in a link is invalid): both share this box and the crown sits over the avatar. */}
+        <div className="relative aspect-square h-full shrink-0">
+          <NavLink
+            to="/perfil"
+            aria-label="Perfil"
+            className={({ isActive }) =>
+              cn(
+                'flex size-full items-center justify-center rounded-full bg-[#1B3A2E] font-display text-[17px] font-extrabold text-[#F1EEDD] outline-none dark:bg-[#2B4A3C]',
+                RING,
+                isActive && 'ring-2 ring-[#E3B23C]',
+              )
+            }
+          >
+            {initial}
+          </NavLink>
+          {isPlus && (
+            <button
+              type="button"
+              onClick={onCrownClick}
+              aria-label="Moni Plus activo, ver beneficios"
+              aria-haspopup="dialog"
+              data-plus-crown
+              className={cn(
+                'absolute -top-[14px] left-1/2 z-10 flex h-[19px] w-[28px] -translate-x-1/2 items-end justify-center rounded-sm before:absolute before:-inset-x-3 before:-inset-y-2 before:content-[\'\']',
+                RING,
+              )}
+            >
+              <img
+                src={plusCrown}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="h-[19px] w-[28px] drop-shadow-[0_1px_1px_rgba(90,60,0,0.35)]"
+              />
+            </button>
+          )}
+        </div>
       </nav>
     </div>
   )

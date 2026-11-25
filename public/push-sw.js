@@ -26,7 +26,10 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const stored = event.notification.data && event.notification.data.url
   const path = typeof stored === 'string' && isSafePath(stored) ? stored : '/'
-  const target = new URL(path, self.location.origin).href
+  // The app recognises a tap on a push by this marker (it then marks that notice as read and takes it out of the notice center).
+  const targetUrl = new URL(path, self.location.origin)
+  targetUrl.searchParams.set('push', '1')
+  const target = targetUrl.href
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
       const existing = windows.find((client) => client.url.startsWith(self.location.origin))

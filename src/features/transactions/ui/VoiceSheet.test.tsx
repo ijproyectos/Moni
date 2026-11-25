@@ -593,7 +593,7 @@ describe('VoiceSheet free plan gate', () => {
     plusState.isFree = true
     renderSheet()
     expect(
-      screen.getByRole('dialog', { name: /Cargar por voz es de Moni Plus/ }),
+      screen.getByRole('dialog', { name: 'Contame qué gastaste' }),
     ).toBeInTheDocument()
     expect(FakeRecognition.instances).toHaveLength(0)
   })
@@ -609,7 +609,7 @@ describe('VoiceSheet free plan gate', () => {
     await user.type(screen.getByLabelText('Lo que gastaste o cobraste'), 'gasté 5 lucas')
     await user.click(screen.getByRole('button', { name: 'Listo' }))
     expect(
-      await screen.findByRole('dialog', { name: /Cargar por voz es de Moni Plus/ }),
+      await screen.findByRole('dialog', { name: 'Contame qué gastaste' }),
     ).toBeInTheDocument()
   })
 })

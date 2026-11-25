@@ -93,7 +93,8 @@ export function CategoriesPage() {
   async function save(values: CategoryFormValues) {
     setSubmitError(null)
     const limit = parseBudgetLimit(limitText)
-    if (editing?.category && !limit.ok) {
+    // Empty is fine (no limit); something invalid or zero is not, for new and existing categories alike.
+    if (!limit.ok) {
       setSubmitError('Ingresá un límite mayor a cero, o dejalo vacío para no ponerlo.')
       return
     }
@@ -105,7 +106,8 @@ export function CategoriesPage() {
         })
         if (limit.ok) await saveLimit(editing.category.id, limit.cents)
       } else {
-        await create.mutateAsync({ ...values, kind })
+        const newId = await create.mutateAsync({ ...values, kind })
+        if (limit.ok && limit.cents !== null && newId) await saveLimit(newId, limit.cents)
       }
       toast.show(editing?.category ? 'Categoría actualizada' : 'Categoría creada', {
         mascotUrl: mascotHappy,
@@ -272,7 +274,7 @@ export function CategoriesPage() {
             onSubmit={(values) => void save(values)}
             onArchive={editing.category ? () => setArchiving(editing.category ?? null) : undefined}
           >
-            {editing.category?.kind === 'expense' && (
+            {(editing.category?.kind ?? kind) === 'expense' && (
               <label className="flex items-center gap-3 rounded-[18px] border border-line bg-card px-4 py-3">
                 <span className="flex-1">
                   <span className="block text-[17px] font-extrabold">Límite por mes</span>

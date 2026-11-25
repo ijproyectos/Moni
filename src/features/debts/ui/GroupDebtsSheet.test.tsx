@@ -21,6 +21,9 @@ const state = vi.hoisted(() => ({
   saveTransfer: vi.fn(),
 }))
 
+const plan = vi.hoisted(() => ({ free: false }))
+vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: !plan.free, isFree: plan.free, isLoading: false, expiresAt: null }) }))
+vi.mock('@/features/plus/ui/PlusSheet', () => ({ PlusSheet: () => null }))
 vi.mock('../api/useDebts', () => ({
   usePendingDebts: () => ({
     debts: state.debts,
@@ -272,6 +275,22 @@ describe('Me deben: Enviar cobro', () => {
       },
     })
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Enviar cobro' })).toBeNull())
+  })
+
+  it('Free: "Enviar por Moni" shows the PLUS label and the reminders promo, and sends nothing; sharing and copying stay free', async () => {
+    plan.free = true
+    try {
+      const { user, sheet } = await openCollect()
+      const send = within(sheet).getByRole('button', { name: /Enviar por Moni/ })
+      expect(send).toHaveTextContent('PLUS')
+      await user.click(send)
+      expect(state.remind).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog', { name: 'Que ningún pago quede pendiente' })).toBeInTheDocument()
+      expect(within(sheet).getByRole('button', { name: 'Compartir' })).toBeInTheDocument()
+      expect(within(sheet).getByRole('button', { name: 'Copiar mensaje' })).toBeInTheDocument()
+    } finally {
+      plan.free = false
+    }
   })
 
   it('it can be sent without any account data', async () => {

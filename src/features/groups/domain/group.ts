@@ -79,6 +79,8 @@ export interface GroupInvite {
   maxUses: number
   uses: number
   revokedAt: string | null
+  /** A single-use link made for one person: whoever opens it enters without approval. Absent on older rows. */
+  personal?: boolean
 }
 
 /** An invite someone can still use: not revoked, not expired and with uses left. */

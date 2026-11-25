@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { ToastProvider } from '@/shared/ui/Toast'
 import { CategoriesPage } from './CategoriesPage'
 
-const state = vi.hoisted(() => ({ txs: [] as unknown[] }))
+const state = vi.hoisted(() => ({ txs: [] as unknown[], createCategory: vi.fn(), createBudget: vi.fn() }))
 const cat = (id: string, name: string) => ({
   id,
   name,
@@ -14,7 +15,7 @@ const cat = (id: string, name: string) => ({
 })
 vi.mock('../api/useCategories', () => ({
   useCategories: () => ({ isLoading: false, isError: false, data: [cat('a', 'Súper'), cat('b', 'Café')] }),
-  useCreateCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateCategory: () => ({ mutateAsync: state.createCategory, isPending: false }),
   useUpdateCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useArchiveCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
@@ -25,7 +26,7 @@ vi.mock('@/features/dashboard/api/useMonthSummary', () => ({
 }))
 vi.mock('@/features/budgets/api/useBudgets', () => ({
   useBudgetStatus: () => ({ data: [] }),
-  useCreateBudget: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateBudget: () => ({ mutateAsync: state.createBudget, isPending: false }),
   useUpdateBudget: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useArchiveBudget: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
@@ -49,6 +50,8 @@ describe('CategoriesPage', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-11-15T15:00:00-03:00'))
     state.txs = []
+    state.createCategory.mockReset().mockResolvedValue('new-id')
+    state.createBudget.mockReset().mockResolvedValue(undefined)
   })
   afterEach(() => vi.useRealTimers())
 
@@ -73,5 +76,27 @@ describe('CategoriesPage', () => {
     ]
     setup()
     expect(screen.getByRole('link', { name: /Tengo 2 movimientos sin categoría. ¿Los ordenamos\?/ })).toHaveAttribute('href', '/actividad')
+  })
+
+  it('asks for the monthly limit while creating an expense category, and saves it with the new category', async () => {
+    vi.useRealTimers()
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('button', { name: 'Nueva' }))
+    await user.type(screen.getByRole('textbox', { name: 'Nombre' }), 'Gimnasio')
+    await user.type(screen.getByRole('textbox', { name: 'Límite por mes' }), '50000')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(state.createBudget).toHaveBeenCalledWith({ categoryId: 'new-id', amountCents: 5_000_000 }))
+  })
+
+  it('creating without a limit creates no budget', async () => {
+    vi.useRealTimers()
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('button', { name: 'Nueva' }))
+    await user.type(screen.getByRole('textbox', { name: 'Nombre' }), 'Gimnasio')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(state.createCategory).toHaveBeenCalled())
+    expect(state.createBudget).not.toHaveBeenCalled()
   })
 })

@@ -14,7 +14,7 @@ import {
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
-import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
 import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
@@ -211,7 +211,7 @@ function NewGroupSheet({ kind, onClose }: { kind: GroupKind; onClose: () => void
     }
   }
 
-  if (upsell) return <PlusSheet reason="group" onClose={() => setUpsell(false)} />
+  if (upsell) return <PlusPromoDialog feature="groups" onClose={() => setUpsell(false)} />
 
   if (created) {
     const finish = () => {

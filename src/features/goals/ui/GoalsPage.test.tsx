@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   error: false,
   errorValue: null as unknown,
 }))
+vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: true, isFree: false, isLoading: false, expiresAt: null }) }))
 vi.mock('../api/useSavings', async () => {
   const domain = await import('../domain/savings')
   return {

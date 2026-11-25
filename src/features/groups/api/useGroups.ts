@@ -14,6 +14,7 @@ import type {
 import {
   createGroup,
   createInvite,
+  createPersonalInvite,
   createSettlement,
   convertSharedToExpense,
   createSharedExpense,
@@ -172,6 +173,14 @@ export function useCreateInvite() {
   const invalidate = useInvalidateGroupMoney()
   return useMutation({
     mutationFn: (groupId: string) => createInvite(groupId),
+    onSuccess: invalidate,
+  })
+}
+
+export function useCreatePersonalInvite() {
+  const invalidate = useInvalidateGroupMoney()
+  return useMutation({
+    mutationFn: (groupId: string) => createPersonalInvite(groupId),
     onSuccess: invalidate,
   })
 }

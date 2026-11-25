@@ -50,9 +50,11 @@ export async function listCategoryTemplates(): Promise<CategoryTemplate[]> {
   return data.map(toTemplate)
 }
 
-export async function createCategory(values: CategoryFormValues): Promise<void> {
-  const { error } = await getSupabase().from('categories').insert(values)
+/** Returns the id of the new category (the form can then attach a monthly limit to it). */
+export async function createCategory(values: CategoryFormValues): Promise<string> {
+  const { data, error } = await getSupabase().from('categories').insert(values).select('id').single()
   if (error) throw error
+  return data.id
 }
 
 /** Kind is immutable after creation: existing movements would no longer match. */
