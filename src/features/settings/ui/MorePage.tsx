@@ -13,10 +13,11 @@ import { useTrips } from '@/features/trips/api/useTrips'
 import { daysBetween } from '@/features/trips/domain/dates'
 import { tripStatus } from '@/features/trips/domain/trip'
 import { FEATURES } from '@/shared/config/features'
-import { formatArs, formatCompact } from '@/shared/lib/money'
 import { todayIso } from '@/shared/lib/month'
 import { cn } from '@/shared/ui/cn'
+import { useDisplayCurrency } from '@/shared/ui/displayCurrencyContext'
 import { ProgressRing } from '@/shared/ui/ProgressRing'
+import { useFormatCompactMoney, useFormatMoney } from '@/shared/ui/useFormatMoney'
 
 /** Date of today's trip headline: the ongoing trip, else the nearest one that has not started. */
 function nextTrip<T extends { startsOn: string; endsOn: string; archivedAt: string | null }>(
@@ -43,9 +44,16 @@ function tripFigure(
   return { value: away <= 0 ? 'Hoy' : away === 1 ? '1 día' : `${away} días`, sub: trip.name }
 }
 
-/** A figure for a half-width card: whole pesos up to a million, then short ("$3,5 M"). */
-function big(cents: number): string {
-  return Math.abs(cents) >= 100_000_000 ? `$${formatCompact(cents).replace('M', ' M')}` : formatArs(cents)
+/** A figure for a half-width card: the full amount up to a million (in ARS terms), then short ("$3,5 M" / "USD 3,5 M"). */
+function useBigFigure() {
+  const formatMoney = useFormatMoney()
+  const formatCompactMoney = useFormatCompactMoney()
+  const { currency } = useDisplayCurrency()
+  return (cents: number) => {
+    if (Math.abs(cents) < 100_000_000) return formatMoney(cents)
+    const symbol = currency === 'ARS' ? '$' : `${currency} `
+    return `${symbol}${formatCompactMoney(cents).replace('M', ' M')}`
+  }
 }
 
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-ink dark:focus-visible:outline-lime'
@@ -111,6 +119,7 @@ function Tile({
 }
 
 export function MorePage() {
+  const big = useBigFigure()
   const today = todayIso()
 
   const savings = useSavings()

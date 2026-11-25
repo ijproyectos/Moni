@@ -33,6 +33,7 @@ import { Avatar, CheckDot, DashedButton, IconTile, Page, SectionLabel } from '@/
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { useGroupLedger } from '../api/useGroupLedger'
 import { debtSentence, personName, type Ledger, type Person } from '../domain/ledger'
 import { buildSummaryModel, summaryText } from '../domain/summaryShare'
@@ -65,6 +66,7 @@ function sentence(ledger: Ledger, meId: string, from: string, to: string, cents:
 
 // Screens 042 / 056 — Resumen.
 export function GroupSummaryPage() {
+  const formatMoney = useFormatMoney()
   const navigate = useNavigate()
   const { groupId, ledger, name, aliasOf } = useSummaryData()
   const { data: me } = useProfile()
@@ -127,7 +129,7 @@ export function GroupSummaryPage() {
                     ? 'Varios'
                     : personName(ledger.people, e.payers[0]?.personId ?? '')}
                 </td>
-                <td className="py-1 text-right font-extrabold">{formatArs(e.amountCents)}</td>
+                <td className="py-1 text-right font-extrabold">{formatMoney(e.amountCents)}</td>
               </tr>
             ))}
             <tr className="border-t-2 border-ink">
@@ -135,7 +137,7 @@ export function GroupSummaryPage() {
                 Total
               </td>
               <td className="pt-2 text-right text-[20px] font-extrabold">
-                {formatArs(ledger.totalCents)}
+                {formatMoney(ledger.totalCents)}
               </td>
             </tr>
           </tbody>
@@ -156,15 +158,15 @@ export function GroupSummaryPage() {
               return (
                 <tr key={p.id}>
                   <td className="py-1 font-extrabold">{p.name}</td>
-                  <td className="py-1 text-right">{formatArs(ledger.paid[p.id] ?? 0)}</td>
-                  <td className="py-1 text-right">{formatArs(ledger.owed[p.id] ?? 0)}</td>
+                  <td className="py-1 text-right">{formatMoney(ledger.paid[p.id] ?? 0)}</td>
+                  <td className="py-1 text-right">{formatMoney(ledger.owed[p.id] ?? 0)}</td>
                   <td
                     className={cn(
                       'py-1 text-right font-extrabold',
                       net > 0 ? 'text-income' : net < 0 ? 'text-expense' : '',
                     )}
                   >
-                    {formatArs(net, { signed: true })}
+                    {formatMoney(net, { signed: true })}
                   </td>
                 </tr>
               )
@@ -186,6 +188,7 @@ export function GroupSummaryPage() {
 
 // Screens 043 / 044 / 057 / 058 / 059 — Compartir resumen.
 export function ShareSummaryPage() {
+  const formatMoney = useFormatMoney()
   const navigate = useNavigate()
   const toast = useToast()
   const { groupId, ledger, name, meId, shareable, shared, myTransfer, aliasOf } = useSummaryData()
@@ -205,13 +208,13 @@ export function ShareSummaryPage() {
     if (out[0]) {
       const to = out[0].toUserId
       return to === meId
-        ? `Pasame ${formatArs(out[0].amountCents)}`
-        : `Pasale ${formatArs(out[0].amountCents)} a ${personName(ledger.people, to)}`
+        ? `Pasame ${formatMoney(out[0].amountCents)}`
+        : `Pasale ${formatMoney(out[0].amountCents)} a ${personName(ledger.people, to)}`
     }
     if (incoming.length) {
       const total = incoming.reduce((s, t) => s + t.amountCents, 0)
       const from = incoming.map((t) => personName(ledger.people, t.fromUserId))
-      return `Te pasan ${formatArs(total)}${from.length > 1 ? ` entre ${from.join(' y ')}` : ` · ${from[0]}`}`
+      return `Te pasan ${formatMoney(total)}${from.length > 1 ? ` entre ${from.join(' y ')}` : ` · ${from[0]}`}`
     }
     return 'Está a mano'
   }
@@ -512,6 +515,7 @@ export function ShareSummaryPage() {
 
 // Screens 156 / 157 — Avisos enviados.
 export function NoticesSentPage() {
+  const formatMoney = useFormatMoney()
   const navigate = useNavigate()
   const toast = useToast()
   const { groupId, ledger, name, meId } = useSummaryData()
@@ -523,10 +527,10 @@ export function NoticesSentPage() {
     const out = ledger.transfers.find((t) => t.fromUserId === p.id)
     if (out)
       return out.toUserId === meId
-        ? `Pasame ${formatArs(out.amountCents)}`
-        : `Pasale ${formatArs(out.amountCents)} a ${personName(ledger.people, out.toUserId)}`
+        ? `Pasame ${formatMoney(out.amountCents)}`
+        : `Pasale ${formatMoney(out.amountCents)} a ${personName(ledger.people, out.toUserId)}`
     const incoming = ledger.transfers.filter((t) => t.toUserId === p.id)
-    return `Te pasan ${formatArs(incoming.reduce((s, t) => s + t.amountCents, 0))}`
+    return `Te pasan ${formatMoney(incoming.reduce((s, t) => s + t.amountCents, 0))}`
   }
   return (
     <Page className="pt-20">
