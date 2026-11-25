@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { useMyGroups } from '@/features/groups/api/useGroups'
 import { formatDayMonth } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { cn } from '@/shared/ui/cn'
 import { Avatar } from '@/shared/ui/kit'
@@ -46,6 +46,7 @@ export function GroupDebtsSheet({
   onClose: () => void
 }) {
   const toast = useToast()
+  const formatMoney = useFormatMoney()
   const { debts, reports, isLoading, isError } = usePendingDebts()
   const notices = useNotices()
   const groups = useMyGroups()
@@ -129,7 +130,7 @@ export function GroupDebtsSheet({
           <>
             <p className="text-[15px] text-text-muted">
               {tab === 'owed' ? 'En total te deben ' : 'En total debés '}
-              <strong className="font-extrabold text-ink">{formatArs(total)}</strong>
+              <strong className="font-extrabold text-ink">{formatMoney(total)}</strong>
               {shown.length > 1 ? ` entre ${shown.length} deudas.` : '.'}
             </p>
             <ul className="flex flex-col gap-3">
@@ -164,7 +165,7 @@ export function GroupDebtsSheet({
                             owed ? 'text-income' : 'text-expense',
                           )}
                         >
-                          {formatArs(debt.amountCents)}
+                          {formatMoney(debt.amountCents)}
                         </span>
                         <span
                           className={cn(
@@ -334,7 +335,7 @@ export function GroupDebtsSheet({
                   <li key={r.id} className="flex items-center justify-between gap-3 py-3">
                     <span className="min-w-0">
                       <span className="block truncate text-[16px] font-extrabold">
-                        {formatArs(r.amountCents)} · {groupName.get(r.groupId) ?? 'Grupo'}
+                        {formatMoney(r.amountCents)} · {groupName.get(r.groupId) ?? 'Grupo'}
                       </span>
                       <span className="block text-[14px] text-text-muted">
                         {formatDayMonth((r.resolvedAt ?? r.reportedAt).slice(0, 10))}
@@ -360,7 +361,7 @@ export function GroupDebtsSheet({
       {paying && (
         <PaymentAccountSheet
           title="¿Ya le pagaste?"
-          description={`Le vamos a avisar a ${paying.otherName} que le transferiste ${formatArs(paying.amountCents)}. Elegí de qué cuenta salió: se descuenta ahora de esa cuenta y queda en Movimientos. La deuda se salda cuando ${paying.otherName} confirme.`}
+          description={`Le vamos a avisar a ${paying.otherName} que le transferiste ${formatMoney(paying.amountCents)}. Elegí de qué cuenta salió: se descuenta ahora de esa cuenta y queda en Movimientos. La deuda se salda cuando ${paying.otherName} confirme.`}
           confirmLabel="Sí, ya pagué"
           noneLabel="Avisar sin elegir cuenta"
           busy={report.isPending}

@@ -9,7 +9,7 @@ import {
 } from '@/features/accounts/domain/account'
 import { TransferDataSection } from '@/features/accounts/ui/TransferDataSection'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { copyText, whatsappUrl } from '@/shared/lib/share'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
@@ -33,6 +33,7 @@ const OPTION_SELECTED = 'border-forest bg-lime/20 dark:border-lime dark:bg-lime/
  */
 export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: () => void }) {
   const toast = useToast()
+  const formatMoney = useFormatMoney()
   const accounts = useAccounts()
   const remind = useRemindDebt()
   const [pickId, setPickId] = useState<string | null>(null)
@@ -83,7 +84,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
   return (
     <BottomSheet
       title="Enviar cobro"
-      subtitle={`${debt.otherName} · ${debt.groupName} · ${formatArs(debt.amountCents)}`}
+      subtitle={`${debt.otherName} · ${debt.groupName} · ${formatMoney(debt.amountCents)}`}
       onClose={onClose}
     >
       <div className="flex flex-col gap-3">

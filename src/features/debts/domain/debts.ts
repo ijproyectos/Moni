@@ -207,9 +207,13 @@ export function sharedTransferFor(
     : null
 }
 
-/** The sentence of a notice, as the person reads it in the inbox. */
-export function noticeText(notice: Notice): string {
-  const amount = formatArs(notice.amountCents)
+/**
+ * The sentence of a notice, as the person reads it in the inbox. `format` defaults to `formatArs` so callers that
+ * don't have "moneda de visualización" wired yet (e.g. the notification center) keep working unchanged; pass
+ * `useFormatMoney()`'s result from a component to respect the chosen display currency.
+ */
+export function noticeText(notice: Notice, format: (cents: Cents) => string = formatArs): string {
+  const amount = format(notice.amountCents)
   switch (notice.kind) {
     case 'debt_reminder':
       return `${notice.actorName} te recordó que tenés un pago pendiente de ${amount}.`

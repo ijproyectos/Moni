@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import mascotUrl from '@/assets/mascot/expresion_feliz.svg'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { todayIso } from '@/shared/lib/month'
 import { copyText } from '@/shared/lib/share'
 import { cn } from '@/shared/ui/cn'
@@ -38,6 +38,7 @@ const pill =
 /** The person's inbox for groups: reminders to pay, payments to confirm and the answers to their own. */
 export function GroupNoticesPage() {
   const toast = useToast()
+  const formatMoney = useFormatMoney()
   const notices = useNotices()
   const reports = usePaymentReports()
   const markRead = useMarkNoticesRead()
@@ -166,7 +167,7 @@ export function GroupNoticesPage() {
                       <div className="flex items-start gap-3">
                         <Avatar name={n.actorName} />
                         <div className="min-w-0 flex-1">
-                          <p className="text-[17px] font-extrabold leading-6">{noticeText(n)}</p>
+                          <p className="text-[17px] font-extrabold leading-6">{noticeText(n, formatMoney)}</p>
                           <p className="text-[13px] font-bold text-text-muted">
                             Grupo: {n.groupName}
                           </p>
@@ -183,7 +184,7 @@ export function GroupNoticesPage() {
                           type="button"
                           onClick={() => void removeNotices([n])}
                           disabled={deletion.isRemoving}
-                          aria-label={`Eliminar aviso: ${noticeText(n)}`}
+                          aria-label={`Eliminar aviso: ${noticeText(n, formatMoney)}`}
                           className="-mr-2 -mt-1 flex size-11 shrink-0 items-center justify-center rounded-full text-text-muted disabled:opacity-50"
                         >
                           <Trash2 aria-hidden="true" className="size-[18px]" strokeWidth={2} />
@@ -378,7 +379,7 @@ export function GroupNoticesPage() {
       {paying && (
         <PaymentAccountSheet
           title="¿Ya le pagaste?"
-          description={`Le vamos a avisar a ${paying.actorName} que le transferiste ${formatArs(paying.amountCents)}. Elegí de qué cuenta salió: se descuenta ahora de esa cuenta y queda en Movimientos. La deuda se salda cuando ${paying.actorName} confirme.`}
+          description={`Le vamos a avisar a ${paying.actorName} que le transferiste ${formatMoney(paying.amountCents)}. Elegí de qué cuenta salió: se descuenta ahora de esa cuenta y queda en Movimientos. La deuda se salda cuando ${paying.actorName} confirme.`}
           confirmLabel="Sí, ya pagué"
           noneLabel="Avisar sin elegir cuenta"
           busy={report.isPending}
