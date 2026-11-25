@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { formatCompactDate } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
@@ -39,6 +39,7 @@ export function FixedExpenseDetailSheet({
   onClose: () => void
 }) {
   const toast = useToast()
+  const formatMoney = useFormatMoney()
   const setStatus = useSetFixedExpenseStatus()
   const voidPayment = useVoidPayment()
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -78,7 +79,7 @@ export function FixedExpenseDetailSheet({
           <KindTile kindId={expense.kindId} size="lg" />
           <span className="min-w-0 flex-1">
             <span className="block font-display text-[26px] font-extrabold leading-8">
-              ≈ {formatArs(expense.amountCents)}
+              ≈ {formatMoney(expense.amountCents)}
             </span>
             <span className="block text-[15px] leading-5 text-text-muted">
               estimado {PER[expense.period]} · {PERIOD_LABELS[expense.period]} ·{' '}
@@ -185,7 +186,7 @@ export function FixedExpenseDetailSheet({
               ? 'El gasto ya estaba anulado en Movimientos. El vencimiento vuelve a quedar pendiente para registrarlo de nuevo.'
               : voiding.source === 'linked'
                 ? 'El gasto que cargaste vos no se anula: solo se desvincula de este vencimiento, que vuelve a quedar pendiente. El saldo no cambia.'
-                : `Moni anula el gasto de ${formatArs(voiding.amountCents)} del ${formatCompactDate(voiding.paidOn)} y devuelve el importe a la cuenta (o la deuda a la tarjeta). El vencimiento vuelve a quedar pendiente y el pago queda en el historial como anulado.`
+                : `Moni anula el gasto de ${formatMoney(voiding.amountCents)} del ${formatCompactDate(voiding.paidOn)} y devuelve el importe a la cuenta (o la deuda a la tarjeta). El vencimiento vuelve a quedar pendiente y el pago queda en el historial como anulado.`
           }
           confirmLabel={voiding.voidedElsewhere ? 'Volver a pendiente' : 'Anular pago'}
           cancelLabel="Volver"

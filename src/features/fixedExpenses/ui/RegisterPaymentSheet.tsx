@@ -14,7 +14,7 @@ import { CreditLimitSheet } from '@/features/cards/ui/CreditLimitSheet'
 import { formatAmountInput, parseAmountInput } from '@/shared/lib/amountInput'
 import { formatCompactDate, formatDayMonth } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { addDays, argentinaTodayIso, isIsoDate } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
@@ -51,6 +51,7 @@ export function RegisterPaymentSheet({
   onClose: () => void
 }) {
   const toast = useToast()
+  const formatMoney = useFormatMoney()
   const accounts = useAccounts()
   const register = useRegisterPayment()
   const link = useLinkExistingExpense()
@@ -159,7 +160,7 @@ export function RegisterPaymentSheet({
         <p className="text-[14px] leading-5 text-text-muted">
           Moni no hace el pago: acá registrás lo que ya pagaste. Recién entonces se crea el gasto y
           cambia el saldo o la deuda de la tarjeta. Estimado:{' '}
-          <strong>{formatArs(bill.occurrence.expectedCents)}</strong>.
+          <strong>{formatMoney(bill.occurrence.expectedCents)}</strong>.
         </p>
 
         <div>
@@ -222,14 +223,14 @@ export function RegisterPaymentSheet({
             {candidates.map((c) => (
               <div key={c.id} className="flex items-center gap-2">
                 <span className="min-w-0 flex-1 text-[14px] leading-5">
-                  {formatArs(c.amountCents)} el {formatDayMonth(c.occurredOn)}
+                  {formatMoney(c.amountCents)} el {formatDayMonth(c.occurredOn)}
                   {c.note ? ` («${c.note}»)` : ''}
                 </span>
                 <Button
                   variant="dark"
                   disabled={busy}
                   onClick={() => void linkExisting(c.id)}
-                  aria-label={`Ya lo cargué: ${formatArs(c.amountCents)} el ${formatDayMonth(c.occurredOn)}`}
+                  aria-label={`Ya lo cargué: ${formatMoney(c.amountCents)} el ${formatDayMonth(c.occurredOn)}`}
                 >
                   Ya lo cargué
                 </Button>

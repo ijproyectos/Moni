@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import { formatCompactDate } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { cn } from '@/shared/ui/cn'
 import type { FixedExpense, Occurrence, Payment } from '../domain/fixedExpense'
 import { KindTile } from './KindTile'
@@ -25,6 +25,7 @@ export function PaymentRow({
   onVoid?: (payment: Payment) => void
   onOpen?: () => void
 }) {
+  const formatMoney = useFormatMoney()
   const voided = payment.status === 'voided'
   const stands = payment.status === 'posted' && !payment.voidedElsewhere
   const status = voided
@@ -50,12 +51,12 @@ export function PaymentRow({
             !stands && 'text-text-muted line-through',
           )}
         >
-          {formatArs(payment.amountCents)}
+          {formatMoney(payment.amountCents)}
         </span>
         <span className="block text-[13px] text-text-muted">{status}</span>
         {occurrence && stands && occurrence.expectedCents !== payment.amountCents && (
           <span className="block text-[13px] text-text-muted">
-            Estimado {formatArs(occurrence.expectedCents)}
+            Estimado {formatMoney(occurrence.expectedCents)}
           </span>
         )}
       </span>

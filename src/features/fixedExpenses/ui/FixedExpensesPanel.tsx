@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
 import { formatCompactDate, formatDayMonth } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
@@ -41,6 +41,7 @@ export function FixedExpensesPanel({
   onCount?: (summary: string | null) => void
 }) {
   const toast = useToast()
+  const formatMoney = useFormatMoney()
   const query = useFixedExpenses()
   const skip = useSkipOccurrence()
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['value']>('active')
@@ -131,7 +132,7 @@ export function FixedExpensesPanel({
             {debits.totalCents > 0 && (
               <div
                 role="img"
-                aria-label={`Pagado ${formatArs(debits.paidCents)}, por venir ${formatArs(debits.pendingCents)}`}
+                aria-label={`Pagado ${formatMoney(debits.paidCents)}, por venir ${formatMoney(debits.pendingCents)}`}
                 className="flex gap-[3px]"
               >
                 <span
@@ -326,6 +327,7 @@ function ExpenseRow({
   muted?: boolean
   onOpen: () => void
 }) {
+  const formatMoney = useFormatMoney()
   const per =
     e.period === 'yearly' ? 'por año' : e.period === 'bimonthly' ? 'cada dos meses' : 'por mes'
   const when =
@@ -350,7 +352,7 @@ function ExpenseRow({
           </span>
         </span>
         <span className="text-right">
-          <span className="block text-[15px] font-medium">≈ {formatArs(e.amountCents)}</span>
+          <span className="block text-[15px] font-medium">≈ {formatMoney(e.amountCents)}</span>
           <span className="block text-[11.5px] text-text-muted">{per}</span>
         </span>
       </button>
