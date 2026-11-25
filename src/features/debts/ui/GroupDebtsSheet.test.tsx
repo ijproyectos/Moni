@@ -333,7 +333,7 @@ describe('Me deben: Enviar cobro', () => {
       await user.click(within(sheet).getByRole('button', { name: 'Compartir' }))
       expect(open).toHaveBeenCalledTimes(1)
       const url = String(open.mock.calls[0]?.[0])
-      expect(url).toMatch(/^https:\/\/wa\.me\/\?text=/)
+      expect(url).toMatch(/^https:\/\/api\.whatsapp\.com\/send\?text=/)
       expect(decodeURIComponent(url)).toContain('Alias: ana.galicia')
       expect(state.remind).not.toHaveBeenCalled()
     } finally {

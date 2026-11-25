@@ -241,7 +241,7 @@ describe('Compartir resumen: el resumen completo', () => {
     const user = renderPage()
     await user.click(screen.getByRole('button', { name: 'Compartir' }))
     const url = String(open.mock.calls[0]?.[0])
-    expect(url).toMatch(/^https:\/\/wa\.me\/\?text=/)
+    expect(url).toMatch(/^https:\/\/api\.whatsapp\.com\/send\?text=/)
     expect(decodeURIComponent(url)).toContain('*Total gastado: $100.000*')
   })
 

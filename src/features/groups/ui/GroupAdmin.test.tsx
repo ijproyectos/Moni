@@ -253,12 +253,22 @@ describe('Personas de Moni', () => {
     expect(inviteC).toHaveBeenCalledWith({ groupId: GROUP, userId: 'c' })
   })
 
-  it('searches by name among the contacts (accents and case do not matter)', async () => {
+  it('shows only 3 people at first and "Ver más" opens everybody with a search by name (accents and case do not matter)', async () => {
     contactsData.current = ['Ana María', 'Beto', 'Cami', 'Dani', 'Eze'].map((n, i) => contact('u' + i, n))
     render(<ContactsInvite groupId={GROUP} />)
+    expect(screen.getByText('Cami')).toBeInTheDocument()
+    expect(screen.queryByText('Dani')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Ver más' }))
+    expect(screen.getByText('Eze')).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Buscar entre tus contactos'), 'maria')
-    expect(screen.getByText('Ana María')).toBeInTheDocument()
-    expect(screen.queryByText('Beto')).toBeNull()
+    expect(screen.getAllByText('Ana María').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Beto')).toHaveLength(1) // only the preview behind the sheet
+  })
+
+  it('has no "Ver más" with 3 people or fewer', () => {
+    contactsData.current = ['Ana', 'Beto', 'Cami'].map((n, i) => contact('u' + i, n))
+    render(<ContactsInvite groupId={GROUP} />)
+    expect(screen.queryByRole('button', { name: 'Ver más' })).toBeNull()
   })
 
   it('shows how each invitation stands and lets the administrator cancel a pending one', async () => {
@@ -275,17 +285,16 @@ describe('Personas de Moni', () => {
     expect(cancelInv).toHaveBeenCalledWith('i1')
   })
 
-  it('hides or blocks a contact, and restores it from "Ocultos y bloqueados"', async () => {
+  it('the only option of the menu is "Quitar de la lista": it hides the person, never blocks them', async () => {
     contactsData.current = [contact('b', 'Beto')]
     hiddenContactsData.current = [{ ...contact('x', 'Xavi'), hidden: true, blocked: true }]
     render(<ContactsInvite groupId={GROUP} />)
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Más opciones de Beto' }))
-    await user.click(screen.getByRole('button', { name: 'Bloquear' }))
-    expect(setPref).toHaveBeenCalledWith({ contactId: 'b', hidden: true, blocked: true })
-    await user.click(screen.getByRole('button', { name: /Ocultos y bloqueados \(1\)/ }))
-    await user.click(screen.getByRole('button', { name: 'Desbloquear a Xavi' }))
-    expect(setPref).toHaveBeenCalledWith({ contactId: 'x', hidden: false, blocked: false })
+    expect(screen.queryByRole('button', { name: 'Bloquear' })).toBeNull()
+    expect(screen.queryByText(/Ocultos y bloqueados/)).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Quitar de la lista' }))
+    expect(setPref).toHaveBeenCalledWith({ contactId: 'b', hidden: true, blocked: false })
   })
 
   it('the invited person sees only the group name and who invited them, and answers', async () => {

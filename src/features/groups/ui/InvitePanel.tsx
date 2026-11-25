@@ -1,4 +1,4 @@
-import { Copy, MessageCircle, RefreshCw, Upload } from 'lucide-react'
+import { MessageCircle, RefreshCw, Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toUserMessage } from '@/shared/lib/errors'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
@@ -20,7 +20,7 @@ interface InvitePanelProps {
 }
 
 const actionClass =
-  'flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[16px] font-extrabold aria-disabled:opacity-50 disabled:opacity-50'
+  'flex min-h-11 w-full items-center justify-center gap-2 rounded-full text-[15px] font-extrabold aria-disabled:opacity-50 disabled:opacity-50'
 
 /** The invite message: the group's name, one single link and the code to type by hand. The link is not sent apart again. */
 function inviteMessage(groupName: string, code: string, link: string): string {
@@ -30,6 +30,30 @@ function inviteMessage(groupName: string, code: string, link: string): string {
 /** The message of a personal link: it works once, for one person, and needs no approval. */
 function personalMessage(groupName: string, link: string): string {
   return `Te invito a unirte a nuestro grupo ${groupName} en Moni.\n\nEntrá desde este enlace personal (funciona una sola vez):\n${link}`
+}
+
+/** WhatsApp + native share, side by side: the only two ways out of an invite. */
+function SendButtons({ online, whatsapp, onShare }: { online: boolean; whatsapp: string; onShare: () => void }) {
+  const wa = cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-on-bright')
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {online ? (
+        <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={wa}>
+          <MessageCircle aria-hidden="true" className="size-5" />
+          WhatsApp
+        </a>
+      ) : (
+        <button type="button" disabled className={wa}>
+          <MessageCircle aria-hidden="true" className="size-5" />
+          WhatsApp
+        </button>
+      )}
+      <button type="button" onClick={onShare} disabled={!online} className={cn(actionClass, 'border-2 border-line bg-card')}>
+        <Upload aria-hidden="true" className="size-5" />
+        Compartir
+      </button>
+    </div>
+  )
 }
 
 /**
@@ -45,7 +69,6 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
   const createPersonal = useCreatePersonalInvite()
   const [personalCode, setPersonalCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
   const autoTried = useRef(false)
 
   const active = (invites.data ?? []).find((i) => !i.personal && isInviteActive(i))
@@ -76,7 +99,6 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
     try {
       await revokeInvite.mutateAsync(active.id)
       await createInvite.mutateAsync(groupId)
-      setCopied(false)
     } catch (e) {
       setError(toUserMessage(e))
     }
@@ -94,151 +116,70 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
   const message = code ? inviteMessage(groupName, code, link) : ''
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
-  async function copy() {
-    if (!code) return
-    const ok = await copyText(code, toast, 'Código copiado')
-    setCopied(ok)
-  }
-
   const personalLink = personalCode ? inviteLink(window.location.origin, personalCode) : ''
   const personalText = personalCode ? personalMessage(groupName, personalLink) : ''
 
-  async function copyPersonal() {
-    if (!personalCode) return
-    await copyText(personalLink, toast, 'Enlace copiado')
-  }
-
-  async function sharePersonal() {
-    try {
-      await navigator.share({ title: 'Moni', text: personalText })
-    } catch {
-      // Closed the share dialog.
+  /** Native share where the device has it; otherwise (most desktops) the message is copied so it can be pasted anywhere. */
+  async function shareMessage(text: string) {
+    if (canShare) {
+      try {
+        // The link is already inside the message: passing it as `url` too made the receiver see it twice.
+        await navigator.share({ title: 'Moni', text })
+      } catch {
+        // Closed the share dialog.
+      }
+      return
     }
-  }
-
-  async function share() {
-    try {
-      // The link is already inside the message: passing it as `url` too made the receiver see it twice.
-      await navigator.share({ title: 'Moni', text: message })
-    } catch {
-      // Closed the share dialog.
-    }
+    await copyText(text, toast, 'Mensaje copiado')
   }
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[16px] leading-6 text-text-muted">
-        Pasale este código a quien quieras sumar. Lo escribe en Moni (o abre el link) y entra al
-        grupo.
-      </p>
-      <div className="rounded-[20px] bg-sand px-4 py-5 text-center">
-        <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted">
-          Código del grupo
-        </p>
+      <div className="rounded-[20px] bg-sand px-4 py-3 text-center">
+        <div className="flex items-center justify-center gap-2">
+          <p className="text-[12px] font-extrabold uppercase tracking-[0.12em] text-text-muted">Código del grupo</p>
+          {code && (
+            <button
+              type="button"
+              onClick={() => void regenerate()}
+              disabled={!online || busy}
+              aria-label="Generar un código nuevo"
+              className="flex size-8 items-center justify-center rounded-full text-text-muted disabled:opacity-50"
+            >
+              <RefreshCw aria-hidden="true" className="size-4" />
+            </button>
+          )}
+        </div>
         {code ? (
-          <p
-            aria-label={`Código del grupo ${prettyCode(code)}`}
-            className="mt-1 select-all font-display text-[32px] font-extrabold tracking-[0.1em]"
-          >
+          <p aria-label={`Código del grupo ${prettyCode(code)}`} className="select-all font-display text-[28px] font-extrabold tracking-[0.1em]">
             {prettyCode(code)}
           </p>
         ) : (
-          <p className="mt-1 font-display text-[22px] font-extrabold text-text-muted">
+          <p className="font-display text-[20px] font-extrabold text-text-muted">
             {busy || invites.isLoading ? 'Generando…' : 'Sin código activo'}
           </p>
         )}
+        <p className="text-[13px] leading-5 text-text-muted">Quien entra con el código espera tu aprobación.</p>
       </div>
-      <span role="status" aria-live="polite" className="sr-only">
-        {copied ? 'Código copiado' : ''}
-      </span>
 
-      {!code && !busy && online && invites.isSuccess && (
-        <Button onClick={() => void generate()}>Generar código</Button>
-      )}
+      {!code && !busy && online && invites.isSuccess && <Button onClick={() => void generate()}>Generar código</Button>}
 
       {code && (
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => void copy()}
-            disabled={!online}
-            className={cn(actionClass, 'bg-forest text-cream')}
-          >
-            <Copy aria-hidden="true" className="size-5" />
-            {copied ? 'Código copiado' : 'Copiar código'}
-          </button>
-          {online ? (
-            <a
-              href={whatsappUrl(message)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-on-bright')}
-            >
-              <MessageCircle aria-hidden="true" className="size-5" />
-              Enviar por WhatsApp
-            </a>
-          ) : (
-            <button
-              type="button"
-              disabled
-              className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-on-bright')}
-            >
-              <MessageCircle aria-hidden="true" className="size-5" />
-              Enviar por WhatsApp
-            </button>
-          )}
-          {canShare && (
-            <button
-              type="button"
-              onClick={() => void share()}
-              disabled={!online}
-              className={cn(actionClass, 'border-2 border-line bg-card')}
-            >
-              <Upload aria-hidden="true" className="size-5" />
-              Compartir
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => void regenerate()}
-            disabled={!online || busy}
-            className="mx-auto flex min-h-11 items-center gap-2 text-[15px] font-extrabold text-text-muted disabled:opacity-50"
-          >
-            <RefreshCw aria-hidden="true" className="size-4" />
-            Generar un código nuevo
-          </button>
-        </div>
+        <SendButtons
+          online={online}
+          whatsapp={whatsappUrl(message)}
+          onShare={() => void shareMessage(message)}
+        />
       )}
 
       {online && invites.isSuccess && (
-        <section aria-label="Enlace personal" className="flex flex-col gap-2 rounded-[20px] border border-line p-4">
+        <section aria-label="Enlace personal" className="flex flex-col gap-2 rounded-[20px] border border-line p-3">
           <p className="text-[15px] font-extrabold">Invitar a una persona</p>
-          <p className="text-[14px] leading-5 text-text-muted">
-            Un enlace solo para esa persona: sirve una vez, vence en 7 días y entra al grupo sin que tengas que aprobarla de nuevo.
-            Quien entra con el código general del grupo sí espera tu aprobación.
+          <p className="text-[13px] leading-5 text-text-muted">
+            Creá una invitación de un solo uso. La persona podrá entrar sin aprobación adicional. Válida por 7 días.
           </p>
           {personalCode ? (
-            <div className="flex flex-col gap-2">
-              <a
-                href={whatsappUrl(personalText)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-on-bright')}
-              >
-                <MessageCircle aria-hidden="true" className="size-5" />
-                Enviar enlace por WhatsApp
-              </a>
-              <button type="button" onClick={() => void copyPersonal()} className={cn(actionClass, 'border-2 border-line bg-card')}>
-                <Copy aria-hidden="true" className="size-5" />
-                Copiar enlace personal
-              </button>
-              {canShare && (
-                <button type="button" onClick={() => void sharePersonal()} className={cn(actionClass, 'border-2 border-line bg-card')}>
-                  <Upload aria-hidden="true" className="size-5" />
-                  Compartir enlace personal
-                </button>
-              )}
-            </div>
+            <SendButtons online={online} whatsapp={whatsappUrl(personalText)} onShare={() => void shareMessage(personalText)} />
           ) : (
             <button
               type="button"
