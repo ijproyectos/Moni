@@ -12,15 +12,16 @@ export function PrivacyPage() {
     <LegalLayout title="Privacidad" subtitle={`Última actualización: ${LAST_UPDATED}`}>
       <LegalSection heading="Qué datos guardamos">
         <p>
-          Guardamos lo que hace falta para que Moni funcione: tu nombre y foto (los que trae tu cuenta de Google),
-          tus gastos e ingresos, categorías, presupuestos, metas de ahorro, viajes y la información de los grupos de
-          los que participás. Si usás el Asistente, también guardamos tu conversación con él.
+          Guardamos lo que hace falta para que Moni funcione: tu nombre y foto (los que trae tu cuenta de Google o de
+          Apple), tus gastos e ingresos, categorías, presupuestos, metas de ahorro, viajes y la información de los
+          grupos de los que participás. Si usás el Asistente, también guardamos tu conversación con él.
         </p>
       </LegalSection>
 
       <LegalSection heading="Cómo entrás a Moni">
         <p>
-          Iniciás sesión con tu cuenta de Google; no manejamos ni guardamos tu contraseña, eso lo hace Google.
+          Iniciás sesión con tu cuenta de Google o de Apple; no manejamos ni guardamos tu contraseña, eso lo hace
+          Google o Apple.
         </p>
       </LegalSection>
 

@@ -8,19 +8,23 @@
 import { Capacitor } from '@capacitor/core'
 import { LOG_LEVEL, PURCHASES_ERROR_CODE, Purchases, type CustomerInfo } from '@revenuecat/purchases-capacitor'
 
-// TODO: reemplazar por las API keys PÚBLICAS reales (no son secretas, viajan en el cliente) una vez exista el
-// proyecto en RevenueCat con sus dos apps conectadas (App Store Connect / Google Play Console). RevenueCat emite
-// una clave por tienda.
-const REVENUECAT_IOS_API_KEY_TODO = 'REVENUECAT_IOS_API_KEY_TODO'
-const REVENUECAT_ANDROID_API_KEY_TODO = 'REVENUECAT_ANDROID_API_KEY_TODO'
+// API keys PÚBLICAS de RevenueCat (no son secretas, viajan en el cliente igual que la de Supabase) — una por tienda,
+// se consiguen en app.revenuecat.com → Apps, una vez conectadas App Store Connect y Google Play Console. Vacías
+// hasta que ese proyecto exista: apiKeyForPlatform() devuelve null y configureRevenueCat() no hace nada, igual que
+// en web.
+function envKey(name: 'VITE_REVENUECAT_IOS_API_KEY' | 'VITE_REVENUECAT_ANDROID_API_KEY'): string {
+  const value = import.meta.env[name]
+  return typeof value === 'string' ? value.trim() : ''
+}
 
-// TODO: reemplazar por el identifier real una vez se cree el entitlement "Plus" en el dashboard de RevenueCat.
+// TODO: confirmar que coincide con el identifier real una vez se cree el entitlement "Plus" en el dashboard de
+// RevenueCat (Entitlements) — hoy es solo el nombre propuesto.
 export const PLUS_ENTITLEMENT_ID = 'plus'
 
 function apiKeyForPlatform(): string | null {
   const platform = Capacitor.getPlatform()
-  if (platform === 'ios') return REVENUECAT_IOS_API_KEY_TODO
-  if (platform === 'android') return REVENUECAT_ANDROID_API_KEY_TODO
+  if (platform === 'ios') return envKey('VITE_REVENUECAT_IOS_API_KEY') || null
+  if (platform === 'android') return envKey('VITE_REVENUECAT_ANDROID_API_KEY') || null
   return null
 }
 
@@ -36,7 +40,10 @@ let configuredForUserId: string | null = null
 export async function configureRevenueCat(userId: string): Promise<void> {
   if (!Capacitor.isNativePlatform() || configuredForUserId === userId) return
   const apiKey = apiKeyForPlatform()
-  if (!apiKey) return
+  if (!apiKey) {
+    console.warn('RevenueCat: falta la API key de este build (VITE_REVENUECAT_IOS_API_KEY / _ANDROID_API_KEY).')
+    return
+  }
   await Purchases.setLogLevel({ level: LOG_LEVEL.WARN })
   await Purchases.configure({ apiKey, appUserID: userId })
   configuredForUserId = userId

@@ -92,9 +92,9 @@ export function CategoriesPage() {
 
   async function save(values: CategoryFormValues) {
     setSubmitError(null)
+    const isExpense = (editing?.category?.kind ?? kind) === 'expense'
     const limit = parseBudgetLimit(limitText)
-    // Empty is fine (no limit); something invalid or zero is not, for new and existing categories alike.
-    if (!limit.ok) {
+    if (isExpense && !limit.ok) {
       setSubmitError('Ingresá un límite mayor a cero, o dejalo vacío para no ponerlo.')
       return
     }
@@ -104,10 +104,10 @@ export function CategoriesPage() {
           id: editing.category.id,
           values: { name: values.name, icon: values.icon, color: values.color },
         })
-        if (limit.ok) await saveLimit(editing.category.id, limit.cents)
+        if (isExpense && limit.ok) await saveLimit(editing.category.id, limit.cents)
       } else {
-        const newId = await create.mutateAsync({ ...values, kind })
-        if (limit.ok && limit.cents !== null && newId) await saveLimit(newId, limit.cents)
+        const id = await create.mutateAsync({ ...values, kind })
+        if (isExpense && limit.ok) await saveLimit(id, limit.cents)
       }
       toast.show(editing?.category ? 'Categoría actualizada' : 'Categoría creada', {
         mascotUrl: mascotHappy,

@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Moni — tu plata, bajo control</title>
+    <meta
+      name="description"
+      content="Anotá gastos e ingresos hablando, con una foto o escribiéndole a Moni por WhatsApp. Compartí cuentas en grupo, armá presupuestos y metas de ahorro."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --forest: #0b3d2e;
+        --lime: #9addb6;
+        --cream: #f1eedd;
+        --gold: #e3b23c;
+        --blush: #edb5b0;
+        --canvas: #f1eedd;
+        --surface: #052319;
+        --text-muted: #566a5c;
+        --ink: #0c2418;
+        --card: #faf8ec;
+        --line: #dcd8bf;
+        --tint-green: #d9e6d6;
+        --tint-gold: #f4e6b8;
+        --expense: #b5382a;
+        --income: #177246;
+        --max-w: 1080px;
+        --max-w-text: 720px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --canvas: #0e1a13;
+          --card: #11241a;
+          --ink: #f1eedd;
+          --text-muted: #9fb3a4;
+          --line: #1e3528;
+          --tint-green: #16301f;
+          --tint-gold: #352a12;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: 'Nunito', system-ui, sans-serif;
+        line-height: 1.6;
+        font-size: 16px;
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+      }
+      img {
+        max-width: 100%;
+      }
+      .wrap {
+        max-width: var(--max-w);
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      /* Header */
+      header.site {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: color-mix(in srgb, var(--canvas) 92%, transparent);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--line);
+      }
+      header.site .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 0;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 800;
+        font-size: 20px;
+      }
+      .brand svg {
+        width: 34px;
+        height: auto;
+      }
+      .brand svg path,
+      .brand svg circle:not(.coin) {
+        stroke: var(--forest);
+      }
+      @media (prefers-color-scheme: dark) {
+        .brand svg path,
+        .brand svg circle:not(.coin) {
+          stroke: var(--lime);
+        }
+      }
+      .brand .coin {
+        fill: var(--gold);
+      }
+      .brand .coin-mark {
+        fill: var(--forest);
+      }
+      nav.main-nav {
+        display: flex;
+        gap: 24px;
+      }
+      nav.main-nav a {
+        font-weight: 700;
+        font-size: 15px;
+        text-decoration: none;
+        color: var(--text-muted);
+      }
+      nav.main-nav a:hover {
+        color: var(--ink);
+      }
+      @media (max-width: 760px) {
+        nav.main-nav {
+          display: none;
+        }
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 15px;
+        text-decoration: none;
+        padding: 12px 22px;
+        border: none;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        background: var(--forest);
+        color: var(--cream);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--ink);
+        border: 2px solid var(--line);
+      }
+
+      /* Hero */
+      section.hero {
+        padding: 56px 0 40px;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 40px;
+        align-items: center;
+      }
+      @media (max-width: 860px) {
+        .hero-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .hero h1 {
+        font-size: 44px;
+        line-height: 1.08;
+        margin: 0 0 16px;
+      }
+      @media (max-width: 480px) {
+        .hero h1 {
+          font-size: 32px;
+        }
+      }
+      .hero p.lead {
+        font-size: 18px;
+        color: var(--text-muted);
+        max-width: 48ch;
+        margin: 0 0 24px;
+      }
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .fine-print {
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+      .hero-art {
+        display: flex;
+        justify-content: center;
+      }
+      .hero-art .frame {
+        position: relative;
+        width: 100%;
+        max-width: 340px;
+      }
+      .hero-art .cat {
+        position: absolute;
+        bottom: -14px;
+        right: -18px;
+        width: 108px;
+        filter: drop-shadow(0 10px 16px rgb(0 0 0 / 0.18));
+      }
+
+      /* Phone mockup */
+      .phone-mock {
+        background: var(--forest);
+        border-radius: 32px;
+        padding: 18px;
+        color: var(--cream);
+        box-shadow: 0 30px 60px -24px rgb(0 0 0 / 0.35);
+      }
+      .phone-mock .screen {
+        background: var(--surface);
+        border-radius: 22px;
+        padding: 18px;
+      }
+      .phone-mock .label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--lime);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 4px;
+      }
+      .phone-mock .balance {
+        font-size: 30px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        margin-bottom: 14px;
+      }
+      .phone-mock .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-top: 1px solid rgb(241 238 221 / 0.1);
+        font-size: 14px;
+      }
+      .phone-mock .row .who {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+      }
+      .phone-mock .dot {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        background: var(--tint-green);
+        color: var(--forest);
+      }
+      .phone-mock .amt-exp {
+        color: #ffb3a6;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .phone-mock .amt-inc {
+        color: #bdf3cf;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .mock-tag {
+        font-size: 11px;
+        color: color-mix(in srgb, var(--cream) 55%, transparent);
+        text-align: center;
+        margin-top: 10px;
+        letter-spacing: 0.03em;
+      }
+
+      /* Sections generic */
+      section {
+        padding: 56px 0;
+      }
+      section.alt {
+        background: var(--card);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+      .eyebrow {
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--income);
+        margin: 0 0 8px;
+      }
+      .section-head {
+        max-width: var(--max-w-text);
+        margin: 0 auto 36px;
+        text-align: center;
+      }
+      .section-head h2 {
+        font-size: 30px;
+        margin: 0 0 10px;
+      }
+      .section-head p {
+        color: var(--text-muted);
+        font-size: 17px;
+        margin: 0;
+      }
+
+      /* Problem */
+      .problem-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      @media (max-width: 760px) {
+        .problem-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .problem-card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 24px;
+      }
+      .problem-card .num {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+      }
+      .problem-card h3 {
+        font-size: 18px;
+        margin: 0 0 6px;
+      }
+      .problem-card p {
+        color: var(--text-muted);
+        margin: 0;
+        font-size: 15px;
+      }
+
+      /* Feature rows (alternating) */
+      .feature-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+        align-items: center;
+        padding: 40px 0;
+      }
+      .feature-row + .feature-row {
+        border-top: 1px solid var(--line);
+      }
+      .feature-row.reverse .feature-text {
+        order: 2;
+      }
+      @media (max-width: 860px) {
+        .feature-row,
+        .feature-row.reverse .feature-text {
+          grid-template-columns: 1fr;
+          order: initial;
+        }
+        .feature-row {
+          display: flex;
+          flex-direction: column;
+        }
+      }
+      .feature-text .eyebrow {
+        margin-bottom: 10px;
+      }
+      .feature-text h3 {
+        font-size: 24px;
+        margin: 0 0 10px;
+      }
+      .feature-text p {
+        color: var(--text-muted);
+        font-size: 16px;
+        margin: 0 0 14px;
+        max-width: 46ch;
+      }
+      .feature-text ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .feature-text li {
+        display: flex;
+        gap: 10px;
+        font-size: 15px;
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .feature-text li::before {
+        content: '✓';
+        color: var(--income);
+        font-weight: 800;
+        flex: none;
+      }
+      .feature-art {
+        display: flex;
+        justify-content: center;
+      }
+      .feature-art img {
+        width: 100%;
+        max-width: 260px;
+      }
+      .feature-art .card-mock {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 20px;
+        width: 100%;
+        max-width: 300px;
+      }
+      .feature-art .card-mock .chip {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--tint-gold);
+        color: #6b4e12;
+        margin-bottom: 10px;
+      }
+      .bar-track {
+        height: 10px;
+        border-radius: 999px;
+        background: var(--line);
+        overflow: hidden;
+        margin: 6px 0 4px;
+      }
+      .bar-fill {
+        height: 100%;
+        background: var(--income);
+        border-radius: 999px;
+      }
+      .bar-fill.warn {
+        background: var(--gold);
+      }
+
+      /* How you load — 3 way grid */
+      .load-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      @media (max-width: 760px) {
+        .load-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .load-card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 26px 22px;
+        text-align: center;
+      }
+      .load-card.highlight {
+        border-color: var(--income);
+        box-shadow: 0 0 0 1px var(--income);
+      }
+      .load-card .icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: var(--tint-green);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 14px;
+        font-size: 24px;
+      }
+      .load-card h3 {
+        font-size: 17px;
+        margin: 0 0 6px;
+      }
+      .load-card p {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin: 0;
+      }
+      .load-card .badge {
+        display: inline-block;
+        margin-top: 10px;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--income);
+      }
+
+      /* Pricing */
+      .pricing-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      @media (max-width: 680px) {
+        .pricing-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .price-card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+      }
+      .price-card.plus {
+        background: var(--forest);
+        color: var(--cream);
+        border-color: var(--forest);
+        position: relative;
+      }
+      .price-card.plus .tag {
+        position: absolute;
+        top: -12px;
+        right: 24px;
+        background: var(--gold);
+        color: #4a3400;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 5px 12px;
+        border-radius: 999px;
+      }
+      .price-card h3 {
+        font-size: 20px;
+        margin: 0 0 4px;
+      }
+      .price-card .price {
+        font-size: 15px;
+        font-weight: 800;
+        margin: 0 0 18px;
+        color: var(--income);
+      }
+      .price-card.plus .price {
+        color: var(--lime);
+      }
+      .price-card ul {
+        list-style: none;
+        margin: 0 0 20px;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+      }
+      .price-card li {
+        display: flex;
+        gap: 8px;
+        font-size: 14.5px;
+      }
+      .price-card li::before {
+        content: '✓';
+        font-weight: 800;
+        color: var(--income);
+        flex: none;
+      }
+      .price-card.plus li::before {
+        color: var(--lime);
+      }
+      .price-card .btn {
+        width: 100%;
+      }
+      .price-card.plus .btn-primary {
+        background: var(--cream);
+        color: var(--forest);
+      }
+
+      /* FAQ */
+      .faq {
+        max-width: var(--max-w-text);
+        margin: 0 auto;
+      }
+      details {
+        border-bottom: 1px solid var(--line);
+        padding: 18px 0;
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 800;
+        font-size: 16px;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      details summary::-webkit-details-marker {
+        display: none;
+      }
+      details summary::after {
+        content: '+';
+        font-size: 22px;
+        color: var(--text-muted);
+        margin-left: 12px;
+      }
+      details[open] summary::after {
+        content: '−';
+      }
+      details p {
+        color: var(--text-muted);
+        margin: 10px 0 0;
+        font-size: 15px;
+      }
+
+      /* Final CTA */
+      section.final-cta {
+        background: var(--forest);
+        color: var(--cream);
+        text-align: center;
+        border-radius: 32px;
+        max-width: var(--max-w);
+        margin: 0 auto 56px;
+        padding: 56px 24px;
+      }
+      section.final-cta h2 {
+        font-size: 30px;
+        margin: 0 0 10px;
+      }
+      section.final-cta p {
+        color: var(--lime);
+        margin: 0 0 24px;
+        font-size: 17px;
+      }
+      section.final-cta .cta-row {
+        justify-content: center;
+      }
+      .note-ai {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        text-align: center;
+        margin-top: 10px;
+      }
+
+      /* Footer */
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 40px 0 48px;
+      }
+      .footer-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+      .footer-links {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+      .footer-links a {
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: underline;
+        color: var(--text-muted);
+      }
+      footer .copy {
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site">
+      <div class="wrap bar">
+        <div class="brand">
+          <svg viewBox="4 4 316 112" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g fill="none" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 100 V70 Q20 50 40 50 Q60 50 60 70 V100 M60 70 Q60 50 80 50 Q100 50 100 70 V100" />
+              <circle cx="160" cy="75" r="25" />
+              <path d="M220 100 V70 Q220 50 240 50 Q260 50 260 70 V100" />
+              <path d="M296 100 V58" />
+            </g>
+            <circle class="coin" cx="296" cy="22" r="14" />
+            <rect class="coin-mark" x="291.5" y="17.5" width="9" height="9" rx="2" />
+          </svg>
+          moni
+        </div>
+        <nav class="main-nav" aria-label="Secciones">
+          <a href="#como-cargar">Cómo funciona</a>
+          <a href="#grupos">Grupos</a>
+          <a href="#precios">Precios</a>
+          <a href="#preguntas">Preguntas</a>
+        </nav>
+        <a class="btn btn-primary" href="#precios">Empezar gratis</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="pill" style="background: var(--tint-green); color: var(--income)">Nuevo · cargá por WhatsApp</span>
+          <h1>Llegá a fin de mes sin sorpresas.</h1>
+          <p class="lead">
+            Anotá tus gastos e ingresos hablando, sacándole una foto a un ticket o escribiéndole a Moni por
+            WhatsApp. Compartí cuentas con tu pareja, amigos o tu grupo, y mirá en qué se te va la plata sin
+            abrir una planilla.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#precios">Empezar gratis</a>
+            <a class="btn btn-ghost" href="#como-cargar">Ver cómo funciona</a>
+          </div>
+          <p class="fine-print">Gratis para siempre. Android ya disponible, iOS en camino.</p>
+        </div>
+        <div class="hero-art">
+          <div class="frame">
+            <div class="phone-mock">
+              <div class="screen">
+                <p class="label">Disponible este mes</p>
+                <p class="balance">$184.350</p>
+                <div class="row">
+                  <span class="who"><span class="dot">🛒</span> Súper</span>
+                  <span class="amt-exp">-$12.400</span>
+                </div>
+                <div class="row">
+                  <span class="who"><span class="dot">🏠</span> Alquiler</span>
+                  <span class="amt-exp">-$95.000</span>
+                </div>
+                <div class="row">
+                  <span class="who"><span class="dot">💼</span> Sueldo</span>
+                  <span class="amt-inc">+$310.000</span>
+                </div>
+              </div>
+            </div>
+            <p class="mock-tag">Pantalla de ejemplo</p>
+            <img class="cat" src="assets/moni-gato-fortuna.svg" alt="" aria-hidden="true" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">El problema de siempre</p>
+          <h2>Anotar gastos a mano cansa. Por eso nadie lo sostiene.</h2>
+        </div>
+        <div class="problem-grid">
+          <div class="problem-card">
+            <p class="num">01</p>
+            <h3>Tipear cada gasto</h3>
+            <p>Abrir una app, elegir categoría, escribir el monto… por cada compra chica del día.</p>
+          </div>
+          <div class="problem-card">
+            <p class="num">02</p>
+            <h3>Dividir cuentas a fin de mes</h3>
+            <p>Sumar todo en una planilla para saber quién le debe qué a quién en el grupo o la pareja.</p>
+          </div>
+          <div class="problem-card">
+            <p class="num">03</p>
+            <h3>Perder de vista los gastos chicos</h3>
+            <p>El café, el kiosco, el delivery: son los que más se acumulan y los que menos se registran.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="como-cargar">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Cómo cargás</p>
+          <h2>El registro manual sigue gratis. Pero no hace falta tipear.</h2>
+          <p>Elegí la forma que más te cierre, o combinalas todas.</p>
+        </div>
+        <div class="load-grid">
+          <div class="load-card highlight">
+            <div class="icon">💬</div>
+            <h3>Escribiéndole a Moni</h3>
+            <p>Le mandás un mensaje de WhatsApp a Moni contándole el gasto y listo, queda cargado.</p>
+            <span class="badge">Solo en Moni</span>
+          </div>
+          <div class="load-card">
+            <div class="icon">🎙️</div>
+            <h3>Hablando</h3>
+            <p>Le decís el gasto en voz alta y Moni arma el monto, la categoría y la fecha por vos.</p>
+          </div>
+          <div class="load-card">
+            <div class="icon">📷</div>
+            <h3>Con una foto</h3>
+            <p>Le sacás una foto al ticket y Moni lee el total, el comercio y la fecha.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt" id="grupos">
+      <div class="wrap">
+        <div class="feature-row">
+          <div class="feature-text">
+            <p class="eyebrow">Gastos compartidos</p>
+            <h3>Compartí cuentas con tu pareja, amigos o tu grupo de Hogar.</h3>
+            <p>
+              Todos ven los mismos gastos del grupo y Moni lleva la cuenta de quién puso qué. Moni no mueve ni
+              transfiere tu plata: solo calcula cuánto le corresponde a cada uno.
+            </p>
+            <ul>
+              <li>Grupos de pareja, amigos o Hogar</li>
+              <li>Liquidación clara de quién le debe a quién</li>
+              <li>Cada quien ve su parte como su propio gasto</li>
+            </ul>
+          </div>
+          <div class="feature-art">
+            <img src="assets/personaje_gastos-en-grupo.svg" alt="Ilustración de gastos compartidos en grupo" />
+          </div>
+        </div>
+
+        <div class="feature-row reverse">
+          <div class="feature-text">
+            <p class="eyebrow">Presupuestos y metas</p>
+            <h3>Ponele un límite a cada categoría y un objetivo a cada ahorro.</h3>
+            <p>
+              Armá un presupuesto mensual por categoría y Moni te avisa cuando llegás al 80%. Creá metas de
+              ahorro con una alcancía propia para lo que estás juntando, y llevá aparte el gasto de tus viajes.
+            </p>
+            <ul>
+              <li>Aviso automático al 80% del presupuesto</li>
+              <li>Metas de ahorro con seguimiento visual</li>
+              <li>Presupuesto y gastos de cada viaje, separados</li>
+            </ul>
+          </div>
+          <div class="feature-art">
+            <div class="card-mock">
+              <span class="chip">Supermercado</span>
+              <p style="margin: 0; font-weight: 800; font-size: 20px">$46.200 de $60.000</p>
+              <div class="bar-track"><div class="bar-fill warn" style="width: 77%"></div></div>
+              <p style="margin: 0; font-size: 13px; color: var(--text-muted)">Llegaste al 77% del mes</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-row">
+          <div class="feature-text">
+            <p class="eyebrow">Asistente de Moni</p>
+            <h3>Preguntale a Moni por tus números, en lugar de buscarlos vos.</h3>
+            <p>
+              "¿Cuánto gasté en delivery este mes?", "¿Cómo vengo con el presupuesto de salidas?". El asistente
+              lee tus movimientos reales y te contesta directo, sin que tengas que filtrar nada a mano.
+            </p>
+          </div>
+          <div class="feature-art">
+            <img src="assets/personaje_asistente.svg" alt="Ilustración del asistente de Moni" />
+          </div>
+        </div>
+
+        <div class="feature-row reverse">
+          <div class="feature-text">
+            <p class="eyebrow">Multimoneda</p>
+            <h3>Mirá toda la app en la moneda que quieras.</h3>
+            <p>
+              Elegí tu moneda de visualización entre más de 70 opciones y Moni te muestra todos tus montos
+              convertidos, sin tocar un solo dato cargado. La carga de gastos directamente en dólares está en
+              camino.
+            </p>
+          </div>
+          <div class="feature-art">
+            <img src="assets/personaje_notificaciones.svg" alt="Ilustración de avisos y notificaciones de Moni" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Y además</p>
+          <h2>Lo básico, bien resuelto</h2>
+        </div>
+        <div class="problem-grid">
+          <div class="problem-card">
+            <h3>Exportá o importá en Excel</h3>
+            <p>Bajá todos tus movimientos a una planilla, o subí una para traer gastos que ya tenías cargados.</p>
+          </div>
+          <div class="problem-card">
+            <h3>Entrás con Google o Apple</h3>
+            <p>Sin contraseñas nuevas que recordar: usás la cuenta que ya tenés.</p>
+          </div>
+          <div class="problem-card">
+            <h3>Mercado Pago, automático</h3>
+            <p>Conectá tu cuenta y tus pagos de Mercado Pago aparecen solos, ya categorizados.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt" id="precios">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Precios</p>
+          <h2>Empezá gratis. Sumá Moni Plus cuando lo necesites.</h2>
+          <p>Lo que ya usás en el plan Free sigue siendo gratis para siempre, no se te vence.</p>
+        </div>
+        <div class="pricing-grid">
+          <div class="price-card">
+            <h3>Free</h3>
+            <p class="price">Gratis para siempre</p>
+            <ul>
+              <li>Carga manual ilimitada</li>
+              <li>Presupuestos y metas de ahorro</li>
+              <li>Hasta 1 grupo compartido</li>
+              <li>Exportar tus movimientos</li>
+            </ul>
+            <a class="btn btn-ghost" href="#">Empezar gratis</a>
+          </div>
+          <div class="price-card plus">
+            <span class="tag">Opcional</span>
+            <h3>Moni Plus</h3>
+            <p class="price">Mirá el precio en la tienda de tu celular</p>
+            <ul>
+              <li>Cargá hablando o con una foto, sin límite</li>
+              <li>Grupos compartidos ilimitados</li>
+              <li>Importación automática de Mercado Pago</li>
+              <li>Asistente de Moni para tus números</li>
+            </ul>
+            <a class="btn btn-primary" href="#">Probar Moni Plus</a>
+          </div>
+        </div>
+        <p class="note-ai" style="margin-top: 28px">
+          Se paga con Mercado Pago o desde la tienda de tu celular, se renueva solo y lo cancelás cuando
+          quieras.
+        </p>
+      </div>
+    </section>
+
+    <section id="preguntas">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Preguntas frecuentes</p>
+          <h2>Lo que más preguntan</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>¿Moni mueve o transfiere mi plata en los grupos?</summary>
+            <p>
+              No. Moni solo lleva la cuenta de quién puso qué y cuánto le corresponde a cada uno. Las
+              transferencias las hacen ustedes por fuera, como ya lo hacían.
+            </p>
+          </details>
+          <details>
+            <summary>¿Puedo sacar mis datos de Moni si me quiero ir?</summary>
+            <p>
+              Sí, en cualquier momento podés exportar todos tus movimientos a Excel desde Configuración, y
+              borrar tu cuenta cuando quieras.
+            </p>
+          </details>
+          <details>
+            <summary>¿Qué pasa con la foto o el audio que le mando a Moni?</summary>
+            <p>
+              Se usa un proveedor externo de inteligencia artificial solo para interpretar ese gasto puntual;
+              no se usa para entrenar modelos de terceros ni se comparte con nadie más.
+            </p>
+          </details>
+          <details>
+            <summary>¿Moni me da consejos de inversión?</summary>
+            <p>
+              No. Los resúmenes y el Asistente te ayudan a entender tus propios números, pero no son
+              asesoramiento financiero ni una recomendación de inversión.
+            </p>
+          </details>
+          <details>
+            <summary>¿Necesito tarjeta para usar el plan gratis?</summary>
+            <p>No. El plan Free no te pide ningún medio de pago y no se vence.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta wrap">
+      <h2>Empezá a usar Moni hoy</h2>
+      <p>Cargá tu primer gasto en menos de un minuto.</p>
+      <div class="cta-row">
+        <a class="btn" style="background: var(--cream); color: var(--forest)" href="#">Descargar para Android</a>
+        <a class="btn btn-ghost" style="border-color: var(--lime); color: var(--cream)" href="#">Avisame cuando esté en iOS</a>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <div class="footer-grid">
+          <div class="brand">
+            <svg viewBox="4 4 316 112" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 28px">
+              <g fill="none" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 100 V70 Q20 50 40 50 Q60 50 60 70 V100 M60 70 Q60 50 80 50 Q100 50 100 70 V100" />
+                <circle cx="160" cy="75" r="25" />
+                <path d="M220 100 V70 Q220 50 240 50 Q260 50 260 70 V100" />
+                <path d="M296 100 V58" />
+              </g>
+              <circle class="coin" cx="296" cy="22" r="14" />
+              <rect class="coin-mark" x="291.5" y="17.5" width="9" height="9" rx="2" />
+            </svg>
+            moni
+          </div>
+          <!-- Placeholder: legal-site se publica como un sitio de Netlify aparte, reemplazar por su URL real. -->
+          <nav class="footer-links" aria-label="Legales">
+            <a href="/legal-site/#terminos">Términos de uso</a>
+            <a href="/legal-site/#privacidad">Privacidad</a>
+            <a href="/legal-site/#acerca-de">Acerca de Moni</a>
+          </nav>
+        </div>
+        <p class="copy">
+          Moni no da asesoramiento financiero: es contenido para ayudarte a entender tus propios números. ©
+          2026 Moni. Hecho en Argentina.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
