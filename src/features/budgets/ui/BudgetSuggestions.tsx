@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { toUserMessage } from '@/shared/lib/errors'
-import { formatArs } from '@/shared/lib/money'
 import { CategoryIconCircle } from '@/shared/ui/IconCircle'
 import { SectionLabel } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { useBudgetSuggestions, useCreateBudget } from '../api/useBudgets'
 import type { BudgetSuggestion } from '../domain/budget'
 
 /** "Sugerencias" for the categories screen: one tap creates the limit. Hidden while empty or on error. */
 export function BudgetSuggestions() {
+  const formatMoney = useFormatMoney()
   const suggestions = useBudgetSuggestions()
   const create = useCreateBudget()
   const toast = useToast()
@@ -20,7 +21,7 @@ export function BudgetSuggestions() {
     setPendingId(s.categoryId)
     try {
       await create.mutateAsync({ categoryId: s.categoryId, amountCents: s.suggestedCents })
-      toast.show(`Límite de ${formatArs(s.suggestedCents)} para ${s.name}`)
+      toast.show(`Límite de ${formatMoney(s.suggestedCents)} para ${s.name}`)
     } catch (e) {
       toast.show(toUserMessage(e), { tone: 'error' })
     } finally {
@@ -43,7 +44,7 @@ export function BudgetSuggestions() {
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[17px] font-extrabold">{s.name}</span>
               <span className="block text-[14px] text-text-muted">
-                {formatArs(s.suggestedCents)} por mes · {s.monthsWithData} de 3 meses con gastos
+                {formatMoney(s.suggestedCents)} por mes · {s.monthsWithData} de 3 meses con gastos
               </span>
             </span>
             <button

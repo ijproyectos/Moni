@@ -1,22 +1,24 @@
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/personaje_alerta-de-presupuesto.svg'
-import { formatArs } from '@/shared/lib/money'
+import type { Cents } from '@/shared/lib/money'
 import type { IsoDate } from '@/shared/lib/month'
 import { Card } from '@/shared/ui/Card'
 import { ProgressBar } from '@/shared/ui/kit'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { useBudgetStatus } from '../api/useBudgets'
 import { budgetAlerts, type BudgetStatus } from '../domain/budget'
 
 const MAX_ROWS = 3
 
-function alertText(b: BudgetStatus): string {
+function alertText(b: BudgetStatus, formatMoney: (cents: Cents) => string): string {
   return b.state === 'over'
-    ? `Te pasaste ${formatArs(-b.remainingCents)} en ${b.name}`
-    : `${b.name}: llevás el ${Math.floor(b.percent)}%, te quedan ${formatArs(b.remainingCents)}`
+    ? `Te pasaste ${formatMoney(-b.remainingCents)} en ${b.name}`
+    : `${b.name}: llevás el ${Math.floor(b.percent)}%, te quedan ${formatMoney(b.remainingCents)}`
 }
 
 /** Inicio card: categories that reached 80% of their monthly limit. Renders nothing when all is fine. */
 export function BudgetAlertsCard({ month }: { month: IsoDate }) {
+  const formatMoney = useFormatMoney()
   const budgets = useBudgetStatus(month)
   const alerts = budgetAlerts(budgets.data ?? [])
   if (alerts.length === 0) return null
@@ -37,7 +39,7 @@ export function BudgetAlertsCard({ month }: { month: IsoDate }) {
       <ul className="mt-3 flex flex-col gap-3">
         {alerts.slice(0, MAX_ROWS).map((b) => (
           <li key={b.budgetId}>
-            <p className="text-[16px] font-extrabold">{alertText(b)}</p>
+            <p className="text-[16px] font-extrabold">{alertText(b, formatMoney)}</p>
             <ProgressBar
               value={Math.min(1, b.percent / 100)}
               label={`Límite de ${b.name}`}
