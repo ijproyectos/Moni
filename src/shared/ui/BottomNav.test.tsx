@@ -5,6 +5,7 @@ import { ShellBottomBar } from '@/app/AppShell'
 import { BottomNav } from './BottomNav'
 
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: null }) }))
+vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: false }) }))
 
 function renderNav(path = '/') {
   return render(
@@ -44,6 +45,33 @@ describe('BottomNav', () => {
   it('has no add button: adding lives in Inicio', () => {
     renderNav()
     expect(screen.queryByRole('button')).toBeNull()
+  })
+})
+
+describe('BottomNav: Moni Plus crown', () => {
+  function renderPlus(isPlus: boolean, onCrownClick = vi.fn()) {
+    render(
+      <MemoryRouter>
+        <BottomNav isPlus={isPlus} onCrownClick={onCrownClick} />
+      </MemoryRouter>,
+    )
+    return onCrownClick
+  }
+
+  it('with Plus the crown sits centered on the profile avatar, outside the link, and opens the benefits', async () => {
+    const onClick = renderPlus(true)
+    const crown = screen.getByRole('button', { name: /Moni Plus activo/ })
+    expect(crown).toHaveAttribute('data-plus-crown')
+    expect(crown).toHaveClass('left-1/2', '-translate-x-1/2')
+    expect(crown.closest('a')).toBeNull()
+    expect(crown.parentElement).toContainElement(screen.getByRole('link', { name: 'Perfil' }))
+    await userEvent.click(crown)
+    expect(onClick).toHaveBeenCalled()
+  })
+
+  it('on the free plan the avatar has no crown', () => {
+    renderPlus(false)
+    expect(document.querySelector('[data-plus-crown]')).toBeNull()
   })
 })
 

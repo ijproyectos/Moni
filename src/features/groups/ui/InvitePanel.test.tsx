@@ -10,6 +10,7 @@ const CODE = 'ABCD2345'
 const invitesData = vi.hoisted(() => ({ current: [] as GroupInvite[] }))
 const createInvite = vi.hoisted(() => vi.fn().mockResolvedValue('NEWC2345'))
 const revokeInvite = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const createPersonal = vi.hoisted(() => vi.fn().mockResolvedValue('PERS2345'))
 
 vi.mock('../api/useGroups', () => ({
   useGroupInvites: () => ({
@@ -19,6 +20,7 @@ vi.mock('../api/useGroups', () => ({
   }),
   useCreateInvite: () => ({ mutateAsync: createInvite, isPending: false }),
   useRevokeInvite: () => ({ mutateAsync: revokeInvite, isPending: false }),
+  useCreatePersonalInvite: () => ({ mutateAsync: createPersonal, isPending: false }),
 }))
 
 const invite = (over: Partial<GroupInvite> = {}): GroupInvite => ({
@@ -147,6 +149,19 @@ describe('InvitePanel', () => {
     await user.click(screen.getByRole('button', { name: /Generar un código nuevo/ }))
     expect(revokeInvite).toHaveBeenCalledWith('inv-1')
     await waitFor(() => expect(createInvite).toHaveBeenCalledWith(GROUP))
+  })
+
+  it('a personal link is made on demand, is never taken for the group code, and says it needs no approval', async () => {
+    invitesData.current = [invite({ id: 'p1', code: 'ZZZZ9999', personal: true, maxUses: 1 }), invite()]
+    const user = setup()
+    expect(screen.getByText('ABCD-2345')).toBeInTheDocument()
+    expect(screen.queryByText('ZZZZ-9999')).toBeNull()
+    expect(screen.getByText(/sin que tengas que aprobarla de nuevo/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Crear enlace personal' }))
+    expect(createPersonal).toHaveBeenCalledWith(GROUP)
+    const wa = await screen.findByRole('link', { name: 'Enviar enlace por WhatsApp' })
+    expect(decodeURIComponent(wa.getAttribute('href') ?? '')).toContain('PERS2345')
+    expect(createInvite).not.toHaveBeenCalled()
   })
 })
 

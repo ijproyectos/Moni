@@ -2,8 +2,9 @@ import { Camera, Mic, Pencil } from 'lucide-react'
 import { useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import { useParseReceipt } from '@/features/ai/api/useParseReceipt'
 import { usePlus } from '@/features/plus/api/usePlus'
-import type { PlusGateReason } from '@/features/plus/domain/plus'
-import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import type { PlusFeature } from '@/features/plus/domain/entitlements'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
+import { PlusTag } from '@/features/plus/ui/PlusTag'
 import { useMovementSheet } from './movementSheetContext'
 import { ReceiptScan } from './ReceiptScan'
 import { VoiceSheet } from './VoiceSheet'
@@ -22,7 +23,7 @@ export function QuickAdd() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   // Free plan: voice and photo open the Plus upsell instead (the server enforces it too).
   const { isFree } = usePlus()
-  const [upsell, setUpsell] = useState<PlusGateReason | null>(null)
+  const [upsell, setUpsell] = useState<PlusFeature | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const scan = useParseReceipt()
   const { mutate: scanReceipt } = scan
@@ -45,11 +46,15 @@ export function QuickAdd() {
   }
 
   function onPhoto() {
-    if (isFree) setUpsell('receipt')
+    if (isFree) setUpsell('photo')
     else openPicker()
   }
 
   function onVoice() {
+    if (isFree) {
+      setUpsell('voice')
+      return
+    }
     setVoiceCount((n) => n + 1)
     setVoiceOpen(true)
   }
@@ -73,11 +78,11 @@ export function QuickAdd() {
         onChange={onFileChosen}
       />
       <section aria-label="Cargar un movimiento" className="flex items-start justify-center gap-7 px-[18px]">
-        <CaptureButton label="Foto" onClick={onPhoto} primary icon={<Camera aria-hidden="true" className="size-[22px]" strokeWidth={2.2} />} />
+        <CaptureButton label="Foto" onClick={onPhoto} tag primary icon={<Camera aria-hidden="true" className="size-[22px]" strokeWidth={2.2} />} />
         <CaptureButton label="Manual" onClick={onManual} icon={<Pencil aria-hidden="true" className="size-5" strokeWidth={2.2} />} />
-        <CaptureButton label="Voz" onClick={onVoice} icon={<Mic aria-hidden="true" className="size-[22px]" strokeWidth={2.2} />} />
+        <CaptureButton label="Voz" onClick={onVoice} tag icon={<Mic aria-hidden="true" className="size-[22px]" strokeWidth={2.2} />} />
       </section>
-      {upsell && <PlusSheet reason={upsell} onClose={() => setUpsell(null)} />}
+      {upsell && <PlusPromoDialog feature={upsell} onClose={() => setUpsell(null)} />}
       {voiceOpen && <VoiceSheet key={voiceCount} onClose={() => setVoiceOpen(false)} />}
       {receiptOpen && (
         <ReceiptScan
@@ -100,14 +105,18 @@ function CaptureButton({
   icon,
   onClick,
   primary = false,
+  tag = false,
 }: {
   label: string
   icon: ReactNode
   onClick: () => void
   primary?: boolean
+  /** Shows the small PLUS label over the button (Free people only). */
+  tag?: boolean
 }) {
   return (
     <button type="button" onClick={onClick} className="flex min-w-16 flex-col items-center gap-1.5 outline-none">
+      <span className="relative">
       <span
         className={`flex size-[60px] items-center justify-center rounded-full border motion-safe:transition motion-safe:active:scale-[0.97] ${
           primary
@@ -116,6 +125,8 @@ function CaptureButton({
         }`}
       >
         {icon}
+      </span>
+      {tag && <PlusTag className="absolute -right-2 -top-1.5" />}
       </span>
       <span className="text-[13px] font-bold text-[#0C2418] dark:text-[#F1EEDD]">{label}</span>
     </button>

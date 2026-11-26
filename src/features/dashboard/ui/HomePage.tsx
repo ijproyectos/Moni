@@ -1,10 +1,6 @@
 import { useMemo } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
-import { useAuth } from '@/features/auth/api/authContext'
 import { useProfile } from '@/features/auth/api/useProfile'
-import { resolveAvatarUrl } from '@/features/auth/domain/avatar'
-import { initialOf } from '@/features/auth/domain/profile'
-import { usePlus } from '@/features/plus/api/usePlus'
 import { availableBalance, isCreditCard } from '@/features/accounts/domain/account'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { useMyGroups } from '@/features/groups/api/useGroups'
@@ -49,7 +45,6 @@ const RECENT_LIMIT = 20
 export function HomePage() {
   // Inicio always shows the current month.
   const month = monthStart(todayIso())
-  const { user } = useAuth()
   const { data: profile } = useProfile()
   const summary = useMonthSummary(month)
   const transactions = useTransactions()
@@ -60,7 +55,6 @@ export function HomePage() {
   const toast = useToast()
   const voidTransaction = useVoidTransaction()
   const voidPlan = useVoidInstallmentPlan()
-  const plus = usePlus()
   const balance = useMemo(() => {
     const active = (accounts.data ?? []).filter((a) => a.archivedAt === null)
     const totalCents = availableBalance(accounts.data ?? [])
@@ -154,9 +148,6 @@ export function HomePage() {
         summary={summary.data}
         // While the full history loads, the month's own latest movements stand in.
         movements={transactions.data ? movements : undefined}
-        initial={initialOf(profile?.display_name, user?.email ?? '')}
-        isPlus={plus.isPlus}
-        photoUrl={resolveAvatarUrl({ user, profileUrl: profile?.avatar_url })}
         name={profile?.display_name?.trim().split(/\s+/)[0] || null}
         movementActions={movementActions}
         balance={balance}

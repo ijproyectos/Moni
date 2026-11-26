@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
   createGroup: vi.fn(),
 }))
 
+vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: true, isFree: false, isLoading: false, expiresAt: null }) }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 vi.mock('../api/useTrips', () => ({
   useTrips: () => state.trips,

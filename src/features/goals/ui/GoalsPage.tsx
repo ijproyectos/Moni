@@ -33,6 +33,8 @@ import { planNow, recommend } from '../domain/savingsPlan'
 import { yearSavings } from '../domain/savingsYear'
 import mascotMoni from '@/assets/mascot/personaje_asistente.svg'
 import { SavingsHero } from './goalVisuals'
+import { usePlanAccess } from '@/features/plus/api/usePlanAccess'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
 import { NewGoalSheet } from './NewGoalSheet'
 import { SavingsGoalCard } from './SavingsGoalCard'
 import { SavingsNotices } from './SavingsNotices'
@@ -53,11 +55,15 @@ export function GoalsPage() {
   const [params, setParams] = useSearchParams()
   const [creating, setCreating] = useState(false)
   const [creatingShared, setCreatingShared] = useState(false)
+  // Free plan: ONE goal in total (any state). Past that, a new one shows the Moni Plus promo (existing goals are never touched).
+  const access = usePlanAccess()
+  const [promo, setPromo] = useState(false)
   const shared = sharedGoals.filter((g) => g.shared)
   const all = savings.data?.goals ?? []
   const active = goalsByStatus(all, 'active')
   const done = goalsByStatus(all, 'completed')
   const others = goalsByStatus(all, 'paused', 'archived')
+  const startCreating = () => (access.canCreate('goals', all.length) ? setCreating(true) : setPromo(true))
   const tab: Tab =
     FEATURES.sharedGoals && params.get('tab') === 'shared' && shared.length > 0 ? 'shared' : 'mine'
   const today = todayIso()
@@ -83,7 +89,7 @@ export function GoalsPage() {
           <button
             type="button"
             aria-label="Agregar una meta"
-            onClick={() => setCreating(true)}
+            onClick={startCreating}
             className={MENTA_CIRCLE}
           >
             <Plus aria-hidden="true" className="size-5" strokeWidth={2} />
@@ -189,7 +195,7 @@ export function GoalsPage() {
                     title="Todavía no tenés metas"
                     description="Reservá plata de tus cuentas para un viaje, un auto o tu fondo de emergencia. La plata no sale de tu cuenta."
                     action={
-                      <Button onClick={() => setCreating(true)}>Crear mi primera meta</Button>
+                      <Button onClick={startCreating}>Crear mi primera meta</Button>
                     }
                   />
                 </div>
@@ -242,7 +248,7 @@ export function GoalsPage() {
               {all.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setCreating(true)}
+                  onClick={startCreating}
                   className={cn(
                     'flex h-[50px] items-center justify-center gap-2 rounded-full bg-card text-[15px] font-medium',
                     FOCUS_RING,
@@ -294,6 +300,7 @@ export function GoalsPage() {
       )}
 
       {creating && <NewGoalSheet onClose={() => setCreating(false)} />}
+      {promo && <PlusPromoDialog feature="goals" onClose={() => setPromo(false)} />}
       {FEATURES.sharedGoals && creatingShared && (
         <SharedGoalSheet
           onClose={() => setCreatingShared(false)}

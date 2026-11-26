@@ -23,9 +23,6 @@ vi.mock('../api/mpImportRepository', async (original) => ({
 }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => plus.value }))
-vi.mock('@/features/plus/ui/PlusSheet', () => ({
-  PlusSheet: () => <div role="dialog" aria-label="plus-sheet" />,
-}))
 
 function Where() {
   const loc = useLocation()
@@ -69,8 +66,8 @@ describe('MpImportSection', () => {
   it('free user sees the upsell and the Plus sheet, never a broken connect button', async () => {
     plus.value = { isPlus: false, isFree: true }
     const user = renderSection()
-    await user.click(await screen.findByRole('button', { name: 'Vincular Mercado Pago' }))
-    expect(screen.getByRole('dialog', { name: 'plus-sheet' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: /^Vincular Mercado Pago/ }))
+    expect(screen.getByRole('dialog', { name: 'Tu plata, siempre al día' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Vincular con Mercado Pago' })).toBeNull()
     expect(repo.connectMp).not.toHaveBeenCalled()
   })
@@ -80,7 +77,7 @@ describe('MpImportSection', () => {
     const assign = vi.fn()
     vi.spyOn(window, 'location', 'get').mockReturnValue({ ...window.location, assign } as Location)
     const user = renderSection()
-    await user.click(await screen.findByRole('button', { name: 'Vincular Mercado Pago' }))
+    await user.click(await screen.findByRole('button', { name: /^Vincular Mercado Pago/ }))
     await user.click(screen.getByRole('checkbox'))
     await user.click(screen.getByRole('button', { name: 'Vincular con Mercado Pago' }))
     await waitFor(() => expect(repo.connectMp).toHaveBeenCalledWith('now'))
@@ -94,7 +91,7 @@ describe('MpImportSection', () => {
     const { MpImportError } = await import('../api/mpImportRepository')
     repo.connectMp.mockRejectedValue(new MpImportError('rate_limited'))
     const user = renderSection()
-    await user.click(await screen.findByRole('button', { name: 'Vincular Mercado Pago' }))
+    await user.click(await screen.findByRole('button', { name: /^Vincular Mercado Pago/ }))
     await user.click(screen.getByRole('checkbox'))
     await user.click(screen.getByRole('button', { name: 'Vincular con Mercado Pago' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/unos minutos/)
@@ -153,7 +150,7 @@ describe('MpImportSection', () => {
 
   it('does not fetch duplicates or suggestions without a connection', async () => {
     renderSection()
-    await screen.findByRole('button', { name: 'Vincular Mercado Pago' })
+    await screen.findByRole('button', { name: /^Vincular Mercado Pago/ })
     expect(repo.getDuplicates).not.toHaveBeenCalled()
     expect(repo.getSubscriptionSuggestions).not.toHaveBeenCalled()
   })

@@ -13,12 +13,8 @@ interface HomeScreenProps {
   movements?: readonly RecentMovement[]
   /** Edit and void from the list; without it the rows are plain. */
   movementActions?: MovementActions
-  initial: string
   /** First name for the greeting. */
   name?: string | null
-  photoUrl?: string | null
-  /** Moni Plus is running right now: shows the PLUS badge on the avatar. */
-  isPlus?: boolean
   /** "Lo que tenés": the real sum of the payment methods, how many there are and where most of it is. */
   balance?: HomeBalance
 }
@@ -27,10 +23,7 @@ export function HomeScreen({
   summary,
   movements,
   movementActions,
-  initial,
   name = null,
-  photoUrl,
-  isPlus,
   balance = { totalCents: 0, methodCount: 0 },
 }: HomeScreenProps) {
   const recent = movements ?? summary.recent
@@ -38,12 +31,7 @@ export function HomeScreen({
   return (
     <div>
       <MoniAgent name={name} />
-      <HomeHeader
-        initial={initial}
-        photoUrl={photoUrl}
-        isPlus={isPlus}
-        name={name}
-      />
+      <HomeHeader name={name} />
 
       <div className="flex flex-col gap-4 pb-4 pt-1">
         <HomeHero balance={balance} />

@@ -278,6 +278,7 @@ export interface Database {
             | 'recurring_due'
             | 'group_archived'
             | 'expense_added'
+            | 'member_left'
           group_id: string
           group_name: string
           actor_id: string
@@ -289,6 +290,7 @@ export interface Database {
           invitation_id: string | null
           occurrence_id: string | null
           subject: string | null
+          group_kind?: string | null
           transfer_label: string | null
           transfer_alias: string | null
           transfer_cbu: string | null
@@ -502,6 +504,7 @@ export interface Database {
           uses: number
           revoked_at: string | null
           created_at: string
+          personal?: boolean
         }
         Insert: never
         Update: never
@@ -1022,7 +1025,15 @@ export interface Database {
         Args: { p_name: string; p_kind: GroupKind }
         Returns: string
       }
+      open_my_notice: {
+        Args: { p_id: string }
+        Returns: string
+      }
       create_group_invite: {
+        Args: { p_group: string }
+        Returns: string
+      }
+      create_personal_group_invite: {
         Args: { p_group: string }
         Returns: string
       }

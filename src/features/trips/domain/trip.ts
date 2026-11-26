@@ -90,6 +90,18 @@ export function tripStatus(
   return 'ongoing'
 }
 
+/**
+ * Trips the person has created in total (the free plan allows one, whatever its kind and whatever its state): every personal trip plus
+ * the trip dates of the groups they created. Ended or archived ones still count, so closing a trip never frees the limit.
+ */
+export function tripsCreatedCount(
+  personalTrips: readonly unknown[],
+  groupTrips: readonly { groupId: string }[],
+  groupsCreatedByMe: ReadonlySet<string>,
+): number {
+  return personalTrips.length + groupTrips.filter((t) => groupsCreatedByMe.has(t.groupId)).length
+}
+
 /** Expenses that belong to the trip and still count (posted, plain expenses). */
 export function tripExpenses(tripId: string, transactions: readonly Transaction[]): Transaction[] {
   return transactions.filter(

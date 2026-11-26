@@ -138,7 +138,7 @@ describe('QuickAdd (Foto, Manual, Voz)', () => {
   it('shows the three ways to load a movement and no cat', () => {
     renderQuickAdd()
     const section = screen.getByRole('region', { name: 'Cargar un movimiento' })
-    for (const name of ['Foto', 'Manual', 'Voz']) expect(within(section).getByRole('button', { name })).toBeInTheDocument()
+    for (const name of [/Foto$/, /^Manual/, /Voz$/]) expect(within(section).getByRole('button', { name })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Hablá con Moni' })).toBeNull()
   })
 
@@ -153,7 +153,7 @@ describe('QuickAdd (Foto, Manual, Voz)', () => {
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => undefined)
     const { user } = renderQuickAdd()
     const input = screen.getByTestId('receipt-input')
-    await user.click(screen.getByRole('button', { name: 'Foto' }))
+    await user.click(screen.getByRole('button', { name: /Foto$/ }))
     expect(click).toHaveBeenCalledTimes(1)
     expect(screen.getByTestId('receipt-input')).toBe(input)
     expect(input).toHaveAttribute('accept', 'image/*')
@@ -162,26 +162,41 @@ describe('QuickAdd (Foto, Manual, Voz)', () => {
 
   it('"Voz" opens the existing voice capture', async () => {
     const { user } = renderQuickAdd()
-    await user.click(screen.getByRole('button', { name: 'Voz' }))
+    await user.click(screen.getByRole('button', { name: /Voz$/ }))
     expect(screen.getByRole('dialog', { name: 'Carga por voz' })).toBeInTheDocument()
   })
 })
 
 describe('QuickAdd free plan gate', () => {
+  it('Free sees the small PLUS label on Foto and Voz only; Moni Plus and Manual have none', () => {
+    plusState.isFree = true
+    renderQuickAdd()
+    expect(screen.getByRole('button', { name: /Foto$/ })).toHaveTextContent('PLUS')
+    expect(screen.getByRole('button', { name: /Voz$/ })).toHaveTextContent('PLUS')
+    expect(screen.getByRole('button', { name: 'Manual' })).not.toHaveTextContent('PLUS')
+    expect(document.querySelectorAll('[data-plus-tag]')).toHaveLength(2)
+  })
+
+  it('Moni Plus sees no label', () => {
+    plusState.isFree = false
+    renderQuickAdd()
+    expect(document.querySelectorAll('[data-plus-tag]')).toHaveLength(0)
+  })
+
   it('"Voz" opens the Plus upsell for a free user', async () => {
     plusState.isFree = true
     const { user } = renderQuickAdd()
-    await user.click(screen.getByRole('button', { name: 'Voz' }))
-    expect(await screen.findByRole('dialog', { name: /Cargar por voz es de Moni Plus/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Voz$/ }))
+    expect(await screen.findByRole('dialog', { name: 'Contame qué gastaste' })).toBeInTheDocument()
   })
 
   it('does not open the file picker for a free user and keeps Manual free', async () => {
     plusState.isFree = true
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
     const { user, openNew } = renderQuickAdd()
-    await user.click(screen.getByRole('button', { name: 'Foto' }))
+    await user.click(screen.getByRole('button', { name: /Foto$/ }))
     expect(click).not.toHaveBeenCalled()
-    expect(await screen.findByRole('dialog', { name: /Escanear tickets es de Moni Plus/ })).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Sacá una foto y yo me encargo' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cerrar' }))
     await user.click(screen.getByRole('button', { name: 'Manual' }))
     expect(openNew).toHaveBeenCalled()
@@ -195,10 +210,10 @@ describe('QuickAdd free plan gate', () => {
       ),
     })
     const { user } = renderQuickAdd()
-    await user.click(screen.getByRole('button', { name: 'Foto' }))
+    await user.click(screen.getByRole('button', { name: /Foto$/ }))
     pickPhoto()
     expect(
-      await screen.findByRole('dialog', { name: /Escanear tickets es de Moni Plus/ }),
+      await screen.findByRole('dialog', { name: 'Sacá una foto y yo me encargo' }),
     ).toBeInTheDocument()
   })
 })

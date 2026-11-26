@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
+import { usePlus } from '@/features/plus/api/usePlus'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { useImportTransactions } from '@/features/transactions/api/useTransactions'
 import { toUserMessage } from '@/shared/lib/errors'
@@ -41,7 +43,7 @@ interface ImportMovementsSheetProps {
 }
 
 /** "Importar desde Excel": pick a .xlsx built from our own export, preview what would come in, then confirm. */
-export function ImportMovementsSheet({ onClose }: ImportMovementsSheetProps) {
+function ImportMovementsCapture({ onClose }: ImportMovementsSheetProps) {
   const toast = useToast()
   const categories = useCategories()
   const accounts = useAccounts()
@@ -179,4 +181,11 @@ export function ImportMovementsSheet({ onClose }: ImportMovementsSheetProps) {
       )}
     </BottomSheet>
   )
+}
+
+/** Importing from Excel is Moni Plus: a Free person who gets here any other way sees the promo, never the importer. (Exporting stays free.) */
+export function ImportMovementsSheet({ onClose }: ImportMovementsSheetProps) {
+  const { isFree } = usePlus()
+  if (isFree) return <PlusPromoDialog feature="excel_import" onClose={onClose} />
+  return <ImportMovementsCapture onClose={onClose} />
 }

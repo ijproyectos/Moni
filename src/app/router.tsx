@@ -76,6 +76,7 @@ import { BudgetPage } from '@/features/budgets/ui/BudgetPage'
 import type { FeatureFlag } from '@/shared/config/features'
 import { AppShell } from './AppShell'
 import { FeatureGate } from './FeatureGate'
+import { PlusRoute } from './PlusRoute'
 import { PlusThanksRoute } from './PlusThanksRoute'
 
 /** Wraps a screen so it is only reachable while its flag is on (otherwise it redirects home). */
@@ -89,9 +90,9 @@ const simulatedRoutes = [
   { path: 'logros', element: <AchievementsPage /> },
   { path: 'metas/cuotas', element: <InstallmentsPage /> },
   { path: 'metas/:id', element: <GoalDetailPage /> },
-  { path: 'hormigas', element: <AntsPage /> },
+  { path: 'hormigas', element: <PlusRoute feature="ants"><AntsPage /></PlusRoute> },
   { path: 'insights', element: <InsightsPage /> },
-  { path: 'salud', element: <HealthPage /> },
+  { path: 'salud', element: <PlusRoute feature="health"><HealthPage /></PlusRoute> },
   { path: 'tarjetas/simulador', element: <InstallmentSimulatorPage /> },
   { path: 'hormigas/aviso-semanal', element: gated('weeklyDigest', <WeeklyDigestPage />) },
   { path: 'avisos', element: gated('notifications', <NotificationsPage />) },
@@ -101,7 +102,7 @@ const simulatedRoutes = [
   { path: 'aguinaldo', element: gated('aguinaldo', <AguinaldoPage />) },
   { path: 'aguinaldo/reparto', element: gated('aguinaldo', <AguinaldoSplitPage />) },
   { path: 'aguinaldo/listo', element: gated('aguinaldo', <AguinaldoDonePage />) },
-  { path: 'recurrentes', element: <RecurringPage /> },
+  { path: 'recurrentes', element: <PlusRoute feature="recurring"><RecurringPage /></PlusRoute> },
   { path: 'fijos', element: <LegacyFijosRedirect /> },
   // Old standalone credit-card screen: now Medios de pago (Tarjetas / Cuotas tabs).
   { path: 'tarjetas', element: <LegacyTarjetasRedirect /> },
@@ -139,10 +140,10 @@ export const appRoutes = [
     path: 'plus/gracias',
     element: <PlusThanksRoute />,
   },
-  { path: 'este-mes', element: <MonthReportPage /> },
-  { path: 'tu-anio', element: <YearReportPage /> },
-  { path: 'ingresos', element: <IncomeByMonthPage /> },
-  { path: 'informes/asistente', element: <AssistantPage /> },
+  { path: 'este-mes', element: <PlusRoute feature="reports"><MonthReportPage /></PlusRoute> },
+  { path: 'tu-anio', element: <PlusRoute feature="reports"><YearReportPage /></PlusRoute> },
+  { path: 'ingresos', element: <PlusRoute feature="reports"><IncomeByMonthPage /></PlusRoute> },
+  { path: 'informes/asistente', element: <PlusRoute feature="assistant"><AssistantPage /></PlusRoute> },
   ...simulatedRoutes,
 ]
 

@@ -11,7 +11,7 @@ import {
 } from '@/features/ai/ui/useSpeechRecognition'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { usePlus } from '@/features/plus/api/usePlus'
-import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
 import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { OFFLINE_MESSAGE } from '@/shared/lib/offline'
 import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
@@ -77,7 +77,7 @@ interface VoiceSheetProps {
 export function VoiceSheet({ onClose, startWith = 'promo' }: VoiceSheetProps) {
   const { isFree } = usePlus()
   // Free plan: show the upsell instead of the capability (and never start the microphone).
-  if (isFree) return <PlusSheet reason="voice" onClose={onClose} />
+  if (isFree) return <PlusPromoDialog feature="voice" onClose={onClose} />
   return <VoiceCapture onClose={onClose} startWith={startWith} />
 }
 
@@ -196,7 +196,7 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
     })
   }
 
-  if (plusRequired) return <PlusSheet reason="voice" onClose={onClose} />
+  if (plusRequired) return <PlusPromoDialog feature="voice" onClose={onClose} />
 
   if (step === 'confirm') {
     return (

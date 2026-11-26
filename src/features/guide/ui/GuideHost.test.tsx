@@ -75,8 +75,8 @@ describe('GuideHost', () => {
     expect(screen.queryByRole('button', { name: 'Atrás' })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Siguiente' }))
     await settle()
-    const cargar = screen.getByRole('dialog', { name: 'Guía de Moni: Cargar un movimiento' })
-    expect(cargar).toHaveTextContent(/Foto.*Manual.*Voz/)
+    const cargar = screen.getByRole('dialog', { name: 'Guía de Moni: Cargá tus movimientos' })
+    expect(cargar).toHaveTextContent(/foto de tu ticket.*voz.*manualmente/)
     await user.click(screen.getByRole('button', { name: 'Atrás' }))
     await settle()
     expect(screen.getByRole('dialog', { name: 'Guía de Moni: Inicio' })).toBeInTheDocument()
@@ -85,12 +85,13 @@ describe('GuideHost', () => {
     await settle()
     await user.click(screen.getByRole('button', { name: 'Siguiente' }))
     await settle()
-    expect(screen.getByRole('dialog', { name: 'Guía de Moni: Agente Moni' })).toHaveTextContent(/agente financiero/)
+    expect(screen.getByRole('dialog', { name: 'Guía de Moni: Tu asistente financiero' })).toHaveTextContent(/Moni está para ayudarte/)
+    expect(screen.getByRole('dialog', { name: 'Guía de Moni: Tu asistente financiero' })).not.toHaveTextContent(/gatito/i)
     const route = ['/grupos', '/cuentas', '/mas', '/perfil']
     for (const [i, title] of ['Grupos', 'Cuentas', 'Explorar', 'Perfil'].entries()) {
       await user.click(screen.getByRole('button', { name: 'Siguiente' }))
       await settle()
-      expect(screen.getByRole('dialog', { name: `Guía de Moni: ${title}` })).toBeInTheDocument()
+      expect(screen.getByRole('dialog', { name: `Guía de Moni: ${title === 'Perfil' ? 'Tu perfil' : title}` })).toBeInTheDocument()
       expect(screen.getByTestId('path')).toHaveTextContent(route[i] as string)
       expect(screen.getByRole('button', { name: 'Omitir guía' })).toBeInTheDocument()
     }

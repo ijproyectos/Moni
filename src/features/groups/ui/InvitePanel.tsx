@@ -7,7 +7,7 @@ import { useOnlineStatus } from '@/shared/lib/useOnlineStatus'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { useToast } from '@/shared/ui/toastContext'
-import { useCreateInvite, useGroupInvites, useRevokeInvite } from '../api/useGroups'
+import { useCreateInvite, useCreatePersonalInvite, useGroupInvites, useRevokeInvite } from '../api/useGroups'
 import { isInviteActive } from '../domain/group'
 import { inviteLink } from '../domain/groupView'
 import { prettyCode } from '../domain/inviteCode'
@@ -27,6 +27,11 @@ function inviteMessage(groupName: string, code: string, link: string): string {
   return `Te invito a unirte a nuestro grupo ${groupName} en Moni.\n\nEntrá desde este enlace:\n${link}\n\nO ingresá este código en Moni:\n${prettyCode(code)}`
 }
 
+/** The message of a personal link: it works once, for one person, and needs no approval. */
+function personalMessage(groupName: string, link: string): string {
+  return `Te invito a unirte a nuestro grupo ${groupName} en Moni.\n\nEntrá desde este enlace personal (funciona una sola vez):\n${link}`
+}
+
 /**
  * Shows the group's linking code and the ways to send it (WhatsApp, native share, copy). Generates
  * a code when the group has none. Creating or revoking an invite needs a connection.
@@ -37,11 +42,13 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
   const invites = useGroupInvites(groupId)
   const createInvite = useCreateInvite()
   const revokeInvite = useRevokeInvite()
+  const createPersonal = useCreatePersonalInvite()
+  const [personalCode, setPersonalCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const autoTried = useRef(false)
 
-  const active = (invites.data ?? []).find((i) => isInviteActive(i))
+  const active = (invites.data ?? []).find((i) => !i.personal && isInviteActive(i))
   const code = active?.code ?? null
   const busy = createInvite.isPending || revokeInvite.isPending
 
@@ -49,6 +56,15 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
     setError(null)
     try {
       await createInvite.mutateAsync(groupId)
+    } catch (e) {
+      setError(toUserMessage(e))
+    }
+  }
+
+  async function generatePersonal() {
+    setError(null)
+    try {
+      setPersonalCode(await createPersonal.mutateAsync(groupId))
     } catch (e) {
       setError(toUserMessage(e))
     }
@@ -82,6 +98,22 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
     if (!code) return
     const ok = await copyText(code, toast, 'Código copiado')
     setCopied(ok)
+  }
+
+  const personalLink = personalCode ? inviteLink(window.location.origin, personalCode) : ''
+  const personalText = personalCode ? personalMessage(groupName, personalLink) : ''
+
+  async function copyPersonal() {
+    if (!personalCode) return
+    await copyText(personalLink, toast, 'Enlace copiado')
+  }
+
+  async function sharePersonal() {
+    try {
+      await navigator.share({ title: 'Moni', text: personalText })
+    } catch {
+      // Closed the share dialog.
+    }
   }
 
   async function share() {
@@ -176,6 +208,48 @@ export function InvitePanel({ groupId, groupName, onDone }: InvitePanelProps) {
             Generar un código nuevo
           </button>
         </div>
+      )}
+
+      {online && invites.isSuccess && (
+        <section aria-label="Enlace personal" className="flex flex-col gap-2 rounded-[20px] border border-line p-4">
+          <p className="text-[15px] font-extrabold">Invitar a una persona</p>
+          <p className="text-[14px] leading-5 text-text-muted">
+            Un enlace solo para esa persona: sirve una vez, vence en 7 días y entra al grupo sin que tengas que aprobarla de nuevo.
+            Quien entra con el código general del grupo sí espera tu aprobación.
+          </p>
+          {personalCode ? (
+            <div className="flex flex-col gap-2">
+              <a
+                href={whatsappUrl(personalText)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(actionClass, 'bg-forest text-cream dark:bg-lime dark:text-on-bright')}
+              >
+                <MessageCircle aria-hidden="true" className="size-5" />
+                Enviar enlace por WhatsApp
+              </a>
+              <button type="button" onClick={() => void copyPersonal()} className={cn(actionClass, 'border-2 border-line bg-card')}>
+                <Copy aria-hidden="true" className="size-5" />
+                Copiar enlace personal
+              </button>
+              {canShare && (
+                <button type="button" onClick={() => void sharePersonal()} className={cn(actionClass, 'border-2 border-line bg-card')}>
+                  <Upload aria-hidden="true" className="size-5" />
+                  Compartir enlace personal
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void generatePersonal()}
+              disabled={createPersonal.isPending}
+              className={cn(actionClass, 'border-2 border-line bg-card')}
+            >
+              {createPersonal.isPending ? 'Creando…' : 'Crear enlace personal'}
+            </button>
+          )}
+        </section>
       )}
 
       {!online && (

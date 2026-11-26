@@ -2,6 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { MoniCatLive } from './MoniCatLive'
 import { cn } from '@/shared/ui/cn'
 import { CAT_VISIBLE, clampToArea, nextInterval, nextPhrase } from '../domain/moniPhrases'
+import { usePlus } from '@/features/plus/api/usePlus'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
 import { AssistantSheet } from './AssistantSheet'
 
 const SIZE = 132
@@ -52,6 +54,8 @@ function readSaved(): { fx: number; fy: number } | null {
  */
 export function MoniAgent({ name = null }: { name?: string | null }) {
   const area = useRef<HTMLDivElement>(null)
+  // Free people tapping Moni see what the assistant does (Moni Plus promo) instead of the chat; Plus opens the assistant directly.
+  const { isFree } = usePlus()
   const [pos, setPos] = useState<Point | null>(null)
   const [dragging, setDragging] = useState(false)
   const [open, setOpen] = useState(false)
@@ -341,7 +345,12 @@ export function MoniAgent({ name = null }: { name?: string | null }) {
           </div>
         )}
       </div>
-      {open && <AssistantSheet name={name} onClose={() => setOpen(false)} />}
+      {open &&
+        (isFree ? (
+          <PlusPromoDialog feature="assistant" onClose={() => setOpen(false)} />
+        ) : (
+          <AssistantSheet name={name} onClose={() => setOpen(false)} />
+        ))}
     </>
   )
 }

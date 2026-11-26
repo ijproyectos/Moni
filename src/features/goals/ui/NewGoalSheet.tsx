@@ -1,3 +1,6 @@
+import { usePlanAccess } from '@/features/plus/api/usePlanAccess'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
+import { useSavings } from '../api/useSavings'
 import { SavingsGoalFormSheet } from './SavingsGoalFormSheet'
 
 /**
@@ -24,6 +27,12 @@ export function NewGoalSheet({
   onClose: () => void
   prefill?: NewGoalPrefill
 }) {
+  // Free plan: ONE goal in total, whatever its type, currency or state (paused, completed and archived ones count); the server
+  // enforces the same. Every way of starting a goal (Metas, cuotas) passes through here.
+  const access = usePlanAccess()
+  const savings = useSavings()
+  const created = (savings.data?.goals ?? []).length
+  if (!access.canCreate('goals', created)) return <PlusPromoDialog feature="goals" onClose={onClose} />
   return (
     <SavingsGoalFormSheet
       prefill={

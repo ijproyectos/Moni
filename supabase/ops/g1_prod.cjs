@@ -47,13 +47,21 @@ const BATCHES = {
   K: [['20261205000000', 'notice_cleanup']],
   // L (estado de la guía interactiva en el perfil): después de K y junto con el front nuevo.
   L: [['20261206000000', 'guide_status']],
+  // M (enlace personal de invitación + corrección de request_join_group para códigos sin aprobación): después de L y junto con el front nuevo.
+  M: [['20261207000000', 'personal_group_invite']],
+  // N (abrir un aviso desde un push: leído y fuera del centro; push de gasto/recurrente con ?aviso): después de M y junto con el front nuevo.
+  N: [['20261208000000', 'notice_open_from_push']],
+  // O (límites Free/Plus en el servidor: metas, viajes, pagos recurrentes y recordatorios de pago): después de N y junto con el front nuevo.
+  O: [['20261209000000', 'free_plus_limits']],
+  // P (eliminar cuenta: public.delete_account, aviso member_left): después de O y junto con el front nuevo y la función delete-account.
+  P: [['20261210000000', 'delete_account']],
 }
 const batchArg = (process.argv.find((a) => a.startsWith('--lote=')) || '--lote=A').split('=')[1].toUpperCase()
-if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I, J, K o L')
+if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I, J, K, L, M, N, O o P')
 const MIGRATIONS = BATCHES[batchArg]
 const BACKUP_BASE = process.env.G1_BACKUP_DIR || path.join(os.homedir(), 'Desktop', 'MONI', 'backups-g1')
 // Funciones que el lote reemplaza (A: solo get_my_groups; B: las demás) y cuyo cuerpo actual debe coincidir con el repositorio.
-const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [], K: [], L: [] }
+const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [], K: [], L: [], M: [], N: [], O: [], P: [] }
 const FUNCTIONS = ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite', 'get_my_groups', 'join_group']
 // Cuerpos de las funciones que G1 reemplaza, tal como están en el repositorio (para detectar cambios en producción).
 const EXPECTED = {
@@ -195,6 +203,22 @@ async function preflight(c) {
     if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='notice_reads') x"))) issues.push('falta el lote J (notice_reads)')
     if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='notice_reads' and column_name='dismissed_at') x")) issues.push('notice_reads.dismissed_at ya existe')
     if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('delete_my_notices','purge_old_notices','dismiss_center_notices')) x")) issues.push('las funciones de avisos ya existen')
+  } else if (batchArg === 'M') {
+    if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='group_invites' and column_name='personal') x")) issues.push('group_invites.personal ya existe')
+    if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_personal_group_invite') x")) issues.push('create_personal_group_invite ya existe')
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='request_join_group') x"))) issues.push('falta request_join_group (lotes C y H)')
+  } else if (batchArg === 'P') {
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.proname='notice_is_pending') x"))) issues.push('falta el lote K')
+    if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='delete_account') x")) issues.push('public.delete_account ya existe')
+    if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='notifications' and column_name='group_kind') x")) issues.push('notifications.group_kind ya existe')
+    if (await has("select exists(select 1 from information_schema.tables where table_schema='private' and table_name='deleted_account_ghosts') x")) issues.push('private.deleted_account_ghosts ya existe')
+    if (!(await has("select exists(select 1 from pg_trigger where tgname='shared_expense_splits_immutable') x"))) issues.push('falta el disparador shared_expense_splits_immutable')
+  } else if (batchArg === 'O') {
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='is_plus_user') x"))) issues.push('falta public.is_plus_user')
+    if (await has("select exists(select 1 from pg_trigger where tgname in ('free_goal_limit','free_trip_limit','plus_subscription_only','plus_debt_reminder_only','free_group_limit','free_group_trip_limit')) x")) issues.push('los disparadores de límites ya existen')
+  } else if (batchArg === 'N') {
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.proname='notice_is_pending') x"))) issues.push('falta el lote K (private.notice_is_pending)')
+    if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='open_my_notice') x")) issues.push('open_my_notice ya existe')
   } else if (batchArg === 'L') {
     if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='guide_status') x")) issues.push('profiles.guide_status ya existe')
     if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='set_guide_status') x")) issues.push('set_guide_status ya existe')

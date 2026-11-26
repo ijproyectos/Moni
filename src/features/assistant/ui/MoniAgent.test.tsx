@@ -323,11 +323,21 @@ describe('Moni chat (opened from the cat)', () => {
     expect(screen.getByText('¿Cuánto tengo?', { selector: 'p' })).toBeInTheDocument()
   })
 
-  it('the chat is Plus: a free user sees the upsell and nothing is sent', async () => {
+  it('the chat is Plus: a free user tapping Moni sees the assistant promo (no label on the cat, the chat does not open) and nothing is sent', async () => {
     plusState.isFree = true
     const user = renderAgent()
+    expect(document.querySelectorAll('[data-plus-tag]')).toHaveLength(0)
     await user.click(cat())
-    expect(screen.getByText('Conocé a tu asistente financiero')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Conocé a tu asistente financiero' })).toHaveTextContent('MONI PLUS')
+    expect(screen.queryByRole('dialog', { name: 'Moni' })).toBeNull()
     expect(mocks.invoke).not.toHaveBeenCalledWith('parse-movements', expect.anything())
+  })
+
+  it('Plus: tapping Moni opens the assistant directly', async () => {
+    plusState.isFree = false
+    const user = renderAgent()
+    await user.click(cat())
+    expect(screen.getByRole('dialog', { name: 'Moni' })).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-plus-promo]')).toHaveLength(0)
   })
 })

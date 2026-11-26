@@ -34,6 +34,7 @@ export type NoticeKind =
   | 'recurring_due'
   | 'group_archived'
   | 'expense_added'
+  | 'member_left'
 
 export interface Notice {
   id: string
@@ -51,6 +52,8 @@ export interface Notice {
   invitationId?: string | null
   /** The recurring expense a "recurring_due" notice is about (its name). */
   subject?: string | null
+  /** Kind of the group a notice is about ('viaje' for a trip): the wording of «dejó de formar parte». */
+  groupKind?: string | null
   transferLabel: string | null
   transferAlias: string | null
   transferCbu: string | null
@@ -237,6 +240,8 @@ export function noticeText(notice: Notice, format: (cents: Cents) => string = fo
       return `${notice.actorName} te incluyó en «${notice.subject ?? 'un gasto'}» de ${notice.groupName}.`
     case 'group_archived':
       return `${notice.actorName} eliminó el grupo ${notice.groupName} para todos. Podés consultar el historial.`
+    case 'member_left':
+      return `${notice.actorName} dejó de formar parte del ${notice.groupKind === 'viaje' ? 'viaje' : 'grupo'} ${notice.groupName}.`
     case 'recurring_due':
       return `Tenés un gasto recurrente para registrar: ${notice.subject ?? 'un gasto del hogar'}.`
   }

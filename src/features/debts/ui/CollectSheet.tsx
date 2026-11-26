@@ -16,6 +16,9 @@ import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { CheckDot, SectionLabel } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
+import { usePlanAccess } from '@/features/plus/api/usePlanAccess'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
+import { PlusTag } from '@/features/plus/ui/PlusTag'
 import { useRemindDebt } from '../api/useDebts'
 import { buildDebtMessage, toReceiveAccount, type PendingDebt } from '../domain/debts'
 
@@ -36,6 +39,8 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
   const formatMoney = useFormatMoney()
   const accounts = useAccounts()
   const remind = useRemindDebt()
+  const access = usePlanAccess()
+  const [promo, setPromo] = useState(false)
   const [pickId, setPickId] = useState<string | null>(null)
   const [addingId, setAddingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +87,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
   }
 
   return (
+    <>
     <BottomSheet
       title="Enviar cobro"
       subtitle={`${debt.otherName} · ${debt.groupName} · ${formatMoney(debt.amountCents)}`}
@@ -162,8 +168,10 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
         )}
 
         <div className="flex flex-col gap-2">
-          <Button variant="dark" onClick={() => void sendInMoni()} disabled={remind.isPending}>
+          {/* Reminders that Moni itself sends are Moni Plus; sharing or copying the message by hand stays free. */}
+          <Button variant="dark" onClick={() => (access.canUse('reminders') ? void sendInMoni() : setPromo(true))} disabled={remind.isPending}>
             {remind.isPending ? 'Enviando…' : 'Enviar por Moni'}
+            <PlusTag className="ml-2" />
           </Button>
           <Button variant="ghost" className="border-2 border-line" onClick={() => void share()}>
             <Share2 aria-hidden="true" className="mr-2 size-5" /> Compartir
@@ -178,5 +186,7 @@ export function CollectSheet({ debt, onClose }: { debt: PendingDebt; onClose: ()
         </div>
       </div>
     </BottomSheet>
+    {promo && <PlusPromoDialog feature="reminders" onClose={() => setPromo(false)} />}
+    </>
   )
 }

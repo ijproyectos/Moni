@@ -54,6 +54,17 @@ export async function purgeOldNotices(): Promise<void> {
   if (error && !isCenterNotEnabled(error)) throw error
 }
 
+/**
+ * A notice was opened from a push: it is read and, unless it still waits for an answer, removed from the center (saved in Supabase, so
+ * it holds on every device). Without the server function yet it is only marked as read.
+ */
+export async function openNoticeFromPush(id: string): Promise<void> {
+  const { error } = await getSupabase().rpc('open_my_notice', { p_id: id })
+  if (!error) return
+  if (!isCenterNotEnabled(error)) throw error
+  await markNoticeRead(id)
+}
+
 export async function markCenterRead(keys: readonly string[]): Promise<void> {
   if (keys.length === 0) return
   const { error } = await getSupabase().rpc('mark_center_notices_read', { p_keys: [...keys] })

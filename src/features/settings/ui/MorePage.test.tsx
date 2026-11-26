@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import type { Account } from '@/features/accounts/domain/account'
 import { MorePage } from './MorePage'
@@ -39,8 +40,12 @@ const ahorrosData = vi.hoisted(() => ({ current: [] as unknown[] }))
 vi.mock('@/features/ahorros/api/useAhorros', () => ({
   useAhorros: () => ({ data: ahorrosData.current, isLoading: false }),
 }))
+const currencyData = vi.hoisted(() => ({ usesUsd: true }))
+vi.mock('@/features/settings/api/useSecondaryCurrency', () => ({
+  useSecondaryCurrency: () => ({ usesUsd: currencyData.usesUsd }),
+}))
 vi.mock('@/features/health/api/useFinancialHealth', () => ({
-  useFinancialHealth: () => ({ isLoading: false, score: { kind: 'ok', score: 68, band: 'good' } }),
+  useFinancialHealth: () => ({ isLoading: false, score: { kind: 'ok', score: 68, band: 'bien' } }),
 }))
 const plusState = vi.hoisted(() => ({ isPlus: false, isLoading: false }))
 vi.mock('@/features/plus/api/usePlus', () => ({
@@ -61,6 +66,8 @@ describe('Explorar', () => {
     subsData.current = []
     antsData.current = 0
     ahorrosData.current = []
+    plusState.isPlus = true
+    currencyData.usesUsd = true
   })
 
   it('has the header and the long cards (Ahorros y metas, Categorías, Salud) and the tiles, each a whole link', () => {
@@ -83,13 +90,30 @@ describe('Explorar', () => {
     expect(screen.queryByRole('button', { name: 'Hablá con Moni' })).toBeNull()
   })
 
-  it('shows what was saved (ARS) in the unified Ahorros y metas card', () => {
+  it('shows what was saved in the unified card, favoring USD when there is some, with an empty-state hint', () => {
+    ahorrosData.current = [{ id: '1', currency: 'ARS', kind: 'opening', amountCents: 150_000_00, status: 'posted' }]
+    renderPage()
+    expect(screen.getByRole('link', { name: /^Ahorros y metas/ })).toHaveTextContent('$150.000 ahorrados')
+
+    cleanup()
     ahorrosData.current = [
       { id: '1', currency: 'ARS', kind: 'opening', amountCents: 150_000_00, status: 'posted' },
       { id: '2', currency: 'USD', kind: 'opening', amountCents: 300_00, status: 'posted' },
     ]
     renderPage()
-    expect(screen.getByRole('link', { name: /^Ahorros y metas/ })).toHaveTextContent('$150.000 ahorrados')
+    expect(screen.getByRole('link', { name: /^Ahorros y metas/ })).toHaveTextContent('US$ 300')
+
+    cleanup()
+    ahorrosData.current = []
+    renderPage()
+    expect(screen.getByRole('link', { name: /^Ahorros y metas/ })).toHaveTextContent('Pesos y dólares')
+
+    cleanup()
+    currencyData.usesUsd = false
+    renderPage()
+    const empty = screen.getByRole('link', { name: /^Ahorros y metas/ })
+    expect(empty).not.toHaveTextContent('dólares')
+    expect(empty).toHaveTextContent('Creá tu primera meta')
   })
 
   it('shows only the tools: no ¿Me conviene?, simulator or Avisos, and no empty "Más"', () => {
@@ -122,6 +146,7 @@ describe('Explorar', () => {
   })
 
   it('says "sin hormigas" and does not invent a budget without data', () => {
+    currencyData.usesUsd = false
     renderPage()
     expect(screen.getByRole('link', { name: /^Gastos hormiga/ })).toHaveTextContent('sin hormigas')
     expect(screen.getByRole('link', { name: /^Ahorros y metas/ })).toHaveTextContent('Creá tu primera meta')
@@ -129,5 +154,45 @@ describe('Explorar', () => {
     expect(screen.getByRole('link', { name: /^Pagos recurrentes/ })).toHaveTextContent('no tenés pagos próximos')
     // None of the example figures of the design may show up as if they were real.
     expect(document.body).not.toHaveTextContent(/201\.866|Bariloche|\$30\.000/)
+  })
+
+  describe('Free plan', () => {
+    beforeEach(() => {
+      plusState.isPlus = false
+    })
+
+    it('keeps every card, puts the small PLUS label only on Salud, Pagos recurrentes, Gastos hormiga and Informes', () => {
+      renderPage()
+      for (const name of [/Salud financiera/, /Pagos recurrentes/, /Gastos hormiga/, /Informes/]) {
+        expect(screen.getByRole('button', { name })).toHaveTextContent('PLUS')
+      }
+      for (const name of [/^Ahorros y metas/, /^Categorías/, /^Viajes/]) {
+        const card = screen.getByRole('link', { name })
+        expect(card).not.toHaveTextContent('PLUS')
+      }
+      expect(document.querySelectorAll('[data-plus-tag]')).toHaveLength(4)
+    })
+
+    it('tapping a Plus card opens its own promo and goes nowhere', async () => {
+      renderPage()
+      await userEvent.click(screen.getByRole('button', { name: /Gastos hormiga/ }))
+      expect(screen.getByRole('dialog', { name: 'Los pequeños gastos también cuentan' })).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Ahora no' }))
+      await userEvent.click(screen.getByRole('button', { name: /Salud financiera/ }))
+      expect(screen.getByRole('dialog', { name: 'Descubrí cómo están tus finanzas' })).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Ahora no' }))
+      await userEvent.click(screen.getByRole('button', { name: /Informes/ }))
+      expect(screen.getByRole('dialog', { name: 'Entendé mejor tus números' })).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Ahora no' }))
+      await userEvent.click(screen.getByRole('button', { name: /Pagos recurrentes/ }))
+      expect(screen.getByRole('dialog', { name: 'Que ningún pago te sorprenda' })).toBeInTheDocument()
+    })
+
+    it('Moni Plus sees no labels at all and the cards are plain links', () => {
+      plusState.isPlus = true
+      renderPage()
+      expect(document.querySelectorAll('[data-plus-tag]')).toHaveLength(0)
+      expect(screen.getByRole('link', { name: /^Salud financiera/ })).toHaveAttribute('href', '/salud')
+    })
   })
 })

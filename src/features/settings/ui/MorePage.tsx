@@ -1,14 +1,19 @@
 import { ChevronRight } from 'lucide-react'
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useAhorros } from '@/features/ahorros/api/useAhorros'
-import { balanceOf } from '@/features/ahorros/domain/ahorros'
+import { balanceOf, formatSaving } from '@/features/ahorros/domain/ahorros'
 import { useFinancialHealth } from '@/features/health/api/useFinancialHealth'
 import { BAND_LABELS } from '@/features/health/domain/healthScore'
 import { useSavings } from '@/features/goals/api/useSavings'
 import { activeTotals } from '@/features/goals/domain/savings'
 import { useAnts } from '@/features/insights/api/useAnts'
 import { useSubscriptions } from '@/features/subscriptions/api/useSubscriptions'
+import { usePlanAccess } from '@/features/plus/api/usePlanAccess'
+import type { PlusFeature } from '@/features/plus/domain/entitlements'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
+import { PlusTagMark } from '@/features/plus/ui/PlusTag'
+import { useSecondaryCurrency } from '@/features/settings/api/useSecondaryCurrency'
 import { useTrips } from '@/features/trips/api/useTrips'
 import { daysBetween } from '@/features/trips/domain/dates'
 import { tripStatus } from '@/features/trips/domain/trip'
@@ -89,6 +94,7 @@ function Tile({
   tone,
   surface = TILE,
   children,
+  plus,
 }: {
   to: string
   title: string
@@ -97,11 +103,17 @@ function Tile({
   tone?: 'bad'
   surface?: string
   children?: ReactNode
+  /** A Moni Plus capability: a Free person sees the small PLUS label and the promo instead of the screen. */
+  plus?: PlusCardGate
 }) {
-  return (
-    <Link to={to} className={cn(CARD, surface, 'flex min-h-[150px] flex-col gap-1 p-4', FOCUS)}>
+  const className = cn(CARD, surface, 'flex min-h-[150px] flex-col gap-1 p-4 text-left', FOCUS)
+  const inner = (
+    <>
       <span className="flex items-start justify-between gap-2">
-        <span className={cn('min-w-0 text-[15px] font-extrabold leading-[19px]', surface === DARK_GREEN ? 'text-cream' : 'text-ink')}>{title}</span>
+        <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+          <span className={cn('text-[15px] font-extrabold leading-[19px]', surface === DARK_GREEN ? 'text-cream' : 'text-ink')}>{title}</span>
+          {plus?.locked && <PlusTagMark />}
+        </span>
         <Go onDark={surface === DARK_GREEN} onSoft={surface === SOFT_GREEN} />
       </span>
       <span
@@ -114,8 +126,27 @@ function Tile({
       </span>
       <span className={cn('line-clamp-2 min-h-[18px] text-[13px] leading-[18px]', surface === DARK_GREEN ? 'text-[#D4DCCB]' : 'text-text-muted')}>{sub}</span>
       {children}
+    </>
+  )
+  if (plus?.locked) {
+    return (
+      <button type="button" onClick={() => plus.onLocked(plus.feature)} className={className}>
+        {inner}
+      </button>
+    )
+  }
+  return (
+    <Link to={to} className={className}>
+      {inner}
     </Link>
   )
+}
+
+interface PlusCardGate {
+  feature: PlusFeature
+  /** True for a Free person: the card stays, with its PLUS label, and opens the promo. */
+  locked: boolean
+  onLocked: (feature: PlusFeature) => void
 }
 
 export function MorePage() {
@@ -128,7 +159,12 @@ export function MorePage() {
   const ants = useAnts(today)
   const ahorros = useAhorros()
   const health = useFinancialHealth()
+  const { usesUsd } = useSecondaryCurrency()
+  const access = usePlanAccess()
+  const [promo, setPromo] = useState<PlusFeature | null>(null)
+  const gate = (feature: PlusFeature): PlusCardGate => ({ feature, locked: !access.canUse(feature), onLocked: setPromo })
   const arsSaved = balanceOf(ahorros.data ?? [], 'ARS')
+  const usdSaved = balanceOf(ahorros.data ?? [], 'USD')
 
   const goalTotals = activeTotals(savings.data?.goals ?? [])
   const hasGoals = goalTotals.targetCents > 0
@@ -162,17 +198,24 @@ export function MorePage() {
               ? `${big(goalTotals.reservedCents)} en metas · ${big(arsSaved)} ahorrados`
               : savings.isLoading || ahorros.isLoading
                 ? '…'
-                : arsSaved > 0
-                  ? `${big(arsSaved)} ahorrados`
-                  : 'Creá tu primera meta'}
+                : usdSaved > 0
+                  ? formatSaving(usdSaved, 'USD')
+                  : arsSaved > 0
+                    ? `${big(arsSaved)} ahorrados`
+                    : usesUsd
+                      ? 'Pesos y dólares'
+                      : 'Creá tu primera meta'}
           </span>
         </span>
         <Go />
       </Link>
 
-      <Link to="/salud" className={cn(CARD, DARK_GREEN, 'flex items-center gap-4 p-4', FOCUS)}>
+      <HealthCard locked={!access.canUse('health')} onLocked={() => setPromo('health')}>
         <span className="min-w-0 flex-1">
-          <span className="block text-[17px] font-extrabold leading-5">Salud financiera</span>
+          <span className="flex items-center gap-2 text-[17px] font-extrabold leading-5">
+            Salud financiera
+            {!access.canUse('health') && <PlusTagMark />}
+          </span>
           <span className="mt-0.5 block text-[13px] leading-[18px] text-[#D4DCCB]">
             {health.score.kind === 'ok'
               ? `${health.score.score} de 100 · ${BAND_LABELS[health.score.band]}`
@@ -182,7 +225,7 @@ export function MorePage() {
           </span>
         </span>
         <Go onDark />
-      </Link>
+      </HealthCard>
 
       <ul className="grid grid-cols-2 gap-3">
         <li className="flex">
@@ -200,6 +243,7 @@ export function MorePage() {
         <li className="flex">
             <Tile
               to="/recurrentes"
+              plus={gate('recurring')}
               title="Pagos recurrentes"
               value={monthlySubs.length > 0 ? big(monthlyTotal) : '$0'}
               sub={
@@ -212,13 +256,14 @@ export function MorePage() {
         <li className="flex">
             <Tile
               to="/hormigas"
+              plus={gate('ants')}
               title="Gastos hormiga"
               value={antsTotal > 0 ? big(antsTotal) : '0'}
               sub={antsTotal > 0 ? 'este mes' : ants.data ? 'sin hormigas' : 'todavía sin datos'}
             />
         </li>
         <li className="flex">
-            <Tile to="/este-mes" title="Informes" value="Mes y año" sub="tu resumen" surface={SOFT_GREEN} />
+            <Tile to="/este-mes" plus={gate('reports')} title="Informes" value="Mes y año" sub="tu resumen" surface={SOFT_GREEN} />
         </li>
       </ul>
 
@@ -232,7 +277,25 @@ export function MorePage() {
           </ul>
         </>
       )}
+      {promo && <PlusPromoDialog feature={promo} onClose={() => setPromo(null)} />}
     </section>
+  )
+}
+
+/** The Salud financiera card: a link, or (Free) a button that opens the Plus promo. */
+function HealthCard({ locked, onLocked, children }: { locked: boolean; onLocked: () => void; children: ReactNode }) {
+  const className = cn(CARD, DARK_GREEN, 'flex items-center gap-4 p-4 text-left', FOCUS)
+  if (locked) {
+    return (
+      <button type="button" onClick={onLocked} className={className}>
+        {children}
+      </button>
+    )
+  }
+  return (
+    <Link to="/salud" className={className}>
+      {children}
+    </Link>
   )
 }
 

@@ -1,9 +1,11 @@
-import { ChevronLeft, Moon, Sparkles, Sun, Trash2 } from 'lucide-react'
+import { ChevronLeft, Moon, Sun } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { clearAssistantMemory } from '@/features/assistant/api/useAssistantChat'
-import { signOut } from '@/features/auth/api/authActions'
+import { signOut, wipeLocalAccountData } from '@/features/auth/api/authActions'
+import { WELCOME_PATH } from '@/features/auth/ui/guards'
+import { DeleteAccountDialog } from './DeleteAccountDialog'
 import { useWeeklyDigestSettings, updateWeeklyDigest } from '@/features/insights/mock/digestSettings'
 import { PushNotificationsRow } from '@/features/push/ui/PushNotificationsRow'
 import { useSubscriptionState } from '@/features/plus/api/useBilling'
@@ -11,7 +13,9 @@ import { usePlus } from '@/features/plus/api/usePlus'
 import { isCancellable } from '@/features/plus/domain/billing'
 import { formatPlusExpiry } from '@/features/plus/domain/plus'
 import { CancelPlusSheet } from '@/features/plus/ui/CancelPlusSheet'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
 import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { PlusTag } from '@/features/plus/ui/PlusTag'
 import { FEATURES } from '@/shared/config/features'
 import { getCurrency } from '@/shared/lib/currencies'
 import { toUserMessage } from '@/shared/lib/errors'
@@ -21,7 +25,7 @@ import { cn } from '@/shared/ui/cn'
 import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import { useDisplayCurrency } from '@/shared/ui/displayCurrencyContext'
 import { useHiddenAmounts } from '@/shared/ui/hiddenAmountsContext'
-import { MoniSays, Page, Toggle } from '@/shared/ui/kit'
+import { Page, Toggle } from '@/shared/ui/kit'
 import { MentaHeader } from '@/shared/ui/MentaHeader'
 import { SettingRow } from '@/shared/ui/SettingRow'
 import { useToast } from '@/shared/ui/toastContext'
@@ -71,7 +75,7 @@ function ThemeSelector() {
   )
 }
 
-type Sheet = 'plus' | 'cancelPlus' | 'signout' | 'delete' | 'import' | 'currency' | null
+type Sheet = 'plus' | 'cancelPlus' | 'importPromo' | 'signout' | 'delete' | 'import' | 'currency' | null
 
 /** Configuración: appearance, account (payment methods, plan, notifications), help and sign out. */
 export function SettingsPage() {
@@ -87,6 +91,14 @@ export function SettingsPage() {
   const navigate = useNavigate()
   const [sheet, setSheet] = useState<Sheet>(null)
   const [isSigningOut, setIsSigningOut] = useState(false)
+
+  /** The server finished the whole deletion: close the session, wipe what this device kept and go to the welcome screen. */
+  async function handleAccountDeleted() {
+    clearAssistantMemory()
+    await wipeLocalAccountData(queryClient)
+    toast.show('Tu cuenta fue eliminada correctamente')
+    navigate(WELCOME_PATH, { replace: true })
+  }
 
   async function handleSignOut() {
     setIsSigningOut(true)
@@ -204,8 +216,9 @@ export function SettingsPage() {
         <ExportMovementsRow />
         <SettingRow
           title="Importar desde Excel"
+          badge={<PlusTag />}
           subtitle="Traé movimientos de una planilla"
-          onClick={() => setSheet('import')}
+          onClick={() => (plus.isFree ? setSheet('importPromo') : setSheet('import'))}
         />
       </ProfileGroup>
 
@@ -267,6 +280,7 @@ export function SettingsPage() {
 
       {sheet === 'plus' && <PlusSheet onClose={() => setSheet(null)} />}
       {sheet === 'cancelPlus' && <CancelPlusSheet expiresAt={plus.expiresAt} onClose={() => setSheet(null)} />}
+      {sheet === 'importPromo' && <PlusPromoDialog feature="excel_import" onClose={() => setSheet(null)} />}
       {sheet === 'import' && <ImportMovementsSheet onClose={() => setSheet(null)} />}
       {sheet === 'currency' && <DisplayCurrencySheet onClose={() => setSheet(null)} />}
       {sheet === 'signout' && (
@@ -288,29 +302,7 @@ export function SettingsPage() {
           Tus gastos, metas y grupos quedan guardados. Volvés a entrar con tu cuenta de Google cuando quieras.
         </DecisionSheet>
       )}
-      {sheet === 'delete' && (
-        <DecisionSheet
-          icon={<Trash2 className="size-6" />}
-          title="¿Eliminar tu cuenta?"
-          onClose={() => setSheet(null)}
-          actions={[
-            { label: 'Mejor no', onClick: () => setSheet(null) },
-            {
-              label: 'Eliminar mi cuenta',
-              tone: 'danger',
-              onClick: () => {
-                toast.show('Por ahora la cuenta se elimina desde soporte. Te avisamos cuando esté en la app.')
-                setSheet(null)
-              },
-            },
-          ]}
-        >
-          <p>Se borran tus gastos, metas y todo tu historial. No se puede deshacer.</p>
-          <MoniSays className="mt-3" lead={null} icon={<Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0" />}>
-            Si estás en grupos, lo que cargaste queda para los demás hasta que se salden las cuentas.
-          </MoniSays>
-        </DecisionSheet>
-      )}
+      {sheet === 'delete' && <DeleteAccountDialog onClose={() => setSheet(null)} onDeleted={() => void handleAccountDeleted()} />}
     </Page>
   )
 }

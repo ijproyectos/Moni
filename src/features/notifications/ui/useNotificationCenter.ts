@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
+import { usePlanAccess } from '@/features/plus/api/usePlanAccess'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useBudgetStatus } from '@/features/budgets/api/useBudgets'
 import { debtKeys } from '@/features/debts/api/queryKeys'
@@ -66,6 +67,7 @@ export function useNotificationCenter() {
   const readKeys = useMemo(() => new Set(reads.isError ? local : (reads.data?.read ?? [])), [reads.isError, reads.data, local])
   const hidden = useMemo(() => new Set([...(reads.data?.dismissed ?? []), ...deletion.removed]), [reads.data, deletion.removed])
   const effective = prefs ?? DEFAULT_CENTER_PREFS
+  const smart = usePlanAccess().canUse('smart_notices')
 
   const items = useMemo<CenterItem[]>(
     () =>
@@ -75,9 +77,14 @@ export function useNotificationCenter() {
         subscriptions: subscriptions.data?.subscriptions ?? [],
         charges: subscriptions.data?.charges ?? [],
         budgets: budgets.data ?? [],
-        show: { paymentsDue: effective.paymentsDue, priceChanges: effective.priceChanges, budgets: effective.budgets },
+        show: {
+          // Smart notices (upcoming payments, price rises, category limits) are Moni Plus; Free keeps the notices of groups.
+          paymentsDue: smart && effective.paymentsDue,
+          priceChanges: smart && effective.priceChanges,
+          budgets: smart && effective.budgets,
+        },
       }).filter((i) => !hidden.has(i.key)),
-    [today, notices.data, subscriptions.data, budgets.data, effective.paymentsDue, effective.priceChanges, effective.budgets, hidden],
+    [today, notices.data, subscriptions.data, budgets.data, smart, effective.paymentsDue, effective.priceChanges, effective.budgets, hidden],
   )
 
   const refresh = useCallback(

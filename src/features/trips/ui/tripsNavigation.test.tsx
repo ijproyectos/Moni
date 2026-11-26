@@ -19,6 +19,7 @@ const state = vi.hoisted(() => ({
   trips: [] as unknown[],
   createTrip: vi.fn(),
 }))
+vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: true, isFree: false, isLoading: false, expiresAt: null }) }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
 vi.mock('@/features/transactions/api/useTransactions', () => ({ useVoidTransaction: () => ({ mutateAsync: vi.fn(), isPending: false }) }))

@@ -8,7 +8,7 @@ const state = vi.hoisted(() => ({ data: null as unknown, mutate: vi.fn(), extra:
 vi.mock('@/features/notifications/ui/useNotificationCenter', () => ({
   useCenterPrefs: () => ({ prefs: state.extra, isAvailable: true, save: { mutate: state.extraSave } }),
 }))
-vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: state.isPlus }) }))
+vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: state.isPlus, isFree: !state.isPlus }) }))
 vi.mock('@/features/debts/api/useDebts', () => ({
   useNoticePrefs: () => ({ data: state.data }),
   useSetNoticePrefs: () => ({ mutate: state.mutate }),
@@ -25,7 +25,7 @@ describe('Avisos de grupos (Configuración)', () => {
   beforeEach(() => {
     state.mutate.mockClear()
     state.extraSave.mockClear()
-    state.isPlus = false
+    state.isPlus = true
   })
 
   it('is not shown while the database has no preferences yet', () => {
@@ -60,10 +60,9 @@ describe('Avisos de grupos (Configuración)', () => {
     )
   })
 
-  it('saves the extra push choice and shows the Plus center choices only with Plus', async () => {
+  it('saves the extra push choice', async () => {
     state.data = DEFAULT_NOTICE_PREFS
     renderIt()
-    expect(screen.queryByRole('switch', { name: 'Pagos próximos' })).toBeNull()
     await userEvent.click(screen.getByRole('switch', { name: 'Gastos en los que te incluyen' }))
     expect(state.extraSave).toHaveBeenLastCalledWith(
       { expenseAddedPush: false, paymentsDue: true, priceChanges: true, budgets: true },
@@ -73,12 +72,38 @@ describe('Avisos de grupos (Configuración)', () => {
 
   it('with Plus, the center choices are saved in Supabase too', async () => {
     state.data = DEFAULT_NOTICE_PREFS
-    state.isPlus = true
     renderIt()
     await userEvent.click(screen.getByRole('switch', { name: 'Aumentos de precio' }))
     expect(state.extraSave).toHaveBeenLastCalledWith(
       { expenseAddedPush: true, paymentsDue: true, priceChanges: false, budgets: true },
       expect.anything(),
     )
+  })
+
+  it('Free: the Plus options stay visible with a PLUS label, show off, open the promo and save nothing', async () => {
+    state.isPlus = false
+    state.data = DEFAULT_NOTICE_PREFS
+    renderIt()
+    for (const name of ['Recordatorios de pago', 'Gastos en los que te incluyen', 'Pagos próximos', 'Aumentos de precio', 'Límites de categorías']) {
+      expect(screen.getByRole('switch', { name })).not.toBeChecked()
+    }
+    expect(document.querySelectorAll('[data-plus-tag]').length).toBe(5)
+    await userEvent.click(screen.getByRole('switch', { name: 'Pagos próximos' }))
+    expect(screen.getByRole('dialog', { name: 'Dejá que yo te avise' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Ahora no' }))
+    await userEvent.click(screen.getByRole('switch', { name: 'Recordatorios de pago' }))
+    expect(screen.getByRole('dialog', { name: 'Que ningún pago quede pendiente' })).toBeInTheDocument()
+    expect(state.mutate).not.toHaveBeenCalled()
+    expect(state.extraSave).not.toHaveBeenCalled()
+  })
+
+  it('Free keeps the essential payment notices (registered / answered) and the privacy switch free', async () => {
+    state.isPlus = false
+    state.data = DEFAULT_NOTICE_PREFS
+    renderIt()
+    await userEvent.click(screen.getByRole('switch', { name: 'Ocultar detalles en la notificación' }))
+    expect(state.mutate).toHaveBeenCalled()
+    expect(screen.getByRole('switch', { name: 'Pagos registrados' })).toBeChecked()
+    expect(screen.getByRole('switch', { name: 'Pagos confirmados o rechazados' })).toBeChecked()
   })
 })

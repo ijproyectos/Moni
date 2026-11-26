@@ -31,6 +31,7 @@ function toNotice(row: NotificationRow): Notice {
     requestId: row.request_id,
     invitationId: row.invitation_id,
     subject: row.subject,
+    groupKind: row.group_kind ?? null,
     transferLabel: row.transfer_label,
     transferAlias: row.transfer_alias,
     transferCbu: row.transfer_cbu,

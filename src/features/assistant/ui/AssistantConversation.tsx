@@ -11,7 +11,7 @@ import { looksLikeMovement } from '@/features/transactions/domain/talkIntent'
 import { DraftConfirmation } from '@/features/transactions/ui/DraftConfirmation'
 import { isPlusRequired, toUserMessage } from '@/shared/lib/errors'
 import { usePlus } from '@/features/plus/api/usePlus'
-import { PlusSheet } from '@/features/plus/ui/PlusSheet'
+import { PlusPromoDialog } from '@/features/plus/ui/PlusPromoDialog'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
 import { FOCUS_RING } from '@/shared/ui/focusRing'
@@ -369,15 +369,15 @@ export function AssistantConversation({
       )}
 
       {(upsell || chat.plusRequired) && (
-        <PlusSheet
-          reason="assistant"
+        <PlusPromoDialog
+          feature="assistant"
           onClose={() => {
             setUpsell(false)
             if (chat.plusRequired) chat.clear()
           }}
         />
       )}
-      {parsePlus && <PlusSheet reason="voice" onClose={() => setParsePlus(false)} />}
+      {parsePlus && <PlusPromoDialog feature="voice" onClose={() => setParsePlus(false)} />}
       {reviewing && (
         <DraftConfirmation
           initialDrafts={reviewing.drafts}

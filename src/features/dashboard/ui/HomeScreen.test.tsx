@@ -54,7 +54,7 @@ const withData: MonthSummary = {
 
 function renderHome(
   summary: MonthSummary,
-  isPlus?: boolean,
+  _isPlus?: boolean,
   movements?: RecentMovement[],
   extra: Partial<Parameters<typeof HomeScreen>[0]> = {},
 ) {
@@ -63,8 +63,6 @@ function renderHome(
       <HomeScreen
         summary={summary}
         movements={movements}
-        initial="J"
-        isPlus={isPlus}
         {...extra}
       />
     </MemoryRouter>,
@@ -118,15 +116,10 @@ describe('HomeScreen (Inicio)', () => {
     expect(screen.queryByRole('heading', { name: 'Tu resumen de hoy' })).toBeNull()
   })
 
-  it('the Plus crown follows the Plus status it is given', () => {
+  it('Inicio has no avatar or crown of its own, with or without Plus', () => {
     renderHome(withData, true)
-    expect(screen.getByRole('button', { name: /Moni Plus activo/ })).toBeInTheDocument()
-  })
-
-  it('there is no crown on Free, and the avatar still opens Moni Plus (not the profile)', () => {
-    renderHome(withData)
-    expect(screen.queryByRole('button', { name: /Moni Plus activo/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ver Moni Plus' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Moni Plus activo/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Ver Moni Plus' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Perfil' })).toBeNull()
   })
 

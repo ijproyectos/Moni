@@ -33,7 +33,7 @@ Tab pages intentionally show only their title and a "next sprint" note: no mock 
 nvm use            # Node 24 (CI/Netlify); local Node 26 also works
 npm ci
 cp .env.example .env.local   # fill in your own values; never commit it
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:5174
 ```
 
 Checks: `npm run lint`, `npm run typecheck`, `npm test -- --run`, `npm run build`.

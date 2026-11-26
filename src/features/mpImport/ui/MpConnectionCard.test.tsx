@@ -34,14 +34,15 @@ function setup(props: Partial<React.ComponentProps<typeof MpConnectionCard>> = {
 describe('MpConnectionCard', () => {
   it('Plus without a connection offers to link', async () => {
     const { user, onConnect } = setup()
-    await user.click(screen.getByRole('button', { name: 'Vincular Mercado Pago' }))
+    await user.click(screen.getByRole('button', { name: /^Vincular Mercado Pago/ }))
     expect(onConnect).toHaveBeenCalled()
   })
 
   it('Free users: the row opens the Plus upsell, not the connection', async () => {
     const { user, onUpgrade } = setup({ isPlus: false, isFree: true })
     expect(screen.queryByText(/aparecen solos como gastos/)).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Vincular Mercado Pago' }))
+    expect(screen.getByRole('button', { name: /^Vincular Mercado Pago/ })).toHaveTextContent('PLUS')
+    await user.click(screen.getByRole('button', { name: /^Vincular Mercado Pago/ }))
     expect(onUpgrade).toHaveBeenCalled()
     expect(screen.queryByRole('button', { name: 'Conocer Moni Plus' })).toBeNull()
   })
@@ -53,7 +54,7 @@ describe('MpConnectionCard', () => {
 
   it('an unlinked connection behaves like none', () => {
     setup({ connection: conn({ status: 'unlinked' }) })
-    expect(screen.getByRole('button', { name: 'Vincular Mercado Pago' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Vincular Mercado Pago/ })).toBeInTheDocument()
   })
 
   it('active: shows status, last sync and the two actions', async () => {
@@ -112,7 +113,7 @@ describe('MpConnectionCard', () => {
 
   it('offline disables linking and reconnecting', () => {
     setup({ offline: true })
-    expect(screen.getByRole('button', { name: 'Vincular Mercado Pago' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Vincular Mercado Pago/ })).toBeDisabled()
   })
 
   it('busy actions are disabled and relabelled', () => {
