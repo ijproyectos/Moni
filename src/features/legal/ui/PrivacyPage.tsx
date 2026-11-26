@@ -32,6 +32,12 @@ export function PrivacyPage() {
           usamos para entrenar modelos de terceros ni lo compartimos con nadie más que ese proveedor y solo para
           responder tu pedido.
         </p>
+        <p>
+          Si dictás por voz (Moni Plus) y el reconocimiento de tu navegador no funciona, como suele pasar en
+          algunos iPhone, mandamos ese audio a un proveedor externo de transcripción solo para convertirlo en
+          texto. No lo guardamos nosotros más allá de lo necesario para procesarlo, y tu navegador sigue siendo
+          la primera opción, gratis, en el resto de los casos.
+        </p>
       </LegalSection>
 
       <LegalSection heading="Mercado Pago">
