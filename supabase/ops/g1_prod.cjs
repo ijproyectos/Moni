@@ -300,7 +300,8 @@ async function preflight(c) {
     if (defs.length !== 1) issues.push(`${fn}: hay ${defs.length} definiciones`)
     else if (!expected || norm(bodyOf(defs[0].d)) !== norm(expected)) issues.push(`${fn}: la definición de producción difiere del repositorio`)
   }
-  const noOwner = (await q(c, "select count(*)::int n from public.groups g where not exists (select 1 from public.group_members m where m.group_id=g.id and m.role='owner' and m.left_at is null)"))[0].n
+  // Archived groups may have nobody left (the last member left): that is expected, only live groups need an administrator.
+  const noOwner = (await q(c, "select count(*)::int n from public.groups g where g.archived_at is null and not exists (select 1 from public.group_members m where m.group_id=g.id and m.role='owner' and m.left_at is null)"))[0].n
   if (noOwner !== 0) issues.push(`${noOwner} grupo(s) sin administrador activo`)
   const unknownKinds = await q(c, "select distinct kind from public.groups where kind not in ('casa','hogar','viaje','pareja','amigos')")
   if (unknownKinds.length) issues.push('tipos de grupo inesperados')
