@@ -290,7 +290,7 @@ export function SubscriptionFormSheet({
           <span className="flex-1">
             <span className="block text-[17px] font-extrabold">Avisarme antes del cobro</span>
             <span className="block text-[14px] text-text-muted">
-              Un día antes, dentro de Moni (sin notificaciones push por ahora)
+              Un día antes, en Moni y con una notificación push
             </span>
           </span>
           <Toggle label="Avisarme antes del cobro" checked={remind} onChange={setRemind} />

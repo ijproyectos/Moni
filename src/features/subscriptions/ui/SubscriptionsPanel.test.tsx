@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ToastProvider } from '@/shared/ui/Toast'
@@ -58,13 +59,15 @@ const charge = (over: Partial<SubscriptionCharge>): SubscriptionCharge => ({
   ...over,
 })
 
-function setup(data: Partial<SubscriptionOverview>) {
+function setup(data: Partial<SubscriptionOverview>, url = '/recurrentes') {
   overview.current = { today: '2026-10-29', subscriptions: [], charges: [], ...data }
   const onAdd = vi.fn()
   render(
-    <ToastProvider>
-      <SubscriptionsPanel onAdd={onAdd} />
-    </ToastProvider>,
+    <MemoryRouter initialEntries={[url]}>
+      <ToastProvider>
+        <SubscriptionsPanel onAdd={onAdd} />
+      </ToastProvider>
+    </MemoryRouter>,
   )
   return { onAdd, user: userEvent.setup() }
 }
@@ -105,10 +108,15 @@ describe('SubscriptionsPanel', () => {
     expect(document.querySelectorAll('img[src*="netflix"]').length).toBeGreaterThanOrEqual(2)
   })
 
-  it('reminds the day before and says it is not push', () => {
+  it('a push opens the detail of the subscription it is about (?suscripcion=<id>)', () => {
+    setup({ today: '2026-11-17', subscriptions: [sub({})] }, '/recurrentes?suscripcion=s1')
+    expect(screen.getByRole('dialog')).toHaveTextContent('Netflix')
+  })
+
+  it('reminds the day before, in Moni and by push', () => {
     setup({ today: '2026-11-17', subscriptions: [sub({})] })
     expect(screen.getByText('Mañana se cobra Netflix: $18.000 de Galicia')).toBeInTheDocument()
-    expect(screen.getByText(/Todavía no enviamos notificaciones push/)).toBeInTheDocument()
+    expect(screen.getByText(/con una notificación push al celular/)).toBeInTheDocument()
   })
 
   it('warns about a negative balance and points to the detail, where the charge can be voided', async () => {

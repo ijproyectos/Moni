@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ToastProvider } from '@/shared/ui/Toast'
@@ -96,9 +97,11 @@ function setup(data = {}) {
   })
   const onAdd = vi.fn()
   render(
-    <ToastProvider>
-      <FixedExpensesPanel onAdd={onAdd} />
-    </ToastProvider>,
+    <MemoryRouter>
+      <ToastProvider>
+        <FixedExpensesPanel onAdd={onAdd} />
+      </ToastProvider>
+    </MemoryRouter>,
   )
   return { onAdd, user: userEvent.setup() }
 }

@@ -9,7 +9,7 @@ import {
   Search,
   Trash2,
 } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import mascotAnalyst from '@/assets/mascot/expresion_analista.svg'
 import type { Category } from '@/features/categories/domain/category'
 import { formatLongDay, formatMonthYear, formatRelativeDay, monthNameOf } from '@/shared/lib/dates'
@@ -70,6 +70,8 @@ interface ActivityScreenProps {
   groupNamesById?: ReadonlyMap<string, string>
   /** Names of the personal trips, to say which trip an expense belongs to. */
   tripNamesById?: ReadonlyMap<string, string>
+  /** A push about a registered payment opens this movement's detail (?mov=<id>). */
+  openTransactionId?: string | null
   categoryId: string | null
   onCategoryChange: (id: string | null) => void
   selectedDay: IsoDate | null
@@ -195,6 +197,16 @@ export function ActivityScreen(props: ActivityScreenProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [detail, setDetail] = useState<Transaction | null>(null)
+  // Opens the movement a push pointed at, once (the list may still be loading when the page opens).
+  const openedFromLink = useRef<string | null>(null)
+  const { openTransactionId, transactions: allTransactions } = props
+  useEffect(() => {
+    if (!openTransactionId || openedFromLink.current === openTransactionId) return
+    const found = allTransactions.find((t) => t.id === openTransactionId)
+    if (!found) return
+    openedFromLink.current = openTransactionId
+    setDetail(found)
+  }, [openTransactionId, allTransactions])
   const { currency: displayCurrency, rates } = useDisplayCurrency()
   const today = todayIso()
   const count = countEntries(days)

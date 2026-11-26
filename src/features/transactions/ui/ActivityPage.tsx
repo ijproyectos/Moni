@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router'
 import { useMemo, useState } from 'react'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
@@ -52,6 +53,7 @@ export function ActivityPage() {
   const accounts = useAccounts({ includeArchived: true })
   const myGroups = useMyGroups()
   const trips = useTrips()
+  const [params] = useSearchParams()
   const voidTransaction = useVoidTransaction()
   const voidTransfer = useVoidTransfer()
   const voidPlan = useVoidInstallmentPlan()
@@ -201,6 +203,7 @@ export function ActivityPage() {
       accountNamesById={accountNamesById}
       groupNamesById={groupNamesById}
       tripNamesById={tripNamesById}
+      openTransactionId={params.get('mov')}
       categoryId={categoryId}
       onCategoryChange={setCategoryId}
       selectedDay={selectedDay}

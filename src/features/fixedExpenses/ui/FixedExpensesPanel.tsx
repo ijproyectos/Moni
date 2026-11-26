@@ -1,5 +1,6 @@
 import { Check, Repeat } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
 import { formatCompactDate, formatDayMonth } from '@/shared/lib/dates'
@@ -44,7 +45,9 @@ export function FixedExpensesPanel({
   const query = useFixedExpenses()
   const skip = useSkipOccurrence()
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['value']>('active')
-  const [openId, setOpenId] = useState<string | null>(null)
+  // A push opens the fixed expense it is about: ?gasto=<id>.
+  const [params] = useSearchParams()
+  const [openId, setOpenId] = useState<string | null>(() => params.get('gasto'))
   const [editing, setEditing] = useState<FixedExpense | null>(null)
   const [paying, setPaying] = useState<PendingBill | null>(null)
   const [moving, setMoving] = useState<PendingBill | null>(null)

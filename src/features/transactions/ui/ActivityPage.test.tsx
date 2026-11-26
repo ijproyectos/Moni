@@ -108,6 +108,15 @@ describe('ActivityPage', () => {
     expect(row).toHaveTextContent('Ahorros')
   })
 
+  it('a push about a registered payment opens that movement\'s detail (?mov=<id>)', () => {
+    render(
+      <MemoryRouter initialEntries={['/actividad?mov=e1']}>
+        <ActivityPage />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('dialog')).toHaveTextContent('Cena')
+  })
+
   it('shows every movement by default, not only the current month', () => {
     setup()
     expect(screen.getByText('3 movimientos')).toBeInTheDocument()

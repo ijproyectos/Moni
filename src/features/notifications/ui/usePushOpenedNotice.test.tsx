@@ -5,7 +5,8 @@ import { usePushOpenedNotice } from './usePushOpenedNotice'
 
 const ID = '11111111-1111-4111-8111-111111111111'
 const open = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
-vi.mock('../api/centerRepository', () => ({ openNoticeFromPush: open }))
+const markRead = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+vi.mock('../api/centerRepository', () => ({ openNoticeFromPush: open, markCenterRead: markRead }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 
 function Probe() {
@@ -28,7 +29,10 @@ function setup(url: string) {
 }
 
 describe('usePushOpenedNotice', () => {
-  beforeEach(() => open.mockClear())
+  beforeEach(() => {
+    open.mockClear()
+    markRead.mockClear()
+  })
 
   it('a notice opened from a push is opened once, the counters refresh and the marker leaves the address', async () => {
     const spy = setup(`/grupos/avisos?aviso=${ID}&push=1`)
@@ -46,6 +50,22 @@ describe('usePushOpenedNotice', () => {
 
   it('ignores an id that is not a uuid', () => {
     setup('/grupos/avisos?aviso=../../x&push=1')
+    expect(open).not.toHaveBeenCalled()
+  })
+
+  it('a push about a payment due or a registered charge marks that event as read by its key and leaves the marker out', async () => {
+    const key = `charged:${ID}`
+    const spy = setup(`/actividad?mov=${ID}&aviso=${key}&push=1`)
+    await waitFor(() => expect(markRead).toHaveBeenCalledWith([key]))
+    expect(open).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.getByTestId('loc')).not.toHaveTextContent('push=1'))
+    await waitFor(() => expect(spy).toHaveBeenCalled())
+  })
+
+  it('keys that are not a payment event are ignored', async () => {
+    setup('/recurrentes?aviso=due:no-es-un-id&push=1')
+    await waitFor(() => expect(screen.getByTestId('loc')).not.toHaveTextContent('push=1'))
+    expect(markRead).not.toHaveBeenCalled()
     expect(open).not.toHaveBeenCalled()
   })
 })
