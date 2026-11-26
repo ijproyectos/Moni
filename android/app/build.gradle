@@ -14,7 +14,7 @@ android {
     namespace = "com.ijproyectos.moni"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.ijproyectos.moni"
+        applicationId "moni.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 500

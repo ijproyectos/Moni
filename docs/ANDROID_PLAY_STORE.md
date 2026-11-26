@@ -5,8 +5,12 @@ Android vive en `android/`, generado con `npx cap add android`. `versionCode`/`v
 `android/app/build.gradle` se sincronizan solos desde `package.json` vía `scripts/sync-android-version.mjs`
 (ver `docs/RELEASING.md` para cómo se corta una versión).
 
-Package name (`applicationId`): **`com.ijproyectos.moni`** — coincide con `appId` en `capacitor.config.ts`.
-No se cambia sin decisión explícita: Google Play liga el listado de la app a este id para siempre.
+Package name (`applicationId`): **`moni.app`** — coincide con `appId` en `capacitor.config.ts` y con el
+nombre que ya quedó fijado como definitivo en el listado de Google Play Console. El paquete interno de
+Java/Kotlin (`namespace` en `build.gradle`, donde vive `MainActivity.java`) sigue siendo
+`com.ijproyectos.moni` — no tiene que coincidir con el `applicationId`, Android los trata por separado.
+No se cambia el `applicationId` de nuevo sin decisión explícita: Google Play liga el listado de la app a
+este id para siempre, apenas se confirma.
 
 ## 1. Crear el keystore de firma (una sola vez, lo hacés vos)
 
