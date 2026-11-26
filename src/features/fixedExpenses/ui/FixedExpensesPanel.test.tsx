@@ -20,6 +20,14 @@ vi.mock('../api/useFixedExpenses', () => ({
   useVoidPayment: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCorrectPayment: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
+const categoriesData = vi.hoisted(() => ({ current: [] as unknown[] }))
+vi.mock('@/features/categories/api/useCategories', () => ({
+  useCategories: () => ({ data: categoriesData.current }),
+}))
+const antsThreshold = vi.hoisted(() => ({ current: null as number | null }))
+vi.mock('@/features/insights/api/useAnts', () => ({
+  useAnts: () => ({ data: antsThreshold.current === null ? undefined : { thresholdCents: antsThreshold.current } }),
+}))
 // The sheets have their own tests; here they only need to show up.
 vi.mock('./RegisterPaymentSheet', () => ({
   RegisterPaymentSheet: ({ bill }: { bill: { expense: { name: string } } }) => (
@@ -107,7 +115,11 @@ function setup(data = {}) {
 }
 
 describe('FixedExpensesPanel', () => {
-  beforeEach(() => skip.mockClear())
+  beforeEach(() => {
+    skip.mockClear()
+    categoriesData.current = []
+    antsThreshold.current = null
+  })
 
   it('shows what is left to debit this month against what was really paid', () => {
     setup()
@@ -240,5 +252,47 @@ describe('FixedExpensesPanel', () => {
   it('shows nothing to confirm when everything is settled', () => {
     setup({ occurrences: [] })
     expect(screen.queryByRole('button', { name: /^Registrar pago de/ })).toBeNull()
+  })
+
+  it('shows each fixed expense\'s category and filters the list by category', async () => {
+    categoriesData.current = [
+      { id: 'c1', kind: 'expense', name: 'Servicios', icon: 'Zap', color: '#000', archivedAt: null },
+      { id: 'c2', kind: 'expense', name: 'Vivienda', icon: 'Home', color: '#000', archivedAt: null },
+    ]
+    const luzC = makeExpense({ id: 'luz', name: 'Luz', categoryId: 'c1' })
+    const alqC = makeExpense({ id: 'alq', name: 'Alquiler', categoryId: 'c2', amountCents: 100_000_00 })
+    const { user } = setup({
+      expenses: [luzC, alqC],
+      occurrences: [
+        makeOccurrence({ id: 'o1', fixedExpenseId: 'luz', dueOn: '2026-11-05' }),
+        makeOccurrence({ id: 'o2', fixedExpenseId: 'alq', dueOn: '2026-11-10', expectedCents: 100_000_00 }),
+      ],
+      payments: [],
+    })
+    const month = screen.getByRole('list', { name: 'Gastos fijos de este mes' })
+    expect(within(month).getByRole('button', { name: /^Luz,.*Servicios/ })).toBeInTheDocument()
+    expect(within(month).getByRole('button', { name: /^Alquiler,.*Vivienda/ })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Vivienda' }))
+    expect(within(month).queryByRole('button', { name: /^Luz,/ })).toBeNull()
+    expect(within(month).getByRole('button', { name: /^Alquiler,/ })).toBeInTheDocument()
+  })
+
+  it('marks a fixed expense as "Hormiga" only when its monthly cost is at or below the threshold', () => {
+    antsThreshold.current = 10_000_00
+    const chica = makeExpense({ id: 'f1', name: 'Internet', amountCents: 5_000_00 })
+    const grande = makeExpense({ id: 'f2', name: 'Alquiler', amountCents: 100_000_00 })
+    setup({
+      expenses: [chica, grande],
+      occurrences: [
+        makeOccurrence({ id: 'o1', fixedExpenseId: 'f1', dueOn: '2026-11-05', expectedCents: 5_000_00 }),
+        makeOccurrence({ id: 'o2', fixedExpenseId: 'f2', dueOn: '2026-11-10', expectedCents: 100_000_00 }),
+      ],
+      payments: [],
+    })
+    const month = screen.getByRole('list', { name: 'Gastos fijos de este mes' })
+    expect(within(month).getByRole('button', { name: /Internet.*gasto hormiga/ })).toBeInTheDocument()
+    expect(within(month).queryByRole('button', { name: /Alquiler.*gasto hormiga/ })).toBeNull()
+    expect(screen.getByText(/Tenés 1 gasto fijo chico que suma \$5\.000 por mes/)).toBeInTheDocument()
   })
 })

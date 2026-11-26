@@ -3,11 +3,17 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
+import { useCategories } from '@/features/categories/api/useCategories'
+import type { Category } from '@/features/categories/domain/category'
+import { useAnts } from '@/features/insights/api/useAnts'
+import { AntBadge } from '@/features/insights/ui/AntBadge'
 import { formatCompactDate, formatRelativeDay } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
 import { Button } from '@/shared/ui/Button'
+import { cn } from '@/shared/ui/cn'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { EmptyState } from '@/shared/ui/EmptyState'
+import { FOCUS_RING } from '@/shared/ui/focusRing'
 import { SectionLabel } from '@/shared/ui/kit'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
@@ -19,6 +25,8 @@ import {
   useSubscriptions,
 } from '../api/useSubscriptions'
 import {
+  antSubscriptions,
+  monthlyAmountCents,
   monthlyEstimateCents,
   needsAttention,
   remindersFor,
@@ -33,6 +41,31 @@ import { ServiceLogo } from './ServiceLogo'
 import { SubscriptionDetailSheet } from './SubscriptionDetailSheet'
 import { SubscriptionFormSheet } from './SubscriptionFormSheet'
 
+function FilterChip({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean
+  onClick: () => void
+  children: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        'shrink-0 whitespace-nowrap rounded-full px-3.5 py-[7px] text-[13.5px] font-medium',
+        FOCUS_RING,
+        selected ? 'bg-ink text-canvas' : 'bg-card text-ink',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
 const HISTORY_SHOWN = 12
 
 /** Screen 074 — Suscripciones, saved in the database and charged by the server on their dates. */
@@ -40,6 +73,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
   const toast = useToast()
   const formatMoney = useFormatMoney()
   const query = useSubscriptions()
+  const categoriesQuery = useCategories()
   const notCharged = useMarkChargeNotCharged()
   const link = useLinkChargeToExpense()
   const dismiss = useDismissDuplicate()
@@ -49,6 +83,10 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
   const [editing, setEditing] = useState<Subscription | null>(null)
   const [reverting, setReverting] = useState<SubscriptionCharge | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
+  const categoriesById = new Map((categoriesQuery.data ?? []).map((c) => [c.id, c]))
+  const antsQuery = useAnts(query.data?.today ?? new Date().toISOString().slice(0, 10))
+  const thresholdCents = antsQuery.data?.thresholdCents ?? null
 
   if (query.isLoading) {
     return (
@@ -70,13 +108,22 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
     )
   }
 
-  const { subscriptions, charges, today } = query.data
+  const { subscriptions: allSubscriptions, charges, today } = query.data
+  const chipCategories = [...new Set(allSubscriptions.map((s) => s.categoryId))]
+    .map((id) => categoriesById.get(id))
+    .filter((c): c is Category => Boolean(c))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const subscriptions = categoryFilter
+    ? allSubscriptions.filter((s) => s.categoryId === categoryFilter)
+    : allSubscriptions
   const byId = new Map(subscriptions.map((s) => [s.id, s]))
   const active = withStatus(subscriptions, 'active')
   const paused = withStatus(subscriptions, 'paused')
   const cancelled = withStatus(subscriptions, 'cancelled')
   const upcoming = upcomingCharges(subscriptions)
   const reminders = remindersFor(subscriptions, today)
+  const ants = thresholdCents !== null ? antSubscriptions(active, thresholdCents) : []
+  const antTotalCents = ants.reduce((sum, s) => sum + monthlyAmountCents(s), 0)
   const known = charges.filter((c) => byId.has(c.subscriptionId))
   // Charges that need a decision are listed once, under "Para revisar"; the history has the rest.
   const attention = known.filter(needsAttention)
@@ -127,7 +174,35 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
         <p className="mt-1 text-[13px] text-text-muted-on-dark">
           Estimado en pesos, según lo que cargaste.
         </p>
+        {ants.length > 0 && (
+          <p className="mt-2 text-[13px] text-text-muted-on-dark">
+            Tenés {ants.length} {ants.length === 1 ? 'suscripción chica' : 'suscripciones chicas'}{' '}
+            {ants.length === 1 ? 'que suma' : 'que suman'}{' '}
+            {formatMoney(antTotalCents)} por mes — del tipo que se olvida que se paga.
+          </p>
+        )}
       </section>
+
+      {chipCategories.length > 0 && (
+        <div
+          role="group"
+          aria-label="Filtrar por categoría"
+          className="no-scrollbar -mr-[18px] flex shrink-0 gap-2 overflow-x-auto pr-[18px]"
+        >
+          <FilterChip selected={categoryFilter === null} onClick={() => setCategoryFilter(null)}>
+            Todas
+          </FilterChip>
+          {chipCategories.map((c) => (
+            <FilterChip
+              key={c.id}
+              selected={categoryFilter === c.id}
+              onClick={() => setCategoryFilter(categoryFilter === c.id ? null : c.id)}
+            >
+              {c.name}
+            </FilterChip>
+          ))}
+        </div>
+      )}
 
       {reminders.length > 0 && (
         <div className="flex flex-col gap-2 rounded-[22px] border-2 border-dashed border-line px-4 py-3">
@@ -185,6 +260,8 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
               <SubscriptionRow
                 key={s.id}
                 subscription={s}
+                category={categoriesById.get(s.categoryId)}
+                isAnt={thresholdCents !== null && monthlyAmountCents(s) <= thresholdCents}
                 today={today}
                 onOpen={() => setOpenId(s.id)}
               />
@@ -227,6 +304,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
               <SubscriptionRow
                 key={s.id}
                 subscription={s}
+                category={categoriesById.get(s.categoryId)}
                 today={today}
                 muted
                 onOpen={() => setOpenId(s.id)}
@@ -244,6 +322,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
               <SubscriptionRow
                 key={s.id}
                 subscription={s}
+                category={categoriesById.get(s.categoryId)}
                 today={today}
                 muted
                 onOpen={() => setOpenId(s.id)}
@@ -291,11 +370,15 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
 
 function SubscriptionRow({
   subscription: s,
+  category,
+  isAnt = false,
   today,
   muted = false,
   onOpen,
 }: {
   subscription: Subscription
+  category: Category | undefined
+  isAnt?: boolean
   today: string
   muted?: boolean
   onOpen: () => void
@@ -312,7 +395,7 @@ function SubscriptionRow({
       <button
         type="button"
         onClick={onOpen}
-        aria-label={`${s.name}, ${when}`}
+        aria-label={`${s.name}, ${when}${category ? `, ${category.name}` : ''}${isAnt ? ', gasto hormiga' : ''}`}
         className="flex w-full items-center gap-3 px-4 py-3 text-left"
       >
         <ServiceLogo
@@ -321,9 +404,13 @@ function SubscriptionRow({
           className={muted ? 'opacity-60' : undefined}
         />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[18px] font-extrabold">{s.name}</span>
-          <span className="block text-[15px] leading-5 text-text-muted">
-            {when} · {s.accountName}
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-[18px] font-extrabold">{s.name}</span>
+            {isAnt && <AntBadge />}
+          </span>
+          <span className="block truncate text-[15px] leading-5 text-text-muted">
+            {when} · {category ? `${category.name} · ` : ''}
+            {s.accountName}
           </span>
         </span>
         <span className="text-right">

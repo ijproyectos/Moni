@@ -164,6 +164,16 @@ export function monthlyEstimateCents(subs: readonly Subscription[]): Cents {
   return Math.round(total / 100) * 100
 }
 
+/** One subscription's own cost per month (a yearly one counts a twelfth): what "gasto hormiga" compares against. */
+export function monthlyAmountCents(s: Pick<Subscription, 'amountCents' | 'period'>): Cents {
+  return s.period === 'yearly' ? Math.round(s.amountCents / 12) : s.amountCents
+}
+
+/** Active subscriptions small enough, per month, to be the kind of charge people forget they're paying. */
+export function antSubscriptions(subs: readonly Subscription[], thresholdCents: Cents): Subscription[] {
+  return withStatus(subs, 'active').filter((s) => monthlyAmountCents(s) <= thresholdCents)
+}
+
 /** Per year: twelve monthly charges, or the yearly one. Estimate, in ARS. */
 export function yearlyEstimateCents(subs: readonly Subscription[]): Cents {
   return withStatus(subs, 'active').reduce(

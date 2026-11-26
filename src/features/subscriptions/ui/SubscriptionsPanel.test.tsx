@@ -26,7 +26,14 @@ vi.mock('../api/useSubscriptions', () => ({
   useUpdateSubscription: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
-vi.mock('@/features/categories/api/useCategories', () => ({ useCategories: () => ({ data: [] }) }))
+const categoriesData = vi.hoisted(() => ({ current: [] as unknown[] }))
+vi.mock('@/features/categories/api/useCategories', () => ({
+  useCategories: () => ({ data: categoriesData.current }),
+}))
+const antsThreshold = vi.hoisted(() => ({ current: null as number | null }))
+vi.mock('@/features/insights/api/useAnts', () => ({
+  useAnts: () => ({ data: antsThreshold.current === null ? undefined : { thresholdCents: antsThreshold.current } }),
+}))
 
 const sub = (over: Partial<Subscription>): Subscription => ({
   id: 's1',
@@ -73,7 +80,11 @@ function setup(data: Partial<SubscriptionOverview>, url = '/recurrentes') {
 }
 
 describe('SubscriptionsPanel', () => {
-  beforeEach(() => [link, dismiss, notCharged, setStatus].forEach((f) => f.mockClear()))
+  beforeEach(() => {
+    ;[link, dismiss, notCharged, setStatus].forEach((f) => f.mockClear())
+    categoriesData.current = []
+    antsThreshold.current = null
+  })
 
   it('shows active count, monthly and yearly totals in ARS and what is paused or cancelled', () => {
     setup({
@@ -223,5 +234,37 @@ describe('SubscriptionsPanel', () => {
     const { user, onAdd } = setup({})
     await user.click(screen.getByRole('button', { name: 'Agregar una suscripción' }))
     expect(onAdd).toHaveBeenCalled()
+  })
+
+  it('shows each subscription\'s category and filters the list by category', async () => {
+    categoriesData.current = [
+      { id: 'c1', kind: 'expense', name: 'Entretenimiento', icon: 'Tv', color: '#000', archivedAt: null },
+      { id: 'c2', kind: 'expense', name: 'Trabajo', icon: 'Briefcase', color: '#000', archivedAt: null },
+    ]
+    const { user } = setup({
+      subscriptions: [
+        sub({ categoryId: 'c1' }),
+        sub({ id: 's2', name: 'Notion', serviceId: 'notion', categoryId: 'c2', nextChargeOn: '2026-11-09' }),
+      ],
+    })
+    expect(screen.getByRole('button', { name: /Netflix.*Entretenimiento/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Notion.*Trabajo/ })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Trabajo' }))
+    expect(screen.queryByRole('button', { name: /Netflix/ })).toBeNull()
+    expect(screen.getByRole('button', { name: /Notion/ })).toBeInTheDocument()
+  })
+
+  it('marks a subscription as "Hormiga" only when its monthly cost is at or below the threshold', () => {
+    antsThreshold.current = 10_000_00
+    setup({
+      subscriptions: [
+        sub({ id: 's1', name: 'Chica', amountCents: 5_000_00 }),
+        sub({ id: 's2', name: 'Grande', amountCents: 50_000_00, nextChargeOn: '2026-11-09' }),
+      ],
+    })
+    expect(screen.getByRole('button', { name: /Chica.*gasto hormiga/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Grande.*gasto hormiga/ })).toBeNull()
+    expect(screen.getByText(/Tenés 1 suscripción chica que suma \$5\.000 por mes/)).toBeInTheDocument()
   })
 })

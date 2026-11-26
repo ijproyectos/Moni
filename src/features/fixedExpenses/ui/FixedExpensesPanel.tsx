@@ -3,6 +3,10 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
+import { useCategories } from '@/features/categories/api/useCategories'
+import type { Category } from '@/features/categories/domain/category'
+import { useAnts } from '@/features/insights/api/useAnts'
+import { AntBadge } from '@/features/insights/ui/AntBadge'
 import { formatCompactDate, formatDayMonth } from '@/shared/lib/dates'
 import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { AmountDisplay } from '@/shared/ui/AmountDisplay'
@@ -16,7 +20,13 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { toUserMessage } from '@/shared/lib/errors'
 import { useFixedExpenses, useSkipOccurrence } from '../api/useFixedExpenses'
-import { historyItems, type FixedExpense, type PendingBill } from '../domain/fixedExpense'
+import {
+  antFixedExpenses,
+  historyItems,
+  monthlyAmountCents,
+  type FixedExpense,
+  type PendingBill,
+} from '../domain/fixedExpense'
 import { findKind } from '../domain/catalog'
 import { debitStatusText, monthDebits, nextDebitText, type MonthDebitRow } from '../domain/monthDebits'
 import { FixedExpenseDetailSheet } from './FixedExpenseDetailSheet'
@@ -25,6 +35,31 @@ import { PaymentRow, SkippedRow } from './FixedHistoryRow'
 import { RegisterPaymentSheet } from './RegisterPaymentSheet'
 import { RescheduleSheet } from './RescheduleSheet'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
+
+function CategoryFilterChip({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean
+  onClick: () => void
+  children: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        'shrink-0 whitespace-nowrap rounded-full px-3.5 py-[7px] text-[13.5px] font-medium',
+        FOCUS_RING,
+        selected ? 'bg-ink text-canvas' : 'bg-card text-ink',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
 
 const HISTORY_SHOWN = 10
 const FILTERS = [
@@ -44,6 +79,7 @@ export function FixedExpensesPanel({
   const toast = useToast()
   const formatMoney = useFormatMoney()
   const query = useFixedExpenses()
+  const categoriesQuery = useCategories()
   const skip = useSkipOccurrence()
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['value']>('active')
   // A push opens the fixed expense it is about: ?gasto=<id>.
@@ -54,6 +90,10 @@ export function FixedExpensesPanel({
   const [moving, setMoving] = useState<PendingBill | null>(null)
   const [skipping, setSkipping] = useState<PendingBill | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
+  const categoriesById = new Map((categoriesQuery.data ?? []).map((c) => [c.id, c]))
+  const antsQuery = useAnts(query.data?.today ?? new Date().toISOString().slice(0, 10))
+  const thresholdCents = antsQuery.data?.thresholdCents ?? null
   const loaded = query.data
   useEffect(() => {
     if (!onCount) return
@@ -89,13 +129,20 @@ export function FixedExpensesPanel({
 
   const overview = query.data
   const { expenses } = overview
-  const history = historyItems(overview)
+  const chipCategories = [...new Set(expenses.map((e) => e.categoryId))]
+    .map((id) => categoriesById.get(id))
+    .filter((c): c is Category => Boolean(c))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const matchesFilter = (e: FixedExpense) => categoryFilter === null || e.categoryId === categoryFilter
+  const history = historyItems(overview).filter((item) => matchesFilter(item.expense))
   const shown = showAll ? history : history.slice(0, HISTORY_SHOWN)
   const occurrences = new Map(overview.occurrences.map((o) => [o.id, o]))
   const open = openId ? expenses.find((e) => e.id === openId) : undefined
-  const others = expenses.filter((e) => e.status === filter)
+  const others = expenses.filter((e) => e.status === filter && matchesFilter(e))
   const removed = expenses.filter((e) => e.status === 'removed')
   const byId = new Map(expenses.map((e) => [e.id, e]))
+  const ants = thresholdCents !== null ? antFixedExpenses(expenses, thresholdCents) : []
+  const antTotalCents = ants.reduce((sum, e) => sum + monthlyAmountCents(e), 0)
 
   async function confirmSkip() {
     if (!skipping) return
@@ -111,6 +158,8 @@ export function FixedExpensesPanel({
 
   const debits = monthDebits(overview)
   const paidShare = debits.totalCents > 0 ? debits.paidCents : 0
+  const visibleDebitRows = debits.rows.filter((row) => matchesFilter(row.expense))
+  const visibleLater = debits.later.filter(matchesFilter)
 
   return (
     <>
@@ -161,7 +210,35 @@ export function FixedExpensesPanel({
                 Por venir
               </span>
             </div>
+            {ants.length > 0 && (
+              <p className="text-[13px] text-text-muted">
+                Tenés {ants.length} {ants.length === 1 ? 'gasto fijo chico' : 'gastos fijos chicos'}{' '}
+                {ants.length === 1 ? 'que suma' : 'que suman'}{' '}
+                {formatMoney(antTotalCents)} por mes — del tipo que se olvida que se paga.
+              </p>
+            )}
           </section>
+
+          {chipCategories.length > 0 && (
+            <div
+              role="group"
+              aria-label="Filtrar por categoría"
+              className="no-scrollbar -mr-[18px] flex shrink-0 gap-2 overflow-x-auto pr-[18px]"
+            >
+              <CategoryFilterChip selected={categoryFilter === null} onClick={() => setCategoryFilter(null)}>
+                Todas
+              </CategoryFilterChip>
+              {chipCategories.map((c) => (
+                <CategoryFilterChip
+                  key={c.id}
+                  selected={categoryFilter === c.id}
+                  onClick={() => setCategoryFilter(categoryFilter === c.id ? null : c.id)}
+                >
+                  {c.name}
+                </CategoryFilterChip>
+              ))}
+            </div>
+          )}
 
           {debits.next && (
             <div className="flex items-center gap-3 rounded-[18px] bg-sun px-3.5 py-2.5">
@@ -170,12 +247,14 @@ export function FixedExpensesPanel({
             </div>
           )}
 
-          {debits.rows.length > 0 && (
+          {visibleDebitRows.length > 0 && (
             <ul aria-label="Gastos fijos de este mes" className="rounded-[26px] bg-card px-4 py-0.5">
-              {debits.rows.map((row) => (
+              {visibleDebitRows.map((row) => (
                 <DebitRow
                   key={row.key}
                   row={row}
+                  category={categoriesById.get(row.expense.categoryId)}
+                  isAnt={thresholdCents !== null && monthlyAmountCents(row.expense) <= thresholdCents}
                   onOpen={() => setOpenId(row.expense.id)}
                   onPay={setPaying}
                   onMove={setMoving}
@@ -185,14 +264,20 @@ export function FixedExpensesPanel({
             </ul>
           )}
 
-          {debits.later.length > 0 && (
+          {visibleLater.length > 0 && (
             <>
               <h2 className="font-display text-[17px] font-semibold tracking-[-0.02em]">
                 Próximos vencimientos
               </h2>
               <ul className="rounded-[26px] bg-card px-4 py-0.5">
-                {debits.later.map((e) => (
-                  <ExpenseRow key={e.id} expense={e} onOpen={() => setOpenId(e.id)} />
+                {visibleLater.map((e) => (
+                  <ExpenseRow
+                    key={e.id}
+                    expense={e}
+                    category={categoriesById.get(e.categoryId)}
+                    isAnt={thresholdCents !== null && monthlyAmountCents(e) <= thresholdCents}
+                    onOpen={() => setOpenId(e.id)}
+                  />
                 ))}
               </ul>
             </>
@@ -257,7 +342,13 @@ export function FixedExpensesPanel({
           ) : (
             <ul className="rounded-[26px] bg-card px-4 py-0.5">
               {others.map((e) => (
-                <ExpenseRow key={e.id} expense={e} muted onOpen={() => setOpenId(e.id)} />
+                <ExpenseRow
+                  key={e.id}
+                  expense={e}
+                  category={categoriesById.get(e.categoryId)}
+                  muted
+                  onOpen={() => setOpenId(e.id)}
+                />
               ))}
             </ul>
           )}
@@ -323,10 +414,14 @@ function KindCircle({ kindId, muted }: { kindId: string; muted?: boolean }) {
 /** A fixed expense by its next due date (no bill yet): used for what falls after this month and for removed ones. */
 function ExpenseRow({
   expense: e,
+  category,
+  isAnt = false,
   muted = false,
   onOpen,
 }: {
   expense: FixedExpense
+  category?: Category
+  isAnt?: boolean
   muted?: boolean
   onOpen: () => void
 }) {
@@ -344,14 +439,18 @@ function ExpenseRow({
       <button
         type="button"
         onClick={onOpen}
-        aria-label={`${e.name}, ${when}`}
+        aria-label={`${e.name}, ${when}${category ? `, ${category.name}` : ''}${isAnt ? ', gasto hormiga' : ''}`}
         className={cn('grid w-full grid-cols-[38px_1fr_auto] items-center gap-3 py-2 text-left', FOCUS_RING)}
       >
         <KindCircle kindId={e.kindId} muted={muted} />
         <span className="min-w-0">
-          <span className="block truncate text-[15px] font-medium">{e.name}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-[15px] font-medium">{e.name}</span>
+            {isAnt && <AntBadge />}
+          </span>
           <span className="block truncate text-[12px] text-text-muted">
-            {when} · {e.accountName}
+            {when} · {category ? `${category.name} · ` : ''}
+            {e.accountName}
           </span>
         </span>
         <span className="text-right">
@@ -374,12 +473,16 @@ const STATUS_TONE: Record<MonthDebitRow['status'], string> = {
 /** One debit of the month: icon, name, "date · account", amount and its state ("Pagado", "En 5 días"...). */
 function DebitRow({
   row,
+  category,
+  isAnt = false,
   onOpen,
   onPay,
   onMove,
   onSkip,
 }: {
   row: MonthDebitRow
+  category?: Category
+  isAnt?: boolean
   onOpen: () => void
   onPay: (bill: PendingBill) => void
   onMove: (bill: PendingBill) => void
@@ -396,14 +499,18 @@ function DebitRow({
       <button
         type="button"
         onClick={onOpen}
-        aria-label={`${expense.name}, ${status}`}
+        aria-label={`${expense.name}, ${status}${category ? `, ${category.name}` : ''}${isAnt ? ', gasto hormiga' : ''}`}
         className={cn('grid w-full grid-cols-[38px_1fr_auto] items-center gap-3 py-2 text-left', FOCUS_RING)}
       >
         <KindCircle kindId={expense.kindId} />
         <span className="min-w-0">
-          <span className="block truncate text-[15px] font-medium">{expense.name}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-[15px] font-medium">{expense.name}</span>
+            {isAnt && <AntBadge />}
+          </span>
           <span className="block truncate text-[12px] text-text-muted">
-            {formatDayMonth(row.date)} · {row.accountName}
+            {formatDayMonth(row.date)} · {category ? `${category.name} · ` : ''}
+            {row.accountName}
           </span>
         </span>
         <span className="flex flex-col items-end gap-[3px]">

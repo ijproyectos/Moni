@@ -199,6 +199,18 @@ export function monthlyEstimateCents(expenses: readonly FixedExpense[]): Cents {
   return Math.round(total / 100) * 100
 }
 
+/** One fixed expense's own cost per month (bimonthly / 2, yearly / 12): what "gasto hormiga" compares against. */
+export function monthlyAmountCents(e: Pick<FixedExpense, 'amountCents' | 'period'>): Cents {
+  return Math.round(
+    e.period === 'yearly' ? e.amountCents / 12 : e.period === 'bimonthly' ? e.amountCents / 2 : e.amountCents,
+  )
+}
+
+/** Active fixed expenses small enough, per month, to be the kind of charge people forget they're paying. */
+export function antFixedExpenses(expenses: readonly FixedExpense[], thresholdCents: Cents): FixedExpense[] {
+  return expenses.filter((e) => e.status === 'active' && monthlyAmountCents(e) <= thresholdCents)
+}
+
 /** A payment that counts as money spent: standing, with its movement still posted. */
 export function isEffectivePayment(payment: Payment): boolean {
   return payment.status === 'posted' && !payment.voidedElsewhere
