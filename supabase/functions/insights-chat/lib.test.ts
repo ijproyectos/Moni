@@ -19,6 +19,8 @@ import {
   runChat,
   serializeToolResult,
   shapeAnts,
+  shapeBudgets,
+  shapeGoalsAndSavings,
   shapeGroupBalances,
   summarizeInstallments,
   summarizeSubscriptions,
@@ -241,6 +243,43 @@ describe('shapers', () => {
     expect(r.groups[0]).toEqual({ label: 'Cafe', category: 'Café', count: 4, total: 9000, average: 2250, yearly_projection: 108000 })
     expect(JSON.stringify(r)).not.toContain('"x"')
   })
+  it('shapes budgets, defaulting an unknown state to ok and counting over-limit ones', () => {
+    const r = shapeBudgets(
+      [
+        { budget_id: 'b1', category_id: 'c1', name: 'Super', color: '#fff', icon: 'x', amount: 10000, spent: 12000, remaining: -2000, percent: 120, state: 'over' },
+        { budget_id: 'b2', category_id: 'c2', name: 'Delivery', color: '#fff', icon: 'x', amount: 5000, spent: 1000, remaining: 4000, percent: 20, state: 'ok' },
+        { budget_id: 'b3', category_id: 'c3', name: 'Rota', color: '#fff', icon: 'x', amount: 1, spent: 0, remaining: 1, percent: 0, state: 'weird' },
+      ],
+      '2026-10-01',
+    )
+    expect(r.month).toBe('2026-10')
+    expect(r.budget_count).toBe(3)
+    expect(r.over_count).toBe(1)
+    expect(r.budgets[0]).toEqual({ category: 'Super', amount: 10000, spent: 12000, remaining: -2000, percent: 120, state: 'over' })
+    expect(r.budgets[2]?.state).toBe('ok')
+    expect(JSON.stringify(r)).not.toContain('"c1"')
+  })
+  it('shapes active goals with percent and the Ahorros balance per currency, skipping other statuses and a zero balance', () => {
+    const goals = [
+      { id: 'g1', name: 'Viaje', icon: 'x', target_amount: 100000, reserved: 25000, status: 'active', target_date: '2027-01-01T00:00:00' },
+      { id: 'g2', name: 'Sin objetivo', icon: 'x', target_amount: 0, reserved: 0, status: 'active', target_date: null },
+      { id: 'g3', name: 'Vieja', icon: 'x', target_amount: 50000, reserved: 50000, status: 'completed', target_date: null },
+    ]
+    const entries = [
+      { currency: 'ARS', kind: 'opening', amount: 10000, status: 'posted' },
+      { currency: 'ARS', kind: 'deposit', amount: 5000, status: 'posted' },
+      { currency: 'ARS', kind: 'withdrawal', amount: 3000, status: 'posted' },
+      { currency: 'USD', kind: 'deposit', amount: 100, status: 'posted' },
+      { currency: 'USD', kind: 'withdrawal', amount: 100, status: 'posted' },
+      { currency: 'ARS', kind: 'deposit', amount: 999999, status: 'voided' },
+    ]
+    const r = shapeGoalsAndSavings(goals, entries)
+    expect(r.goals_count).toBe(2)
+    expect(r.goals[0]).toEqual({ name: 'Viaje', target: 100000, reserved: 25000, percent: 25, target_date: '2027-01-01' })
+    expect(r.goals[1]).toMatchObject({ name: 'Sin objetivo', percent: 0 })
+    expect(r.ahorros).toEqual([{ currency: 'ARS', balance: 12000 }])
+    expect(JSON.stringify(r)).not.toContain('"g1"')
+  })
   it('shapes group balances by name, marks me and never leaks ids', () => {
     const r = shapeGroupBalances(
       [{ id: 'g1', name: 'Casa', kind: 'casa', my_net: 300 }],
@@ -299,7 +338,7 @@ describe('prompt and request body', () => {
     const base = { model: 'm', system: 's', messages: [user('x')] }
     expect(buildRequestBody({ ...base, final: false }).tool_choice).toEqual({ type: 'auto' })
     expect(buildRequestBody({ ...base, final: true }).tool_choice).toEqual({ type: 'none' })
-    expect(buildRequestBody({ ...base, final: false }).tools).toHaveLength(7)
+    expect(buildRequestBody({ ...base, final: false }).tools).toHaveLength(9)
   })
   it('exposes only read-only tools', () => {
     const names = buildRequestBody({ model: 'm', system: 's', messages: [], final: false }).tools.map((t) => t.name)
@@ -505,6 +544,43 @@ describe('executeTool (fake client)', () => {
     expect(out.truncated).toBe(true)
     expect(out.omitted_count).toBeGreaterThan(0)
     expect(r.content.length).toBeLessThanOrEqual(LIMITS.maxToolResultChars)
+  })
+  it('get_budgets reads the month RPC and hides category ids', async () => {
+    const { db, calls } = fakeDb({
+      'rpc:get_budget_status': {
+        data: [{ budget_id: 'b1', category_id: 'c1', name: 'Super', color: '#fff', icon: 'x', amount: 10000, spent: 2000, remaining: 8000, percent: 20, state: 'ok' }],
+        error: null,
+      },
+    })
+    const r = await executeTool(db, 'get_budgets', { month: '2026-10' }, ctx)
+    expect(calls).toContain('rpc.get_budget_status({"p_month":"2026-10-01"})')
+    const out = JSON.parse(r.content)
+    expect(out.budgets[0]).toMatchObject({ category: 'Super', state: 'ok' })
+    expect(r.content).not.toContain('c1')
+  })
+  it('get_goals_and_savings combines the overview RPC with the ahorro_entries balance', async () => {
+    const { db, calls } = fakeDb({
+      'rpc:get_savings_overview': {
+        data: { goals: [{ id: 'g1', name: 'Viaje', icon: 'x', target_amount: 1000, reserved: 500, status: 'active', target_date: null }] },
+        error: null,
+      },
+      ahorro_entries: { data: [{ currency: 'ARS', kind: 'deposit', amount: 2000, status: 'posted' }], error: null },
+    })
+    const r = await executeTool(db, 'get_goals_and_savings', {}, ctx)
+    expect(calls).toContain('rpc.get_savings_overview({})')
+    expect(calls).toContain('ahorro_entries.select("currency, kind, amount, status")')
+    const out = JSON.parse(r.content)
+    expect(out.goals).toEqual([{ name: 'Viaje', target: 1000, reserved: 500, percent: 50 }])
+    expect(out.ahorros).toEqual([{ currency: 'ARS', balance: 2000 }])
+  })
+  it('get_goals_and_savings never exposes a raw database error from either query', async () => {
+    const { db } = fakeDb({
+      'rpc:get_savings_overview': { data: null, error: { code: '42501', message: 'secret detail' } },
+      ahorro_entries: { data: [], error: null },
+    })
+    const r = await executeTool(db, 'get_goals_and_savings', {}, ctx)
+    expect(r.isError).toBe(true)
+    expect(r.content).not.toContain('secret')
   })
   it('rejects invalid input before touching the database', async () => {
     const { db, calls } = fakeDb({})

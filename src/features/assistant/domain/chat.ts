@@ -27,6 +27,8 @@ export const SUGGESTIONS = [
   '¿Cuáles son mis gastos hormiga?',
   '¿Cuánto debo en cuotas?',
   '¿Quién me debe en mis grupos?',
+  '¿Cómo voy con mis metas de ahorro?',
+  '¿Me paso de algún presupuesto?',
 ] as const
 
 /** The quick questions of the sheet that opens from the cat in Inicio. */

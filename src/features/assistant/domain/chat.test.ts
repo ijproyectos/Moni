@@ -48,7 +48,8 @@ describe('assistantErrorMessage', () => {
     expect(assistantErrorMessage(new AiError('whatever'))).toMatch(/no pudo responder/)
     expect(assistantErrorMessage(new OfflineError())).toBe(OFFLINE_MESSAGE)
   })
-  it('has the five suggested questions', () => {
-    expect(SUGGESTIONS).toHaveLength(5)
+  it('has the suggested questions, each a real question', () => {
+    expect(SUGGESTIONS.length).toBeGreaterThan(0)
+    expect(SUGGESTIONS.every((q) => q.endsWith('?'))).toBe(true)
   })
 })

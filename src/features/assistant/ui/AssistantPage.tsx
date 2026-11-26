@@ -45,7 +45,7 @@ export function AssistantPage() {
       <AssistantConversation
         suggestions={SUGGESTIONS}
         initialQuestion={question}
-        greeting="Hola. Contame qué querés comprar y cuánto sale (por ejemplo, “una campera de $180.000 en 3 cuotas”) y te digo si te conviene. También podés preguntarme por tus gastos, vencimientos, cuotas y grupos."
+        greeting="Hola. Contame qué querés comprar y cuánto sale (por ejemplo, “una campera de $180.000 en 3 cuotas”) y te digo si te conviene. También podés preguntarme por tus gastos, vencimientos, cuotas, grupos, presupuestos o metas de ahorro."
       />
     </Page>
   )

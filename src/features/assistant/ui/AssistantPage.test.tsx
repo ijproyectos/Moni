@@ -37,10 +37,10 @@ describe('AssistantPage', () => {
     Object.assign(plusState, { isFree: false, isPlus: true })
   })
 
-  it('shows the five suggested questions and answers a tap', async () => {
+  it('shows the suggested questions and answers a tap', async () => {
     invoke.mockResolvedValue({ data: { reply: 'Gastaste $5.000 este mes.' }, error: null })
     const user = setup()
-    expect(screen.getAllByRole('button', { name: /\?$/ })).toHaveLength(5)
+    expect(screen.getAllByRole('button', { name: /\?$/ })).toHaveLength(7)
     await user.click(screen.getByRole('button', { name: '¿Cuánto gasté este mes?' }))
     expect(await screen.findByText(/Gastaste \$5\.000 este mes\./)).toBeInTheDocument()
     // The chips stay under the conversation, as in the design.

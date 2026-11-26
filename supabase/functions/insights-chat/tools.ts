@@ -10,6 +10,8 @@ import {
   parseToolInput,
   serializeToolResult,
   shapeAnts,
+  shapeBudgets,
+  shapeGoalsAndSavings,
   shapeGroupBalances,
   shapePeriodSummary,
   shapeTransactions,
@@ -262,6 +264,18 @@ export async function executeTool(
           await db.rpc('get_ant_expenses', { p_month: args.month, p_max_amount: args.threshold }),
         )
         return serializeToolResult(shapeAnts(data))
+      }
+      case 'get_budgets': {
+        const data = check(await db.rpc('get_budget_status', { p_month: args.month }))
+        return serializeToolResult(shapeBudgets(data, args.month))
+      }
+      case 'get_goals_and_savings': {
+        const [overview, ahorros] = await Promise.all([
+          db.rpc('get_savings_overview'),
+          db.from('ahorro_entries').select('currency, kind, amount, status'),
+        ])
+        const goals = (check(overview) as { goals?: unknown } | null)?.goals
+        return serializeToolResult(shapeGoalsAndSavings(goals, check(ahorros)))
       }
     }
   } catch (error) {
