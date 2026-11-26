@@ -12,6 +12,7 @@ const GROUP = '99999999-9999-4999-8999-999999999999'
 const archive = vi.hoisted(() => vi.fn())
 const hide = vi.hoisted(() => vi.fn())
 const restore = vi.hoisted(() => vi.fn())
+const purge = vi.hoisted(() => vi.fn())
 const setRole = vi.hoisted(() => vi.fn())
 const membersData = vi.hoisted(() => ({ current: [] as GroupMember[] }))
 const hiddenData = vi.hoisted(() => ({ current: [] as HiddenGroup[] }))
@@ -33,6 +34,7 @@ vi.mock('../api/useGroups', () => ({
   useArchiveGroup: () => ({ mutateAsync: archive, isPending: false }),
   useHideGroup: () => ({ mutateAsync: hide, isPending: false }),
   useRestoreGroup: () => ({ mutateAsync: restore, isPending: false }),
+  usePurgeGroup: () => ({ mutateAsync: purge, isPending: false }),
   useSetMemberRole: () => ({ mutateAsync: setRole, isPending: false }),
   useGroupMembers: () => ({ data: membersData.current }),
   useHiddenGroups: () => ({ data: hiddenData.current }),
@@ -63,6 +65,7 @@ beforeEach(() => {
   archive.mockReset().mockResolvedValue(undefined)
   hide.mockReset().mockResolvedValue(undefined)
   restore.mockReset().mockResolvedValue(undefined)
+  purge.mockReset().mockResolvedValue({ outcome: 'deleted', photoPath: null })
   setRole.mockReset().mockResolvedValue(undefined)
   cancelReq.mockReset().mockResolvedValue(undefined)
   approveReq.mockReset().mockResolvedValue('g1')
@@ -173,6 +176,54 @@ describe('Eliminados y archivados', () => {
     expect(screen.getByRole('link', { name: 'Ver historial' })).toHaveAttribute('href', '/grupos/a1')
     expect(screen.queryByRole('button', { name: 'Restaurar Viaje' })).toBeNull()
   })
+
+  async function openList() {
+    render(<MemoryRouter><HiddenGroupsEntry /></MemoryRouter>)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /Eliminados y archivados/ }))
+    return user
+  }
+
+  it('deletes one for good only after the confirmation, and never from a plain press of the row', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' }), hiddenGroup({ id: 'v1', name: 'Bariloche', kind: 'viaje', hiddenAt: '2026-11-02T00:00:00Z' })]
+    const user = await openList()
+    expect(screen.getByRole('button', { name: 'Restaurar Depto' })).toBeInTheDocument()
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar Bariloche definitivamente' })[0] as HTMLElement)
+    expect(purge).not.toHaveBeenCalled()
+    expect(screen.getByText('¿Querés eliminar este viaje definitivamente?')).toBeInTheDocument()
+    expect(screen.getByText(/No vas a poder restaurarlo/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(purge).not.toHaveBeenCalled()
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar Depto definitivamente' })[0] as HTMLElement)
+    expect(screen.getByText('¿Querés eliminar este grupo definitivamente?')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
+    expect(purge).toHaveBeenCalledWith('h1')
+  })
+
+  it('"Eliminar todos" says how many will go and that it cannot be undone; then the list says there is nothing left', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' }), hiddenGroup({ id: 'a1', name: 'Viaje', archivedAt: '2026-11-03T00:00:00Z' })]
+    purge.mockImplementation(async () => {
+      hiddenData.current = []
+      return { outcome: 'deleted', photoPath: null }
+    })
+    const user = await openList()
+    await user.click(screen.getByRole('button', { name: 'Eliminar todos' }))
+    expect(screen.getByText('¿Eliminar definitivamente 2 grupos y viajes?')).toBeInTheDocument()
+    expect(screen.getByText(/no se puede deshacer/)).toBeInTheDocument()
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar todos' }).at(-1) as HTMLElement)
+    expect(purge).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('No tenés grupos eliminados ni archivados.')).toBeInTheDocument()
+  })
+
+  it('what the server refuses (debts) stays in the list and the reason is shown', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' })]
+    purge.mockRejectedValue(Object.assign(new Error('balance_not_zero'), { message: 'balance_not_zero' }))
+    const user = await openList()
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar Depto definitivamente' })[0] as HTMLElement)
+    await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
+    expect(purge).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Restaurar Depto' })).toBeInTheDocument()
+  })
 })
 
 describe('Invitations are for administrators', () => {
@@ -263,6 +314,12 @@ describe('Personas de Moni', () => {
     await userEvent.type(screen.getByLabelText('Buscar entre tus contactos'), 'maria')
     expect(screen.getAllByText('Ana María').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Beto')).toHaveLength(1) // only the preview behind the sheet
+  })
+
+  it('never lists a deleted account stand-in even from stale data', () => {
+    contactsData.current = [{ userId: 'x', displayName: 'Ex integrante', avatarUrl: null }, { userId: 'a', displayName: 'Ana', avatarUrl: null }]
+    render(<ContactsInvite groupId={GROUP} />)
+    expect(screen.queryByText('Ex integrante')).toBeNull()
   })
 
   it('has no "Ver más" with 3 people or fewer', () => {

@@ -82,6 +82,7 @@ const MESSAGES: Record<string, string> = {
   occurrence_skipped: 'Ese período se omitió.',
   occurrence_resolved: 'Ese período ya fue resuelto.',
   split_changed: 'Alguien del reparto ya no está en el grupo. Editá el gasto recurrente y ajustá los porcentajes.',
+  group_not_removed: 'Primero quitá este grupo de tu lista.',
   not_a_contact: 'Esa persona no está en tus contactos de Moni.',
   contact_blocked: 'Bloqueaste a esta persona. Desbloqueala para invitarla.',
   invitation_unavailable: 'No se puede invitar a esta persona ahora.',

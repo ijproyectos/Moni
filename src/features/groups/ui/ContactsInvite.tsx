@@ -14,7 +14,7 @@ import {
   useInviteContact,
   useSetContactPref,
 } from '../api/useGroups'
-import type { InvitationStatus } from '../domain/group'
+import { DELETED_ACCOUNT_NAME, type InvitationStatus } from '../domain/group'
 
 const STATUS_LABEL: Record<InvitationStatus, string> = {
   pending: 'Invitación enviada',
@@ -54,11 +54,12 @@ export function ContactsInvite({ groupId }: { groupId: string }) {
     return map
   }, [invitations.data])
 
-  const available = (contacts.data ?? []).filter((c) => !memberIds.has(c.userId))
+  // The server already leaves deleted accounts out; this also covers stale cached data.
+  const available = (contacts.data ?? []).filter((c) => !memberIds.has(c.userId) && c.displayName !== DELETED_ACCOUNT_NAME)
   const list = available.filter((c) => normalize(c.displayName ?? '').includes(normalize(query.trim())))
 
   // Nothing to show (no contacts yet, or the database does not have them): the code below stays the way in.
-  if ((contacts.data ?? []).length === 0) return null
+  if ((contacts.data ?? []).filter((c) => c.displayName !== DELETED_ACCOUNT_NAME).length === 0) return null
 
   async function send(userId: string, name: string) {
     try {

@@ -1306,6 +1306,10 @@ export interface Database {
         Args: { p_group: string }
         Returns: undefined
       }
+      purge_group_for_me: {
+        Args: { p_group: string }
+        Returns: Json
+      }
       archive_group_for_all: {
         Args: { p_group: string; p_name_confirmation: string }
         Returns: undefined

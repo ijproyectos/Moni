@@ -57,6 +57,7 @@ import {
   archiveGroup,
   hideGroup,
   listHiddenAndArchivedGroups,
+  purgeGroup,
   restoreGroup,
   setMemberRole,
 } from './groupsRepository'
@@ -273,7 +274,7 @@ export function useRejectJoinRequest() {
 /** My "Personas de Moni": real people I shared a group with. */
 export function useContacts() {
   const { user } = useAuth()
-  return useQuery({ queryKey: groupKeys.contacts(user?.id), enabled: Boolean(user), queryFn: listContacts, retry: false })
+  return useQuery({ queryKey: groupKeys.contacts(user?.id), enabled: Boolean(user), queryFn: listContacts, retry: false, staleTime: 0, refetchOnMount: 'always' })
 }
 
 export function useHiddenContacts(enabled = true) {
@@ -430,6 +431,14 @@ export function useHideGroup() {
 export function useRestoreGroup() {
   const invalidate = useInvalidateGroupMoney()
   return useMutation({ mutationFn: (groupId: string) => restoreGroup(groupId), onSuccess: invalidate })
+}
+
+export function usePurgeGroup() {
+  const invalidate = useInvalidateGroupMoney()
+  return useMutation({
+    mutationFn: (groupId: string) => purgeGroup(groupId),
+    onSuccess: invalidate,
+  })
 }
 
 export function useArchiveGroup() {
