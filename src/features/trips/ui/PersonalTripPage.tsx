@@ -1,12 +1,12 @@
 import { TripIconButton } from './TripIconPicker'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useParams } from 'react-router'
 import mascotUrl from '@/assets/mascot/personaje_carga-de-dinero.svg'
 import { useAccounts } from '@/features/accounts/api/useAccounts'
 import { useAuth } from '@/features/auth/api/authContext'
-import { useVoidTransaction } from '@/features/transactions/api/useTransactions'
+import { useTransactions, useVoidTransaction } from '@/features/transactions/api/useTransactions'
 import type { Transaction } from '@/features/transactions/domain/transaction'
 import { MovementSummarySheet } from '@/features/transactions/ui/MovementSummarySheet'
 import { toUserMessage } from '@/shared/lib/errors'
@@ -16,21 +16,42 @@ import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { tripKeys } from '../api/queryKeys'
 import { useCategories } from '@/features/categories/api/useCategories'
 import { useMovementSheet } from '@/features/transactions/ui/movementSheetContext'
+import { usePlus } from '@/features/plus/api/usePlus'
 import { formatRelativeDay } from '@/shared/lib/dates'
 import { todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState } from '@/shared/ui/EmptyState'
-import { CategoryIconCircle } from '@/shared/ui/IconCircle'
-import { MoniGlyph, Page, ProgressBar, SectionLabel } from '@/shared/ui/kit'
+import { Page, SectionLabel } from '@/shared/ui/kit'
 import { MovementRow } from '@/shared/ui/MovementRow'
 import { PageHeader } from '@/shared/ui/PageHeader'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { isTripsNotEnabled } from '../api/tripsRepository'
-import { useTripExpenses, useTrips } from '../api/useTrips'
-import { rangeLabel } from '../domain/dates'
-import { summarizeTrip, tripExpenses } from '../domain/trip'
+import {
+  useBookings,
+  useCancelBooking,
+  useDeleteBooking,
+  useLinkMovementToBooking,
+  useSideExpenses,
+  useTripCategories,
+  useTripExpenses,
+  useTrips,
+  useVoidSideExpense,
+} from '../api/useTrips'
+import { useArsPerUsd } from '../api/useArsPerUsd'
+import { daysBetween, rangeLabel } from '../domain/dates'
+import { moneyIn } from '../domain/money'
+import { tripExpenses } from '../domain/trip'
+import { allTripCategories, categoryOf } from '../domain/tripCategories'
+import { bookingStates, spendFromMovement, spendFromSide, tripFinance, valueIn, type BookingState, type SpendItem } from '../domain/tripFinance'
+import { RateSheet } from './RateSheet'
+import { tripInsights } from '../domain/tripInsights'
+import { BookingSheet } from './BookingSheet'
+import { BookingsSection, LinkExpenseSheet } from './BookingsSection'
 import { PersonalTripForm } from './PersonalTripForm'
+import { TripBudgetCard } from './TripBudgetCard'
+import { TripCategoryIcon } from './TripCategoryIcon'
+import { TripExpenseSheet } from './TripExpenseSheet'
 
 // Screen 038 — Viaje personal: budget against what was really spent, and the trip's movements.
 export function PersonalTripPage() {
@@ -38,7 +59,7 @@ export function PersonalTripPage() {
   const trips = useTrips()
   const expensesQuery = useTripExpenses()
   const categories = useCategories(undefined, { includeArchived: true })
-  const { openNew, openEdit } = useMovementSheet()
+  const { openEdit } = useMovementSheet()
   const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [opened, setOpened] = useState<Transaction | null>(null)
@@ -49,6 +70,23 @@ export function PersonalTripPage() {
   const { user } = useAuth()
   const today = todayIso()
   const money = useFormatMoney()
+  const sideQuery = useSideExpenses()
+  const bookingsQuery = useBookings()
+  const customCategories = useTripCategories()
+  const allMovements = useTransactions()
+  const voidSide = useVoidSideExpense()
+  const cancelBooking = useCancelBooking()
+  const deleteBooking = useDeleteBooking()
+  const linkMovement = useLinkMovementToBooking()
+  const arsPerUsd = useArsPerUsd()
+  const { isPlus } = usePlus()
+  const [expenseOpen, setExpenseOpen] = useState(false)
+  const [bookingSheet, setBookingSheet] = useState<{ booking?: BookingState['booking'] } | null>(null)
+  const [paying, setPaying] = useState<BookingState | null>(null)
+  const [linking, setLinking] = useState<BookingState | null>(null)
+  const [pendingSideVoid, setPendingSideVoid] = useState<SpendItem | null>(null)
+  const [showAll, setShowAll] = useState(false)
+  const [rateFor, setRateFor] = useState<SpendItem | null>(null)
 
   async function confirmVoid() {
     if (!pendingVoid) return
@@ -97,9 +135,40 @@ export function PersonalTripPage() {
   }
 
   const expenses = tripExpenses(trip.id, expensesQuery.data ?? [])
-  const summary = summarizeTrip(trip, expenses, today)
+  const currency = trip.currency ?? 'ARS'
   const categoryById = new Map((categories.data ?? []).map((c) => [c.id, c]))
-  const percent = Math.round(summary.progress * 100)
+  const tripCategories = allTripCategories(customCategories.data ?? [])
+  const items: SpendItem[] = [
+    ...expenses.map((t) => spendFromMovement(t, currency)),
+    ...(sideQuery.data ?? []).filter((r) => r.trip_id === trip.id).map((r) => spendFromSide(r, currency)),
+  ].sort((a, b) => (a.occurredOn < b.occurredOn ? 1 : a.occurredOn > b.occurredOn ? -1 : 0))
+  const bookings = (bookingsQuery.data ?? []).filter((b) => b.tripId === trip.id)
+  const states = bookingStates(bookings, items, arsPerUsd)
+  const finance = tripFinance({ currency, budgetCents: trip.budgetCents, startsOn: trip.startsOn, endsOn: trip.endsOn, today, items, bookings: states, arsPerUsd })
+  const totalDays = Math.max(1, daysBetween(trip.startsOn, trip.endsOn))
+  const status = today < trip.startsOn ? 'upcoming' : today > trip.endsOn ? 'ended' : 'ongoing'
+  const insights = isPlus ? tripInsights({ finance, bookings: states, today, categories: tripCategories, status }) : []
+  const candidates = (allMovements.data ?? []).filter(
+    (t) => t.kind === 'expense' && t.status === 'posted' && !t.sharedExpenseId && !t.bookingId && (!t.tripId || t.tripId === trip.id),
+  )
+  const visibleItems = showAll ? items : items.slice(0, 8)
+
+  function describe(item: SpendItem) {
+    const movement = item.movement
+    const category = movement?.categoryId ? categoryById.get(movement.categoryId) : undefined
+    return item.title || (item.categoryKey ? categoryOf(item.categoryKey, tripCategories).label : category?.name) || 'Gasto'
+  }
+
+  async function confirmSideVoid() {
+    if (!pendingSideVoid) return
+    try {
+      await voidSide.mutateAsync(pendingSideVoid.id)
+      toast.show('Gasto eliminado')
+    } catch (e) {
+      toast.show(toUserMessage(e), { tone: 'error' })
+    }
+    setPendingSideVoid(null)
+  }
 
   return (
     <Page>
@@ -119,77 +188,60 @@ export function PersonalTripPage() {
       <div className="-mt-2 flex items-center gap-3">
         <TripIconButton tripId={trip.id} name={trip.name} icon={trip.icon} />
         <p className="text-[16px] text-text-muted">
-          {rangeLabel(trip.startsOn, trip.endsOn)} · {summary.totalDays}{' '}
-          {summary.totalDays === 1 ? 'día' : 'días'}
+          {trip.destination ? `${trip.destination} · ` : ''}
+          {rangeLabel(trip.startsOn, trip.endsOn)} · {totalDays} {totalDays === 1 ? 'día' : 'días'}
         </p>
       </div>
-      <section
-        aria-label="Presupuesto del viaje"
-        className="rounded-[28px] bg-forest p-5 text-cream"
-      >
-        <p className="text-[13px] font-extrabold uppercase tracking-[0.12em] text-text-muted-on-dark">
-          Presupuesto del viaje
-        </p>
-        <p className="font-display text-[clamp(30px,9vw,38px)] font-extrabold leading-tight">
-          {money(trip.budgetCents)}
-        </p>
-        <div className="mt-3 flex justify-between gap-3 text-[15px] font-extrabold text-text-muted-on-dark">
-          <span>Gastaste {money(summary.spentCents)}</span>
-          <span>{percent}%</span>
-        </div>
-        <ProgressBar
-          value={summary.progress}
-          tone="dark"
-          className="mt-2"
-          label="Gastado del presupuesto"
-        />
-        <p
-          className={
-            summary.overBudget
-              ? 'mt-3 text-[17px] font-extrabold text-expense-on-dark'
-              : 'mt-3 text-[17px] font-extrabold'
-          }
-        >
-          {summary.overBudget
-            ? `Te pasaste ${money(-summary.remainingCents)}`
-            : `Te quedan ${money(summary.remainingCents)}`}
-        </p>
-        {summary.perDayCents > 0 && (
-          <div className="mt-3 flex gap-3 rounded-[18px] bg-surface p-4 text-[16px] leading-6">
-            <MoniGlyph className="mt-0.5 shrink-0 text-cream" />
-            <p>
-              {summary.status === 'upcoming' ? 'Para cada uno de los ' : 'Podés gastar unos '}
-              <strong className="font-extrabold">
-                {summary.status === 'upcoming'
-                  ? `${summary.daysLeft} días: ${money(summary.perDayCents)} por día`
-                  : `${money(summary.perDayCents)} por día`}
-              </strong>
-              {summary.status === 'ongoing' &&
-                ` durante los ${summary.daysLeft} ${summary.daysLeft === 1 ? 'día' : 'días'} que faltan`}
-              .
-            </p>
-          </div>
-        )}
-      </section>
 
-      {summary.byCategory.length > 0 && (
+      <TripBudgetCard finance={finance} onSetBudget={() => setEditing(true)} />
+
+      {insights.length > 0 && (
+        <section aria-label="Moni te cuenta" className="flex flex-col gap-2 rounded-[24px] border border-line bg-card p-4">
+          <h2 className="flex items-center gap-2 text-[17px] font-extrabold">
+            <Sparkles aria-hidden="true" className="size-5" /> Moni te cuenta
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {insights.map((i) => (
+              <li key={i.id} className="text-[15px] leading-6">
+                {i.text}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <BookingsSection
+        states={states}
+        onAdd={() => setBookingSheet({})}
+        actions={{
+          pay: (state) => setPaying(state),
+          edit: (state) => setBookingSheet({ booking: state.booking }),
+          link: (state) => setLinking(state),
+          setCancelled: async (state, cancelled) => {
+            await cancelBooking.mutateAsync({ id: state.booking.id, cancelled })
+          },
+          remove: async (state) => {
+            await deleteBooking.mutateAsync(state.booking.id)
+          },
+        }}
+      />
+
+      {finance.byCategory.length > 0 && (
         <section className="rounded-[24px] border border-line bg-card p-4">
-          <h2 className="text-[22px] font-extrabold">En qué gastaste</h2>
+          <h2 className="text-[20px] font-extrabold">Gastos por categoría</h2>
           <ul className="mt-1 divide-y divide-line">
-            {summary.byCategory.map((row) => {
-              const category = row.categoryId ? categoryById.get(row.categoryId) : undefined
+            {finance.byCategory.map((row) => {
+              const category = categoryOf(row.key, tripCategories)
               return (
-                <li key={row.categoryId ?? 'none'} className="flex items-center gap-3 py-3">
-                  <CategoryIconCircle iconName={category?.icon} color={category?.color} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[18px] font-extrabold">
-                      {category?.name ?? 'Sin categoría'}
-                    </span>
-                    <span className="block text-[15px] text-text-muted">
-                      {Math.round(row.share * 100)}% de lo gastado
-                    </span>
+                <li key={row.key} className="flex items-center gap-3 py-2.5">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-tint-green text-ink">
+                    <TripCategoryIcon icon={category.icon} />
                   </span>
-                  <span className="text-[18px] font-extrabold">{money(row.cents)}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[16px] font-extrabold">{category.label}</span>
+                    <span className="block text-[13px] text-text-muted">{Math.round(row.share * 100)}% de lo gastado</span>
+                  </span>
+                  <span className="text-[16px] font-extrabold">{moneyIn(row.cents, currency)}</span>
                 </li>
               )
             })}
@@ -197,51 +249,74 @@ export function PersonalTripPage() {
         </section>
       )}
 
-      <SectionLabel>Gastos del viaje</SectionLabel>
+      <SectionLabel>Últimos movimientos</SectionLabel>
       {expensesQuery.isLoading ? (
         <Skeleton className="h-24" />
-      ) : expenses.length === 0 ? (
+      ) : items.length === 0 ? (
         <p className="rounded-[24px] border border-line bg-card p-4 text-[16px] text-text-muted">
           Todavía no cargaste gastos de este viaje.
         </p>
       ) : (
-        <ul className="divide-y divide-line rounded-[24px] border border-line bg-card px-4">
-          {expenses.map((t) => {
-            const category = t.categoryId ? categoryById.get(t.categoryId) : undefined
-            return (
-              <li key={t.id}>
-                <SwipeRow
-                  surfaceClassName="bg-card"
-                  leadingAction={{
-                    label: 'Editar',
-                    tone: 'primary',
-                    icon: <Pencil className="size-5" strokeWidth={2.2} />,
-                    ariaLabel: `Editar ${t.note?.trim() || category?.name || 'gasto'}`,
-                    onPress: () => openEdit(t),
-                  }}
-                  actions={[
-                    {
-                      label: 'Eliminar',
-                      tone: 'danger',
-                      icon: <Trash2 className="size-5" strokeWidth={2.2} />,
-                      ariaLabel: `Eliminar ${t.note?.trim() || category?.name || 'gasto'}`,
-                      onPress: () => setPendingVoid(t),
-                    },
-                  ]}
-                >
-                  <MovementRow
-                    leading={<CategoryIconCircle iconName={category?.icon} color={category?.color} />}
-                    title={t.note?.trim() || category?.name || 'Gasto'}
-                    subtitle={`${category?.name ?? 'Sin categoría'} · ${formatRelativeDay(t.occurredOn, today)}`}
-                    trailing={money(-t.amountCents)}
-                    onPress={() => setOpened(t)}
-                    pressLabel={`Ver detalle de ${t.note?.trim() || category?.name || 'gasto'}`}
-                  />
-                </SwipeRow>
-              </li>
-            )
-          })}
-        </ul>
+        <>
+          <ul className="divide-y divide-line rounded-[24px] border border-line bg-card px-4">
+            {visibleItems.map((item) => {
+              const t = item.movement
+              const name = describe(item)
+              const tripCategory = categoryOf(item.categoryKey, tripCategories)
+              const origin = item.funding === 'savings' ? ' · Ahorros' : item.source === 'side' ? ' · de otro lado' : ''
+              const noRate = valueIn(item, currency) === null
+              const amount = item.usd !== null && currency === 'USD' ? moneyIn(item.usd, 'USD') : item.ars !== null ? money(-item.ars) : moneyIn(item.usd ?? 0, 'USD')
+              return (
+                <li key={`${item.source}-${item.id}`}>
+                  <SwipeRow
+                    surfaceClassName="bg-card"
+                    leadingAction={
+                      t && t.accountId !== null
+                        ? { label: 'Editar', tone: 'primary', icon: <Pencil className="size-5" strokeWidth={2.2} />, ariaLabel: `Editar ${name}`, onPress: () => openEdit(t) }
+                        : undefined
+                    }
+                    actions={[
+                      {
+                        label: 'Eliminar',
+                        tone: 'danger',
+                        icon: <Trash2 className="size-5" strokeWidth={2.2} />,
+                        ariaLabel: `Eliminar ${name}`,
+                        onPress: () => (t ? setPendingVoid(t) : setPendingSideVoid(item)),
+                      },
+                    ]}
+                  >
+                    <MovementRow
+                      leading={
+                        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-tint-green text-ink">
+                          <TripCategoryIcon icon={tripCategory.icon} />
+                        </span>
+                      }
+                      title={name}
+                      subtitle={`${tripCategory.label === name ? '' : tripCategory.label + ' · '}${formatRelativeDay(item.occurredOn, today)}${origin}`}
+                      trailing={amount}
+                      onPress={t ? () => setOpened(t) : undefined}
+                      pressLabel={`Ver detalle de ${name}`}
+                    />
+                  </SwipeRow>
+                  {noRate && (
+                    <button
+                      type="button"
+                      onClick={() => setRateFor(item)}
+                      className="mb-2 ml-14 min-h-9 rounded-full border-2 border-dashed border-line px-3 text-[13px] font-extrabold text-text-muted"
+                    >
+                      Sin cotización · Agregar
+                    </button>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+          {items.length > 8 && (
+            <button type="button" onClick={() => setShowAll((v) => !v)} className="mx-auto min-h-11 px-4 text-[14px] font-extrabold text-text-muted">
+              {showAll ? 'Ver menos' : `Ver los ${items.length} movimientos`}
+            </button>
+          )}
+        </>
       )}
 
       {opened && (
@@ -265,11 +340,29 @@ export function PersonalTripPage() {
       {pendingVoid && (
         <ConfirmDialog
           title="¿Eliminar este gasto?"
-          message="Lo sacamos de tus balances y del viaje. Esta acción no se puede deshacer."
+          message={
+            pendingVoid.funding === 'savings'
+              ? 'Lo sacamos de tus balances y del viaje, y el importe vuelve a tus ahorros. Esta acción no se puede deshacer.'
+              : 'Lo sacamos de tus balances y del viaje. Esta acción no se puede deshacer.'
+          }
           confirmLabel="Eliminar"
           isBusy={voidTransaction.isPending}
           onConfirm={() => void confirmVoid()}
           onCancel={() => setPendingVoid(null)}
+        />
+      )}
+      {pendingSideVoid && (
+        <ConfirmDialog
+          title="¿Eliminar este gasto?"
+          message={
+            pendingSideVoid.funding === 'savings'
+              ? 'Lo sacamos del viaje y el importe vuelve a tus ahorros. Esta acción no se puede deshacer.'
+              : 'Lo sacamos del viaje. No afecta tus saldos. Esta acción no se puede deshacer.'
+          }
+          confirmLabel="Eliminar"
+          isBusy={voidSide.isPending}
+          onConfirm={() => void confirmSideVoid()}
+          onCancel={() => setPendingSideVoid(null)}
         />
       )}
       {editing && (
@@ -282,8 +375,45 @@ export function PersonalTripPage() {
           }}
         />
       )}
+      {rateFor && (
+        <RateSheet
+          kind={rateFor.source === 'movement' ? 'transaction' : 'side'}
+          id={rateFor.id}
+          title={describe(rateFor)}
+          tripCurrency={currency}
+          suggested={arsPerUsd}
+          onClose={() => setRateFor(null)}
+        />
+      )}
+      {expenseOpen && <TripExpenseSheet trip={{ id: trip.id, currency, funding: trip.funding }} onClose={() => setExpenseOpen(false)} />}
+      {paying && (
+        <TripExpenseSheet
+          trip={{ id: trip.id, currency, funding: trip.funding }}
+          payment={{ booking: paying.booking, pendingCents: paying.pendingCents }}
+          onClose={() => setPaying(null)}
+        />
+      )}
+      {bookingSheet && (
+        <BookingSheet target={{ tripId: trip.id }} booking={bookingSheet.booking} defaultCurrency={currency} onClose={() => setBookingSheet(null)} />
+      )}
+      {linking && (
+        <LinkExpenseSheet
+          candidates={candidates}
+          bookingTitle={linking.booking.title}
+          onClose={() => setLinking(null)}
+          onPick={async (t) => {
+            try {
+              await linkMovement.mutateAsync({ transactionId: t.id, bookingId: linking.booking.id, tripId: trip.id })
+              toast.show('Gasto vinculado a la reserva')
+              setLinking(null)
+            } catch (e) {
+              toast.show(toUserMessage(e), { tone: 'error' })
+            }
+          }}
+        />
+      )}
       <div data-bottom-action className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[430px] px-5 pb-[max(env(safe-area-inset-bottom),16px)]">
-        <Button onClick={() => openNew('expense', { tripId: trip.id })}>
+        <Button onClick={() => setExpenseOpen(true)}>
           <Plus aria-hidden="true" className="mr-2 size-5" /> Cargar gasto
         </Button>
       </div>

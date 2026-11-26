@@ -57,7 +57,7 @@ export function buildBalanceSeries({
   // Signed effect of each posted movement on the available money, keyed by its day.
   const effects: { on: IsoDate; cents: Cents }[] = []
   for (const t of transactions) {
-    if (t.status !== 'posted' || !available.has(t.accountId)) continue
+    if (t.status !== 'posted' || t.accountId === null || !available.has(t.accountId)) continue
     effects.push({
       on: t.occurredOn,
       cents: addsToBalance(t.kind) ? t.amountCents : -t.amountCents,

@@ -18,22 +18,37 @@ import { TripsPage } from './TripsPage'
 const state = vi.hoisted(() => ({
   trips: [] as unknown[],
   createTrip: vi.fn(),
+  archiveTrip: vi.fn(),
 }))
 vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: true, isFree: false, isLoading: false, expiresAt: null }) }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
-vi.mock('@/features/transactions/api/useTransactions', () => ({ useVoidTransaction: () => ({ mutateAsync: vi.fn(), isPending: false }) }))
+vi.mock('@/features/ahorros/api/useAhorros', () => ({ useAhorros: () => ({ data: [] }) }))
+vi.mock('@/features/transactions/api/useTransactions', () => ({ useTransactions: () => ({ data: [] }), useVoidTransaction: () => ({ mutateAsync: vi.fn(), isPending: false }) }))
 vi.mock('@tanstack/react-query', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@tanstack/react-query')>()),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }))
 vi.mock('./TripIconPicker', () => ({ TripIconButton: () => <button type="button" aria-label="Cambiar el ícono del viaje" /> }))
+vi.mock('../api/useArsPerUsd', () => ({ useArsPerUsd: () => null }))
 vi.mock('../api/useTrips', () => ({
+  useSideExpenses: () => ({ data: [] }),
+  useArchiveTrip: () => ({ mutateAsync: state.archiveTrip, isPending: false }),
+  useBookings: () => ({ data: [] }),
+  useAddTripExpense: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useTripCategories: () => ({ data: [] }),
+  useCreateTripCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useTrips: () => ({ data: state.trips, isLoading: false, isError: false, error: null }),
   useTripExpenses: () => ({ data: [], isLoading: false }),
   useGroupTrips: () => ({ data: [] }),
   useCreateTrip: () => ({ mutateAsync: state.createTrip, isPending: false }),
   useUpdateTrip: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCancelBooking: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteBooking: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useLinkMovementToBooking: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useVoidSideExpense: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateBooking: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateBooking: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSetGroupTrip: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
 vi.mock('@/features/groups/api/useGroupGuests', () => ({ useGroupOverlays: () => ({}) }))
@@ -218,7 +233,7 @@ describe('Back navigation in Viajes', () => {
     const { where, user } = await setup(['/', '/viajes'])
     await user.click(screen.getByRole('button', { name: 'Nuevo viaje' }))
     await user.click(screen.getByRole('button', { name: /Viaje personal/ }))
-    await user.type(screen.getByLabelText('Destino'), 'Cataratas')
+    await user.type(screen.getByLabelText('Nombre del viaje'), 'Cataratas')
     await user.type(screen.getByLabelText('Presupuesto'), '500000')
     await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
     expect(await screen.findByText('Cataratas', { selector: 'h1' })).toBeVisible()

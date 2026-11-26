@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   groups: { data: [] as unknown[], isLoading: false },
   photos: {} as Record<string, { path: string; url: string }>,
   createTrip: vi.fn(),
+  archiveTrip: vi.fn(),
   updateTrip: vi.fn(),
   setGroupTrip: vi.fn(),
   createGroup: vi.fn(),
@@ -19,7 +20,14 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: true, isFree: false, isLoading: false, expiresAt: null }) }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
+vi.mock('../api/useArsPerUsd', () => ({ useArsPerUsd: () => null }))
 vi.mock('../api/useTrips', () => ({
+  useSideExpenses: () => ({ data: [] }),
+  useArchiveTrip: () => ({ mutateAsync: state.archiveTrip, isPending: false }),
+  useBookings: () => ({ data: [] }),
+  useAddTripExpense: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useTripCategories: () => ({ data: [] }),
+  useCreateTripCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useTrips: () => state.trips,
   useTripExpenses: () => state.expenses,
   useGroupTrips: () => state.groupTrips,
@@ -116,6 +124,39 @@ describe('Viajes: tabs and lists', () => {
     state.expenses = { data: [makeTransaction({ tripId: 't1', amountCents: 520_000_00 })] }
     renderPage()
     expect(screen.getByText('Te pasaste $20.000 del presupuesto')).toBeVisible()
+  })
+
+  it('Mis viajes: swiping reveals Editar on one side and Eliminar on the other (real buttons); deleting asks first and keeps the expenses', async () => {
+    state.trips = { data: [trip()], isLoading: false, isError: false, error: null }
+    state.archiveTrip.mockResolvedValue(undefined)
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'Eliminar Semana en Salta' }))
+    expect(state.archiveTrip).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveTextContent('Tus gastos y movimientos no se borran')
+    await user.click(within(dialog).getByRole('button', { name: 'Eliminar' }))
+    expect(state.archiveTrip).toHaveBeenCalledWith('t1')
+    await user.click(screen.getByRole('button', { name: 'Editar Semana en Salta' }))
+    expect(screen.getByRole('dialog', { name: 'Editar viaje' })).toBeVisible()
+  })
+
+  it('a trip that was removed (archived) is not listed', () => {
+    state.trips = { data: [trip({ archivedAt: '2026-11-01T00:00:00Z' })], isLoading: false, isError: false, error: null }
+    renderPage()
+    expect(screen.queryByText('Semana en Salta')).toBeNull()
+  })
+
+  it('En grupo: an administrator can Editar and Eliminar; anybody else gets «Salir del grupo» and no Editar', async () => {
+    state.groups = { data: [group('g1', 'Viaje a Brasil'), group('g2', 'Viaje a Sierras', 'viaje', 'member')], isLoading: false }
+    state.groupTrips = { data: [{ groupId: 'g1', startsOn: '2999-12-20', endsOn: '2999-12-30', budgetCents: 0 }] }
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'En grupo' }))
+    expect(screen.getByRole('button', { name: 'Editar Viaje a Brasil' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Eliminar Viaje a Brasil' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Editar Viaje a Sierras' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Salir de Viaje a Sierras' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Editar Viaje a Brasil' }))
+    expect(screen.getByRole('dialog', { name: 'Editar viaje en grupo' })).toBeVisible()
   })
 
   it('trips that already ended go under Pasados', () => {
@@ -222,18 +263,32 @@ describe('Viajes: nuevo viaje', () => {
     await user.click(screen.getByRole('button', { name: /Viaje personal/ }))
     await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Contanos a dónde vas.')
-    await user.type(screen.getByLabelText('Destino'), 'Salta')
-    await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('Poné un presupuesto.')
-    expect(state.createTrip).not.toHaveBeenCalled()
+    await user.type(screen.getByLabelText('Nombre del viaje'), 'Salta')
+    await user.type(screen.getByLabelText('Destino'), 'Cafayate')
     await user.type(screen.getByLabelText('Presupuesto'), '500000')
     await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
     await waitFor(() => expect(state.createTrip).toHaveBeenCalledTimes(1))
     expect(state.createTrip.mock.calls[0]?.[0]).toMatchObject({
       name: 'Salta',
+      destination: 'Cafayate',
+      currency: 'ARS',
       budgetCents: 500_000_00,
     })
     expect(await screen.findByText('detalle del viaje')).toBeVisible()
+  })
+
+  it('personal: only the name is needed (no budget, no destination, no origin of the money) and nothing is charged', async () => {
+    state.createTrip.mockResolvedValue({ id: 'new-trip' })
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'Nuevo viaje' }))
+    await user.click(screen.getByRole('button', { name: /Viaje personal/ }))
+    expect(screen.getByRole('button', { name: 'Pesos' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Dólares' })).toBeVisible()
+    expect(screen.getByText(/no descuenta plata/)).toBeVisible()
+    await user.type(screen.getByLabelText('Nombre del viaje'), 'Escapada')
+    await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
+    await waitFor(() => expect(state.createTrip).toHaveBeenCalledTimes(1))
+    expect(state.createTrip.mock.calls[0]?.[0]).toMatchObject({ name: 'Escapada', budgetCents: 0, funding: null })
   })
 
   it('group: can use a group that already exists (nothing is duplicated)', async () => {
@@ -254,6 +309,45 @@ describe('Viajes: nuevo viaje', () => {
       values: { budgetCents: 900_000_00 },
     })
     expect(await screen.findByText('detalle del grupo')).toBeVisible()
+  })
+
+  it('group: shows 3 groups at first, «Ver más grupos» opens all with a search, and removed groups are never offered', async () => {
+    state.groups = {
+      data: [
+        { ...group('g1', 'Uno', 'amigos'), lastActivity: '2026-10-01T00:00:00Z' },
+        { ...group('g2', 'Dos', 'amigos'), lastActivity: '2026-10-02T00:00:00Z' },
+        { ...group('g3', 'Tres', 'amigos'), lastActivity: '2026-10-03T00:00:00Z' },
+        { ...group('g4', 'Cuatro', 'amigos'), lastActivity: '2026-10-04T00:00:00Z' },
+        { ...group('g5', 'Oculto', 'amigos'), lastActivity: '2026-10-09T00:00:00Z', hiddenAt: '2026-10-10T00:00:00Z' },
+      ],
+      isLoading: false,
+    }
+    const user = renderPage('/viajes?nuevo=grupo')
+    const list = screen.getByRole('group', { name: 'Tus grupos' })
+    expect(within(list).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      expect.stringContaining('Cuatro'),
+      expect.stringContaining('Tres'),
+      expect.stringContaining('Dos'),
+    ])
+    expect(screen.queryByText('Oculto')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Ver más grupos' }))
+    const dialog = screen.getByRole('dialog', { name: 'Tus grupos' })
+    expect(within(dialog).getByRole('button', { name: /Uno/ })).toBeVisible()
+    expect(within(dialog).queryByText('Oculto')).toBeNull()
+    await user.type(within(dialog).getByLabelText('Buscar entre tus grupos'), 'uno')
+    await user.click(within(dialog).getByRole('button', { name: /Uno/ }))
+    expect(screen.getByRole('group', { name: 'Tus grupos' })).toHaveTextContent('Uno')
+  })
+
+  it('group: with no group available it says so and invites to create a new one (both options stay)', async () => {
+    state.groups = { data: [{ ...group('g5', 'Oculto', 'amigos'), hiddenAt: '2026-10-10T00:00:00Z' }], isLoading: false }
+    const user = renderPage('/viajes?nuevo=grupo')
+    expect(screen.getByRole('button', { name: 'Grupo existente' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Grupo nuevo' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Grupo existente' }))
+    expect(screen.getByText(/No tenés grupos disponibles para un viaje/)).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Creá un grupo nuevo' }))
+    expect(screen.getByLabelText('Nombre del viaje')).toBeVisible()
   })
 
   it('group: a group that already has trip dates is not offered again', async () => {

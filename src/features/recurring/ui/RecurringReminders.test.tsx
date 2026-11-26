@@ -41,7 +41,7 @@ describe('RecurringReminders', () => {
       'href',
       '/recurrentes',
     )
-    expect(screen.getByText(/Todavía no enviamos notificaciones push/)).toBeInTheDocument()
+    expect(screen.getByText(/con una notificación push al celular/)).toBeInTheDocument()
   })
 
   describe('dismissal', () => {

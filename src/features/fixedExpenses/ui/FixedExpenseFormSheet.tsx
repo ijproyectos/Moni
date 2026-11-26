@@ -210,7 +210,7 @@ export function FixedExpenseFormSheet({
           <span className="flex-1">
             <span className="block text-[17px] font-extrabold">Recordarme el vencimiento</span>
             <span className="block text-[14px] text-text-muted">
-              Un día antes y el día del vencimiento, dentro de Moni (sin notificaciones push)
+              Un día antes y el día del vencimiento, en Moni y con una notificación push
             </span>
           </span>
           <Toggle label="Recordarme el vencimiento" checked={remind} onChange={setRemind} />

@@ -9,7 +9,7 @@ import {
 import { formatArs } from '@/shared/lib/money'
 import { addDays, type IsoDate } from '@/shared/lib/month'
 
-export type CenterKind = 'group' | 'payment_due' | 'price_increase' | 'budget'
+export type CenterKind = 'group' | 'payment_due' | 'payment_charged' | 'price_increase' | 'budget'
 
 export interface CenterItem {
   /** Stable key: the same event never shows twice, and it is what "read" is remembered by. */
@@ -74,8 +74,21 @@ export function buildCenterItems(input: {
         key: `due:${s.id}:${s.nextChargeOn}`,
         kind: 'payment_due',
         text: `${s.name}: se cobra ${formatArs(s.amountCents)} el ${s.nextChargeOn.slice(8, 10)}/${s.nextChargeOn.slice(5, 7)}.`,
-        to: '/recurrentes',
+        to: `/recurrentes?suscripcion=${s.id}`,
         at: `${s.nextChargeOn}T00:00:00Z`,
+        source: 'derived',
+        hasTime: false,
+      })
+    }
+    // Moni registered the expense on its date (it only records it: the service charges on its own side).
+    for (const c of chargesOf(charges, s.id)) {
+      if (!show.paymentsDue || !isEffectiveCharge(c) || c.dueOn > today || c.dueOn < addDays(today, -3)) continue
+      items.push({
+        key: `charged:${c.id}`,
+        kind: 'payment_charged',
+        text: `${s.name} registrado: ${formatArs(c.amountCents)} el ${c.dueOn.slice(8, 10)}/${c.dueOn.slice(5, 7)}.`,
+        to: `/recurrentes?suscripcion=${s.id}`,
+        at: `${c.dueOn}T12:00:00Z`,
         source: 'derived',
         hasTime: false,
       })

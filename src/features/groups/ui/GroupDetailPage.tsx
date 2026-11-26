@@ -33,6 +33,8 @@ import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { useGroupLedger } from '../api/useGroupLedger'
 import { useNewMemberNotice } from '../api/useNewMemberNotice'
 import { useGroupTrips } from '@/features/trips/api/useTrips'
+import { GroupTripPanel } from '@/features/trips/ui/GroupTripPanel'
+import type { BookingState } from '@/features/trips/domain/tripFinance'
 import {
   useIsGroupAdmin,
   useLeaveGroup,
@@ -70,6 +72,7 @@ import { SharedExpenseSheet } from './SharedExpenseSheet'
 
 type Sheet =
   | { type: 'new' }
+  | { type: 'pay-booking'; state: BookingState }
   | { type: 'detail'; id: string }
   | { type: 'edit'; id: string }
   | { type: 'delete'; id: string }
@@ -299,13 +302,16 @@ export function GroupDetailPage() {
       />
 
       {groupTrip && (
-        <div className="rounded-[22px] bg-card px-4 py-3">
-          <ProgressBar value={ledger.totalCents / groupTrip.budgetCents} />
-          <p className="mt-1 text-[13px] text-text-muted">
-            Presupuesto del grupo {money(groupTrip.budgetCents)} · gastaron el{' '}
-            {Math.round((ledger.totalCents / groupTrip.budgetCents) * 100)}%
-          </p>
-        </div>
+        <GroupTripPanel
+          groupId={groupId}
+          trip={groupTrip}
+          ledger={ledger}
+          meId={meId}
+          members={ledger.people.filter((p) => p.hasMoni).map((p) => ({ userId: p.id, name: p.name }))}
+          isAdmin={isAdmin}
+          today={todayIso()}
+          onPayShared={(state) => setSheet({ type: 'pay-booking', state })}
+        />
       )}
 
       {kind !== 'pareja' && ledger.transfers.length > 0 && (
@@ -523,6 +529,13 @@ export function GroupDetailPage() {
 
       {sheet?.type === 'new' && (
         <SharedExpenseSheet groupId={groupId} onClose={() => setSheet(null)} />
+      )}
+      {sheet?.type === 'pay-booking' && (
+        <SharedExpenseSheet
+          groupId={groupId}
+          booking={{ id: sheet.state.booking.id, title: sheet.state.booking.title, pendingCents: sheet.state.pendingCents }}
+          onClose={() => setSheet(null)}
+        />
       )}
       {sheet?.type === 'detail' && selected && (
         <ExpenseDetailSheet

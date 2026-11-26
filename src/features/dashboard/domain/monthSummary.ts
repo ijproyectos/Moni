@@ -65,7 +65,7 @@ export interface RecentMovement {
   amountCents: Cents
   occurredOn: string
   note: string | null
-  accountId: string
+  accountId: string | null
   accountName: string
   categoryName: string | null
   categoryColor: string | null

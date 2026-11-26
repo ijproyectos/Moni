@@ -12,6 +12,7 @@ const GROUP = '99999999-9999-4999-8999-999999999999'
 const archive = vi.hoisted(() => vi.fn())
 const hide = vi.hoisted(() => vi.fn())
 const restore = vi.hoisted(() => vi.fn())
+const purge = vi.hoisted(() => vi.fn())
 const setRole = vi.hoisted(() => vi.fn())
 const membersData = vi.hoisted(() => ({ current: [] as GroupMember[] }))
 const hiddenData = vi.hoisted(() => ({ current: [] as HiddenGroup[] }))
@@ -33,6 +34,7 @@ vi.mock('../api/useGroups', () => ({
   useArchiveGroup: () => ({ mutateAsync: archive, isPending: false }),
   useHideGroup: () => ({ mutateAsync: hide, isPending: false }),
   useRestoreGroup: () => ({ mutateAsync: restore, isPending: false }),
+  usePurgeGroup: () => ({ mutateAsync: purge, isPending: false }),
   useSetMemberRole: () => ({ mutateAsync: setRole, isPending: false }),
   useGroupMembers: () => ({ data: membersData.current }),
   useHiddenGroups: () => ({ data: hiddenData.current }),
@@ -63,6 +65,7 @@ beforeEach(() => {
   archive.mockReset().mockResolvedValue(undefined)
   hide.mockReset().mockResolvedValue(undefined)
   restore.mockReset().mockResolvedValue(undefined)
+  purge.mockReset().mockResolvedValue({ outcome: 'deleted', photoPath: null })
   setRole.mockReset().mockResolvedValue(undefined)
   cancelReq.mockReset().mockResolvedValue(undefined)
   approveReq.mockReset().mockResolvedValue('g1')
@@ -173,6 +176,88 @@ describe('Eliminados y archivados', () => {
     expect(screen.getByRole('link', { name: 'Ver historial' })).toHaveAttribute('href', '/grupos/a1')
     expect(screen.queryByRole('button', { name: 'Restaurar Viaje' })).toBeNull()
   })
+
+  async function openList() {
+    render(<MemoryRouter><HiddenGroupsEntry /></MemoryRouter>)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /Eliminados y archivados/ }))
+    return user
+  }
+
+  it('deletes one for good only after the confirmation, and never from a plain press of the row', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' }), hiddenGroup({ id: 'v1', name: 'Bariloche', kind: 'viaje', hiddenAt: '2026-11-02T00:00:00Z' })]
+    const user = await openList()
+    expect(screen.getByRole('button', { name: 'Restaurar Depto' })).toBeInTheDocument()
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar Bariloche definitivamente' })[0] as HTMLElement)
+    expect(purge).not.toHaveBeenCalled()
+    expect(screen.getByText('¿Querés eliminar este viaje definitivamente?')).toBeInTheDocument()
+    expect(screen.getByText(/No vas a poder restaurarlo/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(purge).not.toHaveBeenCalled()
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar Depto definitivamente' })[0] as HTMLElement)
+    expect(screen.getByText('¿Querés eliminar este grupo definitivamente?')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
+    expect(purge).toHaveBeenCalledWith('h1')
+  })
+
+  it('"Eliminar todos" says how many will go and that it cannot be undone; then the list says there is nothing left', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' }), hiddenGroup({ id: 'a1', name: 'Viaje', archivedAt: '2026-11-03T00:00:00Z' })]
+    purge.mockImplementation(async () => {
+      hiddenData.current = []
+      return { outcome: 'deleted', photoPath: null }
+    })
+    const user = await openList()
+    await user.click(screen.getByRole('button', { name: 'Eliminar todos' }))
+    expect(screen.getByText('¿Eliminar definitivamente 2 grupos y viajes?')).toBeInTheDocument()
+    expect(screen.getByText(/no se puede deshacer/)).toBeInTheDocument()
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar todos' }).at(-1) as HTMLElement)
+    expect(purge).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('No tenés grupos eliminados ni archivados.')).toBeInTheDocument()
+  })
+
+  it('what the server refuses stays in the list and says WHY, group by group (never a generic error)', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' }), hiddenGroup({ id: 'h2', name: 'Casa', hiddenAt: '2026-11-02T00:00:00Z' })]
+    purge.mockImplementation(async (id: string) => {
+      if (id === 'h1') throw new Error('balance_not_zero')
+      hiddenData.current = hiddenData.current.filter((g) => g.id !== id)
+      return { outcome: 'deleted', photoPath: null }
+    })
+    const user = await openList()
+    await user.click(screen.getByRole('button', { name: 'Eliminar todos' }))
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar todos' }).at(-1) as HTMLElement)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('No se pudo eliminar:')
+    expect(alert).toHaveTextContent('Depto')
+    expect(alert).toHaveTextContent('todavía tenés saldo pendiente en el grupo')
+    expect(alert).not.toHaveTextContent('Casa')
+    expect(screen.queryByText(/Algo salió mal/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Restaurar Depto' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Restaurar Casa' })).toBeNull()
+  })
+
+  it('«Eliminar todos» works with a single item: the list empties at once, says so, and the button goes away', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' })]
+    purge.mockImplementation(async () => {
+      hiddenData.current = []
+      return { outcome: 'deleted', photoPath: null }
+    })
+    const user = await openList()
+    await user.click(screen.getByRole('button', { name: 'Eliminar todos' }))
+    expect(screen.getByText('¿Eliminar definitivamente 1 grupo o viaje?')).toBeInTheDocument()
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar todos' }).at(-1) as HTMLElement)
+    expect(await screen.findByText('No tenés grupos eliminados ni archivados.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Eliminar todos' })).toBeNull()
+    expect(purge).toHaveBeenCalledTimes(1)
+  })
+
+  it('an unknown server error says nothing was deleted instead of «Algo salió mal»', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' })]
+    purge.mockRejectedValue(new Error('boom'))
+    const user = await openList()
+    await user.click(screen.getByRole('button', { name: 'Eliminar todos' }))
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar todos' }).at(-1) as HTMLElement)
+    expect(await screen.findByRole('alert')).toHaveTextContent('no se borró nada')
+  })
 })
 
 describe('Invitations are for administrators', () => {
@@ -253,12 +338,39 @@ describe('Personas de Moni', () => {
     expect(inviteC).toHaveBeenCalledWith({ groupId: GROUP, userId: 'c' })
   })
 
-  it('searches by name among the contacts (accents and case do not matter)', async () => {
+  it('shows only 3 people at first and "Ver más" opens everybody with a search by name (accents and case do not matter)', async () => {
     contactsData.current = ['Ana María', 'Beto', 'Cami', 'Dani', 'Eze'].map((n, i) => contact('u' + i, n))
     render(<ContactsInvite groupId={GROUP} />)
+    expect(screen.getByText('Cami')).toBeInTheDocument()
+    expect(screen.queryByText('Dani')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Ver más' }))
+    expect(screen.getByText('Eze')).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Buscar entre tus contactos'), 'maria')
-    expect(screen.getByText('Ana María')).toBeInTheDocument()
-    expect(screen.queryByText('Beto')).toBeNull()
+    expect(screen.getAllByText('Ana María').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Beto')).toHaveLength(1) // only the preview behind the sheet
+  })
+
+  it('when the person needs Moni Plus the invitation is not sent and a popup explains it', async () => {
+    contactsData.current = [{ userId: 'c', displayName: 'Cami', avatarUrl: null }]
+    inviteC.mockRejectedValueOnce(Object.assign(new Error('invitee_needs_plus'), {}))
+    render(<ContactsInvite groupId={GROUP} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Invitar a Cami' }))
+    expect(await screen.findByText('No pudimos enviar la invitación')).toBeInTheDocument()
+    expect(screen.getByText('Cami necesita Moni Plus para sumarse a este grupo')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Entendido' }))
+    expect(screen.queryByText('No pudimos enviar la invitación')).toBeNull()
+  })
+
+  it('never lists a deleted account stand-in even from stale data', () => {
+    contactsData.current = [{ userId: 'x', displayName: 'Ex integrante', avatarUrl: null }, { userId: 'a', displayName: 'Ana', avatarUrl: null }]
+    render(<ContactsInvite groupId={GROUP} />)
+    expect(screen.queryByText('Ex integrante')).toBeNull()
+  })
+
+  it('has no "Ver más" with 3 people or fewer', () => {
+    contactsData.current = ['Ana', 'Beto', 'Cami'].map((n, i) => contact('u' + i, n))
+    render(<ContactsInvite groupId={GROUP} />)
+    expect(screen.queryByRole('button', { name: 'Ver más' })).toBeNull()
   })
 
   it('shows how each invitation stands and lets the administrator cancel a pending one', async () => {
@@ -275,17 +387,16 @@ describe('Personas de Moni', () => {
     expect(cancelInv).toHaveBeenCalledWith('i1')
   })
 
-  it('hides or blocks a contact, and restores it from "Ocultos y bloqueados"', async () => {
+  it('the only option of the menu is "Quitar de la lista": it hides the person, never blocks them', async () => {
     contactsData.current = [contact('b', 'Beto')]
     hiddenContactsData.current = [{ ...contact('x', 'Xavi'), hidden: true, blocked: true }]
     render(<ContactsInvite groupId={GROUP} />)
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Más opciones de Beto' }))
-    await user.click(screen.getByRole('button', { name: 'Bloquear' }))
-    expect(setPref).toHaveBeenCalledWith({ contactId: 'b', hidden: true, blocked: true })
-    await user.click(screen.getByRole('button', { name: /Ocultos y bloqueados \(1\)/ }))
-    await user.click(screen.getByRole('button', { name: 'Desbloquear a Xavi' }))
-    expect(setPref).toHaveBeenCalledWith({ contactId: 'x', hidden: false, blocked: false })
+    expect(screen.queryByRole('button', { name: 'Bloquear' })).toBeNull()
+    expect(screen.queryByText(/Ocultos y bloqueados/)).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Quitar de la lista' }))
+    expect(setPref).toHaveBeenCalledWith({ contactId: 'b', hidden: true, blocked: false })
   })
 
   it('the invited person sees only the group name and who invited them, and answers', async () => {

@@ -56,7 +56,7 @@ export function RecurringReminders({ className }: { className?: string }) {
         </Link>
       ))}
       <p className="text-[13px] leading-4 text-text-muted">
-        Aviso dentro de Moni. Todavía no enviamos notificaciones push.
+        Te avisamos dentro de Moni y con una notificación push al celular.
       </p>
     </section>
   )

@@ -397,3 +397,6 @@ export const HOME_EXPENSE_NAMES: readonly { name: string; templateSlug: string |
   { name: 'Limpieza', templateSlug: 'hogar' },
   { name: 'Otro gasto', templateSlug: 'otros' },
 ]
+
+/** What shared history calls someone whose account was deleted: never a person to invite. */
+export const DELETED_ACCOUNT_NAME = 'Ex integrante'

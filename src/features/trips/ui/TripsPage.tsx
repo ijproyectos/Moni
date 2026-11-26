@@ -1,15 +1,21 @@
 import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router'
 import mascotUrl from '@/assets/mascot/personaje_carga-de-dinero.svg'
 import { useAuth } from '@/features/auth/api/authContext'
 import { useMyGroups } from '@/features/groups/api/useGroups'
+import { ArchiveGroupSheet, LeaveGroupSheet } from '@/features/groups/ui/GroupAdminSections'
 import { overlayDeltaFor } from '@/features/groups/domain/ledger'
 import { useGroupOverlays } from '@/features/groups/api/useGroupGuests'
 import { useGroupPhotos } from '@/features/groups/api/useGroupPhotos'
 import { AvatarStack } from '@/features/groups/ui/groupVisuals'
 import { todayIso } from '@/shared/lib/month'
 import { Button } from '@/shared/ui/Button'
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
+import { SwipeRow } from '@/shared/ui/SwipeRow'
+import { toUserMessage } from '@/shared/lib/errors'
+import { useToast } from '@/shared/ui/toastContext'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { HeaderAddButton, Page } from '@/shared/ui/kit'
@@ -17,11 +23,16 @@ import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { isTripsNotEnabled } from '../api/tripsRepository'
-import { useGroupTrips, useTrips, useTripExpenses } from '../api/useTrips'
+import { useArchiveTrip, useBookings, useGroupTrips, useSideExpenses, useTrips, useTripExpenses } from '../api/useTrips'
+import { useArsPerUsd } from '../api/useArsPerUsd'
+import { bookingStates, spendFromMovement, spendFromSide, tripFinance } from '../domain/tripFinance'
 import { rangeLabel } from '../domain/dates'
 import { summarizeTrip, tripExpenses } from '../domain/trip'
 import { NewTripSheet, type NewTripStart } from './NewTripSheet'
+import { GroupTripEditSheet } from './GroupTripEditSheet'
+import { PersonalTripForm } from './PersonalTripForm'
 import { PersonalTripCard } from './TripCards'
+import type { PersonalTrip } from '../domain/trip'
 
 type Tab = 'personal' | 'group'
 
@@ -87,6 +98,13 @@ export function TripsPage() {
 function PersonalTrips({ onNew }: { onNew: () => void }) {
   const trips = useTrips()
   const expenses = useTripExpenses()
+  const side = useSideExpenses()
+  const bookingsQuery = useBookings()
+  const arsPerUsd = useArsPerUsd()
+  const toast = useToast()
+  const archive = useArchiveTrip()
+  const [editing, setEditing] = useState<PersonalTrip | null>(null)
+  const [removing, setRemoving] = useState<PersonalTrip | null>(null)
   const today = todayIso()
 
   if (trips.isLoading) {
@@ -126,27 +144,78 @@ function PersonalTrips({ onNew }: { onNew: () => void }) {
     )
   }
 
-  const cards = all.map((trip) => ({
-    trip,
-    summary: summarizeTrip(trip, tripExpenses(trip.id, expenses.data ?? []), today),
-  }))
+  // A trip removed with «Eliminar» is archived: it leaves the list, its expenses stay.
+  const cards = all.filter((t) => !t.archivedAt).map((trip) => {
+    const items = [
+      ...tripExpenses(trip.id, expenses.data ?? []).map((t) => spendFromMovement(t, trip.currency ?? 'ARS')),
+      ...(side.data ?? []).filter((r) => r.trip_id === trip.id).map((r) => spendFromSide(r, trip.currency ?? 'ARS')),
+    ]
+    const bookings = bookingStates((bookingsQuery.data ?? []).filter((b) => b.tripId === trip.id), items, arsPerUsd)
+    return {
+      trip,
+      summary: summarizeTrip(trip, tripExpenses(trip.id, expenses.data ?? []), today),
+      finance: tripFinance({
+        currency: trip.currency ?? 'ARS',
+        budgetCents: trip.budgetCents,
+        startsOn: trip.startsOn,
+        endsOn: trip.endsOn,
+        today,
+        items,
+        bookings,
+        arsPerUsd,
+      }),
+    }
+  })
   const current = cards.filter((c) => c.summary.status !== 'ended' && !c.trip.archivedAt)
   const past = cards
     .filter((c) => c.summary.status === 'ended' || c.trip.archivedAt)
     .sort((a, b) => (a.trip.endsOn < b.trip.endsOn ? 1 : -1))
 
+  const swipe = (c: (typeof cards)[number]) => (
+    <SwipeRow
+      key={c.trip.id}
+      className="rounded-[28px]"
+      leadingAction={{ label: 'Editar', tone: 'primary', icon: <Pencil className="size-5" strokeWidth={2.2} />, ariaLabel: `Editar ${c.trip.name}`, onPress: () => setEditing(c.trip) }}
+      actions={[{ label: 'Eliminar', tone: 'danger', icon: <Trash2 className="size-5" strokeWidth={2.2} />, ariaLabel: `Eliminar ${c.trip.name}`, onPress: () => setRemoving(c.trip) }]}
+    >
+      <PersonalTripCard trip={c.trip} summary={c.summary} finance={c.finance} today={today} />
+    </SwipeRow>
+  )
+
   return (
     <>
-      {current.map((c) => (
-        <PersonalTripCard key={c.trip.id} trip={c.trip} summary={c.summary} today={today} />
-      ))}
+      {current.map(swipe)}
       {past.length > 0 && (
         <>
           <h2 className="mt-2 text-[22px] font-extrabold">Pasados</h2>
-          {past.map((c) => (
-            <PersonalTripCard key={c.trip.id} trip={c.trip} summary={c.summary} today={today} />
-          ))}
+          {past.map(swipe)}
         </>
+      )}
+      {editing && (
+        <PersonalTripForm
+          trip={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null)
+            toast.show('Viaje actualizado')
+          }}
+        />
+      )}
+      {removing && (
+        <ConfirmDialog
+          title={`¿Eliminar “${removing.name}”?`}
+          message="Sale de tu lista de viajes. Tus gastos y movimientos no se borran: siguen en Movimientos."
+          confirmLabel="Eliminar"
+          isBusy={archive.isPending}
+          onConfirm={() =>
+            void archive
+              .mutateAsync(removing.id)
+              .then(() => toast.show('Viaje eliminado'))
+              .catch((e: unknown) => toast.show(toUserMessage(e), { tone: 'error' }))
+              .finally(() => setRemoving(null))
+          }
+          onCancel={() => setRemoving(null)}
+        />
       )}
     </>
   )
@@ -179,6 +248,8 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
   const photos = useGroupPhotos()
   const { user } = useAuth()
   const money = useFormatMoney()
+  const [editingGroup, setEditingGroup] = useState<string | null>(null)
+  const [removeGroup, setRemoveGroup] = useState<{ type: 'archive' | 'leave'; id: string; name: string; net: number } | null>(null)
 
   if (groups.isLoading) {
     return (
@@ -211,8 +282,25 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
         const info = infoByGroup.get(g.id)
         const net = g.myNetCents + overlayDeltaFor(overlay, user?.id ?? '')
         return (
-          <Link
+          <SwipeRow
             key={g.id}
+            className="rounded-[28px]"
+            leadingAction={
+              g.role === 'owner' && info
+                ? { label: 'Editar', tone: 'primary', icon: <Pencil className="size-5" strokeWidth={2.2} />, ariaLabel: `Editar ${overlay?.name ?? g.name}`, onPress: () => setEditingGroup(g.id) }
+                : undefined
+            }
+            actions={[
+              {
+                label: g.role === 'owner' ? 'Eliminar' : 'Salir del grupo',
+                tone: 'danger',
+                icon: <Trash2 className="size-5" strokeWidth={2.2} />,
+                ariaLabel: g.role === 'owner' ? `Eliminar ${overlay?.name ?? g.name}` : `Salir de ${overlay?.name ?? g.name}`,
+                onPress: () => setRemoveGroup({ type: g.role === 'owner' ? 'archive' : 'leave', id: g.id, name: overlay?.name ?? g.name, net: g.myNetCents }),
+              },
+            ]}
+          >
+          <Link
             to={`/grupos/${g.id}`}
             className="block rounded-[28px] border border-line bg-card p-5"
           >
@@ -234,7 +322,7 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
                 </span>
                 <span className="block text-[15px] text-text-muted">
                   {g.memberCount + (overlay?.guests.length ?? 0)} personas
-                  {info && ` · Presupuesto ${money(info.budgetCents)}`}
+                  {info && info.budgetCents > 0 && ` · Presupuesto ${money(info.budgetCents)}`}
                 </span>
               </span>
             </div>
@@ -250,8 +338,24 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
               </span>
             </div>
           </Link>
+          </SwipeRow>
         )
       })}
+      {editingGroup && infoByGroup.get(editingGroup) && (
+        <GroupTripEditSheet groupId={editingGroup} info={infoByGroup.get(editingGroup) as NonNullable<ReturnType<typeof infoByGroup.get>>} onClose={() => setEditingGroup(null)} />
+      )}
+      {removeGroup?.type === 'archive' && (
+        <ArchiveGroupSheet
+          groupId={removeGroup.id}
+          name={removeGroup.name}
+          serverName={groups.data?.find((x) => x.id === removeGroup.id)?.name}
+          onClose={() => setRemoveGroup(null)}
+          onDone={() => setRemoveGroup(null)}
+        />
+      )}
+      {removeGroup?.type === 'leave' && (
+        <LeaveGroupSheet groupId={removeGroup.id} name={removeGroup.name} netCents={removeGroup.net} onClose={() => setRemoveGroup(null)} onDone={() => setRemoveGroup(null)} />
+      )}
     </>
   )
 }

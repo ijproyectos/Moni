@@ -3,7 +3,8 @@ import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import { useAuth } from '@/features/auth/api/authContext'
 import { debtKeys } from '@/features/debts/api/queryKeys'
-import { openNoticeFromPush } from '../api/centerRepository'
+import { markCenterRead, openNoticeFromPush } from '../api/centerRepository'
+import { PUSH_EVENT_KEY } from '../domain/pushKeys'
 import { centerKeys } from './centerKeys'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -27,7 +28,16 @@ export function usePushOpenedNotice() {
     const next = new URLSearchParams(params)
     next.delete('push')
     setParams(next, { replace: true })
-    if (!id || !UUID.test(id) || handled.current.has(id)) return
+    if (!id || handled.current.has(id)) return
+    // A payment due or a registered charge: derived events, read by key (the same keys the notice center uses).
+    if (PUSH_EVENT_KEY.test(id)) {
+      handled.current.add(id)
+      markCenterRead([id])
+        .catch(() => undefined)
+        .finally(() => void queryClient.invalidateQueries({ queryKey: centerKeys.reads(user.id) }))
+      return
+    }
+    if (!UUID.test(id)) return
     handled.current.add(id)
     openNoticeFromPush(id)
       .catch(() => undefined)

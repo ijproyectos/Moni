@@ -27,7 +27,7 @@ export function recentRepeats(
   const groups = new Map<string, { latest: Transaction; count: number }>()
   for (const tx of transactions) {
     if (tx.kind !== 'expense' || tx.status !== 'posted') continue
-    if (tx.installmentPlanId || tx.tripId || tx.sharedExpenseId || tx.guestExpenseId) continue
+    if (!tx.accountId || tx.installmentPlanId || tx.tripId || tx.sharedExpenseId || tx.guestExpenseId) continue
     const note = tx.note?.trim() ?? ''
     if (note === '' && !tx.categoryId) continue
     const key = `${note.toLowerCase()}|${tx.categoryId ?? ''}`
@@ -47,7 +47,7 @@ export function recentRepeats(
         key,
         label: note !== '' ? note : (categoryNameById.get(latest.categoryId ?? '') ?? 'Gasto'),
         amountCents: latest.amountCents,
-        accountId: latest.accountId,
+        accountId: latest.accountId as string, // never null here: account-less movements are skipped above
         categoryId: latest.categoryId,
         note: note !== '' ? note : null,
       }

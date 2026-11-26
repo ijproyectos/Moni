@@ -32,9 +32,12 @@ export async function shareLink(
   await copyText(url, toast, 'Link copiado')
 }
 
-/** Opens WhatsApp with a prefilled message. */
+/**
+ * WhatsApp with a prefilled message. api.whatsapp.com/send is the universal link WhatsApp itself documents: it opens the app on
+ * phones and installed PWAs and WhatsApp Web on desktop, without the extra wa.me redirect that dropped the text in some browsers.
+ */
 export function whatsappUrl(text: string): string {
-  return `https://wa.me/?text=${encodeURIComponent(text)}`
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`
 }
 
 /**

@@ -139,7 +139,8 @@ export interface Database {
         Row: {
           id: string
           owner_id: string
-          account_id: string
+          /** null only for an expense paid straight from savings (funding = 'savings'; migration 20261214000000). */
+          account_id: string | null
           category_id: string | null
           kind: TransactionKind
           amount: number
@@ -168,6 +169,16 @@ export interface Database {
           original_currency?: string | null
           /** ARS per unit of `original_currency` used to convert `original_amount` into `amount`. */
           fx_rate?: number | null
+          /** Category of the expense inside its trip: a predefined key or a custom category id (migration 20261214000000). */
+          trip_category?: string | null
+          /** Value in the trip's currency and the rate used, fixed when the expense was registered. */
+          trip_amount?: number | null
+          trip_fx_rate?: number | null
+          /** Booking this expense is a payment of. */
+          booking_id?: string | null
+          /** 'savings' when it was paid from savings (its withdrawal is `ahorro_entry_id`). */
+          funding?: 'savings' | null
+          ahorro_entry_id?: string | null
           created_at: string
           updated_at: string
         }
@@ -175,6 +186,8 @@ export interface Database {
           account_id: string
           category_id: string
           kind: 'expense' | 'income'
+          trip_category?: string | null
+          booking_id?: string | null
           amount: number
           occurred_on?: string
           note?: string | null
@@ -191,6 +204,8 @@ export interface Database {
           note?: string | null
           status?: RowStatus
           trip_id?: string | null
+          trip_category?: string | null
+          booking_id?: string | null
           original_amount?: number | null
           original_currency?: string | null
           fx_rate?: number | null
@@ -204,19 +219,40 @@ export interface Database {
           name: string
           starts_on: string
           ends_on: string
-          budget: number
+          /** null = no budget (migration 20261214000000). */
+          budget: number | null
           icon?: string | null
+          destination?: string | null
+          currency?: 'ARS' | 'USD'
+          fund_source?: 'balance' | 'savings' | 'external' | null
+          fund_account_id?: string | null
+          fund_ahorro_currency?: 'ARS' | 'USD' | null
           archived_at: string | null
           created_at: string
           updated_at: string
         }
-        Insert: { name: string; starts_on: string; ends_on: string; budget: number }
+        Insert: {
+          name: string
+          starts_on: string
+          ends_on: string
+          budget?: number | null
+          destination?: string | null
+          currency?: 'ARS' | 'USD'
+          fund_source?: 'balance' | 'savings' | 'external' | null
+          fund_account_id?: string | null
+          fund_ahorro_currency?: 'ARS' | 'USD' | null
+        }
         Update: {
           name?: string
           icon?: string | null
           starts_on?: string
           ends_on?: string
-          budget?: number
+          budget?: number | null
+          destination?: string | null
+          currency?: 'ARS' | 'USD'
+          fund_source?: 'balance' | 'savings' | 'external' | null
+          fund_account_id?: string | null
+          fund_ahorro_currency?: 'ARS' | 'USD' | null
           archived_at?: string | null
         }
         Relationships: []
@@ -404,13 +440,128 @@ export interface Database {
           group_id: string
           starts_on: string
           ends_on: string
-          budget: number
+          budget: number | null
+          destination?: string | null
+          currency?: 'ARS' | 'USD'
           updated_by: string
           created_at: string
           updated_at: string
         }
         Insert: never
         Update: never
+        Relationships: []
+      }
+      trip_bookings: {
+        Row: {
+          id: string
+          owner_id: string
+          trip_id: string | null
+          group_id: string | null
+          scope: 'personal' | 'shared'
+          kind: 'transport' | 'lodging' | 'other'
+          subtype: string | null
+          title: string
+          origin: string | null
+          destination: string | null
+          address: string | null
+          starts_on: string | null
+          ends_on: string | null
+          total: number
+          currency: 'ARS' | 'USD'
+          pay_deadline: string | null
+          notes: string | null
+          status: 'active' | 'cancelled'
+          cancelled_at: string | null
+          created_at: string
+        }
+        Insert: {
+          trip_id?: string | null
+          group_id?: string | null
+          scope?: 'personal' | 'shared'
+          kind: 'transport' | 'lodging' | 'other'
+          subtype?: string | null
+          title: string
+          origin?: string | null
+          destination?: string | null
+          address?: string | null
+          starts_on?: string | null
+          ends_on?: string | null
+          total: number
+          currency?: 'ARS' | 'USD'
+          pay_deadline?: string | null
+          notes?: string | null
+        }
+        Update: {
+          scope?: 'personal' | 'shared'
+          kind?: 'transport' | 'lodging' | 'other'
+          subtype?: string | null
+          title?: string
+          origin?: string | null
+          destination?: string | null
+          address?: string | null
+          starts_on?: string | null
+          ends_on?: string | null
+          total?: number
+          currency?: 'ARS' | 'USD'
+          pay_deadline?: string | null
+          notes?: string | null
+          status?: 'active' | 'cancelled'
+          cancelled_at?: string | null
+        }
+        Relationships: []
+      }
+      trip_booking_participants: {
+        Row: { booking_id: string; user_id: string }
+        Insert: { booking_id: string; user_id: string }
+        Update: never
+        Relationships: []
+      }
+      trip_side_expenses: {
+        Row: {
+          id: string
+          owner_id: string
+          trip_id: string | null
+          booking_id: string | null
+          amount: number
+          currency: 'ARS' | 'USD'
+          fx_rate: number | null
+          description: string | null
+          occurred_on: string
+          trip_category: string | null
+          funding: 'external' | 'savings'
+          ahorro_entry_id: string | null
+          status: RowStatus
+          created_at: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      trip_categories: {
+        Row: { id: string; owner_id: string; name: string; icon: string; created_at: string }
+        Insert: { name: string; icon?: string }
+        Update: { name?: string; icon?: string }
+        Relationships: []
+      }
+      trip_member_prefs: {
+        Row: {
+          user_id: string
+          group_id: string
+          fund_source: 'balance' | 'savings' | 'external'
+          fund_account_id: string | null
+          fund_ahorro_currency: 'ARS' | 'USD' | null
+        }
+        Insert: {
+          group_id: string
+          fund_source: 'balance' | 'savings' | 'external'
+          fund_account_id?: string | null
+          fund_ahorro_currency?: 'ARS' | 'USD' | null
+        }
+        Update: {
+          fund_source?: 'balance' | 'savings' | 'external'
+          fund_account_id?: string | null
+          fund_ahorro_currency?: 'ARS' | 'USD' | null
+        }
         Relationships: []
       }
       installment_plans: {
@@ -1129,8 +1280,52 @@ export interface Database {
         Returns: undefined
       }
       set_group_trip: {
-        Args: { p_group: string; p_starts_on: string; p_ends_on: string; p_budget: number }
+        Args: {
+          p_group: string
+          p_starts_on: string
+          p_ends_on: string
+          p_budget: number | null
+          p_destination?: string | null
+          p_currency?: 'ARS' | 'USD'
+        }
         Returns: undefined
+      }
+      add_trip_expense: {
+        Args: {
+          /** null only for a payment of a personal booking of a group trip. */
+          p_trip: string | null
+          p_amount: number
+          p_currency: 'ARS' | 'USD'
+          p_fx_rate?: number | null
+          p_description?: string | null
+          p_on?: string | null
+          p_category?: string | null
+          p_funding?: 'balance' | 'savings' | 'external'
+          p_account?: string | null
+          p_ahorro_currency?: 'ARS' | 'USD' | null
+          p_booking?: string | null
+        }
+        Returns: Json
+      }
+      void_trip_side_expense: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      link_shared_expense_booking: {
+        Args: { p_expense: string; p_booking: string | null }
+        Returns: undefined
+      }
+      set_trip_expense_rate: {
+        Args: { p_kind: 'transaction' | 'side'; p_id: string; p_rate: number }
+        Returns: undefined
+      }
+      fund_shared_payment_from_savings: {
+        Args: { p_expense: string }
+        Returns: undefined
+      }
+      get_group_booking_paid: {
+        Args: { p_group: string }
+        Returns: { booking_id: string; paid: number }[]
       }
       preview_group_invite: {
         Args: { p_code: string }
@@ -1305,6 +1500,10 @@ export interface Database {
       restore_group_for_me: {
         Args: { p_group: string }
         Returns: undefined
+      }
+      purge_group_for_me: {
+        Args: { p_group: string }
+        Returns: Json
       }
       archive_group_for_all: {
         Args: { p_group: string; p_name_confirmation: string }

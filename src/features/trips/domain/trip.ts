@@ -13,8 +13,31 @@ export interface PersonalTrip {
   icon?: string | null
   startsOn: IsoDate
   endsOn: IsoDate
+  /** 0 = no budget defined (it is optional and can be set later). */
   budgetCents: Cents
   archivedAt: string | null
+  /** Where the person goes (the name is free). */
+  destination?: string | null
+  /** Main currency of the trip: its budget and totals are in this one. */
+  currency?: TripCurrency
+  /** Default origin of the money for this trip's expenses; each expense can still change it. */
+  funding?: FundingChoice | null
+}
+
+export type TripCurrency = 'ARS' | 'USD'
+
+/** Where the money for an expense comes from. `balance` = my available balance (with the payment method), `savings` = my savings, `external` = from elsewhere (no effect on my finances). */
+export type FundSource = 'balance' | 'savings' | 'external'
+
+/** Nothing chosen yet: my balance, with the payment method still to pick. */
+export const DEFAULT_FUNDING: FundingChoice = { source: 'balance', accountId: null, ahorroCurrency: null }
+
+export interface FundingChoice {
+  source: FundSource
+  /** Payment method (account) used with `balance`, or the account where the savings are kept with `savings`. */
+  accountId: string | null
+  /** With `savings`: which savings (pesos or dollars). */
+  ahorroCurrency: TripCurrency | null
 }
 
 /** Dates and budget of a group trip (the group itself, its members and its expenses live in Grupos). */
@@ -22,14 +45,21 @@ export interface GroupTripInfo {
   groupId: string
   startsOn: IsoDate
   endsOn: IsoDate
+  /** 0 = no budget defined. */
   budgetCents: Cents
+  destination?: string | null
+  currency?: TripCurrency
 }
 
 export interface TripFormValues {
   name: string
   startsOn: IsoDate
   endsOn: IsoDate
+  /** 0 = no budget. */
   budgetCents: Cents
+  destination?: string | null
+  currency?: TripCurrency
+  funding?: FundingChoice | null
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -40,10 +70,14 @@ export const tripFormSchema = z
     name: z.string().trim().min(1, 'Contanos a dónde vas.').max(60, 'Máximo 60 caracteres.'),
     startsOn: z.string().regex(ISO_DATE, 'Elegí cuándo salís.'),
     endsOn: z.string().regex(ISO_DATE, 'Elegí cuándo volvés.'),
+    destination: z.string().trim().max(80, 'Máximo 80 caracteres.').optional(),
+    currency: z.enum(['ARS', 'USD']).optional(),
+    // Optional: empty means "no budget yet"; what is typed has to be a positive amount.
     budget: z.string().transform((text, ctx) => {
+      if (text.trim() === '') return 0
       const cents = parseAmountInput(text)
-      if (cents === null || cents <= 0) {
-        ctx.addIssue({ code: 'custom', message: 'Poné un presupuesto.' })
+      if (cents === null || cents < 0) {
+        ctx.addIssue({ code: 'custom', message: 'Revisá el presupuesto.' })
         return z.NEVER
       }
       return cents
@@ -69,7 +103,7 @@ export interface TripSummary {
   spentCents: Cents
   /** Budget minus spent; negative when the budget was exceeded. */
   remainingCents: Cents
-  /** Spent / budget (0 when the budget is 0), may be above 1. */
+  /** Spent / budget (0 when there is no budget), may be above 1. */
   progress: number
   overBudget: boolean
   expenseCount: number
@@ -141,7 +175,7 @@ export function summarizeTrip(
     spentCents,
     remainingCents,
     progress: trip.budgetCents > 0 ? spentCents / trip.budgetCents : 0,
-    overBudget: spentCents > trip.budgetCents,
+    overBudget: trip.budgetCents > 0 && spentCents > trip.budgetCents,
     expenseCount: expenses.length,
     totalDays,
     daysLeft,

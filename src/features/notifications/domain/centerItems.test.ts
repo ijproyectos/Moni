@@ -31,9 +31,11 @@ describe('buildCenterItems', () => {
       charges: [charge({ id: 'c0', dueOn: '2026-10-01', amountCents: 8_000_00 }), charge({ id: 'c1', dueOn: '2026-11-18', amountCents: 10_000_00 })],
       budgets: [budget({ state: 'over' }), budget({ categoryId: 'x', name: 'Súper', state: 'ok' })],
     })
-    expect(items.map((i) => i.kind).sort()).toEqual(['budget', 'group', 'payment_due', 'price_increase'])
+    expect(items.map((i) => i.kind).sort()).toEqual(['budget', 'group', 'payment_charged', 'payment_due', 'price_increase'])
     expect(items.find((i) => i.kind === 'price_increase')?.text).toBe('Netflix subió de $8.000 a $10.000.')
-    expect(items.find((i) => i.kind === 'payment_due')?.to).toBe('/recurrentes')
+    expect(items.find((i) => i.kind === 'payment_due')?.to).toBe('/recurrentes?suscripcion=s1')
+    const charged = items.find((i) => i.kind === 'payment_charged')
+    expect(charged).toMatchObject({ key: 'charged:c1', text: 'Netflix registrado: $10.000 el 18/11.', to: '/recurrentes?suscripcion=s1' })
     expect(items.find((i) => i.kind === 'group')?.to).toBe('/grupos/avisos?aviso=n1')
   })
 
@@ -66,7 +68,7 @@ describe('buildCenterItems: preferences', () => {
     }
     const items = buildCenterItems({ ...input, show: { paymentsDue: false, priceChanges: false, budgets: false } })
     expect(items.map((i) => i.kind)).toEqual(['group'])
-    expect(buildCenterItems({ ...input, show: { paymentsDue: true, priceChanges: false, budgets: false } }).map((i) => i.kind).sort()).toEqual(['group', 'payment_due'])
+    expect(buildCenterItems({ ...input, show: { paymentsDue: true, priceChanges: false, budgets: false } }).map((i) => i.kind).sort()).toEqual(['group', 'payment_charged', 'payment_due'])
   })
 
   it('keeps notices for a week: an older price change is not shown, and events say they carry no hour', () => {

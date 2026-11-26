@@ -116,7 +116,7 @@ describe('FixedExpenseFormSheet', () => {
       'aria-checked',
       'true',
     )
-    expect(screen.getByText(/sin notificaciones push/)).toBeInTheDocument()
+    expect(screen.getByText(/con una notificación push/)).toBeInTheDocument()
     await user.click(save)
     await waitFor(() => expect(create).toHaveBeenCalled())
     expect(create.mock.calls[0]?.[0].input).toMatchObject({ kindId: 'custom', name: 'Patente' })

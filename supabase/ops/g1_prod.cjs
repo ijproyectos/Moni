@@ -55,13 +55,25 @@ const BATCHES = {
   O: [['20261209000000', 'free_plus_limits']],
   // P (eliminar cuenta: public.delete_account, aviso member_left): después de O y junto con el front nuevo y la función delete-account.
   P: [['20261210000000', 'delete_account']],
+  // Q (contactos «quitados» reaparecen al volver a compartir un grupo): después de P.
+  Q: [['20261211000000', 'contacts_reappear_on_share']],
+  // R (eliminar definitivamente grupos/viajes + contactos sin cuentas eliminadas): después de Q y junto con el front nuevo.
+  R: [['20261212000000', 'purge_group_for_me'], ['20261212000100', 'contacts_exclude_deleted']],
+  // S (Free: un solo grupo/viaje activo a la vez; sumarse a otro requiere Plus): después de R y junto con el front nuevo.
+  S: [['20261213000000', 'free_participation_limit']],
+  // T (Viajes: organizador financiero): después de S y junto con el front nuevo. Aditivo: no modifica datos existentes.
+  T: [['20261214000000', 'trip_organizer']],
+  // U (avisos push de suscripciones y gastos fijos): después de T y junto con el front nuevo.
+  U: [['20261215000000', 'recurring_push']],
+  // V (corrige el orden de borrado de grupos al eliminar definitivamente): después de U.
+  V: [['20261216000000', 'fix_group_purge_order']],
 }
 const batchArg = (process.argv.find((a) => a.startsWith('--lote=')) || '--lote=A').split('=')[1].toUpperCase()
-if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I, J, K, L, M, N, O o P')
+if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U o V')
 const MIGRATIONS = BATCHES[batchArg]
 const BACKUP_BASE = process.env.G1_BACKUP_DIR || path.join(os.homedir(), 'Desktop', 'MONI', 'backups-g1')
 // Funciones que el lote reemplaza (A: solo get_my_groups; B: las demás) y cuyo cuerpo actual debe coincidir con el repositorio.
-const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [], K: [], L: [], M: [], N: [], O: [], P: [] }
+const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [], K: [], L: [], M: [], N: [], O: [], P: [], Q: [], R: [], S: [], T: [], U: [], V: [] }
 const FUNCTIONS = ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite', 'get_my_groups', 'join_group']
 // Cuerpos de las funciones que G1 reemplaza, tal como están en el repositorio (para detectar cambios en producción).
 const EXPECTED = {
@@ -207,6 +219,32 @@ async function preflight(c) {
     if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='group_invites' and column_name='personal') x")) issues.push('group_invites.personal ya existe')
     if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_personal_group_invite') x")) issues.push('create_personal_group_invite ya existe')
     if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='request_join_group') x"))) issues.push('falta request_join_group (lotes C y H)')
+  } else if (batchArg === 'V') {
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='purge_group_for_me') x"))) issues.push('falta el lote R (purge_group_for_me)')
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.proname='delete_account_data') x"))) issues.push('falta el lote P (delete_account_data)')
+  } else if (batchArg === 'U') {
+    if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='trip_bookings') x"))) issues.push('falta el lote T')
+    if (await has("select exists(select 1 from information_schema.tables where table_schema='private' and table_name='recurring_push_log') x")) issues.push('private.recurring_push_log ya existe')
+    for (const f of ['run_push_cron', 'clean_push_text', 'format_ars']) {
+      if (!(await has(`select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.proname='${f}') x`))) issues.push(`falta private.${f}`)
+    }
+  } else if (batchArg === 'T') {
+    if (!(await has("select exists(select 1 from pg_trigger where tgname='free_participation_limit') x"))) issues.push('falta el lote S')
+    if (await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='trip_bookings') x")) issues.push('trip_bookings ya existe')
+    if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='trips' and column_name='currency') x")) issues.push('trips.currency ya existe')
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_ahorro_entry') x"))) issues.push('falta create_ahorro_entry (Ahorros)')
+  } else if (batchArg === 'S') {
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='purge_group_for_me') x"))) issues.push('falta el lote R')
+    if (await has("select exists(select 1 from pg_trigger where tgname='free_participation_limit') x")) issues.push('free_participation_limit ya existe')
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='is_plus_user') x"))) issues.push('falta public.is_plus_user')
+  } else if (batchArg === 'R') {
+    if (!(await has("select exists(select 1 from pg_trigger where tgname='contacts_reappear_on_share') x"))) issues.push('falta el lote Q')
+    if (!(await has("select exists(select 1 from information_schema.tables where table_schema='private' and table_name='deleted_account_ghosts') x"))) issues.push('falta el lote P (deleted_account_ghosts)')
+    if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='purge_group_for_me') x")) issues.push('purge_group_for_me ya existe')
+    if (await has("select exists(select 1 from information_schema.tables where table_schema='private' and table_name='purged_groups') x")) issues.push('private.purged_groups ya existe')
+  } else if (batchArg === 'Q') {
+    if (!(await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='contact_prefs') x"))) issues.push('falta public.contact_prefs')
+    if (await has("select exists(select 1 from pg_trigger where tgname='contacts_reappear_on_share') x")) issues.push('el disparador contacts_reappear_on_share ya existe')
   } else if (batchArg === 'P') {
     if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='private' and p.proname='notice_is_pending') x"))) issues.push('falta el lote K')
     if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='delete_account') x")) issues.push('public.delete_account ya existe')
@@ -267,7 +305,8 @@ async function preflight(c) {
     if (defs.length !== 1) issues.push(`${fn}: hay ${defs.length} definiciones`)
     else if (!expected || norm(bodyOf(defs[0].d)) !== norm(expected)) issues.push(`${fn}: la definición de producción difiere del repositorio`)
   }
-  const noOwner = (await q(c, "select count(*)::int n from public.groups g where not exists (select 1 from public.group_members m where m.group_id=g.id and m.role='owner' and m.left_at is null)"))[0].n
+  // Archived groups may have nobody left (the last member left): that is expected, only live groups need an administrator.
+  const noOwner = (await q(c, "select count(*)::int n from public.groups g where g.archived_at is null and not exists (select 1 from public.group_members m where m.group_id=g.id and m.role='owner' and m.left_at is null)"))[0].n
   if (noOwner !== 0) issues.push(`${noOwner} grupo(s) sin administrador activo`)
   const unknownKinds = await q(c, "select distinct kind from public.groups where kind not in ('casa','hogar','viaje','pareja','amigos')")
   if (unknownKinds.length) issues.push('tipos de grupo inesperados')

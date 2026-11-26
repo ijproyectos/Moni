@@ -19,8 +19,7 @@ describe('tripFormSchema', () => {
 
   it.each([
     [{ name: '  ' }, 'Contanos a dónde vas.'],
-    [{ budget: '' }, 'Poné un presupuesto.'],
-    [{ budget: '0' }, 'Poné un presupuesto.'],
+    [{ budget: 'abc' }, 'Revisá el presupuesto.'],
     [{ endsOn: '2026-12-09' }, 'La vuelta no puede ser antes de la ida.'],
   ])('rejects %j with a clear message', (patch, message) => {
     const result = tripFormSchema.safeParse({ ...ok, ...patch })
@@ -123,5 +122,18 @@ describe('summarizeTrip', () => {
     const s = summarizeTrip(trip, [], '2026-12-12')
     expect(s.byCategory).toEqual([])
     expect(s.progress).toBe(0)
+  })
+})
+
+describe('presupuesto opcional', () => {
+  const ok = { name: 'Salta', startsOn: '2026-12-10', endsOn: '2026-12-17' }
+  it('an empty or zero budget means "no budget", not an error', () => {
+    expect(tripFormSchema.parse({ ...ok, budget: '' }).budgetCents).toBe(0)
+    expect(tripFormSchema.parse({ ...ok, budget: '0' }).budgetCents).toBe(0)
+  })
+  it('without a budget nothing is "over" it', () => {
+    const summary = summarizeTrip({ startsOn: '2026-12-10', endsOn: '2026-12-17', budgetCents: 0 }, [], '2026-12-11')
+    expect(summary.overBudget).toBe(false)
+    expect(summary.progress).toBe(0)
   })
 })

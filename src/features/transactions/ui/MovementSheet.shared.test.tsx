@@ -17,7 +17,7 @@ const createGuest = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
 const guestsData = vi.hoisted(() => ({
   current: [] as { id: string; name: string; alias: string }[],
 }))
-const groupsData = vi.hoisted(() => ({ current: [] as { id: string; name: string }[] }))
+const groupsData = vi.hoisted(() => ({ current: [] as Record<string, unknown>[] }))
 
 const member = (userId: string, displayName: string): GroupMember => ({
   userId,
@@ -106,6 +106,7 @@ vi.mock('@/features/groups/api/useGroups', () => ({
   useCreateSharedExpense: () => ({ mutateAsync: createShared, isPending: false }),
 }))
 
+vi.mock('@/features/groups/api/useGroupPhotos', () => ({ useGroupPhotos: () => ({}) }))
 vi.mock('@/features/trips/ui/TripLinkSelect', () => ({ TripLinkSelect: () => null }))
 vi.mock('@/features/groups/api/useGroupGuests', () => ({
   useGroupOverlay: () => ({ guests: guestsData.current }),
@@ -128,7 +129,7 @@ describe('MovementSheet shared switch', () => {
     createShared.mockClear()
     createGuest.mockClear()
     guestsData.current = []
-    groupsData.current = [{ id: GROUP, name: 'Depto' }]
+    groupsData.current = [{ id: GROUP, name: 'Depto', kind: 'hogar', memberCount: 2, lastActivity: '2026-11-01T00:00:00Z', hiddenAt: null }]
   })
 
   it('opens already set to "Dividir con un grupo" when asked (quick-add shortcut)', () => {
@@ -137,7 +138,7 @@ describe('MovementSheet shared switch', () => {
       'aria-checked',
       'true',
     )
-    expect(screen.getByLabelText('Grupo')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Tus grupos' })).toBeInTheDocument()
   })
 
   it('with the switch off saves a plain expense as before', async () => {
@@ -146,7 +147,7 @@ describe('MovementSheet shared switch', () => {
       'aria-checked',
       'false',
     )
-    expect(screen.queryByLabelText('Grupo')).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Tus grupos' })).toBeNull()
     await user.type(screen.getByLabelText('Monto'), '4000')
     await user.click(screen.getByRole('button', { name: 'Comida' }))
     await user.click(screen.getByRole('button', { name: /^Guardar/ }))
@@ -168,7 +169,7 @@ describe('MovementSheet shared switch', () => {
     await user.type(screen.getByLabelText('Nota'), 'Cena')
     await user.click(screen.getByRole('button', { name: 'Comida' }))
     await user.click(screen.getByRole('switch', { name: 'Dividir con un grupo' }))
-    await user.selectOptions(screen.getByLabelText('Grupo'), GROUP)
+    await user.click(screen.getByRole('button', { name: /Depto/ }))
     expect(screen.getByLabelText('Monto')).toHaveValue('4.000')
     expect(screen.getByLabelText('Descripción')).toHaveValue('Cena')
     await user.click(screen.getByRole('button', { name: 'Guardar gasto compartido' }))
@@ -226,7 +227,7 @@ describe('MovementSheet: editing an individual expense can become shared', () =>
     createGuest.mockClear()
     createTx.mockClear()
     guestsData.current = []
-    groupsData.current = [{ id: GROUP, name: 'Depto' }]
+    groupsData.current = [{ id: GROUP, name: 'Depto', kind: 'hogar', memberCount: 2, lastActivity: '2026-11-01T00:00:00Z', hiddenAt: null }]
   })
 
   it('offers "Compartido" when editing an individual expense (as when creating one)', () => {
@@ -258,7 +259,7 @@ describe('MovementSheet: editing an individual expense can become shared', () =>
   it('keeps the data of the expense: amount, description, date and the account it was paid from', async () => {
     const { user } = setup(own())
     await user.click(screen.getByRole('switch', { name: 'Dividir con un grupo' }))
-    await user.selectOptions(screen.getByLabelText('Grupo'), GROUP)
+    await user.click(screen.getByRole('button', { name: /Depto/ }))
     expect(screen.getByLabelText('Monto')).toHaveValue('12.000')
     expect(screen.getByLabelText('Descripción')).toHaveValue('Cena en el centro')
   })
@@ -266,7 +267,7 @@ describe('MovementSheet: editing an individual expense can become shared', () =>
   it('saves ONE replacement: the new shared expense carries the id of the individual one it replaces', async () => {
     const { user, onClose } = setup(own())
     await user.click(screen.getByRole('switch', { name: 'Dividir con un grupo' }))
-    await user.selectOptions(screen.getByLabelText('Grupo'), GROUP)
+    await user.click(screen.getByRole('button', { name: /Depto/ }))
     await user.click(screen.getByRole('button', { name: 'Compartir este gasto' }))
     await waitFor(() => expect(createShared).toHaveBeenCalledTimes(1))
     const call = createShared.mock.calls[0]?.[0]
@@ -289,7 +290,7 @@ describe('MovementSheet: editing an individual expense can become shared', () =>
     guestsData.current = [{ id: 'guest-fran', name: 'Fran', alias: '' }]
     const { user } = setup(own())
     await user.click(screen.getByRole('switch', { name: 'Dividir con un grupo' }))
-    await user.selectOptions(screen.getByLabelText('Grupo'), GROUP)
+    await user.click(screen.getByRole('button', { name: /Depto/ }))
     expect(screen.getByText('Sin cuenta')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Compartir este gasto' }))
     await waitFor(() => expect(createGuest).toHaveBeenCalledTimes(1))
@@ -304,7 +305,7 @@ describe('MovementSheet: editing an individual expense can become shared', () =>
     createShared.mockRejectedValueOnce(new Error('expense_has_payments'))
     const { user, onClose } = setup(own())
     await user.click(screen.getByRole('switch', { name: 'Dividir con un grupo' }))
-    await user.selectOptions(screen.getByLabelText('Grupo'), GROUP)
+    await user.click(screen.getByRole('button', { name: /Depto/ }))
     await user.click(screen.getByRole('button', { name: 'Compartir este gasto' }))
     expect(await screen.findByText(/pagos registrados/)).toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled()
@@ -316,7 +317,7 @@ describe('MovementSheet: editing an individual expense can become shared', () =>
     await user.type(screen.getByLabelText('Nota'), 'Cena')
     await user.click(screen.getByRole('button', { name: 'Comida' }))
     await user.click(screen.getByRole('switch', { name: 'Dividir con un grupo' }))
-    await user.selectOptions(screen.getByLabelText('Grupo'), GROUP)
+    await user.click(screen.getByRole('button', { name: /Depto/ }))
     await user.click(screen.getByRole('button', { name: 'Guardar gasto compartido' }))
     await waitFor(() => expect(createShared).toHaveBeenCalledTimes(1))
     expect(createShared.mock.calls[0]?.[0].replaces).toBeUndefined()

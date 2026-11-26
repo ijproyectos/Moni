@@ -2,13 +2,13 @@ import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import mascotUrl from '@/assets/mascot/personaje_carga-de-dinero.svg'
 import { formatDayMonth, formatMonthYear } from '@/shared/lib/dates'
-import { formatArs } from '@/shared/lib/money'
 import { daysInMonth, monthStart, shiftMonth, type IsoDate } from '@/shared/lib/month'
 import { AmountInput } from '@/shared/ui/AmountInput'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { cn } from '@/shared/ui/cn'
 import { MoniCalcCard, SectionLabel } from '@/shared/ui/kit'
 import { daysBetween } from '../domain/dates'
+import { moneyIn } from '../domain/money'
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
@@ -22,6 +22,7 @@ export function TripDatesBudget({
   budgetText,
   budgetLabel,
   budgetCents,
+  currency = 'ARS',
   onPick,
   onBudgetChange,
 }: {
@@ -31,6 +32,8 @@ export function TripDatesBudget({
   budgetLabel: string
   /** Parsed budget, 0 while it is empty or invalid. */
   budgetCents: number
+  /** Currency of the budget (its sign and the per-day figure). */
+  currency?: 'ARS' | 'USD'
   onPick: (which: 'from' | 'to') => void
   onBudgetChange: (text: string) => void
 }) {
@@ -61,13 +64,14 @@ export function TripDatesBudget({
       <SectionLabel>{budgetLabel}</SectionLabel>
       <AmountInput
         aria-label="Presupuesto"
+        prefix={currency === 'USD' ? 'US$' : '$'}
         value={budgetText}
         onChange={(e) => onBudgetChange(e.target.value)}
       />
       {budgetCents > 0 && (
         <MoniCalcCard
           mascot={mascotUrl}
-          title={`Unos ${formatArs(Math.round(budgetCents / days / 100) * 100)} por día`}
+          title={`Unos ${moneyIn(Math.round(budgetCents / days / 100) * 100, currency)} por día`}
         >
           {days} {days === 1 ? 'día' : 'días'} de viaje.
         </MoniCalcCard>

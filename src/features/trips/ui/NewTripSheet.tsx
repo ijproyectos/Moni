@@ -8,7 +8,9 @@ import { toUserMessage } from '@/shared/lib/errors'
 import { todayIso } from '@/shared/lib/month'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Button } from '@/shared/ui/Button'
-import { ChoiceChip, SectionLabel } from '@/shared/ui/kit'
+import { SectionLabel } from '@/shared/ui/kit'
+import { GroupPicker } from '@/features/groups/ui/GroupPicker'
+import { selectableGroups } from '@/features/groups/domain/groupView'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { useToast } from '@/shared/ui/toastContext'
 import { usePlanAccess } from '@/features/plus/api/usePlanAccess'
@@ -142,18 +144,21 @@ function GroupTripForm({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
   const [dates, setDates] = useState({ startsOn: defaults.startsOn, endsOn: defaults.endsOn })
   const [budgetText, setBudgetText] = useState('')
+  const [destination, setDestination] = useState('')
+  const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS')
   const [picking, setPicking] = useState<null | 'from' | 'to'>(null)
   const [error, setError] = useState<string | null>(null)
-  const [source, setSource] = useState<'existing' | 'new'>('existing')
+  const [source, setSource] = useState<'existing' | 'new' | null>(null)
   const [groupId, setGroupId] = useState<string | null>(null)
 
   // Only the creator / owner of a group can set its trip (the server enforces it too), so those are the groups on offer;
   // the ones that already have trip dates are not offered again.
   const withTrip = new Set((groupTrips.data ?? []).map((t) => t.groupId))
-  const available = (groups.data ?? []).filter(
+  // Only active groups: not the ones I removed from my list, archived, deleted or left (those never reach `useMyGroups`).
+  const available = selectableGroups(groups.data ?? []).filter(
     (g) => g.role === 'owner' && !withTrip.has(g.id) && !overlays[g.id]?.deleted,
   )
-  const effectiveSource = available.length === 0 ? 'new' : source
+  const effectiveSource = source ?? (available.length === 0 ? 'new' : 'existing')
   const budgetCents = Math.max(0, parseAmountInput(budgetText) ?? 0)
   const busy = createGroup.isPending || setGroupTrip.isPending
 
@@ -164,6 +169,8 @@ function GroupTripForm({ onClose }: { onClose: () => void }) {
       name: effectiveSource === 'new' ? name : 'grupo',
       ...dates,
       budget: budgetText,
+      destination,
+      currency,
     })
     if (!result.success) return setError(result.error.issues[0]?.message ?? 'Revisá los datos.')
     try {
@@ -198,35 +205,32 @@ function GroupTripForm({ onClose }: { onClose: () => void }) {
   return (
     <BottomSheet title="Viaje en grupo" onClose={onClose}>
       <div className="flex flex-col gap-3">
-        {available.length > 0 && (
-          <SegmentedControl
-            label="Grupo del viaje"
-            value={effectiveSource}
-            onChange={setSource}
-            options={[
-              { value: 'existing', label: 'Grupo existente' },
-              { value: 'new', label: 'Grupo nuevo' },
-            ]}
-          />
-        )}
+        <SegmentedControl
+          label="Grupo del viaje"
+          value={effectiveSource}
+          onChange={setSource}
+          options={[
+            { value: 'existing', label: 'Grupo existente' },
+            { value: 'new', label: 'Grupo nuevo' },
+          ]}
+        />
         {effectiveSource === 'existing' ? (
           <>
             <SectionLabel>¿Con qué grupo viajás?</SectionLabel>
-            <div role="group" aria-label="Tus grupos" className="flex flex-col gap-2">
-              {available.map((g) => (
-                <ChoiceChip
-                  key={g.id}
-                  selected={groupId === g.id}
-                  onClick={() => setGroupId(g.id)}
-                  className="min-h-12 justify-start px-4"
-                >
-                  <span className="min-w-0 truncate">{overlays[g.id]?.name ?? g.name}</span>
-                  <span className="ml-auto shrink-0 text-[14px] font-bold opacity-70">
-                    {g.memberCount} {g.memberCount === 1 ? 'persona' : 'personas'}
-                  </span>
-                </ChoiceChip>
-              ))}
-            </div>
+            <GroupPicker
+              groups={available.map((g) => ({ ...g, name: overlays[g.id]?.name ?? g.name }))}
+              selectedId={groupId}
+              onSelect={setGroupId}
+              empty={
+                <>
+                  No tenés grupos disponibles para un viaje.{' '}
+                  <button type="button" onClick={() => setSource('new')} className="font-extrabold text-ink underline">
+                    Creá un grupo nuevo
+                  </button>
+                  .
+                </>
+              }
+            />
             <p className="text-[14px] leading-5 text-text-muted">
               Solo quien creó el grupo puede definir sus fechas y su presupuesto.
             </p>
@@ -247,10 +251,28 @@ function GroupTripForm({ onClose }: { onClose: () => void }) {
             </p>
           </>
         )}
+        <input
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+          aria-label="Destino"
+          maxLength={80}
+          placeholder="Destino (opcional)"
+          className={tripFieldClass}
+        />
+        <SegmentedControl
+          label="Moneda principal del viaje"
+          value={currency}
+          onChange={setCurrency}
+          options={[
+            { value: 'ARS', label: 'Pesos' },
+            { value: 'USD', label: 'Dólares' },
+          ]}
+        />
         <TripDatesBudget
           {...dates}
           budgetText={budgetText}
-          budgetLabel="Presupuesto del grupo"
+          budgetLabel="Presupuesto del grupo (opcional)"
+          currency={currency}
           budgetCents={budgetCents}
           onPick={setPicking}
           onBudgetChange={setBudgetText}

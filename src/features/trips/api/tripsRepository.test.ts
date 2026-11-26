@@ -1,4 +1,5 @@
 import {
+  addTripExpense,
   createTrip,
   isTripsNotEnabled,
   listGroupTrips,
@@ -65,6 +66,9 @@ describe('tripsRepository', () => {
         budgetCents: 500_000_00,
         archivedAt: null,
         icon: null,
+        destination: null,
+        currency: 'ARS',
+        funding: null,
       },
     ])
     expect(sb.calls[0]).toEqual({ method: 'from', args: ['trips'] })
@@ -84,6 +88,11 @@ describe('tripsRepository', () => {
       starts_on: '2026-12-10',
       ends_on: '2026-12-17',
       budget: 500000,
+      destination: null,
+      currency: 'ARS',
+      fund_source: null,
+      fund_account_id: null,
+      fund_ahorro_currency: null,
     })
   })
 
@@ -101,6 +110,11 @@ describe('tripsRepository', () => {
       starts_on: '2026-12-10',
       ends_on: '2026-12-20',
       budget: 700000,
+      destination: null,
+      currency: 'ARS',
+      fund_source: null,
+      fund_account_id: null,
+      fund_ahorro_currency: null,
     })
     expect(sb.calls).toContainEqual({ method: 'eq', args: ['id', 't1'] })
   })
@@ -131,7 +145,7 @@ describe('tripsRepository', () => {
       error: null,
     })
     await expect(listGroupTrips()).resolves.toEqual([
-      { groupId: 'g1', startsOn: '2026-12-20', endsOn: '2026-12-30', budgetCents: 900_000_00 },
+      { groupId: 'g1', startsOn: '2026-12-20', endsOn: '2026-12-30', budgetCents: 900_000_00, destination: null, currency: 'ARS' },
     ])
     sb.set({ data: null, error: null })
     await setGroupTrip('g1', {
@@ -144,6 +158,59 @@ describe('tripsRepository', () => {
       p_starts_on: '2026-12-20',
       p_ends_on: '2026-12-30',
       p_budget: 900000,
+      p_destination: null,
+      p_currency: 'ARS',
+    })
+  })
+
+  it('a trip with no budget is stored as null and read back as 0 (no budget)', async () => {
+    sb.set({ data: { ...tripRow, budget: null, destination: 'Floripa', currency: 'USD', fund_source: 'savings', fund_account_id: null, fund_ahorro_currency: 'USD' }, error: null })
+    const trip = await createTrip({
+      name: 'Brasil',
+      startsOn: '2026-12-10',
+      endsOn: '2026-12-17',
+      budgetCents: 0,
+      destination: ' Floripa ',
+      currency: 'USD',
+      funding: { source: 'savings', accountId: null, ahorroCurrency: 'USD' },
+    })
+    expect(sb.calls.find((c) => c.method === 'insert')?.args[0]).toMatchObject({
+      budget: null,
+      destination: 'Floripa',
+      currency: 'USD',
+      fund_source: 'savings',
+      fund_ahorro_currency: 'USD',
+    })
+    expect(trip.budgetCents).toBe(0)
+    expect(trip.funding).toEqual({ source: 'savings', accountId: null, ahorroCurrency: 'USD' })
+  })
+
+  it('one expense goes to the server with its origin of money in a single call', async () => {
+    sb.set({ data: { transaction_id: 'tx1', side_expense_id: null }, error: null })
+    await expect(
+      addTripExpense({
+        tripId: 't1',
+        amountCents: 20_000,
+        currency: 'USD',
+        fxRate: 1200,
+        description: ' Seña ',
+        categoryKey: 'alojamiento',
+        funding: { source: 'balance', accountId: 'a1', ahorroCurrency: null },
+        bookingId: 'b1',
+      }),
+    ).resolves.toEqual({ transactionId: 'tx1', sideExpenseId: null })
+    expect(sb.rpc).toHaveBeenCalledWith('add_trip_expense', {
+      p_trip: 't1',
+      p_amount: 200,
+      p_currency: 'USD',
+      p_fx_rate: 1200,
+      p_description: 'Seña',
+      p_on: null,
+      p_category: 'alojamiento',
+      p_funding: 'balance',
+      p_account: 'a1',
+      p_ahorro_currency: null,
+      p_booking: 'b1',
     })
   })
 

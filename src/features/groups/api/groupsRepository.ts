@@ -149,6 +149,26 @@ export async function restoreGroup(groupId: string): Promise<void> {
   if (error) throw error
 }
 
+/**
+ * Removes a group of "Eliminados y archivados" for good. The server only allows it there, with no debts of mine and no unconfirmed
+ * payments; a group that is only mine is deleted from the database, a shared one is left for good (what the others have stays).
+ */
+export async function purgeGroup(groupId: string): Promise<{ outcome: 'deleted' | 'left'; photoPath: string | null }> {
+  const { data, error } = await getSupabase().rpc('purge_group_for_me', { p_group: groupId })
+  if (error) throw error
+  const row = (data ?? {}) as { outcome?: string; photo_path?: string | null }
+  const photoPath = row.photo_path ?? null
+  // A deleted group's photo is unreachable for everybody now: remove the file too (best effort, never blocks or fails the deletion).
+  if (photoPath) {
+    try {
+      await getSupabase().storage.from('group-photos').remove([photoPath])
+    } catch {
+      // A leftover file is harmless: the bucket is private and nothing points at it any more.
+    }
+  }
+  return { outcome: row.outcome === 'deleted' ? 'deleted' : 'left', photoPath }
+}
+
 /** Administrators only. Archives (never deletes); the server refuses it while there are debts or unresolved payments. */
 export async function archiveGroup(groupId: string, nameConfirmation: string): Promise<void> {
   const { error } = await getSupabase().rpc('archive_group_for_all', {

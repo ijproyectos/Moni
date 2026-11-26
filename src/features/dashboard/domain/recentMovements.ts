@@ -31,7 +31,7 @@ export function buildRecentMovements(input: {
         occurredOn: tx.occurredOn,
         note: tx.note,
         accountId: tx.accountId,
-        accountName: accountNamesById.get(tx.accountId) ?? 'Cuenta',
+        accountName: tx.accountId ? (accountNamesById.get(tx.accountId) ?? 'Cuenta') : 'Ahorros',
         categoryName: category?.name ?? null,
         categoryColor: category?.color ?? null,
         categoryIcon: category?.icon ?? null,

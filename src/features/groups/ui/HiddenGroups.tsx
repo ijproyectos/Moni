@@ -1,4 +1,4 @@
-import { Archive, EyeOff, RotateCcw } from 'lucide-react'
+import { Archive, EyeOff, RotateCcw, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import mascotAlert from '@/assets/mascot/personaje_alerta-de-presupuesto.svg'
@@ -6,36 +6,54 @@ import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
 import { formatDayMonth } from '@/shared/lib/dates'
 import { toUserMessage } from '@/shared/lib/errors'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
+import { DecisionSheet } from '@/shared/ui/DecisionSheet'
+import { SwipeRow } from '@/shared/ui/SwipeRow'
 import { useToast } from '@/shared/ui/toastContext'
-import { useHiddenGroups, useHideGroup, useRestoreGroup } from '../api/useGroups'
+import type { HiddenGroup } from '../domain/group'
+import { useHiddenGroups, usePurgeGroup, useRestoreGroup } from '../api/useGroups'
 import { GROUP_KIND_LABELS } from '../domain/group'
+import { purgeReason } from '../domain/purgeReason'
 
 /** "Eliminados y archivados": groups I removed from my account (restorable) and groups archived for everybody (read-only). */
 export function HiddenGroupsEntry() {
   const hidden = useHiddenGroups()
   const [open, setOpen] = useState(false)
   const list = hidden.data ?? []
-  if (list.length === 0) return null
+  // Once opened it stays (it says there is nothing left after the last one is deleted); the entry itself only exists with items.
+  if (list.length === 0 && !open) return null
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="mx-auto flex min-h-11 items-center gap-2 px-4 text-[15px] font-extrabold text-text-muted"
-      >
-        <EyeOff aria-hidden="true" className="size-4" />
-        Eliminados y archivados ({list.length})
-      </button>
+      {list.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mx-auto flex min-h-11 items-center gap-2 px-4 text-[15px] font-extrabold text-text-muted"
+        >
+          <EyeOff aria-hidden="true" className="size-4" />
+          Eliminados y archivados ({list.length})
+        </button>
+      )}
       {open && <HiddenGroupsSheet onClose={() => setOpen(false)} />}
     </>
   )
 }
 
+/** What is asked before deleting for good: one group or trip, or all of them at once. */
+type Confirm = { type: 'one'; group: HiddenGroup } | { type: 'all' }
+
+const isTrip = (g: HiddenGroup) => g.kind === 'viaje'
+
+
 function HiddenGroupsSheet({ onClose }: { onClose: () => void }) {
   const toast = useToast()
   const hidden = useHiddenGroups()
   const restore = useRestoreGroup()
-  const hide = useHideGroup()
+  const purge = usePurgeGroup()
+  const [confirm, setConfirm] = useState<Confirm | null>(null)
+  const [working, setWorking] = useState(false)
+  /** What the server refused in the last attempt, with the reason of each one. */
+  const [failures, setFailures] = useState<{ name: string; reason: string }[]>([])
+  const list = hidden.data ?? []
 
   async function restoreOne(id: string) {
     try {
@@ -46,59 +64,167 @@ function HiddenGroupsSheet({ onClose }: { onClose: () => void }) {
     }
   }
 
-  async function dismiss(id: string) {
-    try {
-      await hide.mutateAsync(id)
-      toast.show('Grupo quitado de tu lista', { mascotUrl: mascotHappy })
-    } catch (e) {
-      toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert })
+  /** Deletes one by one: the server decides each, and what it refuses stays in the list with its own reason (never a generic error). */
+  async function deleteForGood(targets: readonly HiddenGroup[]) {
+    if (working) return
+    setWorking(true)
+    setFailures([])
+    let done = 0
+    const refused: { name: string; reason: string }[] = []
+    for (const g of targets) {
+      try {
+        await purge.mutateAsync(g.id)
+        done += 1
+      } catch (e) {
+        refused.push({ name: g.name, reason: purgeReason(e) })
+      }
+    }
+    setWorking(false)
+    setConfirm(null)
+    setFailures(refused)
+    if (refused.length === 0) {
+      toast.show(targets.length === 1 ? 'Eliminado definitivamente' : `Se eliminaron ${done} definitivamente`, { mascotUrl: mascotHappy })
+    } else if (done > 0) {
+      toast.show(`Se eliminaron ${done}. ${refused.length} no se pudo eliminar: mirá el motivo abajo.`, { tone: 'error', mascotUrl: mascotAlert })
     }
   }
 
+  const confirmTargets = confirm?.type === 'one' ? [confirm.group] : list
+  const oneTrip = confirm?.type === 'one' && isTrip(confirm.group)
+
   return (
     <BottomSheet title="Eliminados y archivados" onClose={onClose}>
-      <ul className="flex flex-col divide-y divide-line">
-        {(hidden.data ?? []).map((g) => (
-          <li key={g.id} className="flex min-h-16 items-center gap-3 py-2">
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[16px] font-extrabold">{g.name}</span>
-              <span className="flex items-center gap-1 text-[13px] font-bold text-text-muted">
-                {g.archivedAt ? <Archive aria-hidden="true" className="size-3.5" /> : <EyeOff aria-hidden="true" className="size-3.5" />}
-                {g.archivedAt ? 'Eliminado para todos' : 'Eliminado para mí'}
-              </span>
-              <span className="block text-[12.5px] text-text-muted">
-                {GROUP_KIND_LABELS[g.kind]} · {g.memberCount} {g.memberCount === 1 ? 'persona' : 'personas'} · última actividad {formatDayMonth(g.lastActivity.slice(0, 10))}
-              </span>
-            </span>
-            {g.archivedAt ? (
-              <span className="flex flex-col gap-1.5">
-                <Link to={`/grupos/${g.id}`} onClick={onClose} className="flex min-h-10 items-center justify-center rounded-full border-2 border-line px-3 text-[13px] font-extrabold">
-                  Ver historial
-                </Link>
-                <button
-                  type="button"
-                  disabled={hide.isPending}
-                  onClick={() => void dismiss(g.id)}
-                  aria-label={`Quitar ${g.name} de mi lista`}
-                  className="flex min-h-10 items-center justify-center rounded-full px-3 text-[13px] font-extrabold text-text-muted disabled:opacity-60"
+      {list.length === 0 ? (
+        <p className="py-6 text-center text-[15px] text-text-muted">
+          No tenés grupos eliminados ni archivados.
+        </p>
+      ) : (
+        <>
+          {failures.length > 0 && (
+            <div role="alert" className="mb-2 rounded-[18px] bg-tint-red px-4 py-3 text-[14px] leading-5 text-bad-ink">
+              <p className="font-extrabold">No se pudo eliminar:</p>
+              <ul className="mt-1 list-disc pl-5">
+                {failures.map((f) => (
+                  <li key={f.name}>
+                    <strong>{f.name}</strong>: {f.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="mb-1 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setConfirm({ type: 'all' })}
+              className="flex min-h-11 items-center px-2 text-[14px] font-extrabold text-expense"
+            >
+              Eliminar todos
+            </button>
+          </div>
+          <ul className="flex flex-col divide-y divide-line">
+            {list.map((g) => (
+              <li key={g.id}>
+                <SwipeRow
+                  actions={[
+                    {
+                      label: 'Eliminar',
+                      tone: 'danger',
+                      icon: <Trash2 className="size-5" strokeWidth={2.2} />,
+                      ariaLabel: `Eliminar ${g.name} definitivamente`,
+                      onPress: () => setConfirm({ type: 'one', group: g }),
+                    },
+                  ]}
                 >
-                  Quitar de mi lista
-                </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                disabled={restore.isPending}
-                onClick={() => void restoreOne(g.id)}
-                aria-label={`Restaurar ${g.name}`}
-                className="flex min-h-11 items-center gap-1.5 rounded-full border-2 border-line px-3 text-[13px] font-extrabold disabled:opacity-60"
-              >
-                <RotateCcw aria-hidden="true" className="size-4" /> Restaurar
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+                  <div className="flex min-h-16 items-center gap-3 py-2">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[16px] font-extrabold">{g.name}</span>
+                      <span className="flex items-center gap-1 text-[13px] font-bold text-text-muted">
+                        {g.archivedAt ? (
+                          <Archive aria-hidden="true" className="size-3.5" />
+                        ) : (
+                          <EyeOff aria-hidden="true" className="size-3.5" />
+                        )}
+                        {g.archivedAt ? 'Eliminado para todos' : 'Eliminado para mí'}
+                      </span>
+                      <span className="block text-[12.5px] text-text-muted">
+                        {GROUP_KIND_LABELS[g.kind]} · {g.memberCount}{' '}
+                        {g.memberCount === 1 ? 'persona' : 'personas'} · última actividad{' '}
+                        {formatDayMonth(g.lastActivity.slice(0, 10))}
+                      </span>
+                    </span>
+                    {g.archivedAt ? (
+                      <Link
+                        to={`/grupos/${g.id}`}
+                        onClick={onClose}
+                        className="flex min-h-10 items-center justify-center rounded-full border-2 border-line px-3 text-[13px] font-extrabold"
+                      >
+                        Ver historial
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={restore.isPending}
+                        onClick={() => void restoreOne(g.id)}
+                        aria-label={`Restaurar ${g.name}`}
+                        className="flex min-h-11 items-center gap-1.5 rounded-full border-2 border-line px-3 text-[13px] font-extrabold disabled:opacity-60"
+                      >
+                        <RotateCcw aria-hidden="true" className="size-4" /> Restaurar
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setConfirm({ type: 'one', group: g })}
+                      aria-label={`Eliminar ${g.name} definitivamente`}
+                      className="flex size-11 shrink-0 items-center justify-center rounded-full text-expense"
+                    >
+                      <Trash2 aria-hidden="true" className="size-5" />
+                    </button>
+                  </div>
+                </SwipeRow>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {confirm && (
+        <DecisionSheet
+          icon={<Trash2 className="size-6" />}
+          title={
+            confirm.type === 'one'
+              ? `¿Querés eliminar ${oneTrip ? 'este viaje' : 'este grupo'} definitivamente?`
+              : `¿Eliminar definitivamente ${confirmTargets.length} ${confirmTargets.length === 1 ? 'grupo o viaje' : 'grupos y viajes'}?`
+          }
+          onClose={() => {
+            if (!working) setConfirm(null)
+          }}
+          actions={[
+            {
+              label: working
+                ? 'Eliminando…'
+                : confirm.type === 'one'
+                  ? 'Eliminar definitivamente'
+                  : 'Eliminar todos',
+              tone: 'danger',
+              disabled: working,
+              onClick: () => void deleteForGood(confirmTargets),
+            },
+            {
+              label: 'Cancelar',
+              tone: 'outline',
+              disabled: working,
+              onClick: () => setConfirm(null),
+            },
+          ]}
+        >
+          <p>
+            {confirm.type === 'one'
+              ? 'No vas a poder restaurarlo. '
+              : 'Esta acción no se puede deshacer: no vas a poder restaurarlos. '}
+            Lo que comparten otras personas (gastos, pagos y saldos) no se borra. Si tenés deudas
+            pendientes en alguno, ese no se elimina.
+          </p>
+        </DecisionSheet>
+      )}
     </BottomSheet>
   )
 }

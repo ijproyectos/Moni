@@ -1,5 +1,6 @@
 import { BellRing, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import mascotAlert from '@/assets/mascot/expresion_atento.svg'
 import mascotAssistant from '@/assets/mascot/personaje_asistente.svg'
 import { formatCompactDate, formatRelativeDay } from '@/shared/lib/dates'
@@ -42,7 +43,9 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
   const notCharged = useMarkChargeNotCharged()
   const link = useLinkChargeToExpense()
   const dismiss = useDismissDuplicate()
-  const [openId, setOpenId] = useState<string | null>(null)
+  // A push (or a notice) opens the subscription it is about: ?suscripcion=<id>.
+  const [params] = useSearchParams()
+  const [openId, setOpenId] = useState<string | null>(() => params.get('suscripcion'))
   const [editing, setEditing] = useState<Subscription | null>(null)
   const [reverting, setReverting] = useState<SubscriptionCharge | null>(null)
   const [showAll, setShowAll] = useState(false)
@@ -137,7 +140,7 @@ export function SubscriptionsPanel({ onAdd }: { onAdd: () => void }) {
             </p>
           ))}
           <p className="text-[13px] text-text-muted">
-            Aviso dentro de Moni. Todavía no enviamos notificaciones push.
+            Te avisamos dentro de Moni y con una notificación push al celular.
           </p>
         </div>
       )}
