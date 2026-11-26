@@ -14,3 +14,8 @@ supabase/.branches
 
 # Mercado Pago wizard state (local only)
 .mp-integrate-progress.md
+
+# Android signing keys: never commit the real keystore or its passwords, wherever it was generated.
+*.jks
+*.keystore
+keystore.properties
