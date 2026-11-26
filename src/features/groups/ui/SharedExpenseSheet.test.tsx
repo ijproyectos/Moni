@@ -28,6 +28,11 @@ const member = (userId: string, displayName: string): GroupMember => ({
   leftAt: null,
 })
 
+vi.mock('@/features/trips/api/useTrips', () => ({
+  useMyGroupFunding: () => ({ data: null }),
+  useLinkSharedExpenseToBooking: () => ({ mutateAsync: vi.fn().mockResolvedValue(undefined) }),
+  useFundSharedPaymentFromSavings: () => ({ mutateAsync: vi.fn().mockResolvedValue(undefined) }),
+}))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: ME } }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({
   useAccounts: () => ({

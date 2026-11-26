@@ -38,6 +38,11 @@ export function toTransaction(
     installmentNumber: row.installment_number ?? null,
     installmentsTotal: row.installments_total ?? null,
     tripId: row.trip_id ?? null,
+    tripCategory: row.trip_category ?? null,
+    bookingId: row.booking_id ?? null,
+    funding: row.funding ?? null,
+    originalAmountCents: row.original_amount == null ? null : toCents(row.original_amount),
+    originalCurrency: row.original_currency ?? null,
     createdAt: row.created_at,
   }
 }

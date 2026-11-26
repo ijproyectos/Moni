@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { summarizeTrip } from '../domain/trip'
+import { tripFinance, type SpendItem } from '../domain/tripFinance'
 import { PersonalTripCard } from './TripCards'
 
 const trip = {
@@ -14,9 +15,11 @@ const trip = {
 
 function renderCard(spentCents: number, today = '2026-11-04') {
   const summary = summarizeTrip(trip, [{ amountCents: spentCents } as never], today)
+  const items: SpendItem[] = [{ id: 'x', source: 'movement', occurredOn: today, title: '', categoryKey: null, bookingId: null, funding: 'balance', ars: spentCents, usd: null }]
+  const finance = tripFinance({ currency: 'ARS', budgetCents: trip.budgetCents, startsOn: trip.startsOn, endsOn: trip.endsOn, today, items, bookings: [], arsPerUsd: null })
   render(
     <MemoryRouter>
-      <PersonalTripCard trip={trip} summary={summary} today={today} />
+      <PersonalTripCard trip={trip} summary={summary} finance={finance} today={today} />
     </MemoryRouter>,
   )
 }

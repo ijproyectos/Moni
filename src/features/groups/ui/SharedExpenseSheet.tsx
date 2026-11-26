@@ -9,6 +9,8 @@ import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { useToast } from '@/shared/ui/toastContext'
 import { useCreateGuestExpense, useGroupOverlay } from '../api/useGroupGuests'
+import { useFundSharedPaymentFromSavings, useLinkSharedExpenseToBooking, useMyGroupFunding } from '@/features/trips/api/useTrips'
+import { formatAmountInput } from '@/shared/lib/amountInput'
 import { useCreateSharedExpense, useGroup, useGroupMembers } from '../api/useGroups'
 import { useTransactions } from '@/features/transactions/api/useTransactions'
 import { ConvertToPersonalSheet } from './ConvertToPersonalSheet'
@@ -23,6 +25,8 @@ interface SharedExpenseSheetProps {
   /** Edit mode (screen 091): the old expense is replaced by the new one. */
   editing?: LedgerExpense
   onDelete?: () => void
+  /** A payment of a shared booking of the trip: the expense is linked to it (never counted twice) and starts with what is pending. */
+  booking?: { id: string; title: string; pendingCents: number }
 }
 
 /** Nuevo / Editar gasto sheet: expenses between members and expenses that involve people without an account. */
@@ -31,6 +35,7 @@ export function SharedExpenseSheet({
   onClose,
   editing,
   onDelete,
+  booking,
 }: SharedExpenseSheetProps) {
   const { user } = useAuth()
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -44,6 +49,10 @@ export function SharedExpenseSheet({
   // Editing: the account the expense was paid from, so saving does not silently stop charging it.
   const transactionsQuery = useTransactions()
   const [converting, setConverting] = useState(false)
+  // My PRIVATE default origin of the money for this trip (nobody else can read it).
+  const funding = useMyGroupFunding(groupId).data ?? null
+  const linkBooking = useLinkSharedExpenseToBooking()
+  const fundFromSavings = useFundSharedPaymentFromSavings()
   const toast = useToast()
 
   const members = useMemo(() => activeMembers(membersQuery.data ?? []), [membersQuery.data])
@@ -76,8 +85,15 @@ export function SharedExpenseSheet({
   async function submit(values: SharedExpenseFormValues) {
     setSubmitError(null)
     try {
-      await create.mutateAsync({ groupId, values, replaces })
-      toast.show(editing ? 'Gasto actualizado' : 'Gasto guardado', { mascotUrl: mascotGroup })
+      const expenseId = await create.mutateAsync({ groupId, values, replaces })
+      if (!editing && expenseId) {
+        // Both steps are best effort after the expense exists: a failure never loses the expense, it only leaves it unlinked / unfunded.
+        if (booking) await linkBooking.mutateAsync({ expenseId, bookingId: booking.id }).catch(() => undefined)
+        if (funding?.source === 'savings' && values.payerAccountId && values.payerAccountId === funding.accountId) {
+          await fundFromSavings.mutateAsync(expenseId).catch(() => undefined)
+        }
+      }
+      toast.show(editing ? 'Gasto actualizado' : booking ? 'Pago registrado' : 'Gasto guardado', { mascotUrl: mascotGroup })
       onClose()
     } catch (e) {
       setSubmitError(toUserMessage(e))
@@ -138,7 +154,12 @@ export function SharedExpenseSheet({
           onSubmit={(values) => void submit(values)}
           onSubmitSimulated={(expense) => void submitSimulated(expense)}
           initial={editing}
-          defaults={{ payerAccountId: paymentOf?.accountId ?? null }}
+          defaults={{
+            payerAccountId: paymentOf?.accountId ?? (funding && funding.source !== 'external' ? funding.accountId : null),
+            ...(booking && !editing
+              ? { description: `Pago · ${booking.title}`, amount: booking.pendingCents > 0 ? formatAmountInput(booking.pendingCents) : '' }
+              : {}),
+          }}
           submitLabel={editing ? 'Guardar cambios' : 'Guardar en el grupo'}
           onDelete={onDelete}
         />

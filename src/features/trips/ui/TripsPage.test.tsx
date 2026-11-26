@@ -19,7 +19,13 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: true, isFree: false, isLoading: false, expiresAt: null }) }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
+vi.mock('../api/useArsPerUsd', () => ({ useArsPerUsd: () => null }))
 vi.mock('../api/useTrips', () => ({
+  useSideExpenses: () => ({ data: [] }),
+  useBookings: () => ({ data: [] }),
+  useAddTripExpense: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useTripCategories: () => ({ data: [] }),
+  useCreateTripCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useTrips: () => state.trips,
   useTripExpenses: () => state.expenses,
   useGroupTrips: () => state.groupTrips,
@@ -222,18 +228,32 @@ describe('Viajes: nuevo viaje', () => {
     await user.click(screen.getByRole('button', { name: /Viaje personal/ }))
     await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Contanos a dónde vas.')
-    await user.type(screen.getByLabelText('Destino'), 'Salta')
-    await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('Poné un presupuesto.')
-    expect(state.createTrip).not.toHaveBeenCalled()
+    await user.type(screen.getByLabelText('Nombre del viaje'), 'Salta')
+    await user.type(screen.getByLabelText('Destino'), 'Cafayate')
     await user.type(screen.getByLabelText('Presupuesto'), '500000')
     await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
     await waitFor(() => expect(state.createTrip).toHaveBeenCalledTimes(1))
     expect(state.createTrip.mock.calls[0]?.[0]).toMatchObject({
       name: 'Salta',
+      destination: 'Cafayate',
+      currency: 'ARS',
       budgetCents: 500_000_00,
     })
     expect(await screen.findByText('detalle del viaje')).toBeVisible()
+  })
+
+  it('personal: only the name is needed (no budget, no destination, no origin of the money) and nothing is charged', async () => {
+    state.createTrip.mockResolvedValue({ id: 'new-trip' })
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'Nuevo viaje' }))
+    await user.click(screen.getByRole('button', { name: /Viaje personal/ }))
+    expect(screen.getByRole('button', { name: 'Pesos' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Dólares' })).toBeVisible()
+    expect(screen.getByText(/no descuenta plata/)).toBeVisible()
+    await user.type(screen.getByLabelText('Nombre del viaje'), 'Escapada')
+    await user.click(screen.getByRole('button', { name: 'Crear viaje' }))
+    await waitFor(() => expect(state.createTrip).toHaveBeenCalledTimes(1))
+    expect(state.createTrip.mock.calls[0]?.[0]).toMatchObject({ name: 'Escapada', budgetCents: 0, funding: null })
   })
 
   it('group: can use a group that already exists (nothing is duplicated)', async () => {

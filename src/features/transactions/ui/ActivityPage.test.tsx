@@ -24,6 +24,8 @@ vi.mock('../api/useTransactions', () => ({
         categoryId: FOOD,
         amountCents: 2_200_000,
         occurredOn: today,
+        tripId: 'trip1',
+        funding: 'savings',
       }),
       makeTransaction({
         id: 'i1',
@@ -72,6 +74,7 @@ vi.mock('@/features/categories/api/useCategories', () => ({
   }),
 }))
 vi.mock('@/features/groups/api/useGroups', () => ({ useMyGroups: () => ({ data: [] }) }))
+vi.mock('@/features/trips/api/useTrips', () => ({ useTrips: () => ({ data: [{ id: 'trip1', name: 'Brasil' }] }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
 
 function setup() {
@@ -96,6 +99,13 @@ describe('ActivityPage', () => {
     await user.type(screen.getByLabelText('Buscar por nota o categoría'), 'cena')
     expect(screen.getByText('1 movimiento')).toBeInTheDocument()
     expect(screen.queryByText('Sueldo octubre')).not.toBeInTheDocument()
+  })
+
+  it('says which trip a trip expense belongs to and when it was paid with savings', () => {
+    setup()
+    const row = screen.getByRole('button', { name: 'Ver detalle de Cena' })
+    expect(row).toHaveTextContent('Viaje · Brasil')
+    expect(row).toHaveTextContent('Con ahorros')
   })
 
   it('shows every movement by default, not only the current month', () => {

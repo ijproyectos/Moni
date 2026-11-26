@@ -68,6 +68,8 @@ interface ActivityScreenProps {
   accountNamesById: ReadonlyMap<string, string>
   /** Names of the groups, to tell where a group expense or payment belongs. */
   groupNamesById?: ReadonlyMap<string, string>
+  /** Names of the personal trips, to say which trip an expense belongs to. */
+  tripNamesById?: ReadonlyMap<string, string>
   categoryId: string | null
   onCategoryChange: (id: string | null) => void
   selectedDay: IsoDate | null
@@ -242,6 +244,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
             }
             accountName={accountNamesById.get(entry.transaction.accountId)}
             groupName={groupNameOf(entry.transaction, props.groupNamesById)}
+            tripName={entry.transaction.tripId ? (props.tripNamesById?.get(entry.transaction.tripId) ?? null) : null}
             today={today}
             withDay={withDay}
             onOpen={() => setDetail(entry.transaction)}
@@ -636,6 +639,7 @@ function TransactionRow({
   category,
   accountName,
   groupName,
+  tripName,
   today,
   withDay,
   onOpen,
@@ -646,6 +650,8 @@ function TransactionRow({
   category: Category | undefined
   accountName: string | undefined
   groupName: string | null
+  /** The trip it belongs to, when it is a trip expense. */
+  tripName?: string | null
   today: IsoDate
   withDay: boolean
   onOpen: () => void
@@ -679,7 +685,12 @@ function TransactionRow({
   const place =
     (groupLabel
       ? [groupLabel, groupName, accountName]
-      : [name !== categoryName ? categoryName : null, accountName]
+      : [
+          name !== categoryName ? categoryName : null,
+          tripName ? `Viaje · ${tripName}` : null,
+          transaction.funding === 'savings' ? 'Con ahorros' : null,
+          accountName,
+        ]
     )
       .filter(Boolean)
       .join(' · ') || day

@@ -201,7 +201,7 @@ using (exists (select 1 from public.trip_bookings b where b.id = booking_id and 
 create table public.trip_side_expenses (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users (id) on delete cascade,
-  trip_id uuid not null,
+  trip_id uuid,
   booking_id uuid references public.trip_bookings (id) on delete no action,
   amount numeric(14,2) not null check (amount > 0),
   currency text not null check (currency in ('ARS', 'USD')),
@@ -216,7 +216,9 @@ create table public.trip_side_expenses (
   created_at timestamptz not null default now(),
   foreign key (trip_id, owner_id) references public.trips (id, owner_id) on delete no action,
   check ((status = 'voided') = (voided_at is not null)),
-  check ((funding = 'savings') = (ahorro_entry_id is not null))
+  check ((funding = 'savings') = (ahorro_entry_id is not null)),
+  -- Outside a personal trip it can only be a payment of one of my personal bookings in a group trip.
+  check (trip_id is not null or booking_id is not null)
 );
 create index trip_side_expenses_trip_idx on public.trip_side_expenses (trip_id);
 alter table public.trip_side_expenses enable row level security;
@@ -248,16 +250,22 @@ set search_path = ''
 as $$
 declare
   v_trip uuid;
+  v_group uuid;
 begin
   if new.booking_id is null then
     return new;
   end if;
-  select b.trip_id into v_trip from public.trip_bookings b
-  where b.id = new.booking_id and b.owner_id = new.owner_id and b.trip_id is not null;
+  select b.trip_id, b.group_id into v_trip, v_group from public.trip_bookings b
+  where b.id = new.booking_id and b.owner_id = new.owner_id and b.scope = 'personal';
   if not found then
     raise exception 'booking_not_found' using errcode = '23503';
   end if;
-  if new.trip_id is null then
+  if v_trip is null then
+    -- A personal booking inside a group trip: its payments are my own movements, outside any personal trip.
+    if new.trip_id is not null then
+      raise exception 'booking_trip_mismatch' using errcode = '23514';
+    end if;
+  elsif new.trip_id is null then
     new.trip_id := v_trip;
   elsif new.trip_id <> v_trip then
     raise exception 'booking_trip_mismatch' using errcode = '23514';
@@ -358,7 +366,7 @@ set search_path = ''
 as $$
 declare
   v_owner uuid := (select auth.uid());
-  v_on date := coalesce(p_on, public.subscription_today());
+  v_on date := least(coalesce(p_on, public.subscription_today()), public.subscription_today());
   v_note text := nullif(btrim(p_description), '');
   v_ars numeric;
   v_entry uuid;
@@ -368,7 +376,15 @@ begin
   if v_owner is null then
     raise exception 'not_allowed' using errcode = '42501';
   end if;
-  if not exists (select 1 from public.trips t where t.id = p_trip and t.owner_id = v_owner) then
+  if p_trip is null then
+    -- Only a payment of one of my personal bookings of a group trip may go without a personal trip.
+    if p_booking is null or not exists (
+      select 1 from public.trip_bookings b
+      where b.id = p_booking and b.owner_id = v_owner and b.trip_id is null and b.scope = 'personal' and b.status = 'active'
+    ) then
+      raise exception 'trip_not_found' using errcode = '23503';
+    end if;
+  elsif not exists (select 1 from public.trips t where t.id = p_trip and t.owner_id = v_owner) then
     raise exception 'trip_not_found' using errcode = '23503';
   end if;
   if p_amount is null or p_amount <= 0 or p_amount >= 1000000000000 then
@@ -380,7 +396,7 @@ begin
   if p_funding is null or p_funding not in ('balance', 'savings', 'external') then
     raise exception 'invalid_funding' using errcode = '22023';
   end if;
-  if p_booking is not null and not exists (
+  if p_booking is not null and p_trip is not null and not exists (
     select 1 from public.trip_bookings b where b.id = p_booking and b.owner_id = v_owner and b.trip_id = p_trip and b.status = 'active'
   ) then
     raise exception 'booking_not_found' using errcode = '23503';
@@ -484,6 +500,37 @@ end;
 $$;
 revoke execute on function public.link_shared_expense_booking(uuid, uuid) from public, anon;
 grant execute on function public.link_shared_expense_booking(uuid, uuid) to authenticated;
+
+-- A shared expense I paid from an account can be funded from the savings reserved in that account: the withdrawal only releases the
+-- reservation (the account already lost the money), so the available balance is not charged twice. Voiding the expense voids it too.
+create or replace function public.fund_shared_payment_from_savings(p_expense uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := (select auth.uid());
+  t public.transactions%rowtype;
+  v_entry uuid;
+begin
+  select * into t from public.transactions
+  where owner_id = v_user and shared_expense_id = p_expense and status = 'posted' for update;
+  if not found then
+    raise exception 'payment_not_found' using errcode = '23503';
+  end if;
+  if t.ahorro_entry_id is not null then
+    return;
+  end if;
+  if public.ahorro_account_reserved(t.account_id) < t.amount then
+    raise exception 'not_enough_saved_in_account' using errcode = '23514';
+  end if;
+  v_entry := public.create_ahorro_entry('ARS', 'withdrawal', t.amount, least(t.occurred_on, public.subscription_today()), 'Gasto compartido de viaje', t.account_id, null);
+  update public.transactions set funding = 'savings', ahorro_entry_id = v_entry where id = t.id;
+end;
+$$;
+revoke execute on function public.fund_shared_payment_from_savings(uuid) from public, anon;
+grant execute on function public.fund_shared_payment_from_savings(uuid) to authenticated;
 
 -- What each shared booking has collected so far (everybody in the group sees the totals, never who funds what).
 create or replace function public.get_group_booking_paid(p_group uuid)

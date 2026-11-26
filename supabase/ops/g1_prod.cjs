@@ -61,13 +61,15 @@ const BATCHES = {
   R: [['20261212000000', 'purge_group_for_me'], ['20261212000100', 'contacts_exclude_deleted']],
   // S (Free: un solo grupo/viaje activo a la vez; sumarse a otro requiere Plus): después de R y junto con el front nuevo.
   S: [['20261213000000', 'free_participation_limit']],
+  // T (Viajes: organizador financiero): después de S y junto con el front nuevo. Aditivo: no modifica datos existentes.
+  T: [['20261214000000', 'trip_organizer']],
 }
 const batchArg = (process.argv.find((a) => a.startsWith('--lote=')) || '--lote=A').split('=')[1].toUpperCase()
-if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R o S')
+if (!BATCHES[batchArg]) throw new Error('Lote inválido: usar --lote=A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S o T')
 const MIGRATIONS = BATCHES[batchArg]
 const BACKUP_BASE = process.env.G1_BACKUP_DIR || path.join(os.homedir(), 'Desktop', 'MONI', 'backups-g1')
 // Funciones que el lote reemplaza (A: solo get_my_groups; B: las demás) y cuyo cuerpo actual debe coincidir con el repositorio.
-const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [], K: [], L: [], M: [], N: [], O: [], P: [], Q: [], R: [], S: [] }
+const REPLACED = { A: ['get_my_groups'], B: ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite'], C: [], D: [], E: [], F: [], G: [], H: [], I: [], J: [], K: [], L: [], M: [], N: [], O: [], P: [], Q: [], R: [], S: [], T: [] }
 const FUNCTIONS = ['create_group', 'leave_group', 'create_group_invite', 'revoke_group_invite', 'get_my_groups', 'join_group']
 // Cuerpos de las funciones que G1 reemplaza, tal como están en el repositorio (para detectar cambios en producción).
 const EXPECTED = {
@@ -213,6 +215,11 @@ async function preflight(c) {
     if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='group_invites' and column_name='personal') x")) issues.push('group_invites.personal ya existe')
     if (await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_personal_group_invite') x")) issues.push('create_personal_group_invite ya existe')
     if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='request_join_group') x"))) issues.push('falta request_join_group (lotes C y H)')
+  } else if (batchArg === 'T') {
+    if (!(await has("select exists(select 1 from pg_trigger where tgname='free_participation_limit') x"))) issues.push('falta el lote S')
+    if (await has("select exists(select 1 from information_schema.tables where table_schema='public' and table_name='trip_bookings') x")) issues.push('trip_bookings ya existe')
+    if (await has("select exists(select 1 from information_schema.columns where table_schema='public' and table_name='trips' and column_name='currency') x")) issues.push('trips.currency ya existe')
+    if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_ahorro_entry') x"))) issues.push('falta create_ahorro_entry (Ahorros)')
   } else if (batchArg === 'S') {
     if (!(await has("select exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='purge_group_for_me') x"))) issues.push('falta el lote R')
     if (await has("select exists(select 1 from pg_trigger where tgname='free_participation_limit') x")) issues.push('free_participation_limit ya existe')

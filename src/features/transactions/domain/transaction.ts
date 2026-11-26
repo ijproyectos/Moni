@@ -30,6 +30,14 @@ export interface Transaction {
   installmentsTotal: number | null
   /** Personal trip this expense belongs to (null for anything else). */
   tripId?: string | null
+  /** Category inside the trip (predefined key or custom category id) and the booking this expense is a payment of. */
+  tripCategory?: string | null
+  bookingId?: string | null
+  /** 'savings' when it was paid from savings (the movement says so). */
+  funding?: 'savings' | null
+  /** Amount in USD when it was loaded in dollars (`amountCents` is its peso equivalent). */
+  originalAmountCents?: Cents | null
+  originalCurrency?: string | null
   createdAt: string
 }
 

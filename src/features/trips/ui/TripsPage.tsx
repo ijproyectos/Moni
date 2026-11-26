@@ -17,7 +17,9 @@ import { PageHeader } from '@/shared/ui/PageHeader'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { isTripsNotEnabled } from '../api/tripsRepository'
-import { useGroupTrips, useTrips, useTripExpenses } from '../api/useTrips'
+import { useBookings, useGroupTrips, useSideExpenses, useTrips, useTripExpenses } from '../api/useTrips'
+import { useArsPerUsd } from '../api/useArsPerUsd'
+import { bookingStates, spendFromMovement, spendFromSide, tripFinance } from '../domain/tripFinance'
 import { rangeLabel } from '../domain/dates'
 import { summarizeTrip, tripExpenses } from '../domain/trip'
 import { NewTripSheet, type NewTripStart } from './NewTripSheet'
@@ -87,6 +89,9 @@ export function TripsPage() {
 function PersonalTrips({ onNew }: { onNew: () => void }) {
   const trips = useTrips()
   const expenses = useTripExpenses()
+  const side = useSideExpenses()
+  const bookingsQuery = useBookings()
+  const arsPerUsd = useArsPerUsd()
   const today = todayIso()
 
   if (trips.isLoading) {
@@ -126,10 +131,27 @@ function PersonalTrips({ onNew }: { onNew: () => void }) {
     )
   }
 
-  const cards = all.map((trip) => ({
-    trip,
-    summary: summarizeTrip(trip, tripExpenses(trip.id, expenses.data ?? []), today),
-  }))
+  const cards = all.map((trip) => {
+    const items = [
+      ...tripExpenses(trip.id, expenses.data ?? []).map(spendFromMovement),
+      ...(side.data ?? []).filter((r) => r.trip_id === trip.id).map(spendFromSide),
+    ]
+    const bookings = bookingStates((bookingsQuery.data ?? []).filter((b) => b.tripId === trip.id), items, arsPerUsd)
+    return {
+      trip,
+      summary: summarizeTrip(trip, tripExpenses(trip.id, expenses.data ?? []), today),
+      finance: tripFinance({
+        currency: trip.currency ?? 'ARS',
+        budgetCents: trip.budgetCents,
+        startsOn: trip.startsOn,
+        endsOn: trip.endsOn,
+        today,
+        items,
+        bookings,
+        arsPerUsd,
+      }),
+    }
+  })
   const current = cards.filter((c) => c.summary.status !== 'ended' && !c.trip.archivedAt)
   const past = cards
     .filter((c) => c.summary.status === 'ended' || c.trip.archivedAt)
@@ -138,13 +160,13 @@ function PersonalTrips({ onNew }: { onNew: () => void }) {
   return (
     <>
       {current.map((c) => (
-        <PersonalTripCard key={c.trip.id} trip={c.trip} summary={c.summary} today={today} />
+        <PersonalTripCard key={c.trip.id} trip={c.trip} summary={c.summary} finance={c.finance} today={today} />
       ))}
       {past.length > 0 && (
         <>
           <h2 className="mt-2 text-[22px] font-extrabold">Pasados</h2>
           {past.map((c) => (
-            <PersonalTripCard key={c.trip.id} trip={c.trip} summary={c.summary} today={today} />
+            <PersonalTripCard key={c.trip.id} trip={c.trip} summary={c.summary} finance={c.finance} today={today} />
           ))}
         </>
       )}
@@ -234,7 +256,7 @@ function GroupTrips({ onNew }: { onNew: () => void }) {
                 </span>
                 <span className="block text-[15px] text-text-muted">
                   {g.memberCount + (overlay?.guests.length ?? 0)} personas
-                  {info && ` · Presupuesto ${money(info.budgetCents)}`}
+                  {info && info.budgetCents > 0 && ` · Presupuesto ${money(info.budgetCents)}`}
                 </span>
               </span>
             </div>

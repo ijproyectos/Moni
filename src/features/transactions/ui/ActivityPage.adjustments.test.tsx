@@ -60,6 +60,7 @@ vi.mock('@/features/cards/api/useCards', () => ({
 }))
 vi.mock('@/features/categories/api/useCategories', () => ({ useCategories: () => ({ data: [] }) }))
 vi.mock('@/features/groups/api/useGroups', () => ({ useMyGroups: () => ({ data: [] }) }))
+vi.mock('@/features/trips/api/useTrips', () => ({ useTrips: () => ({ data: [] }) }))
 vi.mock('@/features/accounts/api/useAccounts', () => ({ useAccounts: () => ({ data: [] }) }))
 
 describe('Activity: adjustments and incoming settlements', () => {

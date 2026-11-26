@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
-import { formatArs } from '@/shared/lib/money'
 import { ProgressBar } from '@/shared/ui/kit'
 import { rangeLabel } from '../domain/dates'
+import { moneyIn } from '../domain/money'
+import type { TripFinance } from '../domain/tripFinance'
 import { DestinationGlyph } from './DestinationGlyph'
 import { tripTimeLabel, type PersonalTrip, type TripSummary } from '../domain/trip'
 
@@ -9,10 +10,12 @@ import { tripTimeLabel, type PersonalTrip, type TripSummary } from '../domain/tr
 export function PersonalTripCard({
   trip,
   summary,
+  finance,
   today,
 }: {
   trip: PersonalTrip
   summary: TripSummary
+  finance: TripFinance
   today: string
 }) {
   const ended = summary.status === 'ended' || Boolean(trip.archivedAt)
@@ -60,18 +63,24 @@ export function PersonalTripCard({
       <div
         className={`mt-4 flex flex-wrap justify-between gap-x-3 text-[15px] font-extrabold ${muted}`}
       >
-        <span>Gastaste {formatArs(summary.spentCents)}</span>
-        <span>Presupuesto {formatArs(trip.budgetCents)}</span>
+        <span>Gastaste {moneyIn(finance.spentCents, finance.currency)}</span>
+        {finance.hasBudget ? (
+          <span>Presupuesto {moneyIn(finance.budgetCents, finance.currency)}</span>
+        ) : finance.pendingCents > 0 ? (
+          <span>Pendiente {moneyIn(finance.pendingCents, finance.currency)}</span>
+        ) : null}
       </div>
-      <ProgressBar
-        value={summary.progress}
-        tone={ended ? 'light' : 'dark'}
-        className="mt-2"
-        label={`Gastado del presupuesto de ${trip.name}`}
-      />
-      {summary.overBudget && (
+      {finance.hasBudget && (
+        <ProgressBar
+          value={finance.committedShare ?? 0}
+          tone={ended ? 'light' : 'dark'}
+          className="mt-2"
+          label={`Gastado del presupuesto de ${trip.name}`}
+        />
+      )}
+      {finance.overBudget && finance.availableCents !== null && (
         <p className={`mt-2 text-[14px] font-extrabold ${ended ? 'text-expense' : 'text-expense-on-dark'}`}>
-          Te pasaste {formatArs(-summary.remainingCents)} del presupuesto
+          Te pasaste {moneyIn(-finance.availableCents, finance.currency)} del presupuesto
         </p>
       )}
     </Link>

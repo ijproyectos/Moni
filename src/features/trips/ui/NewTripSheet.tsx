@@ -142,6 +142,8 @@ function GroupTripForm({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
   const [dates, setDates] = useState({ startsOn: defaults.startsOn, endsOn: defaults.endsOn })
   const [budgetText, setBudgetText] = useState('')
+  const [destination, setDestination] = useState('')
+  const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS')
   const [picking, setPicking] = useState<null | 'from' | 'to'>(null)
   const [error, setError] = useState<string | null>(null)
   const [source, setSource] = useState<'existing' | 'new'>('existing')
@@ -164,6 +166,8 @@ function GroupTripForm({ onClose }: { onClose: () => void }) {
       name: effectiveSource === 'new' ? name : 'grupo',
       ...dates,
       budget: budgetText,
+      destination,
+      currency,
     })
     if (!result.success) return setError(result.error.issues[0]?.message ?? 'Revisá los datos.')
     try {
@@ -247,10 +251,27 @@ function GroupTripForm({ onClose }: { onClose: () => void }) {
             </p>
           </>
         )}
+        <input
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+          aria-label="Destino"
+          maxLength={80}
+          placeholder="Destino (opcional)"
+          className={tripFieldClass}
+        />
+        <SegmentedControl
+          label="Moneda principal del viaje"
+          value={currency}
+          onChange={setCurrency}
+          options={[
+            { value: 'ARS', label: 'Pesos' },
+            { value: 'USD', label: 'Dólares' },
+          ]}
+        />
         <TripDatesBudget
           {...dates}
           budgetText={budgetText}
-          budgetLabel="Presupuesto del grupo"
+          budgetLabel="Presupuesto del grupo (opcional)"
           budgetCents={budgetCents}
           onPick={setPicking}
           onBudgetChange={setBudgetText}
