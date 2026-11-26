@@ -35,7 +35,7 @@ export interface ExportableTransaction {
   amountCents: Cents
   occurredOn: IsoDate
   categoryId: string | null
-  accountId: string
+  accountId: string | null
   note: string | null
 }
 
@@ -50,7 +50,7 @@ export function buildMovementRows(
     KIND_LABELS[t.kind] ?? t.kind,
     Number(fromCents(t.amountCents)),
     t.categoryId ? categoryNameById.get(t.categoryId) ?? '' : '',
-    accountNameById.get(t.accountId) ?? '',
+    t.accountId ? (accountNameById.get(t.accountId) ?? '') : 'Ahorros',
     t.note ?? '',
   ])
   return [[...MOVEMENT_COLUMNS], ...rows]

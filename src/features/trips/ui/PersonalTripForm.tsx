@@ -92,14 +92,6 @@ export function PersonalTripForm({
           placeholder="Destino (opcional) · Ej: Florianópolis"
           className={tripFieldClass}
         />
-        <TripDatesBudget
-          {...dates}
-          budgetText={budgetText}
-          budgetLabel="Presupuesto (opcional)"
-          budgetCents={budgetCents}
-          onPick={setPicking}
-          onBudgetChange={setBudgetText}
-        />
         <SegmentedControl
           label="Moneda principal del viaje"
           value={currency}
@@ -108,6 +100,15 @@ export function PersonalTripForm({
             { value: 'ARS', label: 'Pesos' },
             { value: 'USD', label: 'Dólares' },
           ]}
+        />
+        <TripDatesBudget
+          {...dates}
+          budgetText={budgetText}
+          budgetLabel="Presupuesto (opcional)"
+          currency={currency}
+          budgetCents={budgetCents}
+          onPick={setPicking}
+          onBudgetChange={setBudgetText}
         />
         <SectionLabel>¿De dónde sale la plata? (opcional)</SectionLabel>
         {funding ? (

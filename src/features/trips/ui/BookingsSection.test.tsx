@@ -9,7 +9,7 @@ const booking = (over: Partial<TripBooking> = {}): TripBooking => ({
   origin: null, destination: null, address: 'Rua 1', startsOn: '2026-12-10', endsOn: '2026-12-15', totalCents: 700_00, currency: 'USD',
   payDeadline: '2999-01-01', notes: null, status: 'active', participants: [], ...over,
 })
-const paid = (cents: number) => ({ id: 'p', source: 'movement' as const, occurredOn: '2026-11-01', title: '', categoryKey: null, bookingId: 'b1', funding: 'balance' as const, ars: null, usd: cents })
+const paid = (cents: number) => ({ id: 'p', source: 'movement' as const, occurredOn: '2026-11-01', title: '', categoryKey: null, bookingId: 'b1', funding: 'balance' as const, ars: null, usd: cents, tripValue: null, tripCurrency: null, tripFxRate: null })
 
 function setup(b = booking(), items = [paid(200_00)], actions: Record<string, unknown> = {}) {
   const calls = { pay: vi.fn(), edit: vi.fn(), setCancelled: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined), link: vi.fn(), ...actions }

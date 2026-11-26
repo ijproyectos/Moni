@@ -25,6 +25,7 @@ import {
   listSideExpenses,
   listTripCategories,
   setBookingCancelled,
+  setTripExpenseRate,
   setMyGroupFunding,
   updateBooking,
   voidSideExpense,
@@ -240,4 +241,12 @@ export function useSetMyGroupFunding() {
 export function useFundSharedPaymentFromSavings() {
   const refresh = useRefreshTripMoney()
   return useMutation({ mutationFn: (expenseId: string) => fundSharedPaymentFromSavings(expenseId), onSuccess: refresh })
+}
+
+export function useSetTripExpenseRate() {
+  const refresh = useRefreshTripMoney()
+  return useMutation({
+    mutationFn: ({ kind, id, rate }: { kind: 'transaction' | 'side'; id: string; rate: number }) => setTripExpenseRate(kind, id, rate),
+    onSuccess: refresh,
+  })
 }

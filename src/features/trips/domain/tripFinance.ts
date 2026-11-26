@@ -23,6 +23,10 @@ export interface SpendItem {
   /** The value in pesos and in dollars when known (each one only if it was really recorded in that currency). */
   ars: Cents | null
   usd: Cents | null
+  /** The value in the trip's currency and the rate used, FIXED when the expense was registered (never recalculated with another day's rate). */
+  tripValue: Cents | null
+  tripCurrency: TripCurrency | null
+  tripFxRate: number | null
   movement?: Transaction
 }
 
@@ -36,9 +40,11 @@ export interface SideExpenseRow {
   trip_category: string | null
   booking_id: string | null
   funding: 'external' | 'savings'
+  trip_amount?: number | string | null
+  trip_fx_rate?: number | string | null
 }
 
-export function spendFromMovement(t: Transaction): SpendItem {
+export function spendFromMovement(t: Transaction, tripCurrency: TripCurrency | null = null): SpendItem {
   const usd = t.originalCurrency === 'USD' && t.originalAmountCents ? t.originalAmountCents : null
   return {
     id: t.id,
@@ -50,11 +56,14 @@ export function spendFromMovement(t: Transaction): SpendItem {
     funding: t.funding === 'savings' ? 'savings' : 'balance',
     ars: t.amountCents,
     usd,
+    tripValue: t.tripAmountCents ?? null,
+    tripCurrency,
+    tripFxRate: t.tripFxRate ?? null,
     movement: t,
   }
 }
 
-export function spendFromSide(row: SideExpenseRow): SpendItem {
+export function spendFromSide(row: SideExpenseRow, tripCurrency: TripCurrency | null = null): SpendItem {
   const cents = toCents(row.amount)
   const rate = row.fx_rate == null ? null : Number(row.fx_rate)
   const isUsd = row.currency === 'USD'
@@ -68,6 +77,9 @@ export function spendFromSide(row: SideExpenseRow): SpendItem {
     funding: row.funding,
     ars: isUsd ? (rate ? Math.round(cents * rate) : null) : cents,
     usd: isUsd ? cents : null,
+    tripValue: row.trip_amount == null ? null : toCents(row.trip_amount),
+    tripCurrency,
+    tripFxRate: row.trip_fx_rate == null ? null : Number(row.trip_fx_rate),
   }
 }
 
@@ -78,13 +90,14 @@ export function convertCents(cents: Cents, from: TripCurrency, to: TripCurrency,
   return from === 'USD' ? Math.round(cents * arsPerUsd) : Math.round(cents / arsPerUsd)
 }
 
-/** The item's value in a currency: the recorded one when it exists, otherwise converted with the rate, otherwise null. */
-export function valueIn(item: Pick<SpendItem, 'ars' | 'usd'>, currency: TripCurrency, arsPerUsd: number | null): Cents | null {
-  const own = currency === 'USD' ? item.usd : item.ars
-  if (own !== null) return own
-  const other = currency === 'USD' ? item.ars : item.usd
-  if (other === null) return null
-  return convertCents(other, currency === 'USD' ? 'ARS' : 'USD', currency, arsPerUsd)
+/**
+ * The item's value in a currency, ONLY from what was recorded when it was registered: the value fixed in the trip's currency, or the
+ * amount in that same currency. Today's rate is never used, so a historical expense never changes; with nothing recorded it is null
+ * («sin convertir») until its rate is entered.
+ */
+export function valueIn(item: Pick<SpendItem, 'ars' | 'usd' | 'tripValue' | 'tripCurrency'>, currency: TripCurrency): Cents | null {
+  if (item.tripValue !== null && item.tripCurrency === currency) return item.tripValue
+  return currency === 'USD' ? item.usd : item.ars
 }
 
 export interface BookingState {
@@ -112,7 +125,7 @@ export function bookingStates(
     let paid = 0
     let unconverted = false
     for (const item of linked) {
-      const value = valueIn(item, booking.currency, arsPerUsd)
+      const value = valueIn(item, booking.currency)
       if (value === null) unconverted = true
       else paid += value
     }
@@ -179,7 +192,7 @@ export function tripFinance(input: {
   let unconvertedCount = 0
   const totals = new Map<string, number>()
   for (const item of input.items) {
-    const value = valueIn(item, currency, arsPerUsd)
+    const value = valueIn(item, currency)
     if (value === null) {
       unconvertedCount += 1
       continue

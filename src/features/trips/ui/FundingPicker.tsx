@@ -15,7 +15,7 @@ const SOURCES: readonly { value: FundSource; label: string }[] = [
 
 const HINTS: Record<FundSource, string> = {
   balance: 'Se descuenta de tu saldo y de la cuenta o tarjeta que elijas.',
-  savings: 'Sale de tus ahorros: no se descuenta dos veces de tu saldo disponible.',
+  savings: 'Sale de tus ahorros y queda en Movimientos con origen «Ahorros». No hace falta una cuenta y no se descuenta dos veces.',
   external: 'Queda solo en el viaje: no toca tus saldos, ahorros ni medios de pago.',
 }
 
@@ -91,7 +91,7 @@ export function FundingPicker({
               onChange={(e) => onChange({ ...value, accountId: e.target.value || null, ahorroCurrency: 'ARS' })}
               className={tripFieldClass}
             >
-              <option value="">Sin cuenta (solo en Ahorros y el viaje)</option>
+              <option value="">Directo de mis ahorros (sin cuenta)</option>
               {reservedAccounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} · {formatSaving(reserved.get(a.id) ?? 0, 'ARS')} reservados

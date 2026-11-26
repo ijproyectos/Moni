@@ -92,7 +92,7 @@ describe('GroupTripPanel', () => {
     data.funding = { source: 'external', accountId: null, ahorroCurrency: null }
     const user = userEvent.setup()
     render(<GroupTripPanel {...props} />)
-    const button = screen.getByRole('button', { name: /Mi origen de la plata: De otro lado · solo lo ves vos/ })
+    const button = screen.getByRole('button', { name: /Mi origen de la plata: De otro lado/ })
     await user.click(button)
     const dialog = screen.getByRole('dialog', { name: 'Mi origen de la plata' })
     expect(within(dialog).getByText(/nadie más del viaje ve tus ahorros, saldos ni medios de pago/)).toBeVisible()

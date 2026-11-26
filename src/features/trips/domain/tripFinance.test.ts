@@ -64,27 +64,34 @@ describe('reservas canceladas, pagadas de más y monedas', () => {
     expect(states[0]).toMatchObject({ pendingCents: 0, overpaid: true })
   })
 
-  it('a peso payment of a dollar booking is converted with the rate; with no rate it is flagged, never guessed', () => {
-    const peso = spendFromMovement(makeTransaction({ amountCents: 120_000_00, bookingId: 'b1' }))
+  it('a peso payment of a dollar booking counts with the value FIXED when it was registered, whatever today\'s rate is', () => {
+    const peso = spendFromMovement(makeTransaction({ amountCents: 120_000_00, bookingId: 'b1', tripAmountCents: 100_00, tripFxRate: 1200 }), 'USD')
     expect(bookingStates([booking()], [peso], 1200)[0]?.paidCents).toBe(100_00)
-    const unknown = bookingStates([booking()], [peso], null)[0]
+    expect(bookingStates([booking()], [peso], 9999)[0]?.paidCents).toBe(100_00)
+    expect(tripFinance({ ...base, currency: 'USD', budgetCents: 1000_00, items: [peso], bookings: [], arsPerUsd: 9999 }).spentCents).toBe(100_00)
+  })
+
+  it('with no rate recorded it is flagged «sin convertir» and today\'s rate is NOT used to guess it', () => {
+    const peso = spendFromMovement(makeTransaction({ amountCents: 120_000_00, bookingId: 'b1' }), 'USD')
+    const unknown = bookingStates([booking()], [peso], 1200)[0]
     expect(unknown?.paidCents).toBe(0)
     expect(unknown?.unconverted).toBe(true)
-    const f = tripFinance({ ...base, currency: 'USD', budgetCents: 1000_00, items: [peso], bookings: [], arsPerUsd: null })
+    const f = tripFinance({ ...base, currency: 'USD', budgetCents: 1000_00, items: [peso], bookings: [], arsPerUsd: 1200 })
     expect(f.unconvertedCount).toBe(1)
     expect(f.spentCents).toBe(0)
   })
 
   it('a trip in dollars reads the recorded USD of a movement, not a recalculation', () => {
     const item = usd(80_00)
-    expect(valueIn(item, 'USD', 999)).toBe(80_00)
-    expect(valueIn(item, 'ARS', 999)).toBe(80_00 * 1200)
+    expect(valueIn(item, 'USD')).toBe(80_00)
+    expect(valueIn(item, 'ARS')).toBe(80_00 * 1200)
   })
 
   it('side expenses: dollars with its own rate give the pesos; pesos need a rate to be dollars', () => {
     const side = spendFromSide({ id: 's', amount: 60, currency: 'USD', fx_rate: 1000, description: 'Tour', occurred_on: '2026-12-02', trip_category: 'actividades', booking_id: null, funding: 'external' })
     expect(side.usd).toBe(60_00)
     expect(side.ars).toBe(60_000_00)
+    expect(valueIn(spendFromSide({ id: 'p', amount: 500, currency: 'ARS', fx_rate: null, description: null, occurred_on: '2026-12-02', trip_category: null, booking_id: null, funding: 'external' }, 'USD'), 'USD')).toBeNull()
     expect(convertCents(1000_00, 'ARS', 'USD', null)).toBeNull()
     expect(convertCents(1200_00, 'ARS', 'USD', 1200)).toBe(100)
   })

@@ -48,6 +48,7 @@ vi.mock('../api/useTrips', () => ({
   useCreateBooking: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateBooking: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateTripCategory: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useSetTripExpenseRate: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
 vi.mock('@/features/categories/api/useCategories', () => ({
   useCategories: () => ({
@@ -333,5 +334,25 @@ describe('PersonalTripPage', () => {
     renderPage()
     const card = screen.getByRole('region', { name: 'Moni te cuenta' })
     expect(card).toHaveTextContent('Después de cubrir tus reservas, te quedan $210.000 de presupuesto para disfrutar el viaje.')
+  })
+
+  it('an expense in another currency saved without a rate is flagged, left out of the total, and its rate can be entered', async () => {
+    state.trips = { data: [{ ...trip, currency: 'USD', budgetCents: 1000_00 }], isLoading: false, isError: false, error: null }
+    state.expenses = { data: [makeTransaction({ id: 'p', tripId: 't1', amountCents: 60_000_00, note: 'Cena', categoryId: 'food' })], isLoading: false }
+    const { user } = renderPage()
+    expect(screen.getByRole('region', { name: 'Presupuesto del viaje' })).toHaveTextContent('todavía no está en este total porque se guardó sin cotización')
+    await user.click(screen.getByRole('button', { name: /Sin cotización · Agregar/ }))
+    const dialog = screen.getByRole('dialog', { name: 'Agregar cotización' })
+    expect(dialog).toHaveTextContent('queda fija')
+  })
+
+  it('the value fixed at registration is what counts: a historical expense does not move with the rate of today', () => {
+    state.trips = { data: [{ ...trip, currency: 'USD', budgetCents: 1000_00 }], isLoading: false, isError: false, error: null }
+    state.expenses = {
+      data: [makeTransaction({ id: 'p', tripId: 't1', amountCents: 60_000_00, note: 'Cena', categoryId: 'food', tripAmountCents: 50_00, tripFxRate: 1200 })],
+      isLoading: false,
+    }
+    renderPage()
+    expect(screen.getByRole('region', { name: 'Presupuesto del viaje' })).toHaveTextContent('Gastos registrados (pagado)US$ 50')
   })
 })

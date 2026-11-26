@@ -33,13 +33,13 @@ export function TripCategoryPicker({ value, onChange }: { value: string | null; 
     <div className="flex flex-col gap-2">
       <div role="group" aria-label="Categoría del gasto" className="flex flex-wrap gap-2">
         {categories.map((c) => (
-          <ChoiceChip key={c.key} selected={value === c.key} onClick={() => onChange(c.key)} className="min-h-10 gap-1.5 px-3 text-[14px]">
-            <TripCategoryIcon icon={c.icon} className="size-4" />
-            {c.label}
+          <ChoiceChip key={c.key} selected={value === c.key} onClick={() => onChange(c.key)} className="min-h-9 gap-1 px-2.5 text-[13px]">
+            <TripCategoryIcon icon={c.icon} className="size-3.5" />
+            {c.short ?? c.label}
           </ChoiceChip>
         ))}
         {!adding && (
-          <ChoiceChip onClick={() => setAdding(true)} className="min-h-10 gap-1.5 px-3 text-[14px]" aria-label="Agregar categoría">
+          <ChoiceChip onClick={() => setAdding(true)} className="min-h-9 gap-1 px-2.5 text-[13px]" aria-label="Agregar categoría">
             <Plus aria-hidden="true" className="size-4" /> Otra
           </ChoiceChip>
         )}

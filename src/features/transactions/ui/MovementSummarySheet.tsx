@@ -47,12 +47,13 @@ export function MovementSummarySheet({ transaction, category, accountName, group
   const note = transaction.note?.trim() || null
   const title = note ?? groupLabel ?? categoryName ?? typeLabel(transaction.kind)
   const Icon = getCategoryIcon(adjustment ? null : category?.icon)
-  const editable = (transaction.kind === 'expense' || transaction.kind === 'income') && transaction.installmentPlanId === null
+  const editable = (transaction.kind === 'expense' || transaction.kind === 'income') && transaction.installmentPlanId === null && transaction.accountId !== null
   const deletable = !isOpening(transaction.kind) && !groupLabel
   const groupId = transaction.groupId ?? null
 
   const rows: [string, string][] = [['Fecha', formatLongDay(transaction.occurredOn)]]
   if (accountName) rows.push(['Medio de pago', accountName])
+  if (transaction.funding === 'savings') rows.push(['Origen', 'Ahorros'])
   if (categoryName && !adjustment) rows.push(['Categoría', categoryName])
   if (note && title !== note) rows.push(['Nota', note])
   if (groupName) rows.push(['Grupo', groupName])

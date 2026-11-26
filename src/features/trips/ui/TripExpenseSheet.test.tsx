@@ -104,4 +104,42 @@ describe('TripExpenseSheet', () => {
     expect(await screen.findByRole('alert')).toBeVisible()
     expect(onClose).not.toHaveBeenCalled()
   })
+
+  it('pesos in a trip in dollars: the rate is optional and, with none, it says why the expense will not be in the converted total yet', async () => {
+    const { user } = setup({ trip: { id: 't1', currency: 'USD', funding: { source: 'balance', accountId: 'a1', ahorroCurrency: null } } })
+    await user.click(screen.getByRole('button', { name: 'Pesos' }))
+    expect(screen.getByLabelText('Cotización del dólar')).toBeVisible()
+    expect(screen.getByText(/no suma al total convertido del viaje hasta que ingreses la cotización/)).toBeVisible()
+    await user.type(screen.getByLabelText('Importe'), '60000')
+    await user.click(screen.getByRole('button', { name: 'Cargar gasto' }))
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(1))
+    expect(add.mock.calls[0]?.[0]).toMatchObject({ currency: 'ARS', fxRate: null })
+  })
+
+  it('the rate typed is the one saved with the expense; the day\'s one is only the default', async () => {
+    rate.value = 1180
+    const { user } = setup({ trip: { id: 't1', currency: 'ARS', funding: { source: 'external', accountId: null, ahorroCurrency: null } } })
+    await user.click(screen.getByRole('button', { name: 'Dólares' }))
+    expect(screen.getByText(/se guarda la de hoy \(1180\) y queda fija/)).toBeVisible()
+    await user.type(screen.getByLabelText('Importe'), '118000')
+    await user.click(screen.getByRole('button', { name: 'Cargar gasto' }))
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(1))
+    expect(add.mock.calls[0]?.[0].fxRate).toBe(1180)
+    add.mockClear()
+    await user.type(screen.getByLabelText('Cotización del dólar'), '1250')
+    await user.click(screen.getByRole('button', { name: 'Cargar gasto' }))
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(1))
+    expect(add.mock.calls[0]?.[0].fxRate).toBe(1250)
+  })
+
+  it('dollars from my savings need the rate too (the movement is kept in pesos), and say how to proceed when there is none', async () => {
+    const { user } = setup()
+    await user.click(screen.getByRole('button', { name: 'Mis ahorros' }))
+    await user.click(screen.getByRole('button', { name: 'Dólares' }))
+    await user.type(screen.getByLabelText('Importe'), '50')
+    await user.click(screen.getByRole('button', { name: 'Cargar gasto' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('la necesitamos para registrar el gasto en pesos en Movimientos')
+    expect(screen.getByText(/ingresala a mano/)).toBeVisible()
+    expect(add).not.toHaveBeenCalled()
+  })
 })

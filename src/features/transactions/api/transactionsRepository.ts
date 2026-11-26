@@ -43,6 +43,8 @@ export function toTransaction(
     funding: row.funding ?? null,
     originalAmountCents: row.original_amount == null ? null : toCents(row.original_amount),
     originalCurrency: row.original_currency ?? null,
+    tripAmountCents: row.trip_amount == null ? null : toCents(row.trip_amount),
+    tripFxRate: row.trip_fx_rate == null ? null : Number(row.trip_fx_rate),
     createdAt: row.created_at,
   }
 }

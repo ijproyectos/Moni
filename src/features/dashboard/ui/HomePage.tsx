@@ -105,7 +105,7 @@ export function HomePage() {
           <MovementSummarySheet
             transaction={t}
             category={t.categoryId ? categoryById.get(t.categoryId) : undefined}
-            accountName={accountNameById.get(t.accountId)}
+            accountName={t.accountId ? accountNameById.get(t.accountId) : undefined}
             groupName={t.groupId ? (groupNameById.get(t.groupId) ?? null) : null}
             onClose={api.onClose}
             onEdit={() => {

@@ -15,7 +15,7 @@ const trip = {
 
 function renderCard(spentCents: number, today = '2026-11-04') {
   const summary = summarizeTrip(trip, [{ amountCents: spentCents } as never], today)
-  const items: SpendItem[] = [{ id: 'x', source: 'movement', occurredOn: today, title: '', categoryKey: null, bookingId: null, funding: 'balance', ars: spentCents, usd: null }]
+  const items: SpendItem[] = [{ id: 'x', source: 'movement', occurredOn: today, title: '', categoryKey: null, bookingId: null, funding: 'balance', ars: spentCents, usd: null, tripValue: null, tripCurrency: null, tripFxRate: null }]
   const finance = tripFinance({ currency: 'ARS', budgetCents: trip.budgetCents, startsOn: trip.startsOn, endsOn: trip.endsOn, today, items, bookings: [], arsPerUsd: null })
   render(
     <MemoryRouter>

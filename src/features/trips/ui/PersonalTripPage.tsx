@@ -43,7 +43,8 @@ import { daysBetween, rangeLabel } from '../domain/dates'
 import { moneyIn } from '../domain/money'
 import { tripExpenses } from '../domain/trip'
 import { allTripCategories, categoryOf } from '../domain/tripCategories'
-import { bookingStates, spendFromMovement, spendFromSide, tripFinance, type BookingState, type SpendItem } from '../domain/tripFinance'
+import { bookingStates, spendFromMovement, spendFromSide, tripFinance, valueIn, type BookingState, type SpendItem } from '../domain/tripFinance'
+import { RateSheet } from './RateSheet'
 import { tripInsights } from '../domain/tripInsights'
 import { BookingSheet } from './BookingSheet'
 import { BookingsSection, LinkExpenseSheet } from './BookingsSection'
@@ -85,6 +86,7 @@ export function PersonalTripPage() {
   const [linking, setLinking] = useState<BookingState | null>(null)
   const [pendingSideVoid, setPendingSideVoid] = useState<SpendItem | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const [rateFor, setRateFor] = useState<SpendItem | null>(null)
 
   async function confirmVoid() {
     if (!pendingVoid) return
@@ -137,8 +139,8 @@ export function PersonalTripPage() {
   const categoryById = new Map((categories.data ?? []).map((c) => [c.id, c]))
   const tripCategories = allTripCategories(customCategories.data ?? [])
   const items: SpendItem[] = [
-    ...expenses.map(spendFromMovement),
-    ...(sideQuery.data ?? []).filter((r) => r.trip_id === trip.id).map(spendFromSide),
+    ...expenses.map((t) => spendFromMovement(t, currency)),
+    ...(sideQuery.data ?? []).filter((r) => r.trip_id === trip.id).map((r) => spendFromSide(r, currency)),
   ].sort((a, b) => (a.occurredOn < b.occurredOn ? 1 : a.occurredOn > b.occurredOn ? -1 : 0))
   const bookings = (bookingsQuery.data ?? []).filter((b) => b.tripId === trip.id)
   const states = bookingStates(bookings, items, arsPerUsd)
@@ -261,14 +263,15 @@ export function PersonalTripPage() {
               const t = item.movement
               const name = describe(item)
               const tripCategory = categoryOf(item.categoryKey, tripCategories)
-              const origin = item.funding === 'savings' ? ' · con ahorros' : item.source === 'side' ? ' · de otro lado' : ''
+              const origin = item.funding === 'savings' ? ' · Ahorros' : item.source === 'side' ? ' · de otro lado' : ''
+              const noRate = valueIn(item, currency) === null
               const amount = item.usd !== null && currency === 'USD' ? moneyIn(item.usd, 'USD') : item.ars !== null ? money(-item.ars) : moneyIn(item.usd ?? 0, 'USD')
               return (
                 <li key={`${item.source}-${item.id}`}>
                   <SwipeRow
                     surfaceClassName="bg-card"
                     leadingAction={
-                      t
+                      t && t.accountId !== null
                         ? { label: 'Editar', tone: 'primary', icon: <Pencil className="size-5" strokeWidth={2.2} />, ariaLabel: `Editar ${name}`, onPress: () => openEdit(t) }
                         : undefined
                     }
@@ -289,12 +292,21 @@ export function PersonalTripPage() {
                         </span>
                       }
                       title={name}
-                      subtitle={`${tripCategory.label} · ${formatRelativeDay(item.occurredOn, today)}${origin}`}
+                      subtitle={`${tripCategory.label === name ? '' : tripCategory.label + ' · '}${formatRelativeDay(item.occurredOn, today)}${origin}`}
                       trailing={amount}
                       onPress={t ? () => setOpened(t) : undefined}
                       pressLabel={`Ver detalle de ${name}`}
                     />
                   </SwipeRow>
+                  {noRate && (
+                    <button
+                      type="button"
+                      onClick={() => setRateFor(item)}
+                      className="mb-2 ml-14 min-h-9 rounded-full border-2 border-dashed border-line px-3 text-[13px] font-extrabold text-text-muted"
+                    >
+                      Sin cotización · Agregar
+                    </button>
+                  )}
                 </li>
               )
             })}
@@ -361,6 +373,16 @@ export function PersonalTripPage() {
             setEditing(false)
             toast.show('Viaje actualizado')
           }}
+        />
+      )}
+      {rateFor && (
+        <RateSheet
+          kind={rateFor.source === 'movement' ? 'transaction' : 'side'}
+          id={rateFor.id}
+          title={describe(rateFor)}
+          tripCurrency={currency}
+          suggested={arsPerUsd}
+          onClose={() => setRateFor(null)}
         />
       )}
       {expenseOpen && <TripExpenseSheet trip={{ id: trip.id, currency, funding: trip.funding }} onClose={() => setExpenseOpen(false)} />}

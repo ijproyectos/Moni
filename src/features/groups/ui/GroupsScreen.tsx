@@ -58,7 +58,7 @@ function subtitle(group: ListedGroup): string {
 }
 
 /** Icon of a group row: round, mint for the first (couple) kind, soft mint otherwise; a photo takes its place. */
-function GroupRowIcon({ group }: { group: ListedGroup }) {
+export function GroupRowIcon({ group }: { group: Pick<ListedGroup, 'kind' | 'photoUrl'> }) {
   const Icon = GROUP_KIND_ICONS[group.kind]
   // The failed address, so a new photo (another address) is tried again.
   const [failedUrl, setFailedUrl] = useState<string | null>(null)

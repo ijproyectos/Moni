@@ -8,7 +8,7 @@ const booking = (over: Partial<TripBooking> = {}): TripBooking => ({
   notes: null, status: 'active', participants: [], ...over,
 })
 const item = (id: string, usd: number, category: string, bookingId: string | null = null): SpendItem => ({
-  id, source: 'side', occurredOn: '2026-12-01', title: '', categoryKey: category, bookingId, funding: 'external', ars: null, usd,
+  id, source: 'side', occurredOn: '2026-12-01', title: '', categoryKey: category, bookingId, funding: 'external', ars: null, usd, tripValue: null, tripCurrency: null, tripFxRate: null,
 })
 
 function run(opts: { budget?: number; items?: SpendItem[]; bookings?: TripBooking[]; today?: string; status?: 'upcoming' | 'ongoing' | 'ended'; endsOn?: string }) {

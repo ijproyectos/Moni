@@ -62,7 +62,7 @@ export function TripBudgetCard({ finance, onSetBudget }: { finance: TripFinance;
       )}
       {finance.unconvertedCount > 0 && (
         <p className="mt-2 text-[12.5px] text-text-muted-on-dark">
-          {finance.unconvertedCount} {finance.unconvertedCount === 1 ? 'importe' : 'importes'} en otra moneda no se pudo convertir y no está sumado.
+          {finance.unconvertedCount} {finance.unconvertedCount === 1 ? 'gasto' : 'gastos'} en otra moneda todavía no está en este total porque se guardó sin cotización. Ingresala en cada gasto y se suma.
         </p>
       )}
     </section>

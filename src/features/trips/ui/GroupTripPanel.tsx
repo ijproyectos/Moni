@@ -78,10 +78,10 @@ export function GroupTripPanel({
   // What I paid toward my personal bookings of this trip (my own money; never part of the shared totals).
   const mine = useMemo<SpendItem[]>(
     () => [
-      ...(movements.data ?? []).filter((t) => t.bookingId && ids.has(t.bookingId)).map(spendFromMovement),
-      ...(side.data ?? []).filter((r) => r.booking_id && ids.has(r.booking_id)).map(spendFromSide),
+      ...(movements.data ?? []).filter((t) => t.bookingId && ids.has(t.bookingId)).map((t) => spendFromMovement(t, currency)),
+      ...(side.data ?? []).filter((r) => r.booking_id && ids.has(r.booking_id)).map((r) => spendFromSide(r, currency)),
     ],
-    [movements.data, side.data, ids],
+    [movements.data, side.data, ids, currency],
   )
   const states = useMemo(() => bookingStates(bookings, mine, arsPerUsd, sharedPaid.data ?? new Map()), [bookings, mine, arsPerUsd, sharedPaid.data])
   const sharedStates = states.filter((s) => s.booking.scope === 'shared')
@@ -92,7 +92,7 @@ export function GroupTripPanel({
     startsOn: trip.startsOn,
     endsOn: trip.endsOn,
     today,
-    items: [{ id: 'group', source: 'side', occurredOn: today, title: '', categoryKey: null, bookingId: null, funding: 'balance', ars: ledger.totalCents, usd: null }],
+    items: [{ id: 'group', source: 'side', occurredOn: today, title: '', categoryKey: null, bookingId: null, funding: 'balance', ars: ledger.totalCents, usd: null, tripValue: null, tripCurrency: null, tripFxRate: null }],
     bookings: sharedStates,
     arsPerUsd,
   })
@@ -147,14 +147,18 @@ export function GroupTripPanel({
           }}
           className="mt-3 flex min-h-11 w-full items-center gap-2 rounded-full bg-sand px-4 text-[14px] font-extrabold"
         >
-          <Wallet aria-hidden="true" className="size-4" />
-          Mi origen de la plata: {funding.data ? SOURCE_LABEL[funding.data.source] : 'sin definir'} · solo lo ves vos
+          <Wallet aria-hidden="true" className="size-4 shrink-0" />
+          <span className="min-w-0 text-left">
+            Mi origen de la plata: {funding.data ? SOURCE_LABEL[funding.data.source] : 'sin definir'}
+            <span className="block text-[12px] font-bold text-text-muted">Solo lo ves vos</span>
+          </span>
         </button>
       </section>
 
       <BookingsSection
         states={states}
         meId={meId}
+        title="Reservas del viaje"
         onAdd={() => setSheet({})}
         actions={{
           pay: (state) => (state.booking.scope === 'shared' ? onPayShared(state) : setPaying(state)),

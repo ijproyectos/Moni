@@ -3,6 +3,8 @@ export interface TripCategory {
   /** A predefined key, or the id of a custom category. */
   key: string
   label: string
+  /** Shorter name for chips (defaults to the label). */
+  short?: string
   /** Name of a lucide icon (see TripCategoryIcon). */
   icon: string
   custom?: boolean
@@ -11,11 +13,11 @@ export interface TripCategory {
 export const TRIP_CATEGORIES: readonly TripCategory[] = [
   { key: 'pasajes', label: 'Pasajes', icon: 'Plane' },
   { key: 'alojamiento', label: 'Alojamiento', icon: 'BedDouble' },
-  { key: 'comidas', label: 'Comidas y bebidas', icon: 'Utensils' },
+  { key: 'comidas', label: 'Comidas y bebidas', short: 'Comidas', icon: 'Utensils' },
   { key: 'transporte', label: 'Transporte', icon: 'Bus' },
   { key: 'compras', label: 'Compras', icon: 'ShoppingBag' },
-  { key: 'actividades', label: 'Actividades y excursiones', icon: 'Ticket' },
-  { key: 'seguro', label: 'Seguro de viaje', icon: 'ShieldCheck' },
+  { key: 'actividades', label: 'Actividades y excursiones', short: 'Actividades', icon: 'Ticket' },
+  { key: 'seguro', label: 'Seguro de viaje', short: 'Seguro', icon: 'ShieldCheck' },
   { key: 'salud', label: 'Salud', icon: 'HeartPulse' },
   { key: 'otros', label: 'Otros', icon: 'Tag' },
 ]

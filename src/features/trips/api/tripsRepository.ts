@@ -184,6 +184,12 @@ export async function addTripExpense(v: NewTripExpense): Promise<{ transactionId
   return { transactionId: row.transaction_id ?? null, sideExpenseId: row.side_expense_id ?? null }
 }
 
+/** Enters (once, for good) the rate of an expense that was saved without one: from then on its value in the trip's currency is fixed. */
+export async function setTripExpenseRate(kind: 'transaction' | 'side', id: string, rate: number): Promise<void> {
+  const { error } = await getSupabase().rpc('set_trip_expense_rate', { p_kind: kind, p_id: id, p_rate: rate })
+  if (error) throw error
+}
+
 export async function voidSideExpense(id: string): Promise<void> {
   const { error } = await getSupabase().rpc('void_trip_side_expense', { p_id: id })
   if (error) throw error

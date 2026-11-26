@@ -57,20 +57,24 @@ export function TripExpenseSheet({
 
   const amountCents = parseAmountInput(amountText) ?? 0
   // A dollar amount that touches my accounts needs the rate to know its value in pesos.
-  const needsRate = currency === 'USD' && (funding.source === 'balance' || (funding.source === 'savings' && funding.accountId !== null))
-  const fxRate = parseAmountInput(fxText) !== null ? (parseAmountInput(fxText) as number) / 100 : (arsPerUsd ?? null)
+  const needsRate = currency === 'USD' && funding.source !== 'external'
+  // In another currency than the trip's, the rate used is saved WITH the expense (it never changes afterwards).
+  const differs = currency !== trip.currency
+  const typedRate = parseAmountInput(fxText)
+  const fxRate = typedRate !== null ? typedRate / 100 : (arsPerUsd ?? null)
+  const rateLabel = arsPerUsd ? String(arsPerUsd).replace('.', ',') : null
 
   async function submit() {
     setError(null)
     if (amountCents <= 0) return setError('Poné el importe.')
     if (funding.source === 'balance' && !funding.accountId) return setError('Elegí el medio de pago.')
-    if (needsRate && !fxRate) return setError('Poné la cotización del dólar para registrarlo en pesos.')
+    if (needsRate && !fxRate) return setError('Poné la cotización del dólar: la necesitamos para registrar el gasto en pesos en Movimientos.')
     try {
       await add.mutateAsync({
         tripId: trip.id,
         amountCents,
         currency,
-        fxRate: needsRate || currency === 'USD' ? fxRate : null,
+        fxRate: needsRate || differs ? fxRate : null,
         description,
         occurredOn: date,
         categoryKey: category,
@@ -109,18 +113,29 @@ export function TripExpenseSheet({
             { value: 'USD', label: 'Dólares' },
           ]}
         />
-        {currency === 'USD' && (
-          <label className="flex flex-col gap-1 text-[14px] font-bold text-text-muted">
-            Cotización (pesos por dólar){needsRate ? '' : ' · opcional'}
-            <input
-              inputMode="decimal"
-              value={fxText}
-              onChange={(e) => setFxText(e.target.value)}
-              placeholder={arsPerUsd ? String(arsPerUsd).replace('.', ',') : 'Ej: 1.200'}
-              aria-label="Cotización del dólar"
-              className={tripFieldClass}
-            />
-          </label>
+        {(currency === 'USD' || differs) && (
+          <div className="flex flex-col gap-1">
+            <label className="flex flex-col gap-1 text-[14px] font-bold text-text-muted">
+              Cotización (pesos por dólar){needsRate ? '' : ' · opcional'}
+              <input
+                inputMode="decimal"
+                value={fxText}
+                onChange={(e) => setFxText(e.target.value)}
+                placeholder={rateLabel ?? 'Ej: 1.200'}
+                aria-label="Cotización del dólar"
+                className={tripFieldClass}
+              />
+            </label>
+            <p className="text-[13px] leading-5 text-text-muted" aria-live="polite">
+              {typedRate !== null
+                ? 'Se guarda esta cotización con el gasto y queda fija.'
+                : rateLabel
+                  ? 'Si no escribís otra, se guarda la de hoy (' + rateLabel + ') y queda fija.'
+                  : needsRate
+                    ? 'No pudimos traer la cotización de hoy: ingresala a mano para poder registrar el gasto.'
+                    : 'No pudimos traer la cotización de hoy. Podés guardarlo igual: no suma al total convertido del viaje hasta que ingreses la cotización en el gasto.'}
+            </p>
+          </div>
         )}
         <input
           value={description}

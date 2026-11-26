@@ -110,6 +110,38 @@ export function BookingSheet({
   return (
     <BottomSheet title={booking ? 'Editar reserva' : 'Nueva reserva'} onClose={onClose}>
       <div className="flex flex-col gap-3">
+        {inGroup && (
+          <>
+            <SegmentedControl
+              label="Quién la ve"
+              value={scope}
+              onChange={setScope}
+              options={[
+                { value: 'personal', label: 'Solo para mí' },
+                { value: 'shared', label: 'Compartida' },
+              ]}
+            />
+            {scope === 'shared' ? (
+              <div role="group" aria-label="Quiénes participan" className="flex flex-wrap gap-2">
+                {(members ?? []).map((m) => (
+                  <ChoiceChip
+                    key={m.userId}
+                    selected={participants.includes(m.userId)}
+                    onClick={() => setParticipants((cur) => (cur.includes(m.userId) ? cur.filter((id) => id !== m.userId) : [...cur, m.userId]))}
+                    className="min-h-10 px-3 text-[14px]"
+                  >
+                    {m.userId === meId ? 'Yo' : m.name}
+                  </ChoiceChip>
+                ))}
+              </div>
+            ) : null}
+            <p className="text-[13px] leading-5 text-text-muted">
+              {scope === 'shared'
+                ? 'Todos los integrantes ven el costo, lo pagado y lo pendiente; nunca tus ahorros, saldos ni medios de pago. Los pagos se cargan como gastos compartidos del grupo.'
+                : 'Solo vos la ves y gestionás sus pagos.'}
+            </p>
+          </>
+        )}
         {!booking && (
           <SegmentedControl
             label="Tipo de reserva"
@@ -188,38 +220,6 @@ export function BookingSheet({
           placeholder="Notas (opcional)"
           className="rounded-[18px] border border-line bg-card px-4 py-3 text-[16px] placeholder:text-text-muted"
         />
-        {inGroup && (
-          <>
-            <SegmentedControl
-              label="Quién la ve"
-              value={scope}
-              onChange={setScope}
-              options={[
-                { value: 'personal', label: 'Solo para mí' },
-                { value: 'shared', label: 'Compartida' },
-              ]}
-            />
-            {scope === 'shared' ? (
-              <div role="group" aria-label="Quiénes participan" className="flex flex-wrap gap-2">
-                {(members ?? []).map((m) => (
-                  <ChoiceChip
-                    key={m.userId}
-                    selected={participants.includes(m.userId)}
-                    onClick={() => setParticipants((cur) => (cur.includes(m.userId) ? cur.filter((id) => id !== m.userId) : [...cur, m.userId]))}
-                    className="min-h-10 px-3 text-[14px]"
-                  >
-                    {m.userId === meId ? 'Yo' : m.name}
-                  </ChoiceChip>
-                ))}
-              </div>
-            ) : null}
-            <p className="text-[13px] leading-5 text-text-muted">
-              {scope === 'shared'
-                ? 'Todos los integrantes ven el costo, lo pagado y lo pendiente; nunca tus ahorros, saldos ni medios de pago. Los pagos se cargan como gastos compartidos del grupo.'
-                : 'Solo vos la ves y gestionás sus pagos.'}
-            </p>
-          </>
-        )}
         {error && (
           <p role="alert" className="text-center text-sm text-expense">
             {error}

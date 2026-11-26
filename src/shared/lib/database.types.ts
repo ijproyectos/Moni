@@ -139,7 +139,8 @@ export interface Database {
         Row: {
           id: string
           owner_id: string
-          account_id: string
+          /** null only for an expense paid straight from savings (funding = 'savings'; migration 20261214000000). */
+          account_id: string | null
           category_id: string | null
           kind: TransactionKind
           amount: number
@@ -170,6 +171,9 @@ export interface Database {
           fx_rate?: number | null
           /** Category of the expense inside its trip: a predefined key or a custom category id (migration 20261214000000). */
           trip_category?: string | null
+          /** Value in the trip's currency and the rate used, fixed when the expense was registered. */
+          trip_amount?: number | null
+          trip_fx_rate?: number | null
           /** Booking this expense is a payment of. */
           booking_id?: string | null
           /** 'savings' when it was paid from savings (its withdrawal is `ahorro_entry_id`). */
@@ -1309,6 +1313,10 @@ export interface Database {
       }
       link_shared_expense_booking: {
         Args: { p_expense: string; p_booking: string | null }
+        Returns: undefined
+      }
+      set_trip_expense_rate: {
+        Args: { p_kind: 'transaction' | 'side'; p_id: string; p_rate: number }
         Returns: undefined
       }
       fund_shared_payment_from_savings: {

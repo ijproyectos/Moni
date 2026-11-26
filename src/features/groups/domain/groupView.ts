@@ -136,3 +136,12 @@ export function myShareCents(
 ): Cents {
   return expense.splits.find((s) => s.userId === meId)?.shareCents ?? 0
 }
+
+/**
+ * The groups that can be picked for something new (the group of a trip, a shared expense…): the ones I belong to and have NOT removed from
+ * my list, most recent activity first. Archived groups and groups I left never reach the list the app gets; a removed one comes back
+ * the moment it is restored.
+ */
+export function selectableGroups<T extends { hiddenAt?: string | null; lastActivity: string }>(groups: readonly T[]): T[] {
+  return groups.filter((g) => !g.hiddenAt).sort((a, b) => (a.lastActivity < b.lastActivity ? 1 : a.lastActivity > b.lastActivity ? -1 : 0))
+}

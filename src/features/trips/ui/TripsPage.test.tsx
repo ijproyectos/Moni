@@ -276,6 +276,45 @@ describe('Viajes: nuevo viaje', () => {
     expect(await screen.findByText('detalle del grupo')).toBeVisible()
   })
 
+  it('group: shows 3 groups at first, «Ver más grupos» opens all with a search, and removed groups are never offered', async () => {
+    state.groups = {
+      data: [
+        { ...group('g1', 'Uno', 'amigos'), lastActivity: '2026-10-01T00:00:00Z' },
+        { ...group('g2', 'Dos', 'amigos'), lastActivity: '2026-10-02T00:00:00Z' },
+        { ...group('g3', 'Tres', 'amigos'), lastActivity: '2026-10-03T00:00:00Z' },
+        { ...group('g4', 'Cuatro', 'amigos'), lastActivity: '2026-10-04T00:00:00Z' },
+        { ...group('g5', 'Oculto', 'amigos'), lastActivity: '2026-10-09T00:00:00Z', hiddenAt: '2026-10-10T00:00:00Z' },
+      ],
+      isLoading: false,
+    }
+    const user = renderPage('/viajes?nuevo=grupo')
+    const list = screen.getByRole('group', { name: 'Tus grupos' })
+    expect(within(list).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      expect.stringContaining('Cuatro'),
+      expect.stringContaining('Tres'),
+      expect.stringContaining('Dos'),
+    ])
+    expect(screen.queryByText('Oculto')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Ver más grupos' }))
+    const dialog = screen.getByRole('dialog', { name: 'Tus grupos' })
+    expect(within(dialog).getByRole('button', { name: /Uno/ })).toBeVisible()
+    expect(within(dialog).queryByText('Oculto')).toBeNull()
+    await user.type(within(dialog).getByLabelText('Buscar entre tus grupos'), 'uno')
+    await user.click(within(dialog).getByRole('button', { name: /Uno/ }))
+    expect(screen.getByRole('group', { name: 'Tus grupos' })).toHaveTextContent('Uno')
+  })
+
+  it('group: with no group available it says so and invites to create a new one (both options stay)', async () => {
+    state.groups = { data: [{ ...group('g5', 'Oculto', 'amigos'), hiddenAt: '2026-10-10T00:00:00Z' }], isLoading: false }
+    const user = renderPage('/viajes?nuevo=grupo')
+    expect(screen.getByRole('button', { name: 'Grupo existente' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Grupo nuevo' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Grupo existente' }))
+    expect(screen.getByText(/No tenés grupos disponibles para un viaje/)).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Creá un grupo nuevo' }))
+    expect(screen.getByLabelText('Nombre del viaje')).toBeVisible()
+  })
+
   it('group: a group that already has trip dates is not offered again', async () => {
     state.groups = {
       data: [group('g1', 'Viaje a Brasil'), group('g2', 'Amigos', 'amigos')],

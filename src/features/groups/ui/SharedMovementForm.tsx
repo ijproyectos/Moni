@@ -10,9 +10,10 @@ import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
 import { useCreateGuestExpense, useGroupOverlay } from '../api/useGroupGuests'
 import { useCreateSharedExpense, useGroup, useGroupMembers, useMyGroups } from '../api/useGroups'
 import type { SharedExpenseFormValues } from '../domain/group'
-import { activeMembers } from '../domain/groupView'
+import { activeMembers, selectableGroups } from '../domain/groupView'
+import { GroupPicker } from './GroupPicker'
 import { SharedExpenseForm, type SimulatedExpenseInput } from './SharedExpenseForm'
-import { fieldClass, labelClass } from './styles'
+import { labelClass } from './styles'
 
 /** What the new-movement sheet already has typed when the person marks the expense as shared. */
 export interface SharedMovementDraft {
@@ -55,7 +56,8 @@ export function SharedMovementForm({ draft, onSaved, onLeave, replaces }: Shared
       </p>
     )
   }
-  const list = groups.data ?? []
+  // Only active groups: the ones I removed from my list are not offered (restoring one brings it back).
+  const list = selectableGroups(groups.data ?? [])
   if (list.length === 0) {
     return (
       <p className="rounded-[18px] bg-sand px-4 py-4 text-center text-[16px] leading-6">
@@ -68,22 +70,13 @@ export function SharedMovementForm({ draft, onSaved, onLeave, replaces }: Shared
   }
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1">
-        <span className={labelClass}>Grupo</span>
-        <select
-          aria-label="Grupo"
-          className={fieldClass}
-          value={groupId}
-          onChange={(e) => setGroupId(e.target.value)}
-        >
-          <option value="">Elegí un grupo</option>
-          {list.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <span className={labelClass}>Grupo</span>
+      <GroupPicker
+        groups={list}
+        selectedId={groupId || null}
+        onSelect={setGroupId}
+        empty="No tenés grupos disponibles para compartir este gasto."
+      />
       {groupId && (
         <GroupExpenseForm
           key={groupId}

@@ -242,7 +242,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
                 ? categoriesById.get(entry.transaction.categoryId)
                 : undefined
             }
-            accountName={accountNamesById.get(entry.transaction.accountId)}
+            accountName={entry.transaction.accountId ? accountNamesById.get(entry.transaction.accountId) : undefined}
             groupName={groupNameOf(entry.transaction, props.groupNamesById)}
             tripName={entry.transaction.tripId ? (props.tripNamesById?.get(entry.transaction.tripId) ?? null) : null}
             today={today}
@@ -531,7 +531,7 @@ export function ActivityScreen(props: ActivityScreenProps) {
         <MovementDetail
           transaction={detail}
           category={detailCategory}
-          accountName={accountNamesById.get(detail.accountId)}
+          accountName={detail.accountId ? accountNamesById.get(detail.accountId) : undefined}
           history={props.transactions}
           onClose={() => setDetail(null)}
           onEdit={() => {
@@ -670,7 +670,9 @@ function TransactionRow({
   // Only expenses and incomes can be edited; an adjustment is undone by voiding it.
   const editable =
     (transaction.kind === 'expense' || transaction.kind === 'income') &&
-    transaction.installmentPlanId === null
+    transaction.installmentPlanId === null &&
+    // Paid straight from savings: it has no account to edit; it is removed (and the savings come back) instead.
+    transaction.accountId !== null
   const scheduled = isScheduled(transaction, today)
   const installment =
     transaction.installmentNumber !== null && transaction.installmentsTotal !== null
@@ -688,7 +690,7 @@ function TransactionRow({
       : [
           name !== categoryName ? categoryName : null,
           tripName ? `Viaje · ${tripName}` : null,
-          transaction.funding === 'savings' ? 'Con ahorros' : null,
+          transaction.funding === 'savings' ? 'Ahorros' : null,
           accountName,
         ]
     )

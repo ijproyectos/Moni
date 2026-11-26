@@ -133,8 +133,8 @@ function PersonalTrips({ onNew }: { onNew: () => void }) {
 
   const cards = all.map((trip) => {
     const items = [
-      ...tripExpenses(trip.id, expenses.data ?? []).map(spendFromMovement),
-      ...(side.data ?? []).filter((r) => r.trip_id === trip.id).map(spendFromSide),
+      ...tripExpenses(trip.id, expenses.data ?? []).map((t) => spendFromMovement(t, trip.currency ?? 'ARS')),
+      ...(side.data ?? []).filter((r) => r.trip_id === trip.id).map((r) => spendFromSide(r, trip.currency ?? 'ARS')),
     ]
     const bookings = bookingStates((bookingsQuery.data ?? []).filter((b) => b.tripId === trip.id), items, arsPerUsd)
     return {

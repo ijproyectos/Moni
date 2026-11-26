@@ -105,7 +105,7 @@ describe('ActivityPage', () => {
     setup()
     const row = screen.getByRole('button', { name: 'Ver detalle de Cena' })
     expect(row).toHaveTextContent('Viaje · Brasil')
-    expect(row).toHaveTextContent('Con ahorros')
+    expect(row).toHaveTextContent('Ahorros')
   })
 
   it('shows every movement by default, not only the current month', () => {
