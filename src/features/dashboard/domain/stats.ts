@@ -83,6 +83,15 @@ export function barScale(months: readonly MonthTotals[]): { expense: number; inc
   return months.map((m) => ({ expense: m.expenseCents / max, income: m.incomeCents / max }))
 }
 
+/**
+ * How much a period's spending changed against the previous one, as a whole percentage (positive = spent more).
+ * Null without a previous period to compare against (no data, or it had no spending at all).
+ */
+export function expenseDelta(currentCents: Cents, previousCents: Cents | null): number | null {
+  if (previousCents === null || previousCents <= 0) return null
+  return Math.round(((currentCents - previousCents) / previousCents) * 100)
+}
+
 /** Adds the same category across several months (the "6 meses" and "Año" donuts). Percentages are recomputed. */
 export function mergeCategories(months: readonly (readonly CategorySlice[])[]): CategorySlice[] {
   const byId = new Map<string, CategorySlice>()

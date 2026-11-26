@@ -1,5 +1,5 @@
 import type { CategorySlice } from './monthSummary'
-import { barScale, groupCategories, lastMonths, mergeCategories, OTHER_ID, savingsSummary } from './stats'
+import { barScale, expenseDelta, groupCategories, lastMonths, mergeCategories, OTHER_ID, savingsSummary } from './stats'
 
 const slice = (id: string, amountCents: number): CategorySlice => ({
   categoryId: id,
@@ -57,6 +57,19 @@ describe('savingsSummary', () => {
   it('is null without income and negative when spending exceeds it', () => {
     expect(savingsSummary([{ month: '2026-11-01', incomeCents: 0, expenseCents: 10 }])).toBeNull()
     expect(savingsSummary([{ month: '2026-11-01', incomeCents: 100, expenseCents: 150 }])?.percent).toBe(-50)
+  })
+})
+
+describe('expenseDelta', () => {
+  it('rounds the percentage change vs the previous period', () => {
+    expect(expenseDelta(1_100_00, 1_000_00)).toBe(10)
+    expect(expenseDelta(800_00, 1_000_00)).toBe(-20)
+    expect(expenseDelta(1_000_00, 1_000_00)).toBe(0)
+  })
+
+  it('is null without a previous period to compare against', () => {
+    expect(expenseDelta(1_000_00, null)).toBeNull()
+    expect(expenseDelta(1_000_00, 0)).toBeNull()
   })
 })
 

@@ -83,6 +83,13 @@ describe('MonthReportPage (Estadísticas)', () => {
     expect(card).toHaveTextContent('$100.000 por mes en promedio · meta 15%')
   })
 
+  it('reads out the month in plain words: amount, top category and change vs last month', () => {
+    setup()
+    expect(
+      screen.getByText('Gastaste $900.000 este mes, sobre todo en Súper, un 29% más que el mes pasado.'),
+    ).toBeInTheDocument()
+  })
+
   it('6 meses adds the months up and asks for six summaries', async () => {
     const user = setup()
     await user.click(screen.getByRole('button', { name: '6 meses' }))

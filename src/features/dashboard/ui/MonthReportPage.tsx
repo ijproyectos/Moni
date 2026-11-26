@@ -11,10 +11,12 @@ import { MentaHeader } from '@/shared/ui/MentaHeader'
 import { MonthPicker } from '@/shared/ui/MonthPicker'
 import { SegmentedControl } from '@/shared/ui/SegmentedControl'
 import { Skeleton } from '@/shared/ui/Skeleton'
+import { useFormatMoney } from '@/shared/ui/useFormatMoney'
 import { useMonthSummaries } from '../api/useMonthSummary'
 import {
   SAVINGS_GOAL_PERCENT,
   barScale,
+  expenseDelta,
   groupCategories,
   lastMonths,
   mergeCategories,
@@ -42,6 +44,7 @@ function monthsFor(range: Range, selected: string, latest: string): { shown: str
 
 /** Estadísticas (screen 23, at /este-mes): Mes / 6 meses / Año, spending by category, expenses vs income and savings. */
 export function MonthReportPage() {
+  const formatMoney = useFormatMoney()
   const latest = monthStart(todayIso())
   const [selected, setSelected] = useState(latest)
   const [range, setRange] = useState<Range>('month')
@@ -57,6 +60,24 @@ export function MonthReportPage() {
   })
   const slices = groupCategories(mergeCategories(shownData.map((d) => d.byCategory)))
   const expenseTotal = shownData.reduce((s, d) => s + d.expenseCents, 0)
+  const topCategory = slices[0] ?? null
+  const previousMonthExpense =
+    range === 'month' ? (byMonth.get(shiftMonth(selected, -1))?.expenseCents ?? null) : null
+  const delta = range === 'month' ? expenseDelta(expenseTotal, previousMonthExpense) : null
+  const readout =
+    expenseTotal <= 0
+      ? null
+      : range === 'month'
+        ? `Gastaste ${formatMoney(expenseTotal)} este mes${topCategory ? `, sobre todo en ${topCategory.name}` : ''}${
+            delta === null
+              ? '.'
+              : delta > 0
+                ? `, un ${delta}% más que el mes pasado.`
+                : delta < 0
+                  ? `, un ${Math.abs(delta)}% menos que el mes pasado.`
+                  : ', igual que el mes pasado.'
+          }`
+        : `Gastaste ${formatMoney(expenseTotal)} en este período${topCategory ? `, sobre todo en ${topCategory.name}.` : '.'}`
   const totals: MonthTotals[] = bars.map((m) => ({
     month: m,
     incomeCents: byMonth.get(m)?.incomeCents ?? 0,
@@ -98,6 +119,9 @@ export function MonthReportPage() {
         </div>
       ) : (
         <>
+          {readout && (
+            <p className="rounded-[22px] bg-card px-4 py-3 text-[14.5px] leading-5 text-ink">{readout}</p>
+          )}
           <section aria-label="Por categoría" className="flex flex-col gap-2.5 rounded-[26px] bg-card px-4 py-3.5">
             <div className="flex items-center justify-between">
               <h2 className="text-[16px] font-bold">Por categoría</h2>
