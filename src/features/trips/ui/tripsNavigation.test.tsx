@@ -18,6 +18,7 @@ import { TripsPage } from './TripsPage'
 const state = vi.hoisted(() => ({
   trips: [] as unknown[],
   createTrip: vi.fn(),
+  archiveTrip: vi.fn(),
 }))
 vi.mock('@/features/plus/api/usePlus', () => ({ usePlus: () => ({ isPlus: true, isFree: false, isLoading: false, expiresAt: null }) }))
 vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
@@ -32,6 +33,7 @@ vi.mock('./TripIconPicker', () => ({ TripIconButton: () => <button type="button"
 vi.mock('../api/useArsPerUsd', () => ({ useArsPerUsd: () => null }))
 vi.mock('../api/useTrips', () => ({
   useSideExpenses: () => ({ data: [] }),
+  useArchiveTrip: () => ({ mutateAsync: state.archiveTrip, isPending: false }),
   useBookings: () => ({ data: [] }),
   useAddTripExpense: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useTripCategories: () => ({ data: [] }),

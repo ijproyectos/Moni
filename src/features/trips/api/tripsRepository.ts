@@ -91,6 +91,12 @@ export async function updateTrip(id: string, values: TripFormValues): Promise<Pe
   return toTrip(data)
 }
 
+/** «Eliminar» a personal trip: it leaves the list (and the pickers) but nothing is lost: its expenses stay and it keeps counting for the plan limit. */
+export async function archiveTrip(id: string): Promise<void> {
+  const { error } = await getSupabase().from('trips').update({ archived_at: new Date().toISOString() }).eq('id', id)
+  if (error) throw error
+}
+
 /** Only the look of the trip: nothing else about it (destination, dates, budget, expenses) changes. */
 export async function setTripIcon(id: string, icon: string | null): Promise<void> {
   const { error } = await getSupabase().from('trips').update({ icon }).eq('id', id)

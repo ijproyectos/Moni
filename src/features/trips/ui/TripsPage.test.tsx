@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   groups: { data: [] as unknown[], isLoading: false },
   photos: {} as Record<string, { path: string; url: string }>,
   createTrip: vi.fn(),
+  archiveTrip: vi.fn(),
   updateTrip: vi.fn(),
   setGroupTrip: vi.fn(),
   createGroup: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock('@/features/auth/api/authContext', () => ({ useAuth: () => ({ user: { id
 vi.mock('../api/useArsPerUsd', () => ({ useArsPerUsd: () => null }))
 vi.mock('../api/useTrips', () => ({
   useSideExpenses: () => ({ data: [] }),
+  useArchiveTrip: () => ({ mutateAsync: state.archiveTrip, isPending: false }),
   useBookings: () => ({ data: [] }),
   useAddTripExpense: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useTripCategories: () => ({ data: [] }),
@@ -122,6 +124,39 @@ describe('Viajes: tabs and lists', () => {
     state.expenses = { data: [makeTransaction({ tripId: 't1', amountCents: 520_000_00 })] }
     renderPage()
     expect(screen.getByText('Te pasaste $20.000 del presupuesto')).toBeVisible()
+  })
+
+  it('Mis viajes: swiping reveals Editar on one side and Eliminar on the other (real buttons); deleting asks first and keeps the expenses', async () => {
+    state.trips = { data: [trip()], isLoading: false, isError: false, error: null }
+    state.archiveTrip.mockResolvedValue(undefined)
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'Eliminar Semana en Salta' }))
+    expect(state.archiveTrip).not.toHaveBeenCalled()
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveTextContent('Tus gastos y movimientos no se borran')
+    await user.click(within(dialog).getByRole('button', { name: 'Eliminar' }))
+    expect(state.archiveTrip).toHaveBeenCalledWith('t1')
+    await user.click(screen.getByRole('button', { name: 'Editar Semana en Salta' }))
+    expect(screen.getByRole('dialog', { name: 'Editar viaje' })).toBeVisible()
+  })
+
+  it('a trip that was removed (archived) is not listed', () => {
+    state.trips = { data: [trip({ archivedAt: '2026-11-01T00:00:00Z' })], isLoading: false, isError: false, error: null }
+    renderPage()
+    expect(screen.queryByText('Semana en Salta')).toBeNull()
+  })
+
+  it('En grupo: an administrator can Editar and Eliminar; anybody else gets «Salir del grupo» and no Editar', async () => {
+    state.groups = { data: [group('g1', 'Viaje a Brasil'), group('g2', 'Viaje a Sierras', 'viaje', 'member')], isLoading: false }
+    state.groupTrips = { data: [{ groupId: 'g1', startsOn: '2999-12-20', endsOn: '2999-12-30', budgetCents: 0 }] }
+    const user = renderPage()
+    await user.click(screen.getByRole('button', { name: 'En grupo' }))
+    expect(screen.getByRole('button', { name: 'Editar Viaje a Brasil' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Eliminar Viaje a Brasil' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Editar Viaje a Sierras' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Salir de Viaje a Sierras' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Editar Viaje a Brasil' }))
+    expect(screen.getByRole('dialog', { name: 'Editar viaje en grupo' })).toBeVisible()
   })
 
   it('trips that already ended go under Pasados', () => {

@@ -11,6 +11,7 @@ import type { TripFormValues } from '../domain/trip'
 import { tripKeys } from './queryKeys'
 import {
   addTripExpense,
+  archiveTrip,
   createBooking,
   createTrip,
   createTripCategory,
@@ -248,5 +249,14 @@ export function useSetTripExpenseRate() {
   return useMutation({
     mutationFn: ({ kind, id, rate }: { kind: 'transaction' | 'side'; id: string; rate: number }) => setTripExpenseRate(kind, id, rate),
     onSuccess: refresh,
+  })
+}
+
+export function useArchiveTrip() {
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  return useMutation({
+    mutationFn: (id: string) => archiveTrip(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: tripKeys.all(user?.id) }),
   })
 }
