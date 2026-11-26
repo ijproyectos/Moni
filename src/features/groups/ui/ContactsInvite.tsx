@@ -2,7 +2,8 @@ import { MoreHorizontal, Search, Send, UserMinus, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import mascotAlert from '@/assets/mascot/personaje_alerta-de-presupuesto.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
-import { toUserMessage } from '@/shared/lib/errors'
+import { isInviteeNeedsPlus, toUserMessage } from '@/shared/lib/errors'
+import { DecisionSheet } from '@/shared/ui/DecisionSheet'
 import { BottomSheet } from '@/shared/ui/BottomSheet'
 import { Avatar, SectionLabel } from '@/shared/ui/kit'
 import { useToast } from '@/shared/ui/toastContext'
@@ -43,6 +44,8 @@ export function ContactsInvite({ groupId }: { groupId: string }) {
   const [query, setQuery] = useState('')
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
+  /** Who could not be invited because they need Moni Plus to join. */
+  const [needsPlus, setNeedsPlus] = useState<string | null>(null)
 
   const memberIds = useMemo(
     () => new Set((members.data ?? []).filter((m) => m.leftAt === null).map((m) => m.userId)),
@@ -66,7 +69,8 @@ export function ContactsInvite({ groupId }: { groupId: string }) {
       await invite.mutateAsync({ groupId, userId })
       toast.show(`Le mandamos la invitación a ${name}`, { mascotUrl: mascotHappy })
     } catch (e) {
-      toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert })
+      if (isInviteeNeedsPlus(e)) setNeedsPlus(name)
+      else toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert })
     }
   }
 
@@ -179,6 +183,17 @@ export function ContactsInvite({ groupId }: { groupId: string }) {
             <ul className="flex flex-col divide-y divide-line">{list.map(renderRow)}</ul>
           )}
         </BottomSheet>
+      )}
+      {needsPlus && (
+        <DecisionSheet
+          icon={<Send className="size-6" />}
+          iconTone="neutral"
+          title="No pudimos enviar la invitación"
+          onClose={() => setNeedsPlus(null)}
+          actions={[{ label: 'Entendido', onClick: () => setNeedsPlus(null) }]}
+        >
+          <p>{needsPlus} necesita Moni Plus para sumarse a este grupo</p>
+        </DecisionSheet>
       )}
     </section>
   )

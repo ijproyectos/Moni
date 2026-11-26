@@ -5,7 +5,7 @@ import mascotGroup from '@/assets/mascot/personaje_gastos-en-grupo.svg'
 import iconUrl from '@/assets/brand/icono_app_redondeado.svg'
 import { useProfile } from '@/features/auth/api/useProfile'
 import { firstName } from '@/features/auth/domain/profile'
-import { toUserMessage } from '@/shared/lib/errors'
+import { joinErrorMessage, toUserMessage } from '@/shared/lib/errors'
 import { FEATURES } from '@/shared/config/features'
 import { Button } from '@/shared/ui/Button'
 import { cn } from '@/shared/ui/cn'
@@ -281,7 +281,7 @@ export function JoinGroupPage() {
         toast.show(own ? `¡${own} se unió al grupo!` : '¡Te sumaste al grupo!')
       }
     } catch (e) {
-      const message = toUserMessage(e)
+      const message = joinErrorMessage(e)
       // An unknown, expired, revoked or used-up code goes back to the code screen (123); other
       // errors (offline, session expired, too many attempts) stay here with their own message.
       if (e instanceof Error && /^invite_(invalid|expired|revoked|exhausted)$/.test(e.message)) {

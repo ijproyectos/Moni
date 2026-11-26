@@ -4,8 +4,8 @@ import type { PlusGateReason } from './plus'
  * What Free and Moni Plus can do, in ONE place. The database is the source of truth for the plan (plus_entitlements) and enforces
  * every limit again on the server; this file only decides what the screens offer, label and open, so no screen repeats the rules.
  *
- * Free: manual loading without limits, balances and movements, the basic notice center, ONE group of their own in total (they can join any
- * group they are invited to and use it fully), manual payment methods, ONE savings goal in total, ONE trip in total, Ahorros, Categorías,
+ * Free: manual loading without limits, balances and movements, the basic notice center, ONE group of their own in total and being in ONE
+ * group or trip at a time (joining another needs Moni Plus; the server enforces it on every way in), manual payment methods, ONE savings goal in total, ONE trip in total, Ahorros, Categorías,
  * exporting to Excel and every essential setting. Everything else below is Moni Plus.
  */
 export const FREE_LIMITS = { groups: 1, goals: 1, trips: 1 } as const

@@ -83,6 +83,7 @@ const MESSAGES: Record<string, string> = {
   occurrence_resolved: 'Ese período ya fue resuelto.',
   split_changed: 'Alguien del reparto ya no está en el grupo. Editá el gasto recurrente y ajustá los porcentajes.',
   group_not_removed: 'Primero quitá este grupo de tu lista.',
+  invitee_needs_plus: 'Esa persona necesita Moni Plus para sumarse a este grupo.',
   not_a_contact: 'Esa persona no está en tus contactos de Moni.',
   contact_blocked: 'Bloqueaste a esta persona. Desbloqueala para invitarla.',
   invitation_unavailable: 'No se puede invitar a esta persona ahora.',
@@ -227,6 +228,19 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
 }
 
 const FALLBACK = 'Algo salió mal. Probá de nuevo en un rato.'
+
+/** Raised when INVITING someone who, on the free plan, is already in a group or trip (the server stops it before anything is created). */
+export function isInviteeNeedsPlus(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  const { message } = error as { message?: unknown }
+  return typeof message === 'string' && message.includes('invitee_needs_plus')
+}
+
+/** Like toUserMessage, for the person who is trying to JOIN a group or trip: the free plan allows being in one at a time. */
+export function joinErrorMessage(error: unknown): string {
+  if (isPlusRequired(error)) return 'Con Moni Free solo podés estar en un grupo o viaje a la vez. Con Moni Plus te sumás a todos los que quieras.'
+  return toUserMessage(error)
+}
 
 export function toUserMessage(error: unknown): string {
   if (error instanceof OfflineError) return OFFLINE_MESSAGE

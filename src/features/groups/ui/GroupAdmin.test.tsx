@@ -316,6 +316,17 @@ describe('Personas de Moni', () => {
     expect(screen.getAllByText('Beto')).toHaveLength(1) // only the preview behind the sheet
   })
 
+  it('when the person needs Moni Plus the invitation is not sent and a popup explains it', async () => {
+    contactsData.current = [{ userId: 'c', displayName: 'Cami', avatarUrl: null }]
+    inviteC.mockRejectedValueOnce(Object.assign(new Error('invitee_needs_plus'), {}))
+    render(<ContactsInvite groupId={GROUP} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Invitar a Cami' }))
+    expect(await screen.findByText('No pudimos enviar la invitación')).toBeInTheDocument()
+    expect(screen.getByText('Cami necesita Moni Plus para sumarse a este grupo')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Entendido' }))
+    expect(screen.queryByText('No pudimos enviar la invitación')).toBeNull()
+  })
+
   it('never lists a deleted account stand-in even from stale data', () => {
     contactsData.current = [{ userId: 'x', displayName: 'Ex integrante', avatarUrl: null }, { userId: 'a', displayName: 'Ana', avatarUrl: null }]
     render(<ContactsInvite groupId={GROUP} />)

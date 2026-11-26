@@ -2,7 +2,7 @@ import { Check, UsersRound, X } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import mascotAlert from '@/assets/mascot/personaje_alerta-de-presupuesto.svg'
 import mascotHappy from '@/assets/mascot/expresion_feliz.svg'
-import { toUserMessage } from '@/shared/lib/errors'
+import { joinErrorMessage } from '@/shared/lib/errors'
 import { useToast } from '@/shared/ui/toastContext'
 import { useMyInvitations, useRespondInvitation } from '../api/useGroups'
 
@@ -28,7 +28,7 @@ export function PendingInvitations() {
         toast.show(accept ? 'Esa invitación ya venció' : 'Rechazaste la invitación', { mascotUrl: mascotHappy })
       }
     } catch (e) {
-      toast.show(toUserMessage(e), { tone: 'error', mascotUrl: mascotAlert })
+      toast.show(joinErrorMessage(e), { tone: 'error', mascotUrl: mascotAlert })
     }
   }
 
