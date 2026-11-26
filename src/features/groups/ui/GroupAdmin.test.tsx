@@ -215,14 +215,48 @@ describe('Eliminados y archivados', () => {
     expect(await screen.findByText('No tenés grupos eliminados ni archivados.')).toBeInTheDocument()
   })
 
-  it('what the server refuses (debts) stays in the list and the reason is shown', async () => {
-    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' })]
-    purge.mockRejectedValue(Object.assign(new Error('balance_not_zero'), { message: 'balance_not_zero' }))
+  it('what the server refuses stays in the list and says WHY, group by group (never a generic error)', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' }), hiddenGroup({ id: 'h2', name: 'Casa', hiddenAt: '2026-11-02T00:00:00Z' })]
+    purge.mockImplementation(async (id: string) => {
+      if (id === 'h1') throw new Error('balance_not_zero')
+      hiddenData.current = hiddenData.current.filter((g) => g.id !== id)
+      return { outcome: 'deleted', photoPath: null }
+    })
     const user = await openList()
-    await user.click(screen.getAllByRole('button', { name: 'Eliminar Depto definitivamente' })[0] as HTMLElement)
-    await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
-    expect(purge).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: 'Eliminar todos' }))
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar todos' }).at(-1) as HTMLElement)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('No se pudo eliminar:')
+    expect(alert).toHaveTextContent('Depto')
+    expect(alert).toHaveTextContent('todavía tenés saldo pendiente en el grupo')
+    expect(alert).not.toHaveTextContent('Casa')
+    expect(screen.queryByText(/Algo salió mal/)).toBeNull()
     expect(screen.getByRole('button', { name: 'Restaurar Depto' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Restaurar Casa' })).toBeNull()
+  })
+
+  it('«Eliminar todos» works with a single item: the list empties at once, says so, and the button goes away', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' })]
+    purge.mockImplementation(async () => {
+      hiddenData.current = []
+      return { outcome: 'deleted', photoPath: null }
+    })
+    const user = await openList()
+    await user.click(screen.getByRole('button', { name: 'Eliminar todos' }))
+    expect(screen.getByText('¿Eliminar definitivamente 1 grupo o viaje?')).toBeInTheDocument()
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar todos' }).at(-1) as HTMLElement)
+    expect(await screen.findByText('No tenés grupos eliminados ni archivados.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Eliminar todos' })).toBeNull()
+    expect(purge).toHaveBeenCalledTimes(1)
+  })
+
+  it('an unknown server error says nothing was deleted instead of «Algo salió mal»', async () => {
+    hiddenData.current = [hiddenGroup({ id: 'h1', name: 'Depto', hiddenAt: '2026-11-02T00:00:00Z' })]
+    purge.mockRejectedValue(new Error('boom'))
+    const user = await openList()
+    await user.click(screen.getByRole('button', { name: 'Eliminar todos' }))
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar todos' }).at(-1) as HTMLElement)
+    expect(await screen.findByRole('alert')).toHaveTextContent('no se borró nada')
   })
 })
 

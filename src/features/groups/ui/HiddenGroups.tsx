@@ -12,6 +12,7 @@ import { useToast } from '@/shared/ui/toastContext'
 import type { HiddenGroup } from '../domain/group'
 import { useHiddenGroups, usePurgeGroup, useRestoreGroup } from '../api/useGroups'
 import { GROUP_KIND_LABELS } from '../domain/group'
+import { purgeReason } from '../domain/purgeReason'
 
 /** "Eliminados y archivados": groups I removed from my account (restorable) and groups archived for everybody (read-only). */
 export function HiddenGroupsEntry() {
@@ -42,6 +43,7 @@ type Confirm = { type: 'one'; group: HiddenGroup } | { type: 'all' }
 
 const isTrip = (g: HiddenGroup) => g.kind === 'viaje'
 
+
 function HiddenGroupsSheet({ onClose }: { onClose: () => void }) {
   const toast = useToast()
   const hidden = useHiddenGroups()
@@ -49,6 +51,8 @@ function HiddenGroupsSheet({ onClose }: { onClose: () => void }) {
   const purge = usePurgeGroup()
   const [confirm, setConfirm] = useState<Confirm | null>(null)
   const [working, setWorking] = useState(false)
+  /** What the server refused in the last attempt, with the reason of each one. */
+  const [failures, setFailures] = useState<{ name: string; reason: string }[]>([])
   const list = hidden.data ?? []
 
   async function restoreOne(id: string) {
@@ -60,36 +64,28 @@ function HiddenGroupsSheet({ onClose }: { onClose: () => void }) {
     }
   }
 
-  /** Deletes one by one: the server decides each (debts or unconfirmed payments keep one in the list, with its reason). */
+  /** Deletes one by one: the server decides each, and what it refuses stays in the list with its own reason (never a generic error). */
   async function deleteForGood(targets: readonly HiddenGroup[]) {
     if (working) return
     setWorking(true)
+    setFailures([])
     let done = 0
-    let firstError: unknown = null
+    const refused: { name: string; reason: string }[] = []
     for (const g of targets) {
       try {
         await purge.mutateAsync(g.id)
         done += 1
       } catch (e) {
-        firstError ??= e
+        refused.push({ name: g.name, reason: purgeReason(e) })
       }
     }
     setWorking(false)
     setConfirm(null)
-    const failed = targets.length - done
-    if (failed === 0) {
-      toast.show(
-        targets.length === 1
-          ? 'Eliminado definitivamente'
-          : `Se eliminaron ${done} definitivamente`,
-        { mascotUrl: mascotHappy },
-      )
-    } else {
-      const reason = toUserMessage(firstError)
-      toast.show(done > 0 ? `Se eliminaron ${done}. ${failed} no se pudo: ${reason}` : reason, {
-        tone: 'error',
-        mascotUrl: mascotAlert,
-      })
+    setFailures(refused)
+    if (refused.length === 0) {
+      toast.show(targets.length === 1 ? 'Eliminado definitivamente' : `Se eliminaron ${done} definitivamente`, { mascotUrl: mascotHappy })
+    } else if (done > 0) {
+      toast.show(`Se eliminaron ${done}. ${refused.length} no se pudo eliminar: mirá el motivo abajo.`, { tone: 'error', mascotUrl: mascotAlert })
     }
   }
 
@@ -104,6 +100,18 @@ function HiddenGroupsSheet({ onClose }: { onClose: () => void }) {
         </p>
       ) : (
         <>
+          {failures.length > 0 && (
+            <div role="alert" className="mb-2 rounded-[18px] bg-tint-red px-4 py-3 text-[14px] leading-5 text-bad-ink">
+              <p className="font-extrabold">No se pudo eliminar:</p>
+              <ul className="mt-1 list-disc pl-5">
+                {failures.map((f) => (
+                  <li key={f.name}>
+                    <strong>{f.name}</strong>: {f.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="mb-1 flex justify-end">
             <button
               type="button"
