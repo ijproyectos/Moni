@@ -1,5 +1,14 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { PlusRequiredError } from '@/shared/lib/errors'
+import { OfflineError } from '@/shared/lib/offline'
+import { AiError } from '../api/aiRepository'
 import { useSpeechRecognition } from './useSpeechRecognition'
+
+const { transcribeAudio } = vi.hoisted(() => ({ transcribeAudio: vi.fn() }))
+vi.mock('../api/aiRepository', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/aiRepository')>()
+  return { ...actual, transcribeAudio }
+})
 
 class Fake {
   static instances: Fake[] = []
@@ -138,5 +147,167 @@ describe('useSpeechRecognition', () => {
     act(() => result.current.start())
     expect(result.current.error).toBe('unavailable')
     expect(result.current.listening).toBe(false)
+  })
+})
+
+describe('server-side fallback', () => {
+  class FakeRecorder {
+    static instances: FakeRecorder[] = []
+    static isTypeSupported = vi.fn(() => true)
+    state: 'inactive' | 'recording' = 'inactive'
+    ondataavailable: ((e: { data: Blob }) => void) | null = null
+    onstop: (() => void) | null = null
+    tracks = [{ stop: vi.fn() }]
+    constructor() {
+      FakeRecorder.instances.push(this)
+    }
+    start = vi.fn(() => {
+      this.state = 'recording'
+    })
+    stop = vi.fn(() => {
+      this.state = 'inactive'
+      this.ondataavailable?.({ data: new Blob(['clip']) })
+      this.onstop?.()
+    })
+  }
+  const lastRecorder = () => FakeRecorder.instances[FakeRecorder.instances.length - 1] as FakeRecorder
+  const getUserMedia = vi.fn()
+
+  beforeEach(() => {
+    // The outer suite uses fake timers; `waitFor` polls with real ones and jsdom's FileReader completes on a real
+    // task, so both would hang forever here.
+    vi.useRealTimers()
+    FakeRecorder.instances = []
+    transcribeAudio.mockReset()
+    getUserMedia.mockReset().mockResolvedValue({ getTracks: () => [{ stop: vi.fn() }] })
+    ;(globalThis as unknown as { MediaRecorder: unknown }).MediaRecorder = FakeRecorder
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: { getUserMedia },
+      configurable: true,
+    })
+  })
+  afterEach(() => {
+    delete (globalThis as unknown as { MediaRecorder?: unknown }).MediaRecorder
+    vi.useFakeTimers()
+  })
+
+  it('is offered for "no te escuché" (no retry would fix a flaky recognizer), not while idle', () => {
+    const { result } = setup()
+    expect(result.current.canFallback).toBe(false)
+    act(() => result.current.start())
+    act(() => last().onerror?.({ error: 'no-speech' }))
+    act(() => last().onend?.())
+    expect(result.current.error).toBe('no_speech')
+    expect(result.current.canFallback).toBe(true)
+  })
+
+  it('is never offered for permission, microphone or network problems (the fallback needs the same mic/network)', () => {
+    const { result } = setup()
+    act(() => result.current.start())
+    act(() => last().onerror?.({ error: 'not-allowed' }))
+    act(() => last().onend?.())
+    expect(result.current.error).toBe('denied')
+    expect(result.current.canFallback).toBe(false)
+  })
+
+  it('records, uploads and reports the transcript, going through listening then transcribing', async () => {
+    const { result, onTranscript } = setup()
+    act(() => result.current.start())
+    act(() => last().onerror?.({ error: 'no-speech' }))
+    act(() => last().onend?.())
+    expect(result.current.canFallback).toBe(true)
+
+    let resolveTranscribe: (text: string) => void = () => undefined
+    transcribeAudio.mockReturnValue(new Promise((resolve) => (resolveTranscribe = resolve)))
+
+    await act(async () => {
+      result.current.startFallback()
+      await Promise.resolve()
+    })
+    expect(getUserMedia).toHaveBeenCalledWith({ audio: true })
+    expect(result.current.listening).toBe(true)
+    expect(result.current.error).toBeNull()
+
+    act(() => result.current.stop())
+    expect(lastRecorder().stop).toHaveBeenCalled()
+    expect(result.current.listening).toBe(false)
+    expect(result.current.transcribing).toBe(true)
+
+    await act(async () => {
+      resolveTranscribe('gasté 8000 en el super')
+      await Promise.resolve()
+    })
+    await waitFor(() => expect(result.current.transcribing).toBe(false))
+    expect(onTranscript).toHaveBeenCalledWith('gasté 8000 en el super')
+    expect(result.current.error).toBeNull()
+  })
+
+  it('maps a Plus-required failure distinctly from a generic one', async () => {
+    const { result } = setup()
+    act(() => result.current.start())
+    act(() => last().onerror?.({ error: 'no-speech' }))
+    act(() => last().onend?.())
+    transcribeAudio.mockRejectedValue(new PlusRequiredError())
+
+    await act(async () => {
+      result.current.startFallback()
+      await Promise.resolve()
+    })
+    await act(async () => {
+      result.current.stop()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    await waitFor(() => expect(result.current.error).toBe('plus_required'))
+    expect(result.current.transcribing).toBe(false)
+  })
+
+  it('maps a daily quota error and an offline error to their own messages', async () => {
+    const { result } = setup()
+    act(() => result.current.start())
+    act(() => last().onerror?.({ error: 'no-speech' }))
+    act(() => last().onend?.())
+    transcribeAudio.mockRejectedValue(new AiError('ai_quota_exceeded'))
+
+    await act(async () => {
+      result.current.startFallback()
+      await Promise.resolve()
+    })
+    await act(async () => {
+      result.current.stop()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    await waitFor(() => expect(result.current.error).toBe('quota_exceeded'))
+
+    transcribeAudio.mockRejectedValue(new OfflineError())
+    act(() => result.current.clearError())
+    await act(async () => {
+      result.current.startFallback()
+      await Promise.resolve()
+    })
+    await act(async () => {
+      result.current.stop()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    await waitFor(() => expect(result.current.error).toBe('network'))
+  })
+
+  it('cancelling while recording discards the clip: nothing is uploaded', async () => {
+    const { result, onTranscript } = setup()
+    act(() => result.current.start())
+    act(() => last().onerror?.({ error: 'no-speech' }))
+    act(() => last().onend?.())
+
+    await act(async () => {
+      result.current.startFallback()
+      await Promise.resolve()
+    })
+    act(() => result.current.cancel())
+    expect(transcribeAudio).not.toHaveBeenCalled()
+    expect(onTranscript).not.toHaveBeenCalled()
+    expect(result.current.listening).toBe(false)
+    expect(result.current.transcribing).toBe(false)
   })
 })

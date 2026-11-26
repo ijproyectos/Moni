@@ -2,7 +2,7 @@ import { FunctionsFetchError, FunctionsHttpError } from '@supabase/supabase-js'
 import { onlineManager } from '@tanstack/react-query'
 import { PlusRequiredError, toUserMessage } from '@/shared/lib/errors'
 import { OfflineError } from '@/shared/lib/offline'
-import { AiError, parseMovements, parseReceipt } from './aiRepository'
+import { AiError, parseMovements, parseReceipt, transcribeAudio } from './aiRepository'
 
 const invoke = vi.hoisted(() => vi.fn())
 vi.mock('@/shared/lib/supabase', () => ({ getSupabase: () => ({ functions: { invoke } }) }))
@@ -147,5 +147,49 @@ describe('parseReceipt', () => {
     await expect(parseReceipt(IMAGE, '2026-10-28', controller.signal)).rejects.toMatchObject({
       code: 'cancelled',
     })
+  })
+})
+
+describe('transcribeAudio', () => {
+  const AUDIO = { base64: 'Y2xpcA==', mediaType: 'audio/webm' }
+  beforeEach(() => invoke.mockReset())
+  afterEach(() => onlineManager.setOnline(true))
+
+  it('sends the audio and media type, and returns the transcript text', async () => {
+    invoke.mockResolvedValue({ data: { text: 'gasté 8000 en el super' }, error: null })
+    const result = await transcribeAudio(AUDIO)
+    expect(invoke).toHaveBeenCalledWith('transcribe-audio', {
+      body: { audio: 'Y2xpcA==', mediaType: 'audio/webm' },
+    })
+    expect(result).toBe('gasté 8000 en el super')
+  })
+
+  it('fails with OfflineError before any request when there is no connection', async () => {
+    onlineManager.setOnline(false)
+    await expect(transcribeAudio(AUDIO)).rejects.toBeInstanceOf(OfflineError)
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  it('maps HTTP 402 plus_required to a typed PlusRequiredError', async () => {
+    invoke.mockResolvedValue({ data: null, error: httpError(402, { error: 'plus_required' }) })
+    await expect(transcribeAudio(AUDIO)).rejects.toBeInstanceOf(PlusRequiredError)
+  })
+
+  it('maps the daily quota (429) to the friendly message', async () => {
+    invoke.mockResolvedValue({ data: null, error: httpError(429, { error: 'ai_quota_exceeded' }) })
+    const error = await transcribeAudio(AUDIO).catch((e: unknown) => e)
+    expect(error).toMatchObject({ code: 'ai_quota_exceeded' })
+  })
+
+  it('treats an empty or missing transcript as audio_unreadable, never an empty string', async () => {
+    invoke.mockResolvedValue({ data: { text: '' }, error: null })
+    await expect(transcribeAudio(AUDIO)).rejects.toMatchObject({ code: 'audio_unreadable' })
+    invoke.mockResolvedValue({ data: {}, error: null })
+    await expect(transcribeAudio(AUDIO)).rejects.toMatchObject({ code: 'audio_unreadable' })
+  })
+
+  it('maps network failures to ai_unavailable', async () => {
+    invoke.mockResolvedValue({ data: null, error: new FunctionsFetchError(new Error('net')) })
+    await expect(transcribeAudio(AUDIO)).rejects.toMatchObject({ code: 'ai_unavailable' })
   })
 })

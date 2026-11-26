@@ -31,6 +31,8 @@ const SPEECH_MESSAGES: Record<SpeechError, string> = {
   no_mic: 'No encuentro un micrófono. Podés escribirme lo que gastaste o cobraste.',
   network: 'No hay conexión con el servicio de voz. Probá de nuevo o escribime lo que gastaste o cobraste.',
   unsupported: 'Este navegador no permite dictar. Podés escribirme lo que gastaste o cobraste.',
+  plus_required: 'Esto es exclusivo de Moni Plus. Podés escribirme lo que gastaste o cobraste.',
+  quota_exceeded: 'Llegaste al límite de transcripciones de hoy. Probá mañana o escribime lo que gastaste o cobraste.',
 }
 
 /** Waits this long without new words before it stops by itself: room to think between expenses. */
@@ -113,6 +115,17 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
   if (listening !== wasListening) {
     setWasListening(listening)
     if (!listening && step === 'idle') {
+      if (text.trim() !== '') setStep('review')
+      else if (!speech.error) setNotHeard(true)
+    }
+  }
+
+  // Same, for the server-side fallback: it finishes later (after the upload), with no "listening" transition of
+  // its own to react to.
+  const [wasTranscribing, setWasTranscribing] = useState(false)
+  if (speech.transcribing !== wasTranscribing) {
+    setWasTranscribing(speech.transcribing)
+    if (!speech.transcribing && step === 'idle') {
       if (text.trim() !== '') setStep('review')
       else if (!speech.error) setNotHeard(true)
     }
@@ -362,6 +375,14 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
                 )}
                 <AudioWave />
               </>
+            ) : speech.transcribing ? (
+              <p
+                role="status"
+                aria-live="polite"
+                className="max-w-[300px] text-center text-[20px] font-medium leading-[1.25] tracking-[-0.02em]"
+              >
+                Transcribiendo…
+              </p>
             ) : (
               <p
                 role="status"
@@ -378,7 +399,11 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
           </>
         }
         bottom={
-          listening ? (
+          speech.transcribing ? (
+            <p aria-hidden="true" className="text-center text-[14px] text-text-muted">
+              Un momento…
+            </p>
+          ) : listening ? (
             <>
               {/* Ends the dictation now: no need to wait for the pause. What was heard shows up to review. */}
               <button
@@ -408,6 +433,11 @@ function VoiceCapture({ onClose, startWith = 'promo' }: VoiceSheetProps) {
                 {speech.supported && speech.error !== 'denied' && (
                   <button type="button" className={smallButton} onClick={startListening}>
                     <Mic aria-hidden="true" className="size-4" /> Probar de nuevo
+                  </button>
+                )}
+                {speech.canFallback && (
+                  <button type="button" className={smallButton} onClick={speech.startFallback}>
+                    <Mic aria-hidden="true" className="size-4" /> Transcribir con IA
                   </button>
                 )}
               </>

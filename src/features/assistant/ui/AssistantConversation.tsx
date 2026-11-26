@@ -35,6 +35,8 @@ const DICTATION_MESSAGES: Record<SpeechError, string> = {
   no_speech: 'No te escuché. Probá de nuevo, más cerca del micrófono, o escribí tu consulta.',
   unsupported: 'Este navegador no permite dictar por voz. Escribí tu consulta o abrí Moni en Chrome (Android o computadora) o Safari (iPhone).',
   unavailable: 'El dictado no está disponible ahora. Escribí tu consulta.',
+  plus_required: 'Esto es exclusivo de Moni Plus. Escribí tu consulta.',
+  quota_exceeded: 'Llegaste al límite de transcripciones de hoy. Probá mañana o escribí tu consulta.',
 }
 
 function Bubble({ message }: { message: ChatMessage }) {
@@ -97,10 +99,10 @@ export function AssistantConversation({
   const speech = useSpeechRecognition({
     onTranscript: (spoken) => setDraft(mergeDictation(dictationBase.current, spoken).slice(0, ASSISTANT_LIMITS.maxChars)),
   })
-  const dictating = speech.listening || speech.processing
+  const dictating = speech.listening || speech.processing || speech.transcribing
 
   function toggleMic() {
-    if (speech.processing) return
+    if (speech.processing || speech.transcribing) return
     if (speech.listening) {
       speech.stop()
       return
@@ -283,19 +285,31 @@ export function AssistantConversation({
               {speech.error ? (
                 <>
                   <p className="flex-1">{DICTATION_MESSAGES[speech.error]}</p>
-                  <button
-                    type="button"
-                    aria-label="Cerrar aviso"
-                    onClick={speech.clearError}
-                    className={cn('-mr-1.5 -mt-1 flex size-9 shrink-0 items-center justify-center rounded-full', FOCUS_RING)}
-                  >
-                    <X aria-hidden="true" className="size-4" />
-                  </button>
+                  {speech.canFallback ? (
+                    <button
+                      type="button"
+                      onClick={speech.startFallback}
+                      className={cn('-my-1 min-h-9 shrink-0 rounded-full px-3 text-[13px] font-extrabold underline', FOCUS_RING)}
+                    >
+                      Transcribir con IA
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label="Cerrar aviso"
+                      onClick={speech.clearError}
+                      className={cn('-mr-1.5 -mt-1 flex size-9 shrink-0 items-center justify-center rounded-full', FOCUS_RING)}
+                    >
+                      <X aria-hidden="true" className="size-4" />
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
                   <span aria-hidden="true" className="mt-1.5 size-2.5 shrink-0 rounded-full bg-expense motion-safe:animate-pulse" />
-                  <p className="flex-1 font-bold">{speech.listening ? 'Escuchando…' : 'Procesando…'}</p>
+                  <p className="flex-1 font-bold">
+                    {speech.listening ? 'Escuchando…' : speech.transcribing ? 'Transcribiendo…' : 'Procesando…'}
+                  </p>
                   <button
                     type="button"
                     onClick={cancelDictation}
@@ -330,7 +344,7 @@ export function AssistantConversation({
                 type="button"
                 aria-label={speech.listening ? 'Detener dictado' : 'Dictar pregunta'}
                 aria-pressed={speech.listening}
-                disabled={speech.processing}
+                disabled={speech.processing || speech.transcribing}
                 onClick={toggleMic}
                 className={cn(
                   'relative flex size-[38px] shrink-0 items-center justify-center rounded-full bg-sand text-ink disabled:opacity-60',
