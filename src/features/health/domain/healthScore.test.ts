@@ -2,6 +2,7 @@ import {
   bandOf,
   computeHealthScore,
   healthSeries,
+  projectSavings,
   scoreDelta,
   suggestImprovement,
   type HealthMonthInput,
@@ -118,5 +119,34 @@ describe('suggestImprovement', () => {
   it('keeps going when everything is fine, and is null without income', () => {
     expect(suggestImprovement(base)).toEqual({ kind: 'keep' })
     expect(suggestImprovement({ ...base, incomeCents: null })).toBeNull()
+  })
+})
+
+describe('projectSavings', () => {
+  it('multiplies the current monthly pace by 6 and 12, no interest', () => {
+    // base: income 1_000_000, expense 850_000 -> saves 150_000 a month.
+    expect(projectSavings(base)).toEqual({
+      monthlyCents: 150_000_00,
+      sixMonthsCents: 900_000_00,
+      twelveMonthsCents: 1_800_000_00,
+    })
+  })
+
+  it('projects zero, never negative, when spending matches or exceeds income', () => {
+    expect(projectSavings({ ...base, expenseCents: base.incomeCents as number })).toEqual({
+      monthlyCents: 0,
+      sixMonthsCents: 0,
+      twelveMonthsCents: 0,
+    })
+    expect(projectSavings({ ...base, expenseCents: 1_200_000_00 })).toEqual({
+      monthlyCents: 0,
+      sixMonthsCents: 0,
+      twelveMonthsCents: 0,
+    })
+  })
+
+  it('is null without income', () => {
+    expect(projectSavings({ ...base, incomeCents: null })).toBeNull()
+    expect(projectSavings({ ...base, incomeCents: 0 })).toBeNull()
   })
 })

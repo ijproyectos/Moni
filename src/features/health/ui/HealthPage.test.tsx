@@ -77,6 +77,25 @@ describe('HealthPage', () => {
     expect(tip).toHaveTextContent('Tu ahorro pasa de 9% a 12%')
   })
 
+  it('projects the current pace to 6 and 12 months, no interest', () => {
+    state.health = build()
+    setup()
+    expect(
+      screen.getByText(
+        (_, el) => el?.textContent === 'Si seguís ahorrando así, en 6 meses vas a tener guardados unos $540.000, y en un año unos $1.080.000.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('is honest about the projection when spending matches or exceeds income', () => {
+    // Same as the income: nothing left over to project.
+    state.health = build({ current: { ...input, expenseCents: 1_000_000_00 } })
+    setup()
+    expect(
+      screen.getByText('Al ritmo actual no estás guardando nada — mirá la sugerencia de arriba para cambiar eso.'),
+    ).toBeInTheDocument()
+  })
+
   it('is honest without income and leads to loading one', async () => {
     state.health = build({ score: { kind: 'sin-datos' }, suggestion: null, delta: null })
     setup()

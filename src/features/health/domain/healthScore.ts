@@ -238,6 +238,26 @@ export function computeHealthScore(month: HealthMonthInput): HealthScore {
   return { kind: 'ok', score, band: bandOf(score), factors }
 }
 
+export interface SavingsProjection {
+  /** What is being set aside this month, at the current pace. */
+  monthlyCents: Cents
+  sixMonthsCents: Cents
+  twelveMonthsCents: Cents
+}
+
+/**
+ * Linear projection only: what the person would have set aside in 6 and 12 months if they keep saving the same
+ * amount every month (no interest, no change in habits — just the current pace repeated). Null without income to
+ * measure against. Spending at or above income projects to zero: there is nothing to accumulate, never a negative
+ * "savings" figure (overspending is a different problem, already covered by the suggestion).
+ */
+export function projectSavings(month: HealthMonthInput): SavingsProjection | null {
+  const income = month.incomeCents
+  if (income === null || income <= 0) return null
+  const monthlyCents = Math.max(0, income - month.expenseCents)
+  return { monthlyCents, sixMonthsCents: monthlyCents * 6, twelveMonthsCents: monthlyCents * 12 }
+}
+
 export interface HealthSeriesPoint {
   month: string
   /** Null when that month cannot be scored. */

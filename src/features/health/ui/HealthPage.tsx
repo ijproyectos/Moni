@@ -12,9 +12,11 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { useFinancialHealth, type FinancialHealth } from '../api/useFinancialHealth'
 import {
   BAND_LABELS,
+  projectSavings,
   type FactorTone,
   type HealthFactor,
   type HealthSuggestion,
+  type SavingsProjection,
 } from '../domain/healthScore'
 
 const RING = { size: 136, stroke: 14 }
@@ -188,12 +190,30 @@ function Suggestion({ suggestion }: { suggestion: HealthSuggestion }) {
   )
 }
 
+function Projection({ projection }: { projection: SavingsProjection }) {
+  if (projection.monthlyCents <= 0) {
+    return (
+      <p className="px-1 text-[13px] leading-5 text-text-muted">
+        Al ritmo actual no estás guardando nada — mirá la sugerencia de arriba para cambiar eso.
+      </p>
+    )
+  }
+  return (
+    <p className="px-1 text-[13px] leading-5 text-text-muted">
+      Si seguís ahorrando así, en 6 meses vas a tener guardados unos{' '}
+      <AmountDisplay cents={projection.sixMonthsCents} className="font-semibold text-ink" />, y en un año unos{' '}
+      <AmountDisplay cents={projection.twelveMonthsCents} className="font-semibold text-ink" />.
+    </p>
+  )
+}
+
 /** Salud financiera (screen 06): score 0-100, six-month evolution, four factors and one suggestion, all from real data. */
 export function HealthPage() {
   const health = useFinancialHealth()
   const { openNew } = useMovementSheet()
   const latest = monthStart(todayIso())
   const previous = shiftMonth(latest, -1)
+  const projection = health.current ? projectSavings(health.current) : null
 
   return (
     <section className="flex flex-col gap-3 px-[18px] pb-4 pt-1">
@@ -246,6 +266,7 @@ export function HealthPage() {
           </ul>
 
           {health.suggestion && <Suggestion suggestion={health.suggestion} />}
+          {projection && <Projection projection={projection} />}
         </>
       )}
     </section>
