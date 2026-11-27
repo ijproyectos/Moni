@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import cuerpo from '../assets/gato-cuerpo.png'
-import patita from '../assets/gato-patita.png'
-import tapa from '../assets/gato-tapa.png'
+import cuerpo from '../assets/gato-cuerpo.svg'
+import patita from '../assets/gato-patita.svg'
 import { whenAppReady } from '../domain/appReady'
 import './splash.css'
 
@@ -216,7 +215,6 @@ export function SplashOverlay({ root, onDone }: { root: HTMLElement; onDone: () 
               <div className="moni-splash-cat" data-a="cat">
                 <img src={cuerpo} alt="" draggable={false} />
                 <img className="moni-splash-arm" src={patita} alt="" draggable={false} data-a="arm" />
-                <img src={tapa} alt="" draggable={false} />
                 {STARS.map(([id, left, top]) => (
                   <div key={id} className="moni-splash-sp" data-a={id} style={{ left, top }}>
                     <Star color={STAR_COLORS[id] ?? '#E9C46A'} />

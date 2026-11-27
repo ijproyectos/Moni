@@ -89,13 +89,15 @@
 }
 .moni-splash-catwrap {
   position: relative;
-  width: 164px;
-  height: 159px;
+  width: 200px;
+  height: 206px;
 }
 .moni-splash-cat {
   position: absolute;
   inset: 0;
   opacity: 0;
+  /* The outline is dark green on a dark green screen: a faint halo keeps the cat readable. */
+  filter: drop-shadow(0 0 3px rgba(253, 243, 218, 0.3));
 }
 .moni-splash-cat img {
   position: absolute;
@@ -106,12 +108,12 @@
   display: block;
 }
 .moni-splash-arm {
-  transform-origin: 80.5% 60%;
+  transform-origin: 71.8% 73.4%;
 }
 .moni-splash-glow {
   position: absolute;
   left: 50%;
-  top: 80px;
+  top: 103px; /* the middle of the cat */
   width: 420px;
   height: 420px;
   margin: -210px 0 0 -210px;
